@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CDN 线路</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 14px;
+      font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+    }
+
+    h1 {
+      font-size: 14px;
+      margin: 0 0 10px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 9px 0;
+      gap: 8px;
+    }
+
+    .hint {
+      color: #888;
+      font-size: 11px;
+      margin: 4px 0 8px;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid rgba(128, 128, 128, .3);
+      margin: 12px 0;
+    }
+
+    select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px 6px;
+      font: inherit;
+      margin-bottom: 4px;
+    }
+
+    .switch {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      display: inline-block;
+    }
+
+    .row label.switch {
+      flex: 0 0 40px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #bbb;
+      border-radius: 22px;
+      transition: .15s;
+      cursor: pointer;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .15s;
+    }
+
+    .switch input:checked+.slider {
+      background: #00a1d6;
+    }
+
+    .switch input:checked+.slider::before {
+      transform: translateX(18px);
+    }
+
+    #debug {
+      font: 12px/1.5 Consolas, Menlo, monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      background: rgba(0, 0, 0, .06);
+      border: 1px solid rgba(128, 128, 128, .25);
+      border-radius: 6px;
+      padding: 8px;
+      min-height: 72px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      #debug {
+        background: rgba(255, 255, 255, .06);
+      }
+    }
+
+    .cdnnow {
+      color: #00a1d6;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>B 站 CDN 线路</h1>
+
+  <div class="row">
+    <span><b>启用重排</b></span>
+    <label class="switch"><input type="checkbox" id="enabled" /><span class="slider"></span></label>
+  </div>
+  <div class="hint">预设开启。关闭後不改动任何 B 站取流资料（debug 叠层仍可显示当前 CDN）。</div>
+
+  <div class="row"><label for="cdnHost">CDN 线路（换成此节点并排最前，原节点保留为 fallback）</label></div>
+  <select id="cdnHost"></select>
+  <input type="text" id="customHost" spellcheck="false" placeholder="输入 CDN host，例：upos-sz-mirrorxxx.bilivideo.com"
+    style="display:none;width:100%;box-sizing:border-box;padding:5px 6px;font:inherit;margin-bottom:4px" />
+  <div class="hint" id="customHint" style="display:none">只填 host（网域），不含 http:// 与路径。</div>
+  <div class="hint">具名节点：分段请求即时导向，换节点时播放器内重载（保留全屏/进度）。「备用URL」走 playurl
+    层、切换时整页重载。「原始」等同关闭。</div>
+
+  <div class="row">
+    <span>显示页面 debug 叠层</span>
+    <label class="switch"><input type="checkbox" id="showDebug" /><span class="slider"></span></label>
+  </div>
+
+  <hr />
+  <div class="row" style="margin:0 0 6px"><label><b>Debug</b>（当前分页）</label></div>
+  <div id="debug">尚未取得资料，请在 B 站影片页开启。</div>
+
+  <script src="popup.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "B 站 CDN 线路重排",
+  "version": "1.1.0",
+  "description": "把网页版 B 站的取流 CDN 换成选定节点达到播放不卡顿的目的。默认节点为实测 TW/SG 最快，推荐台湾/新加坡用户使用。同时也提供其他备选节点和自订义选项。",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.bilibili.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "B 站 CDN 线路"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.bilibili.com/*"
+      ],
+      "js": [
+        "main-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.bilibili.com/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_start",
+      "world": "ISOLATED",
+      "all_frames": true
+    }
+  ]
+}
