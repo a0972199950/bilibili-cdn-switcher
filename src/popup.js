@@ -110,7 +110,7 @@ function esc(s) {
   return String(s == null ? "-" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; });
 }
 function renderDebug(d) {
-  if (!d) { els.debug.textContent = "尚未取得资料。请在 B 站影片页播放後再开此视窗。"; return; }
+  if (!d) { els.debug.textContent = "尚未取得资料。请在 B 站影片页播放后再开此视窗。"; return; }
   var lines = [
     "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget),
     "cdn=" + esc(d.currentCdn),

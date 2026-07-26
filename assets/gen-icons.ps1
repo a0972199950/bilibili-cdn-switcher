@@ -1,4 +1,4 @@
-# 產生擴充圖示：粉色圓角底 + 白色雙向箭頭（線路切換）
+﻿# 產生擴充圖示：粉色圓角底 + 白色雙向箭頭（線路切換）
 # 用法：pwsh -File assets/gen-icons.ps1
 Add-Type -AssemblyName System.Drawing
 

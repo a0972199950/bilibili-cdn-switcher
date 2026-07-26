@@ -1,4 +1,4 @@
-# 打包 src/ 成 Chrome Web Store 可上傳的 zip，輸出到 dist/
+﻿# 打包 src/ 成 Chrome Web Store 可上傳的 zip，輸出到 dist/
 # 用法：pwsh -File build.ps1
 $ErrorActionPreference = "Stop"
 

@@ -21,9 +21,9 @@
 
 ---
 
-![扩充 popup 设定画面](docs/image-3.png)
+![扩充 popup 设定画面](docs/image.png)
 ---
-![播放器 debug 叠层](docs/image-2.png)
+![播放器 debug 叠层](docs/image-1.png)
 
 ## ✨ 这个扩充在做什么
 
