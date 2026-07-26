@@ -21,9 +21,9 @@
 
 ---
 
-![alt text](image-3.png)
+![扩充 popup 设定画面](docs/image-3.png)
 ---
-![alt text](image-2.png)
+![播放器 debug 叠层](docs/image-2.png)
 
 ## ✨ 这个扩充在做什么
 
@@ -44,13 +44,59 @@ B 站预设分配的取流节点对台湾、新加坡使用者常常绕路、不
 ## 📥 安装（载入未封装扩充）
 
 ```text
-1️⃣  开启 chrome://extensions
-2️⃣  右上角开启「开发人员模式」
-3️⃣  点「载入未封装项目」→ 选择本资料夹 chrome-extension/
-4️⃣  开一支 B 站影片 → 播放器左上出现 debug 叠层 → 点工具列图示调整设定
+1️⃣  下载／clone 本专案到本机
+2️⃣  网址列输入 chrome://extensions 并前往
+3️⃣  右上角把「开发人员模式 / Developer mode」打开
+4️⃣  点左上「载入未封装项目 / Load unpacked」
+5️⃣  ⚠️ 选择专案里的 src 资料夹（不是专案根目录！）
+6️⃣  开一支 B 站影片 → 播放器左上出现 debug 叠层 → 点工具列图示调整设定
 ```
 
-> 💡 zip 仅供分享，需先解压再载入。需要 **Chrome 111+**（用到 content script 的 `world: "MAIN"`）。
+> ⚠️ **一定要选 `src/`**，因为 `manifest.json` 在 `src/` 里面。选到专案根目录会出现
+> 「Manifest file is missing or unreadable」。
+
+> 💡 改完程式码後，回到 `chrome://extensions` 点该扩充卡片上的 🔄 **重新载入**，再重整 B 站分页即可生效。
+
+> 💡 需要 **Chrome 111+**（用到 content script 的 `world: "MAIN"`）。若是从 `dist/` 拿到 zip，
+> 需先解压缩，再对解压出来的资料夹执行上面步骤。
+
+---
+
+## 🗂️ 专案结构
+
+```text
+bilibili-cdn-switcher/
+├── src/                  ← 扩充本体（载入未封装 / 打包的就是这层）
+│   ├── manifest.json
+│   ├── popup.html
+│   ├── popup.js
+│   ├── main-hook.js      ← MAIN world：改写取流 URL
+│   ├── bridge.js         ← ISOLATED world：storage ↔ 页面 桥接
+│   ├── cdn-list.json     ← 节点清单
+│   └── icons/            ← 16 / 32 / 48 / 128
+├── dist/                 ← 打包产物（.zip，已 gitignore）
+├── docs/                 ← README 用的截图
+├── assets/               ← 图示母档 512px + 产生脚本
+├── build.ps1             ← 打包成上架用 zip
+└── README.md
+```
+
+### 📦 打包（上架 Chrome Web Store 用）
+
+```powershell
+pwsh -File build.ps1
+```
+
+会读 `src/manifest.json` 的 `version`，把 `src/` **底下的内容**（`manifest.json` 必须在 zip 最上层）
+压成 `dist/bilibili-cdn-switcher-<版本>.zip`。
+
+### 🎨 重新产生图示
+
+```powershell
+pwsh -File assets/gen-icons.ps1
+```
+
+以 512px 母档缩出 16/32/48/128 写入 `src/icons/`，并更新 `assets/icon-master.png`。
 
 ---
 
@@ -79,7 +125,7 @@ src=playinfo|playurl  rw=<改写次数>  seg=<分段差替数>  qn=<画质>
 
 ## 🗂️ 设定与档案
 
-- 📋 节点清单放在 **`cdn-list.json`** —— 要新增／调整节点或注记，改这个档即可，于扩充页「重新整理」後生效。
+- 📋 节点清单放在 **`src/cdn-list.json`** —— 要新增／调整节点或注记，改这个档即可，于扩充页「重新整理」後生效。
 - 🧩 每个项目格式：
 
   ```json
