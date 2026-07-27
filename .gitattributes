@@ -1,0 +1,2 @@
+# hook 由 sh 執行，CRLF 會讓它整個跑不起來
+.githooks/* text eol=lf

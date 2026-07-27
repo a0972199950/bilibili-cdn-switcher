@@ -1,0 +1,34 @@
+#!/bin/sh
+# push 前自動打包 src/ 成 dist/*.zip，若產物有變更就自動 commit。
+# 啟用方式：git config core.hooksPath .githooks
+set -e
+
+# hook 內部繼承的 GIT_DIR/GIT_INDEX_FILE 會干擾底下的 git 指令
+unset GIT_DIR
+unset GIT_INDEX_FILE
+
+root=$(git rev-parse --show-toplevel)
+
+if command -v pwsh >/dev/null 2>&1; then
+  ps=pwsh
+else
+  ps=powershell
+fi
+
+echo "[pre-push] 打包中..."
+"$ps" -NoProfile -ExecutionPolicy Bypass -File "$root/build.ps1" >/dev/null
+
+if [ -z "$(git status --porcelain -- "$root/dist")" ]; then
+  echo "[pre-push] dist 無變更，繼續 push"
+  exit 0
+fi
+
+git add -- "$root/dist"
+# 用 pathspec 限定，避免把使用者已 stage 的其他變更一起 commit 進去
+git commit -q -m "chore: build dist" -- "$root/dist"
+
+echo ""
+echo "[pre-push] dist 已更新並自動提交：$(git rev-parse --short HEAD)"
+echo "[pre-push] 這個 commit 不在本次 push 範圍內，push 已中止，請再執行一次 git push。"
+echo ""
+exit 1

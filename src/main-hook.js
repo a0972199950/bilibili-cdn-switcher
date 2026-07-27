@@ -46,7 +46,8 @@
 
   var debug = {
     currentCdn: null, pickVideoHost: null, pickAudioHost: null,
-    lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null
+    lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null,
+    speedBps: 0, speedIdle: false
   };
 
   // ---------------- helpers ----------------
@@ -57,6 +58,53 @@
     var seen = {}, out = [];
     for (var i = 0; i < arr.length; i++) { var u = arr[i]; if (u && !seen[u]) { seen[u] = 1; out.push(u); } }
     return out;
+  }
+
+  // ---------------- 画质代码 → 可读名称 ----------------
+  var QN_LABELS = {
+    6: "240P", 16: "360P", 32: "480P", 64: "720P", 74: "720P60",
+    80: "1080P", 100: "1080P AI", 112: "1080P+", 116: "1080P60",
+    120: "4K", 125: "HDR", 126: "Dolby Vision", 127: "8K"
+  };
+  function qnText() {
+    var q = debug.lastQn;
+    if (q == null) return "-";
+    var name = QN_LABELS[q];
+    return name ? name + " (" + q + ")" : String(q);
+  }
+
+  // ---------------- 分段下载速度（滚动视窗）----------------
+  // 取样来源优先序：fetch/XHR 直接量测 > resource timing（跨网域需 Timing-Allow-Origin，
+  // 拿不到 transferSize 时会是 0）。有直接量测就忽略 resource timing，避免同一段重复计入。
+  var SPEED_WINDOW_MS = 10000;
+  var speedSamples = []; // {at, bytes, ms}
+  var lastDirectAt = 0;
+
+  function addSample(bytes, ms, direct) {
+    if (!(bytes > 0) || !(ms > 0)) return;
+    var now = Date.now();
+    if (direct) lastDirectAt = now;
+    else if (now - lastDirectAt < 30000) return;
+    speedSamples.push({ at: now, bytes: bytes, ms: ms });
+  }
+
+  // 用「每段 bytes / 每段耗时」而非挂钟平均：播放器缓冲满就停抓，
+  // 挂钟平均只会等于影片码率，量不到线路实际吞吐。
+  function updateSpeed() {
+    var cut = Date.now() - SPEED_WINDOW_MS, kept = [], b = 0, t = 0;
+    for (var i = 0; i < speedSamples.length; i++) if (speedSamples[i].at >= cut) kept.push(speedSamples[i]);
+    speedSamples = kept;
+    for (var j = 0; j < kept.length; j++) { b += kept[j].bytes; t += kept[j].ms; }
+    if (t > 0) { debug.speedBps = (b / t) * 1000; debug.speedIdle = false; }
+    else debug.speedIdle = debug.speedBps > 0; // 视窗内没流量 → 保留上次数值并标记 idle
+  }
+
+  function speedText() {
+    if (!debug.speedBps) return "-";
+    var s = debug.speedBps >= 1048576
+      ? (debug.speedBps / 1048576).toFixed(1) + " MB/s"
+      : Math.round(debug.speedBps / 1024) + " kB/s";
+    return debug.speedIdle ? s + " (idle)" : s;
   }
 
   var SEG_RE = /\/upgcxcode\/.*\.m4s|\/upgcxcode\//i;
@@ -135,40 +183,51 @@
   var PLAYURL_RE = /(x\/player\/wbi\/playurl|x\/player\/playurl|pgc\/player\/web\/playurl)/i;
 
   function installHooks() {
-    // __playinfo__（SSR 首个分 P）
-    try {
-      if (window.__playinfo__) rewriteRoot(window.__playinfo__, "playinfo");
-      else {
-        var store;
-        Object.defineProperty(window, "__playinfo__", {
-          configurable: true,
-          get: function () { return store; },
-          set: function (v) { try { rewriteRoot(v, "playinfo"); } catch (e) {} store = v; }
-        });
-      }
-    } catch (e) { debug.lastError = "playinfo hook: " + e; }
+    // __playinfo__（SSR 首个分 P）— CDN 重排启用时才需要
+    if (ACTIVE) {
+      try {
+        if (window.__playinfo__) rewriteRoot(window.__playinfo__, "playinfo");
+        else {
+          var store;
+          Object.defineProperty(window, "__playinfo__", {
+            configurable: true,
+            get: function () { return store; },
+            set: function (v) { try { rewriteRoot(v, "playinfo"); } catch (e) {} store = v; }
+          });
+        }
+      } catch (e) { debug.lastError = "playinfo hook: " + e; }
+    }
 
-    // fetch：分段 host 差替 +（次要）playurl 改写
+    // fetch：速度量测（永远启用）+ 分段 host 差替 / playurl 改写（CDN 启用时）
     var _fetch = window.fetch;
     if (typeof _fetch === "function") {
       window.fetch = function (input, init) {
         var url = "";
         try { url = typeof input === "string" ? input : (input && input.url) || ""; } catch (e) {}
-        if (isSwappableSeg(url)) {
-          var nu = swapSegHost(url);
-          if (nu !== url) {
-            debug.segRewriteCount++;
-            if (typeof input === "string") input = nu;
-            else { try { input = new Request(nu, input); } catch (e) {} }
+        if (ACTIVE) {
+          if (isSwappableSeg(url)) {
+            var nu = swapSegHost(url);
+            if (nu !== url) {
+              debug.segRewriteCount++;
+              if (typeof input === "string") input = nu;
+              else { try { input = new Request(nu, input); } catch (e) {} }
+            }
+          }
+          if (PLAYURL_RE.test(url)) {
+            return _fetch.call(this, input, init).then(function (resp) {
+              return resp.clone().text().then(function (txt) {
+                var out = tryRewriteText(txt, "playurl");
+                if (out == null) return resp;
+                return new Response(out, { status: resp.status, statusText: resp.statusText, headers: new Headers(resp.headers) });
+              }).catch(function () { return resp; });
+            });
           }
         }
-        if (PLAYURL_RE.test(url)) {
+        if (SEG_RE.test(url)) {
+          var t0 = Date.now();
           return _fetch.call(this, input, init).then(function (resp) {
-            return resp.clone().text().then(function (txt) {
-              var out = tryRewriteText(txt, "playurl");
-              if (out == null) return resp;
-              return new Response(out, { status: resp.status, statusText: resp.statusText, headers: new Headers(resp.headers) });
-            }).catch(function () { return resp; });
+            resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
+            return resp;
           });
         }
         return _fetch.call(this, input, init);
@@ -184,14 +243,26 @@
       var respDesc = Object.getOwnPropertyDescriptor(proto, "response");
       proto.open = function (method, url) {
         try {
-          if (typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; }
+          if (ACTIVE && typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; }
           this.__rogerUrl = url;
+          this.__rogerIsSeg = typeof url === "string" && SEG_RE.test(url);
         } catch (e) {}
         return open.call(this, method, url, arguments.length > 2 ? arguments[2] : true, arguments[3], arguments[4]);
       };
       proto.send = function () {
         var self = this, url = self.__rogerUrl || "";
-        if (PLAYURL_RE.test(url) && textDesc && respDesc) {
+        if (self.__rogerIsSeg) {
+          var t0 = Date.now();
+          self.addEventListener("load", function () {
+            try {
+              var bytes = 0;
+              if (self.response instanceof ArrayBuffer) bytes = self.response.byteLength;
+              else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
+              addSample(bytes, Date.now() - t0, true);
+            } catch (e) {}
+          });
+        }
+        if (ACTIVE && PLAYURL_RE.test(url) && textDesc && respDesc) {
           var cachedText = null, cachedObj = null, computed = false;
           var compute = function () {
             if (computed) return; computed = true;
@@ -224,7 +295,7 @@
     }
   }
 
-  if (ACTIVE) installHooks();
+  installHooks(); // 速度量测永远启用；CDN 改写只在 ACTIVE 时生效
 
   // ---------------- 被动观测「当前 CDN」（不改变任何原生行为）----------------
   function noteSegment(url) {
@@ -234,7 +305,12 @@
   try {
     var po = new PerformanceObserver(function (list) {
       var es = list.getEntries();
-      for (var i = 0; i < es.length; i++) if (es[i].name && SEG_RE.test(es[i].name)) noteSegment(es[i].name);
+      for (var i = 0; i < es.length; i++) {
+        var e = es[i];
+        if (!e.name || !SEG_RE.test(e.name)) continue;
+        noteSegment(e.name);
+        if (e.transferSize > 0 && e.duration > 0) addSample(e.transferSize, e.duration, false);
+      }
     });
     po.observe({ type: "resource", buffered: true });
   } catch (e) {}
@@ -313,7 +389,7 @@
       "mode=" + (cfg.enabled ? "on" : "off") + "  target=" + cdnTargetLabel(),
       "cdn=" + (debug.currentCdn || "-"),
       "v=" + (debug.pickVideoHost || "-") + "  a=" + (debug.pickAudioHost || "-"),
-      "src=" + (debug.lastSource || "-") + "  rw=" + debug.rewriteCount + "  seg=" + debug.segRewriteCount + "  qn=" + (debug.lastQn || "-")
+      "src=" + (debug.lastSource || "-") + "  rw=" + debug.rewriteCount + "  seg=" + debug.segRewriteCount + "  qn=" + qnText() + "  spd=" + speedText()
     ].join("\n");
   }
   function renderOverlay() {
@@ -342,12 +418,13 @@
       window.postMessage({ __rogerCdn: 1, dir: "debug", payload: {
         currentCdn: debug.currentCdn, pickVideoHost: debug.pickVideoHost, pickAudioHost: debug.pickAudioHost,
         lastSource: debug.lastSource, rewriteCount: debug.rewriteCount, segRewriteCount: debug.segRewriteCount,
-        lastQn: debug.lastQn, enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), lastError: debug.lastError
+        lastQn: debug.lastQn, enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), lastError: debug.lastError,
+        speedBps: debug.speedBps, speedIdle: debug.speedIdle
       } }, "*");
     } catch (e) {}
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderOverlay);
   else renderOverlay();
-  setInterval(function () { renderOverlay(); postDebug(); }, 1000);
+  setInterval(function () { updateSpeed(); renderOverlay(); postDebug(); }, 1000);
 })();

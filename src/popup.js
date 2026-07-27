@@ -109,13 +109,28 @@ els.customHost.addEventListener("input", function () {
 function esc(s) {
   return String(s == null ? "-" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; });
 }
+var QN_LABELS = {
+  6: "240P", 16: "360P", 32: "480P", 64: "720P", 74: "720P60",
+  80: "1080P", 100: "1080P AI", 112: "1080P+", 116: "1080P60",
+  120: "4K", 125: "HDR", 126: "Dolby Vision", 127: "8K"
+};
+function qnText(q) {
+  if (q == null) return "-";
+  var name = QN_LABELS[q];
+  return name ? name + " (" + q + ")" : String(q);
+}
+function spdText(bps, idle) {
+  if (!bps) return "-";
+  var s = bps >= 1048576 ? (bps / 1048576).toFixed(1) + " MB/s" : Math.round(bps / 1024) + " kB/s";
+  return idle ? s + " (idle)" : s;
+}
 function renderDebug(d) {
   if (!d) { els.debug.textContent = "尚未取得资料。请在 B 站影片页播放后再开此视窗。"; return; }
   var lines = [
     "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget),
     "cdn=" + esc(d.currentCdn),
     "v=" + esc(d.pickVideoHost) + "  a=" + esc(d.pickAudioHost),
-    "src=" + esc(d.lastSource) + "  rw=" + esc(d.rewriteCount) + "  seg=" + esc(d.segRewriteCount) + "  qn=" + esc(d.lastQn)
+    "src=" + esc(d.lastSource) + "  rw=" + esc(d.rewriteCount) + "  seg=" + esc(d.segRewriteCount) + "  qn=" + esc(qnText(d.lastQn)) + "  spd=" + esc(spdText(d.speedBps, d.speedIdle))
   ];
   if (d.lastError) lines.push("err=" + esc(d.lastError));
   els.debug.innerHTML = lines.map(function (l, i) { return i === 1 ? '<span class="cdnnow">' + l + "</span>" : l; }).join("\n");
