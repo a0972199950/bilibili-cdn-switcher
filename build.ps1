@@ -47,11 +47,15 @@ function Build-Target([string]$name, [string]$manifestFile) {
     Write-Warning "找不到 $iconsProd，zip 內会是 src/icons/ 目前的图示（可能是开发版）。请先执行 pwsh -File assets/gen-icons.ps1。"
   }
 
-  $items = Get-ChildItem -LiteralPath $stage | ForEach-Object { $_.FullName }
-  Compress-Archive -LiteralPath $items -DestinationPath $zip
+  # 不用 Compress-Archive：它在 Windows 上壓子資料夾（如 icons/）時，档名分隔符会用 `\`，
+  # 不符合 zip 格式规范（一律要 `/`），Firefox 上架检查会直接打回「Invalid file name in
+  # archive」。改用 ZipFile.CreateFromDirectory，.NET 底层正确固定用 `/`。
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [System.IO.Compression.ZipFile]::CreateFromDirectory(
+    $stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false
+  )
   Remove-Item -LiteralPath $stage -Recurse -Force
 
-  Add-Type -AssemblyName System.IO.Compression.FileSystem
   $z = [System.IO.Compression.ZipFile]::OpenRead($zip)
   Write-Host "`n$($manifest.name) [$name]  v$version" -ForegroundColor Cyan
   $z.Entries | ForEach-Object { "  {0,-24} {1,7} B" -f $_.FullName, $_.Length }
