@@ -55,18 +55,25 @@ function Build-Target([string]$name, [string]$manifestFile) {
   # 再传进去，local/central 两边都会是同一个字串，不会有这个不一致的问题。
   Add-Type -AssemblyName System.IO.Compression
   Add-Type -AssemblyName System.IO.Compression.FileSystem
+  # 固定 entry 的时间戳与走访顺序，让内容没变时每次包出来的 zip bytes 也完全一样（reproducible
+  # build）。不这样做的话每个 entry 会带「打包当下」的时间，同样的原始码每次包出来都不同，
+  # pre-push hook 就会每次都判定 dist 有变更、一直多出空的 "chore: build dist" commit。
+  $fixedTime = [DateTimeOffset]::new(1980, 1, 1, 0, 0, 0, [TimeSpan]::Zero)
   $zipStream = [System.IO.File]::Open($zip, [System.IO.FileMode]::Create)
   $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
   try {
-    Get-ChildItem -LiteralPath $stage -Recurse -File | ForEach-Object {
-      $relative = $_.FullName.Substring($stage.Length + 1) -replace '\\', '/'
-      $entry = $archive.CreateEntry($relative, [System.IO.Compression.CompressionLevel]::Optimal)
-      $entryStream = $entry.Open()
-      try {
-        $fileStream = [System.IO.File]::OpenRead($_.FullName)
-        try { $fileStream.CopyTo($entryStream) } finally { $fileStream.Dispose() }
-      } finally { $entryStream.Dispose() }
-    }
+    Get-ChildItem -LiteralPath $stage -Recurse -File |
+      Sort-Object { $_.FullName.Substring($stage.Length + 1) -replace '\\', '/' } |
+      ForEach-Object {
+        $relative = $_.FullName.Substring($stage.Length + 1) -replace '\\', '/'
+        $entry = $archive.CreateEntry($relative, [System.IO.Compression.CompressionLevel]::Optimal)
+        $entry.LastWriteTime = $fixedTime
+        $entryStream = $entry.Open()
+        try {
+          $fileStream = [System.IO.File]::OpenRead($_.FullName)
+          try { $fileStream.CopyTo($entryStream) } finally { $fileStream.Dispose() }
+        } finally { $entryStream.Dispose() }
+      }
   } finally {
     $archive.Dispose()
     $zipStream.Dispose()
