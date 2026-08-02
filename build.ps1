@@ -47,13 +47,30 @@ function Build-Target([string]$name, [string]$manifestFile) {
     Write-Warning "找不到 $iconsProd，zip 內会是 src/icons/ 目前的图示（可能是开发版）。请先执行 pwsh -File assets/gen-icons.ps1。"
   }
 
-  # 不用 Compress-Archive：它在 Windows 上壓子資料夾（如 icons/）時，档名分隔符会用 `\`，
-  # 不符合 zip 格式规范（一律要 `/`），Firefox 上架检查会直接打回「Invalid file name in
-  # archive」。改用 ZipFile.CreateFromDirectory，.NET 底层正确固定用 `/`。
+  # 不能用 Compress-Archive 或 ZipFile.CreateFromDirectory：Windows PowerShell 5.1 用的
+  # .NET Framework 在压子资料夹（如 icons/）时有个已知 bug —— central directory 的档名会正规化
+  # 成 `/`，但每个档案前面的 local file header 却还是留着 `\`，两边不一致。多数解压工具只看
+  # central directory 所以看起来没事，但 Firefox 的验证器是读 local header，一样会打回
+  # 「Invalid file name in archive」。改成手动逐一 CreateEntry，档名自己先正规化成 `/`
+  # 再传进去，local/central 两边都会是同一个字串，不会有这个不一致的问题。
+  Add-Type -AssemblyName System.IO.Compression
   Add-Type -AssemblyName System.IO.Compression.FileSystem
-  [System.IO.Compression.ZipFile]::CreateFromDirectory(
-    $stage, $zip, [System.IO.Compression.CompressionLevel]::Optimal, $false
-  )
+  $zipStream = [System.IO.File]::Open($zip, [System.IO.FileMode]::Create)
+  $archive = New-Object System.IO.Compression.ZipArchive($zipStream, [System.IO.Compression.ZipArchiveMode]::Create)
+  try {
+    Get-ChildItem -LiteralPath $stage -Recurse -File | ForEach-Object {
+      $relative = $_.FullName.Substring($stage.Length + 1) -replace '\\', '/'
+      $entry = $archive.CreateEntry($relative, [System.IO.Compression.CompressionLevel]::Optimal)
+      $entryStream = $entry.Open()
+      try {
+        $fileStream = [System.IO.File]::OpenRead($_.FullName)
+        try { $fileStream.CopyTo($entryStream) } finally { $fileStream.Dispose() }
+      } finally { $entryStream.Dispose() }
+    }
+  } finally {
+    $archive.Dispose()
+    $zipStream.Dispose()
+  }
   Remove-Item -LiteralPath $stage -Recurse -Force
 
   $z = [System.IO.Compression.ZipFile]::OpenRead($zip)
