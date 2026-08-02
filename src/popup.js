@@ -3,26 +3,34 @@
 var DEFAULTS = {
   enabled: true,
   cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
-  showDebug: true
+  showDebug: false
 };
-
-var CUSTOM = "__custom__";
 
 var els = {
   enabled: document.getElementById("enabled"),
+  modeList: document.getElementById("modeList"),
+  modeCustom: document.getElementById("modeCustom"),
   cdnHost: document.getElementById("cdnHost"),
   customHost: document.getElementById("customHost"),
   customHint: document.getElementById("customHint"),
   showDebug: document.getElementById("showDebug"),
-  debug: document.getElementById("debug")
+  debug: document.getElementById("debug"),
+  mainView: document.getElementById("mainView"),
+  speedtestView: document.getElementById("speedtestView"),
+  speedtestBtn: document.getElementById("speedtestBtn"),
+  stBackBtn: document.getElementById("stBackBtn"),
+  stRetestBtn: document.getElementById("stRetestBtn"),
+  stMeta: document.getElementById("stMeta"),
+  stList: document.getElementById("stList")
 };
 
-var knownValues = {}; // 清单中所有非自订的 value（用来判断储存值是否为自订 host）
+var knownValues = {}; // 清单中所有 value（用来判断储存值是否在清单内，不在的话视为自行输入）
+var cdnList = []; // cdn-list.json 的 options，供测速时取节点清单与显示用的名称
 
-// 标签：具名节点显示 domain；特殊/自订只显示名称
+// 标签：具名节点显示 domain；特殊选项只显示名称
 function optLabel(o) {
   var base = o.name + (o.note ? "（" + o.note + "）" : "");
-  var isHost = o.value && o.value !== "base" && o.value !== "backup" && o.value !== CUSTOM;
+  var isHost = o.value && o.value !== "base" && o.value !== "backup";
   return isHost ? base + " — " + o.value : base;
 }
 
@@ -38,27 +46,28 @@ function normHost(s) {
 function buildOptions(options, current) {
   els.cdnHost.innerHTML = "";
   options.forEach(function (o) {
-    if (o.value !== CUSTOM) knownValues[o.value] = true;
+    knownValues[o.value] = true;
     var op = document.createElement("option");
     op.value = o.value;
     op.textContent = optLabel(o);
     els.cdnHost.appendChild(op);
   });
-  // 还原目前选择
-  if (current && !knownValues[current] && current !== "base" && current !== "backup") {
-    // 储存值不在清单 → 视为自订 host
-    els.cdnHost.value = CUSTOM;
-    els.customHost.value = current;
-  } else {
+  // 还原目前选择：储存值在清单内 → 清单模式；不在 → 视为自行输入的 host
+  if (current && knownValues[current]) {
+    els.modeList.checked = true;
     els.cdnHost.value = current;
-    if (!els.cdnHost.value) els.cdnHost.value = DEFAULTS.cdnHost;
+  } else {
+    els.modeCustom.checked = true;
+    els.cdnHost.value = DEFAULTS.cdnHost; // 保底，切回清单模式时有值可用
+    els.customHost.value = current || "";
   }
-  syncCustomUI();
+  syncModeUI();
 }
 
-// 依目前下拉是否为「自订」显示/隐藏输入框
-function syncCustomUI() {
-  var isCustom = els.cdnHost.value === CUSTOM;
+// 依目前是「清单选择」还是「自行输入」互斥显示对应的输入元件
+function syncModeUI() {
+  var isCustom = els.modeCustom.checked;
+  els.cdnHost.style.display = isCustom ? "none" : "block";
   els.customHost.style.display = isCustom ? "block" : "none";
   els.customHint.style.display = isCustom ? "block" : "none";
 }
@@ -71,6 +80,7 @@ Promise.all([
   new Promise(function (res) { chrome.storage.local.get(DEFAULTS, res); })
 ]).then(function (arr) {
   var list = (arr[0] && arr[0].options) || [];
+  cdnList = list;
   var cfg = {};
   for (var k in DEFAULTS) cfg[k] = arr[1][k] === undefined ? DEFAULTS[k] : arr[1][k];
   els.enabled.checked = !!cfg.enabled;
@@ -81,17 +91,20 @@ Promise.all([
 els.enabled.addEventListener("change", function () { save({ enabled: els.enabled.checked }); });
 els.showDebug.addEventListener("change", function () { save({ showDebug: els.showDebug.checked }); });
 
-els.cdnHost.addEventListener("change", function () {
-  syncCustomUI();
-  if (els.cdnHost.value === CUSTOM) {
-    // 切到自订：若输入框已有有效 host 就存，否则等待输入
-    var h = normHost(els.customHost.value);
-    if (h) { save({ cdnHost: h }); markCustom(true); }
-    else { els.customHost.focus(); markCustom(false); }
-  } else {
-    save({ cdnHost: els.cdnHost.value });
-  }
+els.modeList.addEventListener("change", function () {
+  if (!els.modeList.checked) return;
+  syncModeUI();
+  save({ cdnHost: els.cdnHost.value || DEFAULTS.cdnHost });
 });
+els.modeCustom.addEventListener("change", function () {
+  if (!els.modeCustom.checked) return;
+  syncModeUI();
+  var h = normHost(els.customHost.value);
+  if (h) { save({ cdnHost: h }); markCustom(true); }
+  else { els.customHost.focus(); markCustom(false); }
+});
+
+els.cdnHost.addEventListener("change", function () { save({ cdnHost: els.cdnHost.value }); });
 
 // 自订输入：即时正规化并储存
 function markCustom(ok) {
@@ -135,14 +148,126 @@ function renderDebug(d) {
   if (d.lastError) lines.push("err=" + esc(d.lastError));
   els.debug.innerHTML = lines.map(function (l, i) { return i === 1 ? '<span class="cdnnow">' + l + "</span>" : l; }).join("\n");
 }
+// 都固定打「顶层 frame」（frameId: 0）：content script 是 all_frames 注入，若不锁定 frame，
+// Chrome 会把讯息广播给分页内所有 frame、取最先回应的那个 —— 万一先回应的是没有播放器的
+// iframe（广告/元件），debug 会拿不到资料、测速甚至会卡在该 iframe 的残留状态而一直报错。
+var TOP_FRAME = { frameId: 0 };
+
 function pollDebug() {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (!tabs || !tabs[0]) return;
-    chrome.tabs.sendMessage(tabs[0].id, { type: "ROGER_GET_DEBUG" }, function (resp) {
+    chrome.tabs.sendMessage(tabs[0].id, { type: "ROGER_GET_DEBUG" }, TOP_FRAME, function (resp) {
       if (chrome.runtime.lastError) { renderDebug(null); return; }
       renderDebug(resp && resp.debug);
     });
   });
 }
 pollDebug();
-setInterval(pollDebug, 1000);
+
+// -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
+var SPEEDTEST_ERR_TEXT = {
+  "no-data": "无回应", "no-stream": "无法读取串流", "timeout": "超时",
+  "network-error": "网路错误", "read-error": "读取中断", "no-sample": "尚无分段样本"
+};
+function speedtestErrText(err) { return SPEEDTEST_ERR_TEXT[err] || err; }
+
+var speedtestHosts = []; // 本次送出测试的 host 顺序，index 对应 speedTest.results 的顺序
+var speedtestTabId = null;
+var speedtestPort = null; // 只用来让 content script 侦测「离开测速页 / popup 关闭」→ 立即中止
+
+function speedtestHostList() {
+  return cdnList.filter(function (o) { return o.value && o.value !== "base" && o.value !== "backup"; });
+}
+
+function renderSpeedtestMeta(st) {
+  if (!st || !st.title) { els.stMeta.innerHTML = ""; return; }
+  els.stMeta.innerHTML = '<span class="stTitle">' + esc(st.title) + "</span>" +
+    (st.qn ? '<span class="stQn">' + esc(st.qn) + "</span>" : "");
+}
+
+function renderSpeedtest(st) {
+  if (!st) return;
+  renderSpeedtestMeta(st);
+  if (st.error === "no-sample") {
+    els.stList.textContent = "请先在 B 站影片页开始播放，取得分段样本後再测速。";
+    return;
+  }
+  var bestHost = null, bestBps = 0;
+  st.results.forEach(function (r) { if (!r.error && r.bps > bestBps) { bestBps = r.bps; bestHost = r.host; } });
+
+  els.stList.innerHTML = speedtestHosts.map(function (host, i) {
+    var o = null;
+    for (var j = 0; j < cdnList.length; j++) if (cdnList[j].value === host) { o = cdnList[j]; break; }
+    var label = o ? o.name + (o.note ? "（" + o.note + "）" : "") : host;
+    var r = st.results[i];
+    var text, cls = "stRow";
+    if (r) {
+      text = r.error ? "失败（" + speedtestErrText(r.error) + "）" : spdText(r.bps, false);
+      cls += r.error ? " stErr" : (r.host === bestHost ? " stBest" : "");
+    } else if (st.running && i === st.results.length) {
+      text = "测试中…"; cls += " stTesting";
+    } else if (!st.running) {
+      text = "已取消";
+    } else {
+      text = "等待中";
+    }
+    return '<div class="' + cls + '"><span>' + esc(label) + "</span><span class=\"stSpeed\">" + esc(text) + "</span></div>";
+  }).join("");
+}
+
+function pollSpeedtest() {
+  if (speedtestTabId == null) return;
+  chrome.tabs.sendMessage(speedtestTabId, { type: "ROGER_GET_SPEEDTEST" }, TOP_FRAME, function (resp) {
+    if (chrome.runtime.lastError) return;
+    var st = resp && resp.speedTest;
+    if (!st) return;
+    renderSpeedtest(st);
+  });
+}
+
+function showSpeedtestView(tabId) {
+  speedtestTabId = tabId;
+  els.mainView.style.display = "none";
+  els.speedtestView.style.display = "block";
+  // 开一个长连线：popup 关闭或按返回时会自动/主动断线，content script 收到 onDisconnect 就中止测速
+  try { speedtestPort = chrome.tabs.connect(tabId, { name: "roger-speedtest", frameId: 0 }); } catch (e) { speedtestPort = null; }
+}
+
+function showMainView() {
+  els.speedtestView.style.display = "none";
+  els.mainView.style.display = "block";
+  if (speedtestPort) { try { speedtestPort.disconnect(); } catch (e) {} speedtestPort = null; }
+  speedtestTabId = null;
+  speedtestHosts = [];
+}
+
+function startSpeedtest(tabId) {
+  els.stList.innerHTML = "";
+  els.stMeta.innerHTML = "";
+  chrome.tabs.sendMessage(tabId, { type: "ROGER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
+    if (chrome.runtime.lastError || !resp || !resp.ok) {
+      els.stList.textContent = "无法开始测速，请确认目前分页是 B 站影片页。";
+    }
+  });
+}
+
+els.speedtestBtn.addEventListener("click", function () {
+  speedtestHosts = speedtestHostList().map(function (o) { return o.value; });
+  if (!speedtestHosts.length) return;
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    if (!tabs || !tabs[0]) return;
+    var tabId = tabs[0].id;
+    showSpeedtestView(tabId);
+    startSpeedtest(tabId);
+  });
+});
+
+els.stBackBtn.addEventListener("click", showMainView);
+
+els.stRetestBtn.addEventListener("click", function () {
+  // 测速中也能按：main-hook.js 的 runSpeedTest 会自己中断上一轮、直接开新的
+  if (speedtestTabId == null) return;
+  startSpeedtest(speedtestTabId);
+});
+
+setInterval(function () { pollDebug(); pollSpeedtest(); }, 1000);
