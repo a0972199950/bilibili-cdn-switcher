@@ -3,6 +3,12 @@
   "name": "TW/SG 视频加速 for bilibili (非官方)",
   "version": "1.2.0",
   "description": "让台湾 / 新加坡使用者在网页版 bilibili 上更顺畅观看 4K 等高画质影片，减少缓冲与卡顿。非官方第三方扩充，与 bilibili 官方无关联。",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "bilibili-cdn-switcher@a0972199950.github.io",
+      "strict_min_version": "128.0"
+    }
+  },
   "permissions": [
     "storage"
   ],
