@@ -25,7 +25,7 @@
   var DEFAULTS = {
     enabled: true, // 预设开启
     cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com", // 默认 TW/SG 最快；'base'=不覆写
-    showDebug: true
+    showDebug: false // debug 叠层预设关闭，避免新装用户被打扰
   };
 
   var cfg = readCfg();
@@ -49,6 +49,8 @@
     lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null,
     speedBps: 0, speedIdle: false
   };
+
+  var NATIVE_FETCH = window.fetch; // 存原生 fetch，供手动测速用，绕开下面装的 fetch hook
 
   // ---------------- helpers ----------------
   function asStr(v) { return typeof v === "string" ? v.trim() : ""; }
@@ -109,6 +111,56 @@
 
   var SEG_RE = /\/upgcxcode\/.*\.m4s|\/upgcxcode\//i;
   var CDN_HOST_RE = /(bilivideo\.(com|cn)|akamaized\.net|hdslb\.com)$/i;
+
+  // ---------------- 自动回退：目前 CDN 播不动时，切到「备用URL」----------------
+  // 「备用URL」即重排 playurl 時已算好的 backupUrl 清单（B 站原生给的备援节点），
+  // 不额外维护一份自订节点清单。内建功能，不提供开关。
+  var FALLBACK = { triedBackup: false, lastSwitchAt: 0 };
+  var FALLBACK_COOLDOWN_MS = 12000;
+  var stallState = { zeroSince: null };
+
+  function isFailureStatus(status) {
+    return status === 403 || status === 404 || status === 451 || (status >= 500 && status < 600);
+  }
+
+  // 具名节点模式下只认目前节点的分段；备用URL模式没有做 host 差替，任何分段失败都算数
+  function isCurrentSegHost(host) { return isHostMode() ? host === cfg.cdnHost : !!host; }
+
+  function resetFallbackState() { FALLBACK.triedBackup = false; stallState.zeroSince = null; }
+
+  function switchHost(next) {
+    var prevHost = cfg.cdnHost;
+    cfg.cdnHost = next;
+    try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
+    try { window.postMessage({ __rogerCdn: 1, dir: "auto-fallback", payload: { cdnHost: next } }, "*"); } catch (e) {}
+    renderOverlay(); postDebug();
+    if (next === "backup" || prevHost === "backup") fullReload();
+    else if (!playerReload()) fullReload();
+  }
+
+  function maybeFallback(reason) {
+    if (!ACTIVE) return;
+    if (cfg.cdnHost === "backup" || FALLBACK.triedBackup) return; // 备用URL 已是最后一步
+    var now = Date.now();
+    if (now - FALLBACK.lastSwitchAt < FALLBACK_COOLDOWN_MS) return;
+    FALLBACK.triedBackup = true;
+    FALLBACK.lastSwitchAt = now;
+    debug.lastError = "auto-fallback(" + reason + "): " + cfg.cdnHost + " -> backup";
+    switchHost("backup");
+  }
+
+  // 持续侦测：正在播放但分段速度持续为 0/idle → 视为目前 CDN 播不动
+  function checkStall() {
+    if (!ACTIVE) { stallState.zeroSince = null; return; }
+    var v = document.querySelector("video");
+    if (!v || v.paused || v.ended || v.readyState === 0) { stallState.zeroSince = null; return; }
+    if (debug.speedBps > 0 && !debug.speedIdle) { stallState.zeroSince = null; return; }
+    if (stallState.zeroSince == null) stallState.zeroSince = Date.now();
+    else if (Date.now() - stallState.zeroSince > 8000) {
+      stallState.zeroSince = Date.now();
+      maybeFallback("zero-speed");
+    }
+  }
   // 是否为「该被差替的分段请求」：具名节点模式、是分段、host 是 CDN、且尚未等于目标
   function isSwappableSeg(url) {
     if (!isHostMode()) return false;
@@ -138,19 +190,19 @@
       track.baseUrl = top; if ("base_url" in track) track.base_url = top;
     } else { track.url = top; }
     track.backupUrl = rest; if ("backup_url" in track) track.backup_url = rest;
-    return hostOf(top);
+    return top; // 回传完整 URL（不只 host），让呼叫端自行取用
   }
   function rewriteContainer(d) {
     if (!d || typeof d !== "object") return false;
     var changed = false, vHost = null, aHost = null;
     var dash = d.dash;
     if (dash && typeof dash === "object") {
-      eachTrack(dash.video, function (h) { changed = true; if (!vHost) vHost = h; });
-      eachTrack(dash.audio, function (h) { changed = true; if (!aHost) aHost = h; });
-      if (dash.dolby && Array.isArray(dash.dolby.audio)) eachTrack(dash.dolby.audio, function (h) { changed = true; if (!aHost) aHost = h; });
-      if (dash.flac && dash.flac.audio) { var h = applyTrack(dash.flac.audio); if (h) { changed = true; if (!aHost) aHost = h; } }
+      eachTrack(dash.video, function (top) { changed = true; var h = hostOf(top); if (!vHost) { vHost = h; noteEarlySample(top); } });
+      eachTrack(dash.audio, function (top) { changed = true; if (!aHost) aHost = hostOf(top); });
+      if (dash.dolby && Array.isArray(dash.dolby.audio)) eachTrack(dash.dolby.audio, function (top) { changed = true; if (!aHost) aHost = hostOf(top); });
+      if (dash.flac && dash.flac.audio) { var top1 = applyTrack(dash.flac.audio); if (top1) { changed = true; if (!aHost) aHost = hostOf(top1); } }
     }
-    if (Array.isArray(d.durl)) eachTrack(d.durl, function (h) { changed = true; if (!vHost) vHost = h; });
+    if (Array.isArray(d.durl)) eachTrack(d.durl, function (top) { changed = true; var h = hostOf(top); if (!vHost) { vHost = h; noteEarlySample(top); } });
     if (changed) {
       debug.pickVideoHost = vHost || debug.pickVideoHost;
       debug.pickAudioHost = aHost || debug.pickAudioHost;
@@ -158,16 +210,16 @@
     }
     return changed;
   }
-  function eachTrack(arr, onHost) {
+  function eachTrack(arr, onTop) {
     if (!Array.isArray(arr)) return;
-    for (var i = 0; i < arr.length; i++) { var h = applyTrack(arr[i]); if (h) onHost(h); }
+    for (var i = 0; i < arr.length; i++) { var top = applyTrack(arr[i]); if (top) onTop(top); }
   }
   function rewriteRoot(root, source) {
     try {
       if (!root || typeof root !== "object") return false;
       var d = root.data || root.result || root;
       var changed = rewriteContainer(d);
-      if (changed) { debug.lastSource = source; debug.rewriteCount++; renderOverlay(); postDebug(); }
+      if (changed) { debug.lastSource = source; debug.rewriteCount++; resetFallbackState(); renderOverlay(); postDebug(); }
       return changed;
     } catch (e) { debug.lastError = String(e); return false; }
   }
@@ -225,9 +277,14 @@
         }
         if (SEG_RE.test(url)) {
           var t0 = Date.now();
+          var reqHost = hostOf(typeof input === "string" ? input : (input && input.url) || url);
           return _fetch.call(this, input, init).then(function (resp) {
             resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
+            if (!resp.ok && isFailureStatus(resp.status) && isCurrentSegHost(reqHost)) maybeFallback("http-" + resp.status);
             return resp;
+          }, function (err) {
+            if (isCurrentSegHost(reqHost)) maybeFallback("network-error");
+            throw err;
           });
         }
         return _fetch.call(this, input, init);
@@ -259,7 +316,11 @@
               if (self.response instanceof ArrayBuffer) bytes = self.response.byteLength;
               else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
               addSample(bytes, Date.now() - t0, true);
+              if (isFailureStatus(self.status) && isCurrentSegHost(hostOf(self.__rogerUrl || ""))) maybeFallback("http-" + self.status);
             } catch (e) {}
+          });
+          self.addEventListener("error", function () {
+            if (isCurrentSegHost(hostOf(self.__rogerUrl || ""))) maybeFallback("network-error");
           });
         }
         if (ACTIVE && PLAYURL_RE.test(url) && textDesc && respDesc) {
@@ -297,8 +358,19 @@
 
   installHooks(); // 速度量测永远启用；CDN 改写只在 ACTIVE 时生效
 
+  // video 播放错误（如解码/来源错误）也视为目前 CDN 播不动的讯号
+  window.addEventListener("error", function (e) {
+    try { if (e && e.target && e.target.tagName === "VIDEO") maybeFallback("video-error"); } catch (err) {}
+  }, true);
+
   // ---------------- 被动观测「当前 CDN」（不改变任何原生行为）----------------
+  var lastSegUrl = ""; // 最近一个「已实际下载完」的分段 URL，最准确，但要等播放器真的抓过分段才有
+  var earlySegUrl = ""; // playurl/playinfo 一解析完就有：当前画质第一个 video track 的 URL，不用等开始播放
+  function noteEarlySample(url) { if (url) earlySegUrl = url; }
+  function sampleUrl() { return lastSegUrl || earlySegUrl; } // 手动测速用：优先用真实下载过的，没有才退回 early
+
   function noteSegment(url) {
+    lastSegUrl = url;
     var h = hostOf(url);
     if (h && h !== debug.currentCdn) { debug.currentCdn = h; renderOverlay(); postDebug(); }
   }
@@ -314,6 +386,110 @@
     });
     po.observe({ type: "resource", buffered: true });
   } catch (e) {}
+
+  // ---------------- 手动测速：拿「当前影片＋当前画质」的分段，逐一实测各节点速度 ----------------
+  // 只在 popup 按下按钮时执行一次；不影响使用者当下选择的 CDN，跑完只回报结果给 popup 显示。
+  // popup 离开测速页或关闭时会送 speedtest-stop，中止目前请求、不再排下一个节点。
+  var SPEEDTEST_MAX_BYTES = 8 * 1024 * 1024; // 8MB 或 5s，先到者为准
+  var SPEEDTEST_MAX_MS = 5000;
+  var speedTestRunning = false;
+  var speedTestGen = 0; // 每次 runSpeedTest 递增一代；旧一轮尚未 resolve 的 continuation 比对到
+                         // 不是目前这代就自行停手，避免「重新测速」把旗标重置後、旧的那轮又复活续跑
+  var speedTestAbort = null; // 目前这一个节点的 AbortController，供外部中止用
+
+  function measureHost(host) {
+    var testUrl = replaceHost(sampleUrl(), host);
+    return new Promise(function (resolve) {
+      var t0 = Date.now();
+      var ctrl = (typeof AbortController === "function") ? new AbortController() : null;
+      speedTestAbort = ctrl;
+      var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, SPEEDTEST_MAX_MS);
+      var done = false;
+      function finish(bytes, error) {
+        if (done) return; done = true;
+        clearTimeout(timer);
+        var ms = Date.now() - t0;
+        resolve({ host: host, bytes: bytes, ms: ms, bps: ms > 0 ? (bytes / ms) * 1000 : 0, error: error || null });
+      }
+      NATIVE_FETCH(testUrl, { signal: ctrl ? ctrl.signal : undefined, cache: "no-store" }).then(function (resp) {
+        if (!resp.ok) { finish(0, "http-" + resp.status); return; }
+        if (!resp.body || !resp.body.getReader) { finish(0, "no-stream"); return; }
+        var reader = resp.body.getReader();
+        var received = 0;
+        (function pump() {
+          reader.read().then(function (r) {
+            if (r.done) { finish(received, received > 0 ? null : "no-data"); return; }
+            received += (r.value && r.value.length) || 0;
+            if (received >= SPEEDTEST_MAX_BYTES) { try { reader.cancel(); } catch (e) {} finish(received, null); return; }
+            pump();
+          }).catch(function () {
+            // 5 秒到、AbortController 中止读取：期间有收到资料就当成实测速度回报，
+            // 完全没收到任何 byte 才算超时
+            if (ctrl && ctrl.signal.aborted) { finish(received, received > 0 ? null : "timeout"); return; }
+            finish(received, received > 0 ? null : "read-error");
+          });
+        })();
+      }).catch(function () {
+        finish(0, (ctrl && ctrl.signal.aborted) ? "timeout" : "network-error");
+      });
+    });
+  }
+
+  // 取影片标题：og:title / document.title 在 B 站都会带「_哔哩哔哩_bilibili」这类站名後缀，统一去掉
+  var TITLE_SUFFIX_RE = /[-_]\s*(哔哩哔哩|bilibili)[\s\S]*$/i;
+  function cleanTitle(s) { s = asStr(s); var t = s.replace(TITLE_SUFFIX_RE, "").trim(); return t || s; }
+  function getVideoTitle() {
+    try {
+      var og = document.querySelector('meta[property="og:title"]');
+      if (og && asStr(og.content)) return cleanTitle(og.content);
+      var mt = document.querySelector('meta[name="title"]');
+      if (mt && asStr(mt.content)) return cleanTitle(mt.content);
+      return cleanTitle(document.title);
+    } catch (e) { return ""; }
+  }
+
+  // 重新测速：不管前一轮跑到哪，直接中断、开新的一代；旧一轮的 continuation 靠 gen 比对自行退出
+  function runSpeedTest(hosts) {
+    if (!sampleUrl()) {
+      try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-done", payload: { error: "no-sample" } }, "*"); } catch (e) {}
+      return;
+    }
+    if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
+    var myGen = ++speedTestGen;
+    speedTestRunning = true;
+    try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-meta", payload: { title: getVideoTitle(), qn: qnText() } }, "*"); } catch (e) {}
+    var i = 0;
+    (function next() {
+      if (myGen !== speedTestGen) return; // 已被更新一轮取代，不再回报也不再继续
+      if (i >= hosts.length) {
+        speedTestRunning = false;
+        speedTestAbort = null;
+        try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-done", payload: {} }, "*"); } catch (e) {}
+        return;
+      }
+      var host = hosts[i++];
+      measureHost(host).then(function (r) {
+        if (myGen !== speedTestGen) return;
+        try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-progress", payload: r }, "*"); } catch (e) {}
+        next();
+      });
+    })();
+  }
+
+  function stopSpeedTest() {
+    if (!speedTestRunning) return;
+    speedTestGen++; // 让目前这一轮的 continuation 全部失效
+    speedTestRunning = false;
+    if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
+  }
+
+  window.addEventListener("message", function (ev) {
+    if (ev.source !== window) return;
+    var d = ev.data;
+    if (!d || d.__rogerCdn !== 1) return;
+    if (d.dir === "speedtest-run") { runSpeedTest((d.payload && d.payload.hosts) || []); return; }
+    if (d.dir === "speedtest-stop") { stopSpeedTest(); return; }
+  });
 
   // ---------------- 切换 CDN 时的重载策略 ----------------
   function effSig(c) { return c.enabled ? ("on:" + c.cdnHost) : "off"; }
@@ -426,5 +602,5 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderOverlay);
   else renderOverlay();
-  setInterval(function () { updateSpeed(); renderOverlay(); postDebug(); }, 1000);
+  setInterval(function () { updateSpeed(); checkStall(); renderOverlay(); postDebug(); }, 1000);
 })();

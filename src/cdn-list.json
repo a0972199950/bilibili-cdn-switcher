@@ -1,5 +1,5 @@
 {
-  "_comment": "CDN 节点清单。value 为要换成的 host；'base'=不覆写、'backup'=优先备用URL、'__custom__'=自订输入。来源：PiliNaraRogerMod/lib/models/common/video/cdn_type.dart（引用自 BiliRoaming）。第一项为预设。",
+  "_comment": "CDN 节点清单（清单选择模式用）。value 为要换成的 host；'base'=不覆写、'backup'=优先备用URL。自行输入 host 是 popup 里另一个互斥的模式，不在此清单内。来源：PiliNaraRogerMod/lib/models/common/video/cdn_type.dart（引用自 BiliRoaming）。第一项为预设，为 TW/SG 最快节点。",
   "options": [
     { "value": "cn-jxnc-cmcc-bcache-06.bilivideo.com", "name": "bilivideo", "note": "推荐 TW/SG 最快" },
     { "value": "upos-sz-mirrorali.bilivideo.com", "name": "ali", "note": "阿里云" },
@@ -22,7 +22,6 @@
     { "value": "upos-sz-mirrorhwov.bilivideo.com", "name": "hwov", "note": "华为云海外" },
     { "value": "cn-hk-eq-bcache-01.bilivideo.com", "name": "hk_bcache", "note": "Bilibili海外" },
     { "value": "backup", "name": "备用URL", "note": "用 B 站提供的备援节点" },
-    { "value": "base", "name": "原始", "note": "不覆写，等同关闭" },
-    { "value": "__custom__", "name": "自订", "note": "自行输入 CDN host" }
+    { "value": "base", "name": "原始", "note": "不覆写，等同关闭" }
   ]
 }
