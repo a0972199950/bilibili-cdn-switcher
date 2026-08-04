@@ -108,8 +108,8 @@ els.cdnHost.addEventListener("change", function () { save({ cdnHost: els.cdnHost
 
 // 自订输入：即时正规化并储存
 function markCustom(ok) {
-  els.customHint.textContent = ok ? "只填 host（网域），不含 http:// 与路径。"
-    : "请输入有效的 host（含网域，如 xxx.bilivideo.com）。";
+  els.customHint.textContent = ok ? "只填 host（網域），不含 http:// 與路徑。"
+    : "請輸入有效的 host（含網域，如 xxx.bilivideo.com）。";
   els.customHint.style.color = ok ? "#888" : "#e00";
 }
 els.customHost.addEventListener("input", function () {
@@ -138,7 +138,7 @@ function spdText(bps, idle) {
   return idle ? s + " (idle)" : s;
 }
 function renderDebug(d) {
-  if (!d) { els.debug.textContent = "尚未取得资料。请在 B 站影片页播放后再开此视窗。"; return; }
+  if (!d) { els.debug.textContent = "尚未取得資料。請在 B 站影片頁播放後再開此視窗。"; return; }
   var lines = [
     "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget),
     "cdn=" + esc(d.currentCdn),
@@ -166,8 +166,8 @@ pollDebug();
 
 // -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
 var SPEEDTEST_ERR_TEXT = {
-  "no-data": "无回应", "no-stream": "无法读取串流", "timeout": "超时",
-  "network-error": "网路错误", "read-error": "读取中断", "no-sample": "尚无分段样本"
+  "no-data": "無回應", "no-stream": "無法讀取串流", "timeout": "超時",
+  "network-error": "網路錯誤", "read-error": "讀取中斷", "no-sample": "尚無分段樣本"
 };
 function speedtestErrText(err) { return SPEEDTEST_ERR_TEXT[err] || err; }
 
@@ -189,7 +189,7 @@ function renderSpeedtest(st) {
   if (!st) return;
   renderSpeedtestMeta(st);
   if (st.error === "no-sample") {
-    els.stList.textContent = "请先在 B 站影片页开始播放，取得分段样本後再测速。";
+    els.stList.textContent = "請先在 B 站影片頁開始播放，取得分段樣本後再測速。";
     return;
   }
   var bestHost = null, bestBps = 0;
@@ -202,10 +202,10 @@ function renderSpeedtest(st) {
     var r = st.results[i];
     var text, cls = "stRow";
     if (r) {
-      text = r.error ? "失败（" + speedtestErrText(r.error) + "）" : spdText(r.bps, false);
+      text = r.error ? "失敗（" + speedtestErrText(r.error) + "）" : spdText(r.bps, false);
       cls += r.error ? " stErr" : (r.host === bestHost ? " stBest" : "");
     } else if (st.running && i === st.results.length) {
-      text = "测试中…"; cls += " stTesting";
+      text = "測試中…"; cls += " stTesting";
     } else if (!st.running) {
       text = "已取消";
     } else {
@@ -246,7 +246,7 @@ function startSpeedtest(tabId) {
   els.stMeta.innerHTML = "";
   chrome.tabs.sendMessage(tabId, { type: "ROGER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
     if (chrome.runtime.lastError || !resp || !resp.ok) {
-      els.stList.textContent = "无法开始测速，请确认目前分页是 B 站影片页。";
+      els.stList.textContent = "無法開始測速，請確認目前分頁是 B 站影片頁。";
     }
   });
 }

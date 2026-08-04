@@ -1,9 +1,13 @@
-﻿# 打包 src/ 成 Chrome / Firefox Web Store 可上傳的 zip，輸出到 dist/
-# 用法：pwsh -File build.ps1                 # Chrome + Firefox 都打包
+﻿# 打包 src/ 成 Chrome / Edge / Firefox 可上傳的 zip，輸出到 dist/
+# 用法：pwsh -File build.ps1                 # Chrome + Edge + Firefox 都打包
 #       pwsh -File build.ps1 -Browser chrome # 只打包 Chrome
+#       pwsh -File build.ps1 -Browser edge   # 只打包 Edge
 #       pwsh -File build.ps1 -Browser firefox
+#
+# Edge 是 Chromium 内核，Manifest V3 与 Chrome 完全相容，直接沿用 src/manifest.json，
+# 不需要另外一份 manifest.edge.json。
 param(
-  [ValidateSet("chrome", "firefox", "all")]
+  [ValidateSet("chrome", "edge", "firefox", "all")]
   [string]$Browser = "all"
 )
 $ErrorActionPreference = "Stop"
@@ -17,6 +21,19 @@ function Read-ManifestVersion([string]$manifestPath) {
   # 用 UTF-8 讀，避免 PS 5.1 把中文讀成亂碼
   $manifest = [System.IO.File]::ReadAllText($manifestPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
   return $manifest
+}
+
+# manifest 的 name 现在是 __MSG_extName__ 这种 i18n 占位字串（真正文字在 _locales/<default_locale>/
+# messages.json），只是拿来在打包时的终端机输出显示好看一点，不影响实际打包内容。
+function Resolve-DisplayName([psobject]$manifest) {
+  $n = $manifest.name
+  if ($n -notmatch '^__MSG_(.+)__$' -or -not $manifest.default_locale) { return $n }
+  $msgPath = Join-Path $src "_locales\$($manifest.default_locale)\messages.json"
+  if (-not (Test-Path $msgPath)) { return $n }
+  $key = $Matches[1]
+  $messages = [System.IO.File]::ReadAllText($msgPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+  if ($messages.$key -and $messages.$key.message) { return $messages.$key.message }
+  return $n
 }
 
 function Build-Target([string]$name, [string]$manifestFile) {
@@ -81,7 +98,7 @@ function Build-Target([string]$name, [string]$manifestFile) {
   Remove-Item -LiteralPath $stage -Recurse -Force
 
   $z = [System.IO.Compression.ZipFile]::OpenRead($zip)
-  Write-Host "`n$($manifest.name) [$name]  v$version" -ForegroundColor Cyan
+  Write-Host "`n$(Resolve-DisplayName $manifest) [$name]  v$version" -ForegroundColor Cyan
   $z.Entries | ForEach-Object { "  {0,-24} {1,7} B" -f $_.FullName, $_.Length }
   $z.Dispose()
   Write-Host "-> $zip  ($((Get-Item $zip).Length) B)`n" -ForegroundColor Green
@@ -96,4 +113,5 @@ if ($Browser -eq "all") {
 }
 
 if ($Browser -eq "chrome" -or $Browser -eq "all") { Build-Target "chrome" "manifest.json" }
+if ($Browser -eq "edge" -or $Browser -eq "all") { Build-Target "edge" "manifest.json" }
 if ($Browser -eq "firefox" -or $Browser -eq "all") { Build-Target "firefox" "manifest.firefox.json" }

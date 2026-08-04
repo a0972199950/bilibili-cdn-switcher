@@ -2,9 +2,9 @@
 
 # 🎬 B 站 CDN 线路重排
 
-### 让 🇹🇼 台湾 / 🇸🇬 新加坡 用户看网页版 B 站更顺的 Chrome / Firefox 扩充
+### 让 🇹🇼 台湾 / 🇸🇬 新加坡 用户看网页版 B 站更顺的 Chrome / Edge / Firefox 扩充
 
-`Manifest V3` · `Chrome 111+ / Firefox 128+` · `纯前端 · 无需登入`
+`Manifest V3` · `Chrome 111+ / Edge 111+ / Firefox 128+` · `纯前端 · 无需登入`
 
 ### 📥 [点此从 Chrome Web Store 安装](https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch)
 
@@ -42,7 +42,7 @@ B 站预设分配的取流节点对台湾、新加坡使用者常常绕路、不
 | 🔁 **失败自动切换** | 侦测到目前 CDN 分段请求失败、或播放中速度持续为 0，自动切到「备用URL」（B 站原生给的备援节点）。内建行为，无开关 |
 | 📶 **各节点测速** | 独立页面，显示影片标题／画质，实测当前影片、当前画质下各节点的下载速度并逐一列出，测速中也能重新测；不影响你手动选择的 CDN，离开该页即中止 |
 | **debug 叠层** | 查看当前 CDN 节点（预设关闭，可在设定中打开） |
-| 🦊 **Chrome / Firefox 双平台** | 同一份 `src/`，打包时依浏览器各自产生 zip |
+| 🦊 **Chrome / Edge / Firefox 三平台** | 同一份 `src/`，打包时依浏览器各自产生 zip（Edge 是 Chromium 内核，直接沿用 Chrome 的 manifest） |
 
 ---
 
@@ -51,33 +51,39 @@ B 站预设分配的取流节点对台湾、新加坡使用者常常绕路、不
 ```text
 bilibili-cdn-switcher/
 ├── src/                  ← 扩充本体（载入未封装 / 打包的就是这层）
-│   ├── manifest.json          ← Chrome 用
+│   ├── manifest.json          ← Chrome / Edge 用
 │   ├── manifest.firefox.json  ← Firefox 用（含 browser_specific_settings）
 │   ├── popup.html
 │   ├── popup.js
 │   ├── main-hook.js      ← MAIN world：改写取流 URL
 │   ├── bridge.js         ← ISOLATED world：storage ↔ 页面 桥接
 │   ├── cdn-list.json     ← 节点清单
+│   ├── _locales/zh_TW/   ← 扩充名称/描述的繁体中文文案（manifest 用 __MSG_x__ 引用）
 │   └── icons/            ← 16 / 32 / 48 / 128
 ├── dist/                 ← 打包产物（.zip）
 ├── docs/                 ← README 用的截图
 ├── assets/               ← 图示母档 512px + 产生脚本
-├── build.ps1             ← 打包成上架用 zip（Chrome + Firefox）
+├── build.ps1             ← 打包成上架用 zip（Chrome + Edge + Firefox）
 └── README.md
 ```
 
-### 📦 打包（上架 Chrome Web Store / Firefox Add-ons 用）
+### 📦 打包（上架 Chrome Web Store / Microsoft Edge Add-ons / Firefox Add-ons 用）
 
 ```powershell
-pwsh -File build.ps1                 # 预设：Chrome + Firefox 都打包
+pwsh -File build.ps1                 # 预设：Chrome + Edge + Firefox 都打包
 pwsh -File build.ps1 -Browser chrome # 只打包 Chrome
+pwsh -File build.ps1 -Browser edge   # 只打包 Edge
 pwsh -File build.ps1 -Browser firefox
 ```
 
-会分别读 `src/manifest.json`（Chrome）／`src/manifest.firefox.json`（Firefox）的 `version`，
-把 `src/` **底下的内容**（对应的 manifest 换成 `manifest.json` 放在 zip 最上层）
-压成 `dist/bilibili-cdn-switcher-<browser>-<版本>.zip`。两份 manifest 的 `version` 要保持一致，
-不一致时脚本会跳警告。
+Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 内核，Manifest V3 与 Chrome 完全相容，
+不需要另外的 manifest），Firefox 用 `src/manifest.firefox.json`。会读对应 manifest 的 `version`，
+把 `src/` **底下的内容**（manifest 换成 `manifest.json` 放在 zip 最上层）压成
+`dist/bilibili-cdn-switcher-<browser>-<版本>.zip`。Chrome／Firefox 两份 manifest 的 `version`
+要保持一致，不一致时脚本会跳警告（Edge 沿用 Chrome 的 manifest，版本必然一致，不用另外检查）。
+
+打包结果是可重现的（reproducible build）：只要 `src/` 内容没变，同一个浏览器目标每次包出来的
+zip bytes 完全相同，方便搭配 CI／pre-push hook 判断 `dist/` 是否真的需要更新。
 
 ### 🎨 重新产生图示
 

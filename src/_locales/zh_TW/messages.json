@@ -1,0 +1,11 @@
+{
+  "extName": {
+    "message": "TW/SG 影片加速 for bilibili (非官方)"
+  },
+  "extDescription": {
+    "message": "讓台灣 / 新加坡使用者在網頁版 bilibili 上更順暢觀看 4K 等高畫質影片，減少緩衝與卡頓。非官方第三方擴充，與 bilibili 官方無關聯。"
+  },
+  "extActionTitle": {
+    "message": "TW/SG 影片加速"
+  }
+}
