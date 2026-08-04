@@ -1,0 +1,170 @@
+{
+  "extName": {
+    "message": "TW/SG Video Speedup for bilibili (Unofficial)"
+  },
+  "extDescription": {
+    "message": "Smoother 4K+ playback on bilibili's web player for Taiwan / Singapore users by rerouting to a faster CDN edge. Unofficial third-party extension, not affiliated with bilibili."
+  },
+  "extActionTitle": {
+    "message": "TW/SG Video Speedup"
+  },
+  "popupTitle": {
+    "message": "CDN Route"
+  },
+  "headerTitle": {
+    "message": "Bilibili CDN Route"
+  },
+  "enabledLabel": {
+    "message": "Enabled"
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN route (moves this node to the front; the original node stays as fallback)"
+  },
+  "modeListLabel": {
+    "message": "Choose from list"
+  },
+  "modeCustomLabel": {
+    "message": "Custom input"
+  },
+  "customHostPlaceholder": {
+    "message": "Enter a CDN host, e.g. upos-sz-mirrorxxx.bilivideo.com"
+  },
+  "customHintDefault": {
+    "message": "Host only (domain), no http:// or path."
+  },
+  "customHintInvalid": {
+    "message": "Please enter a valid host (with domain, e.g. xxx.bilivideo.com)."
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 Test node speeds"
+  },
+  "showDebugLabel": {
+    "message": "Show debug overlay on page"
+  },
+  "debugSectionLabel": {
+    "message": "Debug (current tab)"
+  },
+  "debugInitial": {
+    "message": "No data yet. Open a bilibili video page."
+  },
+  "debugNoDataAfterOpen": {
+    "message": "No data yet. Open this popup after playback starts on a bilibili video page."
+  },
+  "stBackBtn": {
+    "message": "← Back"
+  },
+  "stHeaderTitle": {
+    "message": "Node speed test"
+  },
+  "stRetestBtn": {
+    "message": "🔄 Retest"
+  },
+  "stHintLeave": {
+    "message": "Tests each node using segments from the current video and quality; leaving this page stops the test immediately."
+  },
+  "stHintBandwidth": {
+    "message": "This measures each node's <b>theoretical maximum bandwidth</b>, not the actual speed used during playback — playback may not need this much bandwidth, so a higher number here than in the debug overlay is normal."
+  },
+  "speedtestNoSampleHint": {
+    "message": "Start playback on a bilibili video page first to get a segment sample before testing."
+  },
+  "speedtestCannotStart": {
+    "message": "Could not start the speed test. Make sure the current tab is a bilibili video page."
+  },
+  "speedtestStatusTesting": {
+    "message": "Testing…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "Canceled"
+  },
+  "speedtestStatusWaiting": {
+    "message": "Waiting"
+  },
+  "speedtestFailedTemplate": {
+    "message": "Failed ({err})"
+  },
+  "errNoData": {
+    "message": "No response"
+  },
+  "errNoStream": {
+    "message": "Could not read stream"
+  },
+  "errTimeout": {
+    "message": "Timed out"
+  },
+  "errNetworkError": {
+    "message": "Network error"
+  },
+  "errReadError": {
+    "message": "Read interrupted"
+  },
+  "errNoSample": {
+    "message": "No segment sample yet"
+  },
+  "cdnNoteRecommended": {
+    "message": "Recommended, fastest for TW/SG"
+  },
+  "cdnNoteAliyun": {
+    "message": "Alibaba Cloud"
+  },
+  "cdnNoteTencentCloud": {
+    "message": "Tencent Cloud"
+  },
+  "cdnNoteTencentCloudVod": {
+    "message": "Tencent Cloud VOD Acceleration"
+  },
+  "cdnNoteHuaweiHybrid": {
+    "message": "Huawei Cloud Hybrid CDN"
+  },
+  "cdnNoteHuawei": {
+    "message": "Huawei Cloud"
+  },
+  "cdnNoteAkamaiOverseas": {
+    "message": "Akamai (Overseas)"
+  },
+  "cdnNoteAliyunOverseas": {
+    "message": "Alibaba Cloud (Overseas)"
+  },
+  "cdnNoteTencentOverseas": {
+    "message": "Tencent Cloud (Overseas)"
+  },
+  "cdnNoteHuaweiOverseas": {
+    "message": "Huawei Cloud (Overseas)"
+  },
+  "cdnNoteBilibiliOverseas": {
+    "message": "Bilibili (Overseas)"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "Use bilibili's provided backup node"
+  },
+  "cdnNoteOriginal": {
+    "message": "No override, same as disabled"
+  },
+  "cdnNameBackupUrl": {
+    "message": "Backup URL"
+  },
+  "cdnNameOriginal": {
+    "message": "Original"
+  },
+  "mhToastAutoSwitched": {
+    "message": "Current CDN is slow, automatically switched to backup node {host}"
+  },
+  "mhToastAllFailed": {
+    "message": "Neither the current CDN nor the backup node can play smoothly"
+  },
+  "mhToastReloadBackup": {
+    "message": "Reload and switch to Backup URL"
+  },
+  "mhToastClose": {
+    "message": "Close"
+  },
+  "mhDebugTitle": {
+    "message": "CDN Route"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "Original (no override)"
+  },
+  "mhCdnTargetBackup": {
+    "message": "Backup URL (priority)"
+  }
+}

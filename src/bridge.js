@@ -34,8 +34,24 @@
     } catch (e) {}
   }
 
+  // MAIN world 拿不到 chrome.i18n（页面 context 无扩充 API），toast / debug 叠层要用的
+  // 语系文案由这里（ISOLATED world）代查後推过去，作法与 cfg 相同（localStorage + postMessage）。
+  // 语言不会在分页存活期间变动，开局推一次即可，不用像 cfg 那样监听变更。
+  var MSGS_KEY = "__ROGER_CDN_MSGS__";
+  var MSG_KEYS = [
+    "mhToastAutoSwitched", "mhToastAllFailed", "mhToastReloadBackup", "mhToastClose",
+    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup"
+  ];
+  function pushMessages() {
+    var msgs = {};
+    try { MSG_KEYS.forEach(function (k) { msgs[k] = chrome.i18n.getMessage(k); }); } catch (e) {}
+    try { window.localStorage.setItem(MSGS_KEY, JSON.stringify(msgs)); } catch (e) {}
+    try { window.postMessage({ __rogerCdn: 1, dir: "messages", payload: msgs }, "*"); } catch (e) {}
+  }
+
   // 启动即同步一次
   loadAndPush();
+  pushMessages();
 
   // chrome.storage 变更 → 重新推送
   try {
@@ -45,18 +61,12 @@
     });
   } catch (e) {}
 
-  // 收 MAIN 的 debug 回报 / 自动回退通知
+  // 收 MAIN 的 debug 回报（自动回退是 MAIN world 内部的静默行为，不写回 storage）
   window.addEventListener("message", function (ev) {
     if (ev.source !== window) return;
     var d = ev.data;
     if (!d || d.__rogerCdn !== 1) return;
     if (d.dir === "debug") { latestDebug = d.payload || null; return; }
-    if (d.dir === "auto-fallback" && d.payload) {
-      // MAIN world 侦测到目前 CDN 播不动、已自行切换节点，这里同步写回 storage
-      // 让 popup 显示最新选择、并在下次载入时沿用
-      try { chrome.storage.local.set({ cdnHost: d.payload.cdnHost }); } catch (e) {}
-      return;
-    }
     if (d.dir === "speedtest-meta" && d.payload) {
       speedTest.title = d.payload.title || "";
       speedTest.qn = d.payload.qn || "";

@@ -24,12 +24,32 @@ var els = {
   stList: document.getElementById("stList")
 };
 
+// -------- i18n：套用 chrome.i18n 訊息到靜態文字節點 --------
+function t(key) { return chrome.i18n.getMessage(key) || key; }
+document.title = t("popupTitle");
+document.documentElement.lang = chrome.i18n.getUILanguage();
+[
+  ["headerTitle", "headerTitle"], ["enabledLabel", "enabledLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["speedtestBtn", "speedtestBtnLabel"],
+  ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
+  ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stHintLeave", "stHintLeave"]
+].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
+document.getElementById("stHintBandwidth").innerHTML = t("stHintBandwidth");
+els.customHost.placeholder = t("customHostPlaceholder");
+els.debug.textContent = t("debugInitial");
+
 var knownValues = {}; // 清单中所有 value（用来判断储存值是否在清单内，不在的话视为自行输入）
 var cdnList = []; // cdn-list.json 的 options，供测速时取节点清单与显示用的名称
 
+// 具名节点：技术代号 + noteKey 註記；特殊选项（base/backup）用 nameKey + noteKey
+function cdnDisplayName(o) {
+  var name = o.nameKey ? t(o.nameKey) : o.name;
+  var note = o.noteKey ? t(o.noteKey) : (o.note || "");
+  return name + (note ? " (" + note + ")" : "");
+}
 // 标签：具名节点显示 domain；特殊选项只显示名称
 function optLabel(o) {
-  var base = o.name + (o.note ? "（" + o.note + "）" : "");
+  var base = cdnDisplayName(o);
   var isHost = o.value && o.value !== "base" && o.value !== "backup";
   return isHost ? base + " — " + o.value : base;
 }
@@ -108,8 +128,7 @@ els.cdnHost.addEventListener("change", function () { save({ cdnHost: els.cdnHost
 
 // 自订输入：即时正规化并储存
 function markCustom(ok) {
-  els.customHint.textContent = ok ? "只填 host（網域），不含 http:// 與路徑。"
-    : "請輸入有效的 host（含網域，如 xxx.bilivideo.com）。";
+  els.customHint.textContent = ok ? t("customHintDefault") : t("customHintInvalid");
   els.customHint.style.color = ok ? "#888" : "#e00";
 }
 els.customHost.addEventListener("input", function () {
@@ -138,15 +157,19 @@ function spdText(bps, idle) {
   return idle ? s + " (idle)" : s;
 }
 function renderDebug(d) {
-  if (!d) { els.debug.textContent = "尚未取得資料。請在 B 站影片頁播放後再開此視窗。"; return; }
+  if (!d) { els.debug.textContent = t("debugNoDataAfterOpen"); return; }
   var lines = [
-    "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget),
+    "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget)
+  ];
+  if (d.autoHost) lines.push("auto-fallback -> " + esc(d.autoHost));
+  var cdnLineIdx = lines.length; // "cdn=" 这行的高亮不能写死 index：前面可能多插了 auto-fallback 那行
+  lines.push(
     "cdn=" + esc(d.currentCdn),
     "v=" + esc(d.pickVideoHost) + "  a=" + esc(d.pickAudioHost),
     "src=" + esc(d.lastSource) + "  rw=" + esc(d.rewriteCount) + "  seg=" + esc(d.segRewriteCount) + "  qn=" + esc(qnText(d.lastQn)) + "  spd=" + esc(spdText(d.speedBps, d.speedIdle))
-  ];
+  );
   if (d.lastError) lines.push("err=" + esc(d.lastError));
-  els.debug.innerHTML = lines.map(function (l, i) { return i === 1 ? '<span class="cdnnow">' + l + "</span>" : l; }).join("\n");
+  els.debug.innerHTML = lines.map(function (l, i) { return i === cdnLineIdx ? '<span class="cdnnow">' + l + "</span>" : l; }).join("\n");
 }
 // 都固定打「顶层 frame」（frameId: 0）：content script 是 all_frames 注入，若不锁定 frame，
 // Chrome 会把讯息广播给分页内所有 frame、取最先回应的那个 —— 万一先回应的是没有播放器的
@@ -165,11 +188,11 @@ function pollDebug() {
 pollDebug();
 
 // -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
-var SPEEDTEST_ERR_TEXT = {
-  "no-data": "無回應", "no-stream": "無法讀取串流", "timeout": "超時",
-  "network-error": "網路錯誤", "read-error": "讀取中斷", "no-sample": "尚無分段樣本"
+var SPEEDTEST_ERR_KEYS = {
+  "no-data": "errNoData", "no-stream": "errNoStream", "timeout": "errTimeout",
+  "network-error": "errNetworkError", "read-error": "errReadError", "no-sample": "errNoSample"
 };
-function speedtestErrText(err) { return SPEEDTEST_ERR_TEXT[err] || err; }
+function speedtestErrText(err) { var k = SPEEDTEST_ERR_KEYS[err]; return k ? t(k) : err; }
 
 var speedtestHosts = []; // 本次送出测试的 host 顺序，index 对应 speedTest.results 的顺序
 var speedtestTabId = null;
@@ -189,7 +212,7 @@ function renderSpeedtest(st) {
   if (!st) return;
   renderSpeedtestMeta(st);
   if (st.error === "no-sample") {
-    els.stList.textContent = "請先在 B 站影片頁開始播放，取得分段樣本後再測速。";
+    els.stList.textContent = t("speedtestNoSampleHint");
     return;
   }
   var bestHost = null, bestBps = 0;
@@ -198,18 +221,18 @@ function renderSpeedtest(st) {
   els.stList.innerHTML = speedtestHosts.map(function (host, i) {
     var o = null;
     for (var j = 0; j < cdnList.length; j++) if (cdnList[j].value === host) { o = cdnList[j]; break; }
-    var label = o ? o.name + (o.note ? "（" + o.note + "）" : "") : host;
+    var label = o ? cdnDisplayName(o) : host;
     var r = st.results[i];
     var text, cls = "stRow";
     if (r) {
-      text = r.error ? "失敗（" + speedtestErrText(r.error) + "）" : spdText(r.bps, false);
+      text = r.error ? t("speedtestFailedTemplate").replace("{err}", speedtestErrText(r.error)) : spdText(r.bps, false);
       cls += r.error ? " stErr" : (r.host === bestHost ? " stBest" : "");
     } else if (st.running && i === st.results.length) {
-      text = "測試中…"; cls += " stTesting";
+      text = t("speedtestStatusTesting"); cls += " stTesting";
     } else if (!st.running) {
-      text = "已取消";
+      text = t("speedtestStatusCanceled");
     } else {
-      text = "等待中";
+      text = t("speedtestStatusWaiting");
     }
     return '<div class="' + cls + '"><span>' + esc(label) + "</span><span class=\"stSpeed\">" + esc(text) + "</span></div>";
   }).join("");
@@ -246,7 +269,7 @@ function startSpeedtest(tabId) {
   els.stMeta.innerHTML = "";
   chrome.tabs.sendMessage(tabId, { type: "ROGER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
     if (chrome.runtime.lastError || !resp || !resp.ok) {
-      els.stList.textContent = "無法開始測速，請確認目前分頁是 B 站影片頁。";
+      els.stList.textContent = t("speedtestCannotStart");
     }
   });
 }
