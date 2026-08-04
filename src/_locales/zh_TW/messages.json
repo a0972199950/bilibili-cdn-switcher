@@ -7,5 +7,164 @@
   },
   "extActionTitle": {
     "message": "TW/SG 影片加速"
+  },
+  "popupTitle": {
+    "message": "CDN 線路"
+  },
+  "headerTitle": {
+    "message": "B 站 CDN 線路"
+  },
+  "enabledLabel": {
+    "message": "啟用"
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN 線路（換成此節點並排最前，原節點保留為 fallback）"
+  },
+  "modeListLabel": {
+    "message": "清單選擇"
+  },
+  "modeCustomLabel": {
+    "message": "自行輸入"
+  },
+  "customHostPlaceholder": {
+    "message": "輸入 CDN host，例：upos-sz-mirrorxxx.bilivideo.com"
+  },
+  "customHintDefault": {
+    "message": "只填 host（網域），不含 http:// 與路徑。"
+  },
+  "customHintInvalid": {
+    "message": "請輸入有效的 host（含網域，如 xxx.bilivideo.com）。"
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 測試各節點速度"
+  },
+  "showDebugLabel": {
+    "message": "顯示頁面 debug 疊層"
+  },
+  "debugSectionLabel": {
+    "message": "Debug（目前分頁）"
+  },
+  "debugInitial": {
+    "message": "尚未取得資料，請在 B 站影片頁開啟。"
+  },
+  "debugNoDataAfterOpen": {
+    "message": "尚未取得資料。請在 B 站影片頁播放後再開此視窗。"
+  },
+  "stBackBtn": {
+    "message": "← 返回"
+  },
+  "stHeaderTitle": {
+    "message": "各節點測速"
+  },
+  "stRetestBtn": {
+    "message": "🔄 重新測速"
+  },
+  "stHintLeave": {
+    "message": "用「目前影片、目前畫質」的分段實測各節點；離開此頁會立即停止測速。"
+  },
+  "stHintBandwidth": {
+    "message": "這裡測到的是各節點的<b>理論最大頻寬</b>，跟播放當下實際用到的速度不同——影片可能根本用不到這麼高的頻寬，所以比 debug 疊層看到的數字高是正常的。"
+  },
+  "speedtestNoSampleHint": {
+    "message": "請先在 B 站影片頁開始播放，取得分段樣本後再測速。"
+  },
+  "speedtestCannotStart": {
+    "message": "無法開始測速，請確認目前分頁是 B 站影片頁。"
+  },
+  "speedtestStatusTesting": {
+    "message": "測試中…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "已取消"
+  },
+  "speedtestStatusWaiting": {
+    "message": "等待中"
+  },
+  "speedtestFailedTemplate": {
+    "message": "失敗（{err}）"
+  },
+  "errNoData": {
+    "message": "無回應"
+  },
+  "errNoStream": {
+    "message": "無法讀取串流"
+  },
+  "errTimeout": {
+    "message": "超時"
+  },
+  "errNetworkError": {
+    "message": "網路錯誤"
+  },
+  "errReadError": {
+    "message": "讀取中斷"
+  },
+  "errNoSample": {
+    "message": "尚無分段樣本"
+  },
+  "cdnNoteRecommended": {
+    "message": "推薦 TW/SG 最快"
+  },
+  "cdnNoteAliyun": {
+    "message": "阿里雲"
+  },
+  "cdnNoteTencentCloud": {
+    "message": "騰訊雲"
+  },
+  "cdnNoteTencentCloudVod": {
+    "message": "騰訊雲 VOD加速"
+  },
+  "cdnNoteHuaweiHybrid": {
+    "message": "華為雲 融合CDN"
+  },
+  "cdnNoteHuawei": {
+    "message": "華為雲"
+  },
+  "cdnNoteAkamaiOverseas": {
+    "message": "Akamai海外"
+  },
+  "cdnNoteAliyunOverseas": {
+    "message": "阿里雲海外"
+  },
+  "cdnNoteTencentOverseas": {
+    "message": "騰訊雲海外"
+  },
+  "cdnNoteHuaweiOverseas": {
+    "message": "華為雲海外"
+  },
+  "cdnNoteBilibiliOverseas": {
+    "message": "Bilibili海外"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "用 B 站提供的備援節點"
+  },
+  "cdnNoteOriginal": {
+    "message": "不覆寫，等同關閉"
+  },
+  "cdnNameBackupUrl": {
+    "message": "備用URL"
+  },
+  "cdnNameOriginal": {
+    "message": "原始"
+  },
+  "mhToastAutoSwitched": {
+    "message": "目前 CDN 速度不佳，已自動切換至備援節點 {host}"
+  },
+  "mhToastAllFailed": {
+    "message": "目前 CDN 與備援節點皆無法順利播放"
+  },
+  "mhToastReloadBackup": {
+    "message": "重載並切換至備用URL"
+  },
+  "mhToastClose": {
+    "message": "關閉"
+  },
+  "mhDebugTitle": {
+    "message": "CDN 線路"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "原始（不覆寫）"
+  },
+  "mhCdnTargetBackup": {
+    "message": "備用URL（優先）"
   }
 }

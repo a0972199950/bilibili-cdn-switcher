@@ -40,9 +40,49 @@
   }
 
   function isActive(c) { return !!c.enabled && c.cdnHost !== "base"; }
-  // 具名节点模式（可做分段层即时差替）；'backup' 走 playurl 层、不做分段差替
-  function isHostMode() { return cfg.cdnHost !== "base" && cfg.cdnHost !== "backup"; }
   var ACTIVE = isActive(cfg); // 依「载入当下」设定决定是否安装 hook
+
+  // MAIN world 没有 chrome.i18n（页面 context 无扩充 API），toast / debug 叠层的文案由
+  // bridge.js（ISOLATED world）代查後经 localStorage/postMessage 送过来，读法与 cfg 相同。
+  // DEFAULT_MSGS 是 bridge 尚未推送前的保底文案（繁中，与 _locales/zh_TW 一致）。
+  var MSGS_KEY = "__ROGER_CDN_MSGS__";
+  var DEFAULT_MSGS = {
+    mhToastAutoSwitched: "目前 CDN 速度不佳，已自動切換至備援節點 {host}",
+    mhToastAllFailed: "目前 CDN 與備援節點皆無法順利播放",
+    mhToastReloadBackup: "重載並切換至備用URL",
+    mhToastClose: "關閉",
+    mhDebugTitle: "CDN 線路",
+    mhCdnTargetOriginal: "原始（不覆寫）",
+    mhCdnTargetBackup: "備用URL（優先）"
+  };
+  var MSGS = readMsgs();
+  function readMsgs() {
+    var m = {};
+    for (var k in DEFAULT_MSGS) m[k] = DEFAULT_MSGS[k];
+    try {
+      var raw = window.localStorage.getItem(MSGS_KEY);
+      if (raw) { var p = JSON.parse(raw); for (var k2 in DEFAULT_MSGS) if (p[k2]) m[k2] = p[k2]; }
+    } catch (e) {}
+    return m;
+  }
+
+  // 自动回退的「静默覆写」：只影响本分页实际使用的节点，不写入用户设定 ——
+  // popup 显示、下次手动重整仍以用户自选节点为准。备用URL 需整页重载才生效，
+  // 重载前把覆写放进 sessionStorage 一次性带过去（读到就删，手动重整不会沿用）。
+  var AUTO_KEY = "__ROGER_CDN_AUTO__";
+  var autoHost = null; // null = 没有覆写；否则为具名备援 host 或 "backup"
+  try {
+    var rawAuto = window.sessionStorage.getItem(AUTO_KEY);
+    if (rawAuto) {
+      window.sessionStorage.removeItem(AUTO_KEY);
+      if (ACTIVE) { var pa = JSON.parse(rawAuto); if (pa && typeof pa.host === "string" && pa.host) autoHost = pa.host; }
+    }
+  } catch (e) {}
+
+  // 本页实际生效的目标：自动回退覆写优先，否则用户自选
+  function effHost() { return autoHost || cfg.cdnHost; }
+  // 具名节点模式（可做分段层即时差替）；'backup' 走 playurl 层、不做分段差替
+  function isHostMode() { var h = effHost(); return h !== "base" && h !== "backup"; }
 
   var debug = {
     currentCdn: null, pickVideoHost: null, pickAudioHost: null,
@@ -60,6 +100,12 @@
     var seen = {}, out = [];
     for (var i = 0; i < arr.length; i++) { var u = arr[i]; if (u && !seen[u]) { seen[u] = 1; out.push(u); } }
     return out;
+  }
+
+  // 主播放器的 video：页面上还有 hover 预览、迷你卡片等其他 video，不能一概用 querySelector
+  function getMainVideo() {
+    var p = getPlayerEl();
+    return (p && p.querySelector("video")) || document.querySelector("video");
   }
 
   // ---------------- 画质代码 → 可读名称 ----------------
@@ -81,6 +127,7 @@
   var SPEED_WINDOW_MS = 10000;
   var speedSamples = []; // {at, bytes, ms}
   var lastDirectAt = 0;
+  var lastSampleAt = 0; // 最近一次计入样本的时间：当作「线路仍有资料在动」的讯号（checkStall 用）
 
   function addSample(bytes, ms, direct) {
     if (!(bytes > 0) || !(ms > 0)) return;
@@ -88,6 +135,7 @@
     if (direct) lastDirectAt = now;
     else if (now - lastDirectAt < 30000) return;
     speedSamples.push({ at: now, bytes: bytes, ms: ms });
+    lastSampleAt = now;
   }
 
   // 用「每段 bytes / 每段耗时」而非挂钟平均：播放器缓冲满就停抓，
@@ -112,53 +160,211 @@
   var SEG_RE = /\/upgcxcode\/.*\.m4s|\/upgcxcode\//i;
   var CDN_HOST_RE = /(bilivideo\.(com|cn)|akamaized\.net|hdslb\.com)$/i;
 
-  // ---------------- 自动回退：目前 CDN 播不动时，切到「备用URL」----------------
-  // 「备用URL」即重排 playurl 時已算好的 backupUrl 清单（B 站原生给的备援节点），
-  // 不额外维护一份自订节点清单。内建功能，不提供开关。
-  var FALLBACK = { triedBackup: false, lastSwitchAt: 0 };
+  // ---------------- 播放器上的提示 toast（挂在播放器容器内，全屏时也看得到）----------------
+  var TOAST_SEL = [".bpx-player-container", "#bilibili-player", ".bpx-player-video-area", ".bpx-player-primary-area"];
+  var toastEl = null, toastTimer = null, toastFadeTimer = null;
+
+  function getToastHost() {
+    // 优先挂外层容器：player.reload() 会重建内层 video 区域，挂太内层会连 toast 一起清掉
+    for (var i = 0; i < TOAST_SEL.length; i++) { var el = document.querySelector(TOAST_SEL[i]); if (el) return el; }
+    return document.body;
+  }
+
+  function hideToast() {
+    if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+    if (toastFadeTimer) { clearTimeout(toastFadeTimer); toastFadeTimer = null; }
+    if (toastEl && toastEl.parentElement) toastEl.parentElement.removeChild(toastEl);
+    toastEl = null;
+  }
+
+  var TOAST_FONT = "-apple-system,'Microsoft JhengHei','Microsoft YaHei',sans-serif";
+  // opts: { duration, actionText, onAction, cancelText, onCancel, persistent }
+  //  - persistent=true：不设定时器，不会自动消失，只能靠 actionText/cancelText 按钮关掉
+  //  - 有任一按钮时 toast 才接收滑鼠事件，否则不挡播放器操作
+  function showToast(text, opts) {
+    opts = opts || {};
+    hideToast();
+    var host = getToastHost();
+    if (!host) return;
+    var fixed = host === document.body;
+    var hasButton = !!(opts.actionText || opts.cancelText);
+    toastEl = document.createElement("div");
+    toastEl.id = "roger-cdn-toast";
+    toastEl.style.cssText = [
+      fixed ? "position:fixed" : "position:absolute",
+      fixed ? "top:15%" : "top:24px",
+      "left:50%", "transform:translateX(-50%)", "z-index:999999",
+      "display:flex", "align-items:center", "gap:10px", "max-width:85%", "box-sizing:border-box",
+      "font:13px/1.6 " + TOAST_FONT, "color:#fff",
+      "background:rgba(0,0,0,.78)", "padding:8px 14px", "border-radius:8px",
+      "box-shadow:0 2px 10px rgba(0,0,0,.35)", "opacity:1", "transition:opacity .4s",
+      (hasButton ? "pointer-events:auto" : "pointer-events:none")
+    ].join(";");
+    var span = document.createElement("span");
+    span.textContent = text;
+    toastEl.appendChild(span);
+    if (opts.actionText && opts.onAction) {
+      var btn = document.createElement("button");
+      btn.textContent = opts.actionText;
+      btn.style.cssText = "cursor:pointer;border:0;border-radius:6px;padding:5px 12px;font:13px " + TOAST_FONT + ";background:#00aeec;color:#fff;white-space:nowrap";
+      btn.addEventListener("click", function () { var fn = opts.onAction; hideToast(); try { fn(); } catch (e) {} });
+      toastEl.appendChild(btn);
+    }
+    if (opts.cancelText) {
+      var cancelBtn = document.createElement("button");
+      cancelBtn.textContent = opts.cancelText;
+      cancelBtn.style.cssText = "cursor:pointer;border:1px solid rgba(255,255,255,.45);border-radius:6px;padding:5px 12px;font:13px " + TOAST_FONT + ";background:transparent;color:#fff;white-space:nowrap";
+      cancelBtn.addEventListener("click", function () { var fn = opts.onCancel; hideToast(); if (fn) try { fn(); } catch (e) {} });
+      toastEl.appendChild(cancelBtn);
+    }
+    try { if (!fixed && getComputedStyle(host).position === "static") host.style.position = "relative"; } catch (e) {}
+    host.appendChild(toastEl);
+    if (!opts.persistent) {
+      var dur = opts.duration || 3000;
+      toastFadeTimer = setTimeout(function () { if (toastEl) toastEl.style.opacity = "0"; }, Math.max(0, dur - 400));
+      toastTimer = setTimeout(hideToast, dur);
+    }
+  }
+
+  // ---------------- 自动回退：目前 CDN 播不动时，切到 B 站给的备援节点 ----------------
+  // 备援 host 取自 playurl 里的 baseUrl/backupUrl（B 站原生备援），解析 playurl 时顺手记下。
+  // 第一次回退切「具名备援 host」：分段层即时差替 + player.reload()，不整页刷新，闪 toast 告知；
+  // 备援 host 也播不动（或没记到可用 host）时不再自动整页重载，改弹一个不会自动消失的提示，
+  // 让用户自己按「重載並切換至備用URL」或「關閉」决定。内建功能，不提供开关。
+  var FALLBACK = { attempts: 0, lastSwitchAt: 0, tried: {} };
+  var FALLBACK_MAX_ATTEMPTS = 2;
   var FALLBACK_COOLDOWN_MS = 12000;
-  var stallState = { zeroSince: null };
+  var stallState = { lastTime: -1, stuckSince: null };
+  var backupHosts = []; // 最近一次 playurl 解析到的候选 host（base + backupUrl），依出现顺序
+  var pendingBackupHosts = null; // rewriteRoot 期间收集用；有解析到才整批取代 backupHosts
+
+  // 测试用开关（无任何 UI 入口，不影响一般用户）：在 DevTools console（页面 context）执行
+  //   __rogerCdnSimulateStall()       → 接下来 60 秒把影片当成卡住（连播放器状态检查都略过，
+  //                                     时序确定），走真实回退流程：约 9 秒切备援节点＋toast、
+  //                                     约 27 秒（8 秒判定＋12 秒冷却）弹「切备用URL」提示（不会自动消失）
+  //   __rogerCdnSimulateStall(90000)  → 自订模拟时长（毫秒）；传 0 取消
+  //   __rogerCdnSimulateStall("ask")  → 不等计时，立刻弹出询问 toast（按钮为真实行为，
+  //                                     按下会真的切备用URL＋整页重载）
+  // 每支影片 attempts 只有一轮，要重测完整流程请重新整理或换影片。
+  var simulateStallUntil = 0;
+  window.__rogerCdnSimulateStall = function (arg) {
+    if (arg === "ask") { askBackupSwitch("simulated"); return "ask toast shown"; }
+    simulateStallUntil = Date.now() + (typeof arg === "number" ? arg : 60000);
+    return simulateStallUntil > Date.now()
+      ? "simulating stall for " + Math.round((simulateStallUntil - Date.now()) / 1000) + "s"
+      : "canceled";
+  };
 
   function isFailureStatus(status) {
     return status === 403 || status === 404 || status === 451 || (status >= 500 && status < 600);
   }
 
+  // 分段 URL 的 deadline（unix 秒）已过：整份 playurl 签名失效，换 host 也一样 403，
+  // 该交给播放器自己重打 playurl，不算目前 CDN 坏掉
+  function isExpiredUrl(url) {
+    try {
+      var dl = new URL(url, location.href).searchParams.get("deadline");
+      return !!dl && parseInt(dl, 10) * 1000 < Date.now();
+    } catch (e) { return false; }
+  }
+
   // 具名节点模式下只认目前节点的分段；备用URL模式没有做 host 差替，任何分段失败都算数
-  function isCurrentSegHost(host) { return isHostMode() ? host === cfg.cdnHost : !!host; }
+  function isCurrentSegHost(host) { return isHostMode() ? host === effHost() : !!host; }
 
-  function resetFallbackState() { FALLBACK.triedBackup = false; stallState.zeroSince = null; }
+  function shouldFallbackOnStatus(status, url) {
+    if (!isFailureStatus(status)) return false;
+    if (status === 403 && isExpiredUrl(url)) return false;
+    return isCurrentSegHost(hostOf(url));
+  }
 
-  function switchHost(next) {
-    var prevHost = cfg.cdnHost;
-    cfg.cdnHost = next;
-    try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
-    try { window.postMessage({ __rogerCdn: 1, dir: "auto-fallback", payload: { cdnHost: next } }, "*"); } catch (e) {}
+  function resetFallbackState() {
+    FALLBACK.attempts = 0; FALLBACK.tried = {};
+    stallState.lastTime = -1; stallState.stuckSince = null;
+  }
+
+  // 记下 playurl 给的候选 host：滤掉 PCDN（mcdn，品质不稳）；带端口的 host 过不了
+  // CDN_HOST_RE 的 $ 锚定，顺带被排除（分段差替也不适用带端口的节点）
+  function noteBackupHost(url) {
+    if (pendingBackupHosts == null || !url) return;
+    var h = hostOf(url);
+    if (!h || !CDN_HOST_RE.test(h) || h.indexOf(".mcdn.") >= 0) return;
+    if (pendingBackupHosts.indexOf(h) < 0) pendingBackupHosts.push(h);
+  }
+
+  function pickFallbackHost() {
+    for (var i = 0; i < backupHosts.length; i++) {
+      var h = backupHosts[i];
+      if (h !== effHost() && !FALLBACK.tried[h]) return h;
+    }
+    return null;
+  }
+
+  // 静默套用自动回退：只动 autoHost，不碰 cfg 与 chrome.storage（用户设定不变）
+  function applyAutoHost(next) {
+    autoHost = next;
     renderOverlay(); postDebug();
-    if (next === "backup" || prevHost === "backup") fullReload();
-    else if (!playerReload()) fullReload();
+    if (next === "backup") {
+      // 备用URL 走 playurl 层，需重打 playurl 才生效 → 整页重载，覆写用 sessionStorage 一次性带过去
+      try { window.sessionStorage.setItem(AUTO_KEY, JSON.stringify({ host: next })); } catch (e) {}
+      fullReload();
+    } else if (!playerReload()) {
+      // 具名备援本走播放器内重载；player.reload 不可用时退整页重载，同样一次性带覆写
+      try { window.sessionStorage.setItem(AUTO_KEY, JSON.stringify({ host: next })); } catch (e) {}
+      fullReload();
+    }
   }
 
   function maybeFallback(reason) {
     if (!ACTIVE) return;
-    if (cfg.cdnHost === "backup" || FALLBACK.triedBackup) return; // 备用URL 已是最后一步
+    if (!WATCH_RE.test(location.pathname)) return; // 非观看页（如首页 hover 预览）不回退
+    if (effHost() === "backup" || FALLBACK.attempts >= FALLBACK_MAX_ATTEMPTS) return;
     var now = Date.now();
     if (now - FALLBACK.lastSwitchAt < FALLBACK_COOLDOWN_MS) return;
-    FALLBACK.triedBackup = true;
+    FALLBACK.attempts++;
     FALLBACK.lastSwitchAt = now;
-    debug.lastError = "auto-fallback(" + reason + "): " + cfg.cdnHost + " -> backup";
-    switchHost("backup");
+    FALLBACK.tried[effHost()] = true;
+    var next = FALLBACK.attempts === 1 ? pickFallbackHost() : null;
+    if (next) {
+      debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> " + next;
+      showToast(MSGS.mhToastAutoSwitched.replace("{host}", next));
+      applyAutoHost(next);
+      return;
+    }
+    // 具名备援也播不动（或没记到可用 host）：整页重载感知太大，不自动做，
+    // 弹提示让用户自己决定；本支影片只问这一次（attempts 直接封顶）
+    FALLBACK.attempts = FALLBACK_MAX_ATTEMPTS;
+    askBackupSwitch(reason);
   }
 
-  // 持续侦测：正在播放但分段速度持续为 0/idle → 视为目前 CDN 播不动
+  function askBackupSwitch(reason) {
+    debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> ask-user";
+    showToast(MSGS.mhToastAllFailed, {
+      persistent: true, // 不自动消失，让用户自己按「重載」或「關閉」
+      actionText: MSGS.mhToastReloadBackup,
+      onAction: function () { applyAutoHost("backup"); },
+      cancelText: MSGS.mhToastClose
+    });
+  }
+
+  // 持续侦测「真的播不动」：未暂停但 currentTime 不前进、且线路上也没有资料在动。
+  // 不能拿「一段时间没流量」当依据：播放器缓冲抓满本来就会停抓分段，idle 是正常状态，
+  // 之前把 idle 当卡住会在缓冲抓满约 18 秒后误判、把好好播放中的页面整页重载。
   function checkStall() {
-    if (!ACTIVE) { stallState.zeroSince = null; return; }
-    var v = document.querySelector("video");
-    if (!v || v.paused || v.ended || v.readyState === 0) { stallState.zeroSince = null; return; }
-    if (debug.speedBps > 0 && !debug.speedIdle) { stallState.zeroSince = null; return; }
-    if (stallState.zeroSince == null) stallState.zeroSince = Date.now();
-    else if (Date.now() - stallState.zeroSince > 8000) {
-      stallState.zeroSince = Date.now();
-      maybeFallback("zero-speed");
+    if (!ACTIVE) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+    // 模拟模式：连播放器状态检查也略过 —— 第一次回退的 player.reload() 会让影片短暂
+    // 暂停/readyState 0，若照常重置计时器，第二段（询问）会一直等不到
+    var simulating = Date.now() < simulateStallUntil;
+    if (!simulating) {
+      var v = getMainVideo();
+      if (!v || v.paused || v.ended || v.readyState === 0) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+      var t = v.currentTime;
+      if (t !== stallState.lastTime) { stallState.lastTime = t; stallState.stuckSince = null; return; }
+      if (Date.now() - lastSampleAt < 5000) { stallState.stuckSince = null; return; } // 还在下载 → 只是缓冲慢，再等
+    }
+    if (stallState.stuckSince == null) stallState.stuckSince = Date.now();
+    else if (Date.now() - stallState.stuckSince > 8000) {
+      stallState.stuckSince = null;
+      maybeFallback(simulating ? "simulated" : "stalled");
     }
   }
   // 是否为「该被差替的分段请求」：具名节点模式、是分段、host 是 CDN、且尚未等于目标
@@ -166,9 +372,9 @@
     if (!isHostMode()) return false;
     if (!SEG_RE.test(url)) return false;
     var h = hostOf(url);
-    return !!h && CDN_HOST_RE.test(h) && h !== cfg.cdnHost;
+    return !!h && CDN_HOST_RE.test(h) && h !== effHost();
   }
-  function swapSegHost(url) { return replaceHost(url, cfg.cdnHost); }
+  function swapSegHost(url) { return replaceHost(url, effHost()); }
 
   // ---------------- playurl / playinfo 改写（让 baseUrl 也一致，次要）----------------
   function applyTrack(track) {
@@ -177,11 +383,13 @@
     if (!Array.isArray(backups)) backups = [];
     backups = backups.map(asStr).filter(Boolean);
     if (!base && !backups.length) return null;
+    noteBackupHost(base);
+    for (var bi = 0; bi < backups.length; bi++) noteBackupHost(backups[bi]);
     var ordered;
-    if (cfg.cdnHost === "backup") {
+    if (effHost() === "backup") {
       ordered = distinct(backups.concat([base])).filter(Boolean); // 优先 B 站给的备援节点
     } else {
-      var swapped = base ? replaceHost(base, cfg.cdnHost) : "";
+      var swapped = base ? replaceHost(base, effHost()) : "";
       ordered = distinct([swapped, base].concat(backups)).filter(Boolean);
     }
     if (!ordered.length) return null;
@@ -218,10 +426,15 @@
     try {
       if (!root || typeof root !== "object") return false;
       var d = root.data || root.result || root;
+      pendingBackupHosts = [];
       var changed = rewriteContainer(d);
-      if (changed) { debug.lastSource = source; debug.rewriteCount++; resetFallbackState(); renderOverlay(); postDebug(); }
+      if (changed) {
+        if (pendingBackupHosts.length) backupHosts = pendingBackupHosts;
+        debug.lastSource = source; debug.rewriteCount++; resetFallbackState(); renderOverlay(); postDebug();
+      }
+      pendingBackupHosts = null;
       return changed;
-    } catch (e) { debug.lastError = String(e); return false; }
+    } catch (e) { debug.lastError = String(e); pendingBackupHosts = null; return false; }
   }
   function tryRewriteText(txt, source) {
     if (typeof txt !== "string" || !txt) return null;
@@ -277,13 +490,14 @@
         }
         if (SEG_RE.test(url)) {
           var t0 = Date.now();
-          var reqHost = hostOf(typeof input === "string" ? input : (input && input.url) || url);
+          var reqUrl = typeof input === "string" ? input : (input && input.url) || url;
           return _fetch.call(this, input, init).then(function (resp) {
             resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
-            if (!resp.ok && isFailureStatus(resp.status) && isCurrentSegHost(reqHost)) maybeFallback("http-" + resp.status);
+            if (!resp.ok && shouldFallbackOnStatus(resp.status, reqUrl)) maybeFallback("http-" + resp.status);
             return resp;
           }, function (err) {
-            if (isCurrentSegHost(reqHost)) maybeFallback("network-error");
+            // 播放器 seek / 切画质会主动 abort 在飞的分段请求，不是线路问题
+            if (!(err && err.name === "AbortError") && isCurrentSegHost(hostOf(reqUrl))) maybeFallback("network-error");
             throw err;
           });
         }
@@ -316,7 +530,7 @@
               if (self.response instanceof ArrayBuffer) bytes = self.response.byteLength;
               else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
               addSample(bytes, Date.now() - t0, true);
-              if (isFailureStatus(self.status) && isCurrentSegHost(hostOf(self.__rogerUrl || ""))) maybeFallback("http-" + self.status);
+              if (shouldFallbackOnStatus(self.status, self.__rogerUrl || "")) maybeFallback("http-" + self.status);
             } catch (e) {}
           });
           self.addEventListener("error", function () {
@@ -358,9 +572,13 @@
 
   installHooks(); // 速度量测永远启用；CDN 改写只在 ACTIVE 时生效
 
-  // video 播放错误（如解码/来源错误）也视为目前 CDN 播不动的讯号
+  // 主播放器 video 的播放错误（如解码/来源错误）也视为目前 CDN 播不动的讯号；
+  // 页面上 hover 预览等其他 video 的错误与线路无关，不理会
   window.addEventListener("error", function (e) {
-    try { if (e && e.target && e.target.tagName === "VIDEO") maybeFallback("video-error"); } catch (err) {}
+    try {
+      var t = e && e.target;
+      if (t && t.tagName === "VIDEO" && t === getMainVideo()) maybeFallback("video-error");
+    } catch (err) {}
   }, true);
 
   // ---------------- 被动观测「当前 CDN」（不改变任何原生行为）----------------
@@ -489,6 +707,7 @@
     if (!d || d.__rogerCdn !== 1) return;
     if (d.dir === "speedtest-run") { runSpeedTest((d.payload && d.payload.hosts) || []); return; }
     if (d.dir === "speedtest-stop") { stopSpeedTest(); return; }
+    if (d.dir === "messages" && d.payload) { for (var mk in DEFAULT_MSGS) if (d.payload[mk]) MSGS[mk] = d.payload[mk]; return; }
   });
 
   // ---------------- 切换 CDN 时的重载策略 ----------------
@@ -522,7 +741,7 @@
     try {
       if (!WATCH_RE.test(location.pathname) && !document.querySelector("video")) return;
       var url = new URL(location.href);
-      var v = document.querySelector("video");
+      var v = getMainVideo();
       if (v && isFinite(v.currentTime) && v.currentTime > 1) url.searchParams.set("t", String(Math.floor(v.currentTime)));
       location.replace(url.toString());
     } catch (e) { try { location.reload(); } catch (_) {} }
@@ -533,14 +752,15 @@
     var d = ev.data;
     if (!d || d.__rogerCdn !== 1 || d.dir !== "config") return;
     if (!d.payload) return;
-    var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeHost = cfg.cdnHost;
+    var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost();
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
     renderOverlay();
-    if (beforeSig === effSig(cfg)) return; // 只改了 showDebug 之类 → 不动
+    if (beforeSig === effSig(cfg)) return; // 只改了 showDebug 之类 → 不动（保留 autoHost）
+    autoHost = null; // 用户手动改了节点/开关：自动回退的静默覆写作废，以用户选择为准
     var afterActive = isActive(cfg);
     if (beforeActive !== afterActive) {
       fullReload(); // 需安装/移除 hook（开/关重排、切到/离开「原始」）
-    } else if (cfg.cdnHost === "backup" || beforeHost === "backup") {
+    } else if (cfg.cdnHost === "backup" || beforeEffHost === "backup") {
       fullReload(); // 「备用」走 playurl 层，需重打 playurl 才生效 → 整页重载
     } else if (!playerReload()) {
       fullReload(); // 具名节点：播放器内重载（分段层即时导向）
@@ -555,18 +775,22 @@
     return null;
   }
   function cdnTargetLabel() {
-    if (cfg.cdnHost === "base") return "原始（不覆寫）";
-    if (cfg.cdnHost === "backup") return "備用URL（優先）";
+    if (cfg.cdnHost === "base") return MSGS.mhCdnTargetOriginal;
+    if (cfg.cdnHost === "backup") return MSGS.mhCdnTargetBackup;
     return cfg.cdnHost;
   }
   function buildDebugText() {
-    return [
-      "CDN 線路",
-      "mode=" + (cfg.enabled ? "on" : "off") + "  target=" + cdnTargetLabel(),
+    var lines = [
+      MSGS.mhDebugTitle,
+      "mode=" + (cfg.enabled ? "on" : "off") + "  target=" + cdnTargetLabel()
+    ];
+    if (autoHost) lines.push("auto-fallback -> " + autoHost); // 静默覆写：独立一行、纯英文，避免跟上面的使用者设定混在一起
+    lines.push(
       "cdn=" + (debug.currentCdn || "-"),
       "v=" + (debug.pickVideoHost || "-") + "  a=" + (debug.pickAudioHost || "-"),
       "src=" + (debug.lastSource || "-") + "  rw=" + debug.rewriteCount + "  seg=" + debug.segRewriteCount + "  qn=" + qnText() + "  spd=" + speedText()
-    ].join("\n");
+    );
+    return lines.join("\n");
   }
   function renderOverlay() {
     if (window.top !== window) return;
@@ -594,7 +818,7 @@
       window.postMessage({ __rogerCdn: 1, dir: "debug", payload: {
         currentCdn: debug.currentCdn, pickVideoHost: debug.pickVideoHost, pickAudioHost: debug.pickAudioHost,
         lastSource: debug.lastSource, rewriteCount: debug.rewriteCount, segRewriteCount: debug.segRewriteCount,
-        lastQn: debug.lastQn, enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), lastError: debug.lastError,
+        lastQn: debug.lastQn, enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), autoHost: autoHost, lastError: debug.lastError,
         speedBps: debug.speedBps, speedIdle: debug.speedIdle
       } }, "*");
     } catch (e) {}

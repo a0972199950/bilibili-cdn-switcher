@@ -1,0 +1,170 @@
+{
+  "extName": {
+    "message": "TW/SG 视频加速 for bilibili (非官方)"
+  },
+  "extDescription": {
+    "message": "让台湾 / 新加坡使用者在网页版 bilibili 上更顺畅观看 4K 等高画质视频，减少缓冲与卡顿。非官方第三方扩充，与 bilibili 官方无关联。"
+  },
+  "extActionTitle": {
+    "message": "TW/SG 视频加速"
+  },
+  "popupTitle": {
+    "message": "CDN 线路"
+  },
+  "headerTitle": {
+    "message": "B 站 CDN 线路"
+  },
+  "enabledLabel": {
+    "message": "启用"
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN 线路（换成此节点并排最前，原节点保留为 fallback）"
+  },
+  "modeListLabel": {
+    "message": "清单选择"
+  },
+  "modeCustomLabel": {
+    "message": "自行输入"
+  },
+  "customHostPlaceholder": {
+    "message": "输入 CDN host，例：upos-sz-mirrorxxx.bilivideo.com"
+  },
+  "customHintDefault": {
+    "message": "只填 host（网域），不含 http:// 与路径。"
+  },
+  "customHintInvalid": {
+    "message": "请输入有效的 host（含网域，如 xxx.bilivideo.com）。"
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 测试各节点速度"
+  },
+  "showDebugLabel": {
+    "message": "显示页面 debug 叠层"
+  },
+  "debugSectionLabel": {
+    "message": "Debug（目前分页）"
+  },
+  "debugInitial": {
+    "message": "尚未取得资料，请在 B 站影片页开启。"
+  },
+  "debugNoDataAfterOpen": {
+    "message": "尚未取得资料。请在 B 站影片页播放后再开此视窗。"
+  },
+  "stBackBtn": {
+    "message": "← 返回"
+  },
+  "stHeaderTitle": {
+    "message": "各节点测速"
+  },
+  "stRetestBtn": {
+    "message": "🔄 重新测速"
+  },
+  "stHintLeave": {
+    "message": "用「目前影片、目前画质」的分段实测各节点；离开此页会立即停止测速。"
+  },
+  "stHintBandwidth": {
+    "message": "这里测到的是各节点的<b>理论最大频宽</b>，跟播放当下实际用到的速度不同——影片可能根本用不到这么高的频宽，所以比 debug 叠层看到的数字高是正常的。"
+  },
+  "speedtestNoSampleHint": {
+    "message": "请先在 B 站影片页开始播放，取得分段样本后再测速。"
+  },
+  "speedtestCannotStart": {
+    "message": "无法开始测速，请确认目前分页是 B 站影片页。"
+  },
+  "speedtestStatusTesting": {
+    "message": "测试中…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "已取消"
+  },
+  "speedtestStatusWaiting": {
+    "message": "等待中"
+  },
+  "speedtestFailedTemplate": {
+    "message": "失败（{err}）"
+  },
+  "errNoData": {
+    "message": "无回应"
+  },
+  "errNoStream": {
+    "message": "无法读取串流"
+  },
+  "errTimeout": {
+    "message": "超时"
+  },
+  "errNetworkError": {
+    "message": "网络错误"
+  },
+  "errReadError": {
+    "message": "读取中断"
+  },
+  "errNoSample": {
+    "message": "尚无分段样本"
+  },
+  "cdnNoteRecommended": {
+    "message": "推荐 TW/SG 最快"
+  },
+  "cdnNoteAliyun": {
+    "message": "阿里云"
+  },
+  "cdnNoteTencentCloud": {
+    "message": "腾讯云"
+  },
+  "cdnNoteTencentCloudVod": {
+    "message": "腾讯云 VOD加速"
+  },
+  "cdnNoteHuaweiHybrid": {
+    "message": "华为云 融合CDN"
+  },
+  "cdnNoteHuawei": {
+    "message": "华为云"
+  },
+  "cdnNoteAkamaiOverseas": {
+    "message": "Akamai海外"
+  },
+  "cdnNoteAliyunOverseas": {
+    "message": "阿里云海外"
+  },
+  "cdnNoteTencentOverseas": {
+    "message": "腾讯云海外"
+  },
+  "cdnNoteHuaweiOverseas": {
+    "message": "华为云海外"
+  },
+  "cdnNoteBilibiliOverseas": {
+    "message": "Bilibili海外"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "用 B 站提供的备援节点"
+  },
+  "cdnNoteOriginal": {
+    "message": "不覆写，等同关闭"
+  },
+  "cdnNameBackupUrl": {
+    "message": "备用URL"
+  },
+  "cdnNameOriginal": {
+    "message": "原始"
+  },
+  "mhToastAutoSwitched": {
+    "message": "目前 CDN 速度不佳，已自动切换至备援节点 {host}"
+  },
+  "mhToastAllFailed": {
+    "message": "目前 CDN 与备援节点皆无法顺利播放"
+  },
+  "mhToastReloadBackup": {
+    "message": "重载并切换至备用URL"
+  },
+  "mhToastClose": {
+    "message": "关闭"
+  },
+  "mhDebugTitle": {
+    "message": "CDN 线路"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "原始（不覆写）"
+  },
+  "mhCdnTargetBackup": {
+    "message": "备用URL（优先）"
+  }
+}

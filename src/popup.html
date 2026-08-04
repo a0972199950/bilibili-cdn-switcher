@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html>
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CDN 線路</title>
+  <title></title>
   <style>
     :root {
       color-scheme: light dark;
@@ -227,48 +227,46 @@
 
 <body>
   <div id="mainView">
-    <h1>B 站 CDN 線路</h1>
+    <h1 id="headerTitle"></h1>
 
     <div class="row">
-      <span><b>啟用</b></span>
+      <span><b id="enabledLabel"></b></span>
       <label class="switch"><input type="checkbox" id="enabled" /><span class="slider"></span></label>
     </div>
 
-    <div class="row"><label>CDN 線路（換成此節點並排最前，原節點保留為 fallback）</label></div>
+    <div class="row"><label id="cdnHostRowLabel"></label></div>
     <div class="cdnMode">
-      <label><input type="radio" name="cdnMode" id="modeList" /> 清單選擇</label>
-      <label><input type="radio" name="cdnMode" id="modeCustom" /> 自行輸入</label>
+      <label><input type="radio" name="cdnMode" id="modeList" /> <span id="modeListLabel"></span></label>
+      <label><input type="radio" name="cdnMode" id="modeCustom" /> <span id="modeCustomLabel"></span></label>
     </div>
     <select id="cdnHost"></select>
-    <input type="text" id="customHost" spellcheck="false" placeholder="輸入 CDN host，例：upos-sz-mirrorxxx.bilivideo.com"
+    <input type="text" id="customHost" spellcheck="false"
       style="display:none;width:100%;box-sizing:border-box;padding:5px 6px;font:inherit;margin-bottom:4px" />
-    <div class="hint" id="customHint" style="display:none">只填 host（網域），不含 http:// 與路徑。</div>
+    <div class="hint" id="customHint" style="display:none"></div>
 
     <div class="row" style="margin-top:16px">
-      <button id="speedtestBtn" type="button">🔍 測試各節點速度</button>
+      <button id="speedtestBtn" type="button"></button>
     </div>
 
     <div class="row">
-      <span>顯示頁面 debug 疊層</span>
+      <span id="showDebugLabel"></span>
       <label class="switch"><input type="checkbox" id="showDebug" /><span class="slider"></span></label>
     </div>
 
     <hr />
-    <div class="row" style="margin:0 0 6px"><label><b>Debug</b>（目前分頁）</label></div>
-    <div id="debug">尚未取得資料，請在 B 站影片頁開啟。</div>
+    <div class="row" style="margin:0 0 6px"><label id="debugSectionLabel"></label></div>
+    <div id="debug"></div>
   </div>
 
   <div id="speedtestView">
     <div class="stHeader">
-      <button id="stBackBtn" type="button">← 返回</button>
-      <b>各節點測速</b>
-      <button id="stRetestBtn" type="button" style="margin-left:auto">🔄 重新測速</button>
+      <button id="stBackBtn" type="button"></button>
+      <b id="stHeaderTitle"></b>
+      <button id="stRetestBtn" type="button" style="margin-left:auto"></button>
     </div>
     <div id="stMeta"></div>
-    <div class="hint">用「目前影片、目前畫質」的分段實測各節點；
-      離開此頁會立即停止測速。</div>
-    <div class="hint">這裡測到的是各節點的<b>理論最大頻寬</b>，跟播放當下實際用到的速度不同——影片可能根本用不到
-      這麼高的頻寬，所以比 debug 疊層看到的數字高是正常的。</div>
+    <div class="hint" id="stHintLeave"></div>
+    <div class="hint" id="stHintBandwidth"></div>
     <div id="stList"></div>
   </div>
 
