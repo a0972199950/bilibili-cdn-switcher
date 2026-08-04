@@ -555,13 +555,13 @@
     return null;
   }
   function cdnTargetLabel() {
-    if (cfg.cdnHost === "base") return "原始（不覆写）";
-    if (cfg.cdnHost === "backup") return "备用URL（优先）";
+    if (cfg.cdnHost === "base") return "原始（不覆寫）";
+    if (cfg.cdnHost === "backup") return "備用URL（優先）";
     return cfg.cdnHost;
   }
   function buildDebugText() {
     return [
-      "CDN 线路",
+      "CDN 線路",
       "mode=" + (cfg.enabled ? "on" : "off") + "  target=" + cdnTargetLabel(),
       "cdn=" + (debug.currentCdn || "-"),
       "v=" + (debug.pickVideoHost || "-") + "  a=" + (debug.pickAudioHost || "-"),
