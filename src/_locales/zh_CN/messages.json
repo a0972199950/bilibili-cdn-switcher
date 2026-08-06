@@ -38,6 +38,12 @@
   "speedtestBtnLabel": {
     "message": "🔍 测试各节点速度"
   },
+  "rateBtnLabel": {
+    "message": "⭐ 喜欢吗？给我 5 星鼓励"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 问题反馈／功能许愿"
+  },
   "showDebugLabel": {
     "message": "显示页面 debug 叠层"
   },
@@ -115,6 +121,12 @@
   },
   "cdnNoteHuaweiHybrid": {
     "message": "华为云 融合CDN"
+  },
+  "cdnNoteSecondBest2": {
+    "message": "华为云 融合CDN，TW次优线路2"
+  },
+  "cdnNoteSecondBest3": {
+    "message": "华为云 融合CDN，TW次优线路3"
   },
   "cdnNoteHuawei": {
     "message": "华为云"

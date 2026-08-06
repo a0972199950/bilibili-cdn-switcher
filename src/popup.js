@@ -10,7 +10,11 @@ var els = {
   enabled: document.getElementById("enabled"),
   modeList: document.getElementById("modeList"),
   modeCustom: document.getElementById("modeCustom"),
-  cdnHost: document.getElementById("cdnHost"),
+  cdnSelect: document.getElementById("cdnSelect"),
+  cdnSelectTrigger: document.getElementById("cdnSelectTrigger"),
+  cdnSelectName: document.getElementById("cdnSelectName"),
+  cdnSelectHost: document.getElementById("cdnSelectHost"),
+  cdnSelectList: document.getElementById("cdnSelectList"),
   customHost: document.getElementById("customHost"),
   customHint: document.getElementById("customHint"),
   showDebug: document.getElementById("showDebug"),
@@ -18,6 +22,8 @@ var els = {
   mainView: document.getElementById("mainView"),
   speedtestView: document.getElementById("speedtestView"),
   speedtestBtn: document.getElementById("speedtestBtn"),
+  rateBtn: document.getElementById("rateBtn"),
+  feedbackBtn: document.getElementById("feedbackBtn"),
   stBackBtn: document.getElementById("stBackBtn"),
   stRetestBtn: document.getElementById("stRetestBtn"),
   stMeta: document.getElementById("stMeta"),
@@ -31,6 +37,7 @@ document.documentElement.lang = chrome.i18n.getUILanguage();
 [
   ["headerTitle", "headerTitle"], ["enabledLabel", "enabledLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["speedtestBtn", "speedtestBtnLabel"],
+  ["rateBtn", "rateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stHintLeave", "stHintLeave"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
@@ -38,8 +45,45 @@ document.getElementById("stHintBandwidth").innerHTML = t("stHintBandwidth");
 els.customHost.placeholder = t("customHostPlaceholder");
 els.debug.textContent = t("debugInitial");
 
+// -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；Edge 尚未上架，沒有網址就不顯示 --------
+// 意見回饋表單：依語言分開的 Google 表單連結。zh_CN / en 專用表單還沒建，先共用 zh_TW 那份頂著。
+var FEEDBACK_FORM_URLS = {
+  zh_TW: "https://forms.gle/HoSRGTyp3UEejave7",
+  zh_CN: "https://forms.gle/HoSRGTyp3UEejave7", // TODO: 簡體中文表單好了再換
+  en: "https://forms.gle/HoSRGTyp3UEejave7" // TODO: 英文表單好了再換
+};
+function pickFeedbackFormUrl() {
+  var lang = (chrome.i18n.getUILanguage() || "").toLowerCase();
+  if (lang.indexOf("zh") !== 0) return FEEDBACK_FORM_URLS.en;
+  return lang.indexOf("cn") !== -1 ? FEEDBACK_FORM_URLS.zh_CN : FEEDBACK_FORM_URLS.zh_TW;
+}
+var STORE_REVIEW_URLS = {
+  chrome: "https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch/reviews",
+  firefox: "https://addons.mozilla.org/zh-TW/firefox/addon/tw-sg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98%E6%96%B9/reviews/"
+  // edge: 尚未上架 Edge Add-ons，補上後再加
+};
+function detectBrowser() {
+  var ua = navigator.userAgent;
+  if (ua.indexOf("Firefox/") !== -1) return "firefox";
+  if (ua.indexOf("Edg/") !== -1) return "edge";
+  return "chrome";
+}
+function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
+
+var reviewUrl = STORE_REVIEW_URLS[detectBrowser()];
+if (reviewUrl) {
+  els.rateBtn.style.display = "";
+  els.rateBtn.addEventListener("click", function () { openTab(reviewUrl); });
+}
+var feedbackUrl = pickFeedbackFormUrl();
+if (feedbackUrl) {
+  els.feedbackBtn.style.display = "";
+  els.feedbackBtn.addEventListener("click", function () { openTab(feedbackUrl); });
+}
+
 var knownValues = {}; // 清单中所有 value（用来判断储存值是否在清单内，不在的话视为自行输入）
 var cdnList = []; // cdn-list.json 的 options，供测速时取节点清单与显示用的名称
+var currentCdnHost = null; // 目前生效的 cdnHost，供测速页标示「目前使用」＋点击切换比对
 
 // 具名节点：技术代号 + noteKey 註記；特殊选项（base/backup）用 nameKey + noteKey
 function cdnDisplayName(o) {
@@ -47,12 +91,63 @@ function cdnDisplayName(o) {
   var note = o.noteKey ? t(o.noteKey) : (o.note || "");
   return name + (note ? " (" + note + ")" : "");
 }
-// 标签：具名节点显示 domain；特殊选项只显示名称
-function optLabel(o) {
-  var base = cdnDisplayName(o);
-  var isHost = o.value && o.value !== "base" && o.value !== "backup";
-  return isHost ? base + " — " + o.value : base;
+
+// -------- CDN 清单：自制下拉（原生 select 的 option 不能分两行、不能弱化网域字重，改用 div 清单模拟）--------
+var cdnSelectValue = ""; // 目前下拉「显示/选取」的 value；跟 currentCdnHost 的差别：自订模式时这里仍保留一个清单内的保底值，方便切回清单模式
+
+function findCdnOpt(value) {
+  for (var i = 0; i < cdnList.length; i++) if (cdnList[i].value === value) return cdnList[i];
+  return null;
 }
+function renderCdnSelectTrigger() {
+  var o = findCdnOpt(cdnSelectValue);
+  els.cdnSelectName.textContent = o ? cdnDisplayName(o) : cdnSelectValue;
+  var isHost = !!o && o.value !== "base" && o.value !== "backup";
+  els.cdnSelectHost.textContent = isHost ? o.value : "";
+  els.cdnSelectHost.style.display = isHost ? "" : "none";
+}
+function closeCdnSelect() { els.cdnSelect.classList.remove("open"); }
+function selectCdnValue(value) {
+  cdnSelectValue = value;
+  renderCdnSelectTrigger();
+  var rows = els.cdnSelectList.children;
+  for (var i = 0; i < rows.length; i++) rows[i].classList.toggle("selected", rows[i].dataset.value === value);
+}
+function buildCdnSelectList(options) {
+  els.cdnSelectList.innerHTML = "";
+  options.forEach(function (o) {
+    knownValues[o.value] = true;
+    var isHost = o.value !== "base" && o.value !== "backup";
+    var row = document.createElement("div");
+    row.className = "cdnOptRow";
+    row.dataset.value = o.value;
+    var nameEl = document.createElement("span");
+    nameEl.className = "cdnOptName";
+    nameEl.textContent = cdnDisplayName(o);
+    row.appendChild(nameEl);
+    if (isHost) {
+      var hostEl = document.createElement("span");
+      hostEl.className = "cdnOptHost";
+      hostEl.textContent = o.value;
+      row.appendChild(hostEl);
+    }
+    row.addEventListener("click", function () {
+      closeCdnSelect();
+      if (o.value === cdnSelectValue) return;
+      selectCdnValue(o.value);
+      currentCdnHost = o.value;
+      save({ cdnHost: o.value });
+    });
+    els.cdnSelectList.appendChild(row);
+  });
+}
+els.cdnSelectTrigger.addEventListener("click", function (ev) {
+  ev.stopPropagation();
+  els.cdnSelect.classList.toggle("open");
+});
+document.addEventListener("click", function (ev) {
+  if (!els.cdnSelect.contains(ev.target)) closeCdnSelect();
+});
 
 // 把使用者输入正规化成 host（去掉 http://、路径等）；无效回 ""
 function normHost(s) {
@@ -64,21 +159,14 @@ function normHost(s) {
 }
 
 function buildOptions(options, current) {
-  els.cdnHost.innerHTML = "";
-  options.forEach(function (o) {
-    knownValues[o.value] = true;
-    var op = document.createElement("option");
-    op.value = o.value;
-    op.textContent = optLabel(o);
-    els.cdnHost.appendChild(op);
-  });
+  buildCdnSelectList(options);
   // 还原目前选择：储存值在清单内 → 清单模式；不在 → 视为自行输入的 host
   if (current && knownValues[current]) {
     els.modeList.checked = true;
-    els.cdnHost.value = current;
+    selectCdnValue(current);
   } else {
     els.modeCustom.checked = true;
-    els.cdnHost.value = DEFAULTS.cdnHost; // 保底，切回清单模式时有值可用
+    selectCdnValue(DEFAULTS.cdnHost); // 保底，切回清单模式时有值可用
     els.customHost.value = current || "";
   }
   syncModeUI();
@@ -87,9 +175,10 @@ function buildOptions(options, current) {
 // 依目前是「清单选择」还是「自行输入」互斥显示对应的输入元件
 function syncModeUI() {
   var isCustom = els.modeCustom.checked;
-  els.cdnHost.style.display = isCustom ? "none" : "block";
+  els.cdnSelect.style.display = isCustom ? "none" : "block";
   els.customHost.style.display = isCustom ? "block" : "none";
   els.customHint.style.display = isCustom ? "block" : "none";
+  if (isCustom) closeCdnSelect();
 }
 
 function save(patch) { chrome.storage.local.set(patch); }
@@ -105,6 +194,7 @@ Promise.all([
   for (var k in DEFAULTS) cfg[k] = arr[1][k] === undefined ? DEFAULTS[k] : arr[1][k];
   els.enabled.checked = !!cfg.enabled;
   els.showDebug.checked = !!cfg.showDebug;
+  currentCdnHost = cfg.cdnHost;
   buildOptions(list, cfg.cdnHost);
 });
 
@@ -114,17 +204,16 @@ els.showDebug.addEventListener("change", function () { save({ showDebug: els.sho
 els.modeList.addEventListener("change", function () {
   if (!els.modeList.checked) return;
   syncModeUI();
-  save({ cdnHost: els.cdnHost.value || DEFAULTS.cdnHost });
+  currentCdnHost = cdnSelectValue || DEFAULTS.cdnHost;
+  save({ cdnHost: currentCdnHost });
 });
 els.modeCustom.addEventListener("change", function () {
   if (!els.modeCustom.checked) return;
   syncModeUI();
   var h = normHost(els.customHost.value);
-  if (h) { save({ cdnHost: h }); markCustom(true); }
+  if (h) { currentCdnHost = h; save({ cdnHost: h }); markCustom(true); }
   else { els.customHost.focus(); markCustom(false); }
 });
-
-els.cdnHost.addEventListener("change", function () { save({ cdnHost: els.cdnHost.value }); });
 
 // 自订输入：即时正规化并储存
 function markCustom(ok) {
@@ -133,7 +222,7 @@ function markCustom(ok) {
 }
 els.customHost.addEventListener("input", function () {
   var h = normHost(els.customHost.value);
-  if (h) { save({ cdnHost: h }); markCustom(true); }
+  if (h) { currentCdnHost = h; save({ cdnHost: h }); markCustom(true); }
   else { markCustom(false); }
 });
 
@@ -197,6 +286,7 @@ function speedtestErrText(err) { var k = SPEEDTEST_ERR_KEYS[err]; return k ? t(k
 var speedtestHosts = []; // 本次送出测试的 host 顺序，index 对应 speedTest.results 的顺序
 var speedtestTabId = null;
 var speedtestPort = null; // 只用来让 content script 侦测「离开测速页 / popup 关闭」→ 立即中止
+var lastSpeedtestState = null; // 最近一次 renderSpeedtest 的资料，点击切换节点后立即重绘打勾标示用
 
 function speedtestHostList() {
   return cdnList.filter(function (o) { return o.value && o.value !== "base" && o.value !== "backup"; });
@@ -210,6 +300,7 @@ function renderSpeedtestMeta(st) {
 
 function renderSpeedtest(st) {
   if (!st) return;
+  lastSpeedtestState = st;
   renderSpeedtestMeta(st);
   if (st.error === "no-sample") {
     els.stList.textContent = t("speedtestNoSampleHint");
@@ -221,9 +312,11 @@ function renderSpeedtest(st) {
   els.stList.innerHTML = speedtestHosts.map(function (host, i) {
     var o = null;
     for (var j = 0; j < cdnList.length; j++) if (cdnList[j].value === host) { o = cdnList[j]; break; }
-    var label = o ? cdnDisplayName(o) : host;
+    var title = o ? cdnDisplayName(o) : host;
+    if (host === currentCdnHost) title = "✓ " + title; // 打勾标示目前生效的节点
     var r = st.results[i];
-    var text, cls = "stRow";
+    var text, cls = "stRow stClickable";
+    if (host === currentCdnHost) cls += " stCurrent";
     if (r) {
       text = r.error ? t("speedtestFailedTemplate").replace("{err}", speedtestErrText(r.error)) : spdText(r.bps, false);
       cls += r.error ? " stErr" : (r.host === bestHost ? " stBest" : "");
@@ -234,9 +327,26 @@ function renderSpeedtest(st) {
     } else {
       text = t("speedtestStatusWaiting");
     }
-    return '<div class="' + cls + '"><span>' + esc(label) + "</span><span class=\"stSpeed\">" + esc(text) + "</span></div>";
+    return '<div class="' + cls + '" data-host="' + esc(host) + '">' +
+      '<span class="stRowMain"><span class="stRowTitle">' + esc(title) + '</span><span class="stRowHost">' + esc(host) + '</span></span>' +
+      '<span class="stSpeed">' + esc(text) + "</span></div>";
   }).join("");
 }
+
+// 测速页点一下节点列即直接切换：写回清单模式的选择并存档，主画面下次打开会同步显示
+function applySpeedtestHost(host) {
+  if (!knownValues[host] || host === currentCdnHost) return;
+  currentCdnHost = host;
+  els.modeList.checked = true;
+  selectCdnValue(host);
+  syncModeUI();
+  save({ cdnHost: host });
+  renderSpeedtest(lastSpeedtestState); // 立即重绘打勾标示，不用等下次 poll
+}
+els.stList.addEventListener("click", function (ev) {
+  var row = ev.target.closest(".stRow");
+  if (row && row.dataset.host) applySpeedtestHost(row.dataset.host);
+});
 
 function pollSpeedtest() {
   if (speedtestTabId == null) return;

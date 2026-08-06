@@ -128,6 +128,7 @@
   var speedSamples = []; // {at, bytes, ms}
   var lastDirectAt = 0;
   var lastSampleAt = 0; // 最近一次计入样本的时间：当作「线路仍有资料在动」的讯号（checkStall 用）
+  var lastSegReqAt = 0; // 最近一次「送出分段请求」的时间：请求持续在送却抓不到资料 = 线路死了（checkStall 用）
 
   function addSample(bytes, ms, direct) {
     if (!(bytes > 0) || !(ms > 0)) return;
@@ -159,6 +160,9 @@
 
   var SEG_RE = /\/upgcxcode\/.*\.m4s|\/upgcxcode\//i;
   var CDN_HOST_RE = /(bilivideo\.(com|cn)|akamaized\.net|hdslb\.com)$/i;
+  // 分段判定必须同时验 host：data.bilibili.com 的打点上报会把分段 URL 塞在 query 里，
+  // 只看路径会把上报误认成分段（污染 currentCdn / 速度样本 / 备用URL模式的失败判定）
+  function isSegUrl(url) { return SEG_RE.test(url) && CDN_HOST_RE.test(hostOf(url)); }
 
   // ---------------- 播放器上的提示 toast（挂在播放器容器内，全屏时也看得到）----------------
   var TOAST_SEL = [".bpx-player-container", "#bilibili-player", ".bpx-player-video-area", ".bpx-player-primary-area"];
@@ -233,15 +237,19 @@
   // 让用户自己按「重載並切換至備用URL」或「關閉」决定。内建功能，不提供开关。
   var FALLBACK = { attempts: 0, lastSwitchAt: 0, tried: {} };
   var FALLBACK_MAX_ATTEMPTS = 2;
-  var FALLBACK_COOLDOWN_MS = 12000;
+  // 冷却要盖过「换节点后播放器重建缓冲」的空窗：实测 4K 在 player.reload() 后
+  // 可能超过 20 秒才恢复走针，冷却太短会在恢复前就误弹「皆无法播放」
+  var FALLBACK_COOLDOWN_MS = 30000;
   var stallState = { lastTime: -1, stuckSince: null };
+  var progressSince = null; // 连续顺畅播放的起点：顺播够久代表线路恢复，重置回退额度
+  var askToastOn = false; // 「皆无法播放」询问弹窗显示中：播放一旦恢复就自动收掉
   var backupHosts = []; // 最近一次 playurl 解析到的候选 host（base + backupUrl），依出现顺序
   var pendingBackupHosts = null; // rewriteRoot 期间收集用；有解析到才整批取代 backupHosts
 
   // 测试用开关（无任何 UI 入口，不影响一般用户）：在 DevTools console（页面 context）执行
   //   __rogerCdnSimulateStall()       → 接下来 60 秒把影片当成卡住（连播放器状态检查都略过，
   //                                     时序确定），走真实回退流程：约 9 秒切备援节点＋toast、
-  //                                     约 27 秒（8 秒判定＋12 秒冷却）弹「切备用URL」提示（不会自动消失）
+  //                                     约 47 秒（8 秒判定＋30 秒冷却）弹「切备用URL」提示（不会自动消失）
   //   __rogerCdnSimulateStall(90000)  → 自订模拟时长（毫秒）；传 0 取消
   //   __rogerCdnSimulateStall("ask")  → 不等计时，立刻弹出询问 toast（按钮为真实行为，
   //                                     按下会真的切备用URL＋整页重载）
@@ -338,6 +346,7 @@
 
   function askBackupSwitch(reason) {
     debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> ask-user";
+    askToastOn = true;
     showToast(MSGS.mhToastAllFailed, {
       persistent: true, // 不自动消失，让用户自己按「重載」或「關閉」
       actionText: MSGS.mhToastReloadBackup,
@@ -346,23 +355,69 @@
     });
   }
 
-  // 持续侦测「真的播不动」：未暂停但 currentTime 不前进、且线路上也没有资料在动。
+  // currentTime 前方是否还有已缓冲的资料：有＝随时能继续播（暂停是使用者主动的）；
+  // 没有＝缓冲耗尽（播放器可能已自己停下）
+  function hasForwardBuffer(v) {
+    try {
+      var bf = v.buffered;
+      for (var i = 0; i < bf.length; i++) {
+        if (v.currentTime >= bf.start(i) - 0.1 && v.currentTime < bf.end(i) - 0.5) return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  // 持续侦测「真的播不动」：currentTime 不前进、且线路上也没有资料在动。
   // 不能拿「一段时间没流量」当依据：播放器缓冲抓满本来就会停抓分段，idle 是正常状态，
   // 之前把 idle 当卡住会在缓冲抓满约 18 秒后误判、把好好播放中的页面整页重载。
+  // paused 不能无条件放行：实测（番剧页）卡死一阵子后播放器会自己把 video 设回 paused，
+  // 若把这当成「使用者主动暂停」就永远判不到卡住 —— 用前向缓冲区分：还有缓冲的暂停
+  // 才是使用者主动的；缓冲耗尽的暂停继续累计。
   function checkStall() {
     if (!ACTIVE) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
     // 模拟模式：连播放器状态检查也略过 —— 第一次回退的 player.reload() 会让影片短暂
     // 暂停/readyState 0，若照常重置计时器，第二段（询问）会一直等不到
     var simulating = Date.now() < simulateStallUntil;
+    var limit = 8000;
     if (!simulating) {
       var v = getMainVideo();
-      if (!v || v.paused || v.ended || v.readyState === 0) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
-      var t = v.currentTime;
-      if (t !== stallState.lastTime) { stallState.lastTime = t; stallState.stuckSince = null; return; }
-      if (Date.now() - lastSampleAt < 5000) { stallState.stuckSince = null; return; } // 还在下载 → 只是缓冲慢，再等
+      var now = Date.now();
+      // 分段请求持续在送、却一直抓不到任何资料 → 线路死了。这是最强的讯号，
+      // 连 readyState 0（初载就遇到死线路，影片从没拿到过资料）都盖得住
+      var starving = now - lastSegReqAt < 10000 && now - lastSampleAt > 5000 && lastSegReqAt > 0;
+      if (v && v.ended) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+      if (!v || v.readyState === 0) {
+        // 没有 video / 还没有任何媒体资料：通常是还没开始（或 player.reload() 过渡），
+        // 不算卡；但 starving 时代表初载就遇到死线路，照样累计
+        if (!starving) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+      } else if (v.paused && hasForwardBuffer(v)) {
+        // 还有前向缓冲的暂停 = 使用者主动暂停，不算卡
+        stallState.lastTime = -1; stallState.stuckSince = null; return;
+      } else {
+        var t = v.currentTime;
+        if (t !== stallState.lastTime) {
+          stallState.lastTime = t; stallState.stuckSince = null;
+          if (!v.paused) {
+            // 播放恢复走针：收掉「皆无法播放」的询问弹窗（它是 persistent 的，不会自己消失）；
+            // 连续顺播 30 秒代表线路已恢复，重置回退额度，之后再卡还能再自动回退
+            if (askToastOn) { askToastOn = false; hideToast(); }
+            if (progressSince == null) progressSince = Date.now();
+            else if (now - progressSince > 30000 && FALLBACK.attempts) { FALLBACK.attempts = 0; FALLBACK.tried = {}; }
+          }
+          return;
+        }
+        progressSince = null;
+        if (now - lastSampleAt < 5000) {
+          // 线路还有资料在动：暂停中（缓冲耗尽但还在补）属正常，不算卡；
+          // 播放中卡住但仍在下载 → 只是缓冲慢，宽限到 20 秒再判定，
+          // 免得音轨还活着、视轨已死的情况永远判不到
+          if (v.paused) { stallState.stuckSince = null; return; }
+          limit = 20000;
+        }
+      }
     }
     if (stallState.stuckSince == null) stallState.stuckSince = Date.now();
-    else if (Date.now() - stallState.stuckSince > 8000) {
+    else if (Date.now() - stallState.stuckSince > limit) {
       stallState.stuckSince = null;
       maybeFallback(simulating ? "simulated" : "stalled");
     }
@@ -426,6 +481,9 @@
     try {
       if (!root || typeof root !== "object") return false;
       var d = root.data || root.result || root;
+      // 番剧/课程（pgc v2、SSR playurlSSRData）把 dash/durl 多包一层在 result.video_info 下
+      if (d && typeof d === "object" && d.video_info && typeof d.video_info === "object" &&
+          (d.video_info.dash || d.video_info.durl)) d = d.video_info;
       pendingBackupHosts = [];
       var changed = rewriteContainer(d);
       if (changed) {
@@ -445,7 +503,11 @@
   }
 
   // ---------------- 安装 hook（仅 ACTIVE 时）----------------
-  var PLAYURL_RE = /(x\/player\/wbi\/playurl|x\/player\/playurl|pgc\/player\/web\/playurl)/i;
+  // 各类型页面的 playurl 端点（实测自 player core bundle）：
+  //  - 一般影片: x/player/wbi/playurl、x/player/playurl
+  //  - 番剧:     pgc/player/web/v2/playurl（旧版无 v2）
+  //  - 课程:     pugv/player/web/playurl
+  var PLAYURL_RE = /(x\/player\/(wbi\/)?playurl|pgc\/player\/web\/(v2\/)?playurl|pugv\/player\/web\/playurl)/i;
 
   function installHooks() {
     // __playinfo__（SSR 首个分 P）— CDN 重排启用时才需要
@@ -488,8 +550,9 @@
             });
           }
         }
-        if (SEG_RE.test(url)) {
+        if (isSegUrl(url)) {
           var t0 = Date.now();
+          lastSegReqAt = t0;
           var reqUrl = typeof input === "string" ? input : (input && input.url) || url;
           return _fetch.call(this, input, init).then(function (resp) {
             resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
@@ -516,7 +579,7 @@
         try {
           if (ACTIVE && typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; }
           this.__rogerUrl = url;
-          this.__rogerIsSeg = typeof url === "string" && SEG_RE.test(url);
+          this.__rogerIsSeg = typeof url === "string" && isSegUrl(url);
         } catch (e) {}
         return open.call(this, method, url, arguments.length > 2 ? arguments[2] : true, arguments[3], arguments[4]);
       };
@@ -524,6 +587,7 @@
         var self = this, url = self.__rogerUrl || "";
         if (self.__rogerIsSeg) {
           var t0 = Date.now();
+          lastSegReqAt = t0;
           self.addEventListener("load", function () {
             try {
               var bytes = 0;
@@ -597,7 +661,7 @@
       var es = list.getEntries();
       for (var i = 0; i < es.length; i++) {
         var e = es[i];
-        if (!e.name || !SEG_RE.test(e.name)) continue;
+        if (!e.name || !isSegUrl(e.name)) continue;
         noteSegment(e.name);
         if (e.transferSize > 0 && e.duration > 0) addSample(e.transferSize, e.duration, false);
       }

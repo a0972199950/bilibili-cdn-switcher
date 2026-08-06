@@ -38,6 +38,12 @@
   "speedtestBtnLabel": {
     "message": "🔍 Test node speeds"
   },
+  "rateBtnLabel": {
+    "message": "⭐ Enjoying it? Leave a 5-star review"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 Report a bug / Request a feature"
+  },
   "showDebugLabel": {
     "message": "Show debug overlay on page"
   },
@@ -115,6 +121,12 @@
   },
   "cdnNoteHuaweiHybrid": {
     "message": "Huawei Cloud Hybrid CDN"
+  },
+  "cdnNoteSecondBest2": {
+    "message": "Huawei Cloud Hybrid CDN, TW 2nd-best route"
+  },
+  "cdnNoteSecondBest3": {
+    "message": "Huawei Cloud Hybrid CDN, TW 3rd-best route"
   },
   "cdnNoteHuawei": {
     "message": "Huawei Cloud"

@@ -2,6 +2,8 @@
   "_comment": "CDN 節點清單（清單選擇模式用）。value 為要換成的 host；'base'=不覆寫、'backup'=優先備用URL。自行輸入 host 是 popup 裡另一個互斥的模式，不在此清單內。name 為技術代號（不做多語系）；noteKey/nameKey 對應 _locales 訊息鍵，由 popup.js 依使用者語言取出顯示文字。來源：PiliNaraRogerMod/lib/models/common/video/cdn_type.dart（引用自 BiliRoaming）。第一項為預設，為 TW/SG 最快節點。",
   "options": [
     { "value": "cn-jxnc-cmcc-bcache-06.bilivideo.com", "name": "bilivideo", "noteKey": "cdnNoteRecommended" },
+    { "value": "upos-sz-mirror08c.bilivideo.com", "name": "08c", "noteKey": "cdnNoteSecondBest2" },
+    { "value": "upos-sz-mirror08h.bilivideo.com", "name": "08h", "noteKey": "cdnNoteSecondBest3" },
     { "value": "upos-sz-mirrorali.bilivideo.com", "name": "ali", "noteKey": "cdnNoteAliyun" },
     { "value": "upos-sz-mirroralib.bilivideo.com", "name": "alib", "noteKey": "cdnNoteAliyun" },
     { "value": "upos-sz-mirroralio1.bilivideo.com", "name": "alio1", "noteKey": "cdnNoteAliyun" },
@@ -11,8 +13,6 @@
     { "value": "upos-sz-mirrorhw.bilivideo.com", "name": "hw", "noteKey": "cdnNoteHuaweiHybrid" },
     { "value": "upos-sz-mirrorhwb.bilivideo.com", "name": "hwb", "noteKey": "cdnNoteHuaweiHybrid" },
     { "value": "upos-sz-mirrorhwo1.bilivideo.com", "name": "hwo1", "noteKey": "cdnNoteHuaweiHybrid" },
-    { "value": "upos-sz-mirror08c.bilivideo.com", "name": "08c", "noteKey": "cdnNoteHuaweiHybrid" },
-    { "value": "upos-sz-mirror08h.bilivideo.com", "name": "08h", "noteKey": "cdnNoteHuaweiHybrid" },
     { "value": "upos-sz-mirror08ct.bilivideo.com", "name": "08ct", "noteKey": "cdnNoteHuaweiHybrid" },
     { "value": "upos-tf-all-hw.bilivideo.com", "name": "tf_hw", "noteKey": "cdnNoteHuawei" },
     { "value": "upos-tf-all-tx.bilivideo.com", "name": "tf_tx", "noteKey": "cdnNoteTencentCloud" },
