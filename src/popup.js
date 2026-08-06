@@ -41,7 +41,21 @@ document.documentElement.lang = chrome.i18n.getUILanguage();
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stHintLeave", "stHintLeave"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
-document.getElementById("stHintBandwidth").innerHTML = t("stHintBandwidth");
+// 逐段解析 <b>…</b> 建 DOM 节点，避免用 innerHTML 塞入语系字串（addons-linter 会挡动态 innerHTML）
+function setRichText(el, str) {
+  el.textContent = "";
+  var re = /<b>(.*?)<\/b>/g;
+  var lastIndex = 0, m;
+  while ((m = re.exec(str)) !== null) {
+    if (m.index > lastIndex) el.appendChild(document.createTextNode(str.slice(lastIndex, m.index)));
+    var b = document.createElement("b");
+    b.textContent = m[1];
+    el.appendChild(b);
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
+}
+setRichText(document.getElementById("stHintBandwidth"), t("stHintBandwidth"));
 els.customHost.placeholder = t("customHostPlaceholder");
 els.debug.textContent = t("debugInitial");
 
@@ -114,7 +128,7 @@ function selectCdnValue(value) {
   for (var i = 0; i < rows.length; i++) rows[i].classList.toggle("selected", rows[i].dataset.value === value);
 }
 function buildCdnSelectList(options) {
-  els.cdnSelectList.innerHTML = "";
+  els.cdnSelectList.textContent = "";
   options.forEach(function (o) {
     knownValues[o.value] = true;
     var isHost = o.value !== "base" && o.value !== "backup";
@@ -227,9 +241,7 @@ els.customHost.addEventListener("input", function () {
 });
 
 // -------- Debug 读取 --------
-function esc(s) {
-  return String(s == null ? "-" : s).replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; });
-}
+function disp(s) { return s == null ? "-" : String(s); }
 var QN_LABELS = {
   6: "240P", 16: "360P", 32: "480P", 64: "720P", 74: "720P60",
   80: "1080P", 100: "1080P AI", 112: "1080P+", 116: "1080P60",
@@ -248,17 +260,30 @@ function spdText(bps, idle) {
 function renderDebug(d) {
   if (!d) { els.debug.textContent = t("debugNoDataAfterOpen"); return; }
   var lines = [
-    "mode=" + (d.enabled ? "on" : "off") + "  target=" + esc(d.cdnTarget)
+    "mode=" + (d.enabled ? "on" : "off") + "  target=" + disp(d.cdnTarget)
   ];
-  if (d.autoHost) lines.push("auto-fallback -> " + esc(d.autoHost));
+  if (d.autoHost) lines.push("auto-fallback -> " + disp(d.autoHost));
   var cdnLineIdx = lines.length; // "cdn=" 这行的高亮不能写死 index：前面可能多插了 auto-fallback 那行
   lines.push(
-    "cdn=" + esc(d.currentCdn),
-    "v=" + esc(d.pickVideoHost) + "  a=" + esc(d.pickAudioHost),
-    "src=" + esc(d.lastSource) + "  rw=" + esc(d.rewriteCount) + "  seg=" + esc(d.segRewriteCount) + "  qn=" + esc(qnText(d.lastQn)) + "  spd=" + esc(spdText(d.speedBps, d.speedIdle))
+    "cdn=" + disp(d.currentCdn),
+    "v=" + disp(d.pickVideoHost) + "  a=" + disp(d.pickAudioHost),
+    "src=" + disp(d.lastSource) + "  rw=" + disp(d.rewriteCount) + "  seg=" + disp(d.segRewriteCount) + "  qn=" + qnText(d.lastQn) + "  spd=" + spdText(d.speedBps, d.speedIdle)
   );
-  if (d.lastError) lines.push("err=" + esc(d.lastError));
-  els.debug.innerHTML = lines.map(function (l, i) { return i === cdnLineIdx ? '<span class="cdnnow">' + l + "</span>" : l; }).join("\n");
+  if (d.lastError) lines.push("err=" + disp(d.lastError));
+  els.debug.textContent = "";
+  var frag = document.createDocumentFragment();
+  lines.forEach(function (l, i) {
+    if (i > 0) frag.appendChild(document.createTextNode("\n"));
+    if (i === cdnLineIdx) {
+      var span = document.createElement("span");
+      span.className = "cdnnow";
+      span.textContent = l;
+      frag.appendChild(span);
+    } else {
+      frag.appendChild(document.createTextNode(l));
+    }
+  });
+  els.debug.appendChild(frag);
 }
 // 都固定打「顶层 frame」（frameId: 0）：content script 是 all_frames 注入，若不锁定 frame，
 // Chrome 会把讯息广播给分页内所有 frame、取最先回应的那个 —— 万一先回应的是没有播放器的
@@ -293,9 +318,18 @@ function speedtestHostList() {
 }
 
 function renderSpeedtestMeta(st) {
-  if (!st || !st.title) { els.stMeta.innerHTML = ""; return; }
-  els.stMeta.innerHTML = '<span class="stTitle">' + esc(st.title) + "</span>" +
-    (st.qn ? '<span class="stQn">' + esc(st.qn) + "</span>" : "");
+  els.stMeta.textContent = "";
+  if (!st || !st.title) return;
+  var titleEl = document.createElement("span");
+  titleEl.className = "stTitle";
+  titleEl.textContent = st.title;
+  els.stMeta.appendChild(titleEl);
+  if (st.qn) {
+    var qnEl = document.createElement("span");
+    qnEl.className = "stQn";
+    qnEl.textContent = st.qn;
+    els.stMeta.appendChild(qnEl);
+  }
 }
 
 function renderSpeedtest(st) {
@@ -309,7 +343,9 @@ function renderSpeedtest(st) {
   var bestHost = null, bestBps = 0;
   st.results.forEach(function (r) { if (!r.error && r.bps > bestBps) { bestBps = r.bps; bestHost = r.host; } });
 
-  els.stList.innerHTML = speedtestHosts.map(function (host, i) {
+  els.stList.textContent = "";
+  var frag = document.createDocumentFragment();
+  speedtestHosts.forEach(function (host, i) {
     var o = null;
     for (var j = 0; j < cdnList.length; j++) if (cdnList[j].value === host) { o = cdnList[j]; break; }
     var title = o ? cdnDisplayName(o) : host;
@@ -327,10 +363,31 @@ function renderSpeedtest(st) {
     } else {
       text = t("speedtestStatusWaiting");
     }
-    return '<div class="' + cls + '" data-host="' + esc(host) + '">' +
-      '<span class="stRowMain"><span class="stRowTitle">' + esc(title) + '</span><span class="stRowHost">' + esc(host) + '</span></span>' +
-      '<span class="stSpeed">' + esc(text) + "</span></div>";
-  }).join("");
+
+    var row = document.createElement("div");
+    row.className = cls;
+    row.dataset.host = host;
+
+    var main = document.createElement("span");
+    main.className = "stRowMain";
+    var titleSpan = document.createElement("span");
+    titleSpan.className = "stRowTitle";
+    titleSpan.textContent = title;
+    var hostSpan = document.createElement("span");
+    hostSpan.className = "stRowHost";
+    hostSpan.textContent = host;
+    main.appendChild(titleSpan);
+    main.appendChild(hostSpan);
+
+    var speedSpan = document.createElement("span");
+    speedSpan.className = "stSpeed";
+    speedSpan.textContent = text;
+
+    row.appendChild(main);
+    row.appendChild(speedSpan);
+    frag.appendChild(row);
+  });
+  els.stList.appendChild(frag);
 }
 
 // 测速页点一下节点列即直接切换：写回清单模式的选择并存档，主画面下次打开会同步显示
@@ -375,8 +432,8 @@ function showMainView() {
 }
 
 function startSpeedtest(tabId) {
-  els.stList.innerHTML = "";
-  els.stMeta.innerHTML = "";
+  els.stList.textContent = "";
+  els.stMeta.textContent = "";
   chrome.tabs.sendMessage(tabId, { type: "ROGER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
     if (chrome.runtime.lastError || !resp || !resp.ok) {
       els.stList.textContent = t("speedtestCannotStart");
