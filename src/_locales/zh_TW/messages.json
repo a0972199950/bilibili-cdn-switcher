@@ -38,6 +38,12 @@
   "speedtestBtnLabel": {
     "message": "🔍 測試各節點速度"
   },
+  "rateBtnLabel": {
+    "message": "⭐ 喜歡嗎？給我 5 星鼓勵"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 問題回報／功能許願"
+  },
   "showDebugLabel": {
     "message": "顯示頁面 debug 疊層"
   },
@@ -115,6 +121,12 @@
   },
   "cdnNoteHuaweiHybrid": {
     "message": "華為雲 融合CDN"
+  },
+  "cdnNoteSecondBest2": {
+    "message": "華為雲 融合CDN，TW次優線路2"
+  },
+  "cdnNoteSecondBest3": {
+    "message": "華為雲 融合CDN，TW次優線路3"
   },
   "cdnNoteHuawei": {
     "message": "華為雲"

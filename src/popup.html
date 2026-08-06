@@ -42,12 +42,110 @@
       margin: 12px 0;
     }
 
-    select {
+    .cdnSelect {
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .cdnSelectTrigger {
       width: 100%;
       box-sizing: border-box;
-      padding: 5px 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 5px 8px;
       font: inherit;
-      margin-bottom: 4px;
+      text-align: left;
+      cursor: pointer;
+      border: 1px solid rgba(128, 128, 128, .4);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+    }
+
+    .cdnSelectText {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .cdnSelectName {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cdnSelectHost {
+      font-size: 10px;
+      color: #888;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cdnSelectArrow {
+      flex: 0 0 auto;
+      color: #888;
+      font-size: 10px;
+      transition: transform .15s;
+    }
+
+    .cdnSelect.open .cdnSelectArrow {
+      transform: rotate(180deg);
+    }
+
+    .cdnSelectList {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid rgba(128, 128, 128, .4);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+      z-index: 10;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .cdnSelectList {
+        background: #2b2b2b;
+      }
+    }
+
+    .cdnSelect.open .cdnSelectList {
+      display: block;
+    }
+
+    .cdnOptRow {
+      display: flex;
+      flex-direction: column;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+
+    .cdnOptRow:hover {
+      background: rgba(0, 161, 214, .12);
+    }
+
+    .cdnOptRow.selected {
+      background: rgba(0, 161, 214, .18);
+    }
+
+    .cdnOptRow.selected .cdnOptName {
+      font-weight: 600;
+    }
+
+    .cdnOptName {
+      overflow-wrap: break-word;
+    }
+
+    .cdnOptHost {
+      font-size: 10px;
+      color: #888;
     }
 
     .switch {
@@ -200,12 +298,51 @@
 
     .stRow {
       display: flex;
+      align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 2px 0;
+      padding: 3px 4px;
+      border-radius: 4px;
+    }
+
+    .stRow.stClickable {
+      cursor: pointer;
+    }
+
+    .stRow.stClickable:hover {
+      background: rgba(0, 161, 214, .12);
+    }
+
+    .stRow.stCurrent {
+      background: rgba(0, 161, 214, .18);
+    }
+
+    .stRow.stCurrent .stRowTitle {
+      font-weight: 600;
+    }
+
+    .stRowMain {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .stRowTitle {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .stRowHost {
+      font-size: 10px;
+      color: #888;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .stRow .stSpeed {
+      flex: 0 0 auto;
       white-space: nowrap;
       color: #888;
     }
@@ -222,12 +359,56 @@
     .stRow.stErr .stSpeed {
       color: #e00;
     }
+
+    .headerRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+
+    .headerRow h1 {
+      margin: 0;
+    }
+
+    button#rateBtn {
+      padding: 3px 8px;
+      font: 11px/1.4 inherit;
+      cursor: pointer;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 170, 0, .5);
+      background: rgba(255, 170, 0, .12);
+      color: inherit;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    button#rateBtn:hover {
+      background: rgba(255, 170, 0, .22);
+    }
+
+    button#feedbackBtn {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      font: inherit;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid rgba(128, 128, 128, .4);
+      background: transparent;
+      color: inherit;
+      margin-top: 10px;
+    }
   </style>
 </head>
 
 <body>
   <div id="mainView">
-    <h1 id="headerTitle"></h1>
+    <div class="headerRow">
+      <h1 id="headerTitle"></h1>
+      <button id="rateBtn" type="button" style="display:none"></button>
+    </div>
 
     <div class="row">
       <span><b id="enabledLabel"></b></span>
@@ -239,7 +420,16 @@
       <label><input type="radio" name="cdnMode" id="modeList" /> <span id="modeListLabel"></span></label>
       <label><input type="radio" name="cdnMode" id="modeCustom" /> <span id="modeCustomLabel"></span></label>
     </div>
-    <select id="cdnHost"></select>
+    <div class="cdnSelect" id="cdnSelect">
+      <button type="button" class="cdnSelectTrigger" id="cdnSelectTrigger">
+        <span class="cdnSelectText">
+          <span class="cdnSelectName" id="cdnSelectName"></span>
+          <span class="cdnSelectHost" id="cdnSelectHost"></span>
+        </span>
+        <span class="cdnSelectArrow">▾</span>
+      </button>
+      <div class="cdnSelectList" id="cdnSelectList"></div>
+    </div>
     <input type="text" id="customHost" spellcheck="false"
       style="display:none;width:100%;box-sizing:border-box;padding:5px 6px;font:inherit;margin-bottom:4px" />
     <div class="hint" id="customHint" style="display:none"></div>
@@ -256,6 +446,8 @@
     <hr />
     <div class="row" style="margin:0 0 6px"><label id="debugSectionLabel"></label></div>
     <div id="debug"></div>
+
+    <button id="feedbackBtn" type="button" style="display:none"></button>
   </div>
 
   <div id="speedtestView">
