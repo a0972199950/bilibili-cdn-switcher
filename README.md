@@ -6,9 +6,7 @@
 
 ### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Edge / Firefox 擴充
 
-`Manifest V3` · `Chrome 111+ / Edge 111+ / Firefox 128+` · `純前端 · 無需登入`
-
-### 📥 [點此從 Chrome Web Store 安裝](https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch)
+### 📥 [點此從 Chrome Web Store 安裝](https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch) ｜ [點此從 Firefox Add-ons 安裝](https://addons.mozilla.org/zh-TW/firefox/addon/bilibili-cdn-switcher/)
 
 </div>
 
@@ -25,9 +23,14 @@
 
 ---
 
-![擴充 popup 設定畫面](docs/image.png)
+![Extension popup settings](./docs/main.png)
 ---
-![播放器 debug 疊層](docs/image-1.png)
+
+Before
+![alt text](./docs/before.png)
+
+After
+![Player debug overlay](./docs/after.png)
 
 ## ✨ 這個擴充在做什麼
 
@@ -64,18 +67,31 @@ bilibili-cdn-switcher/
 │   └── icons/            ← 16 / 32 / 48 / 128
 ├── dist/                 ← 打包產物（.zip）
 ├── docs/                 ← README 用的截圖 + 简体中文／English README
-├── assets/               ← 圖示母檔 512px + 產生腳本
-├── build.ps1             ← 打包成上架用 zip（Chrome + Edge + Firefox）
+├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
+├── store/                ← 各商店上架用截圖 / 宣傳圖
+├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
+│   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Edge + Firefox）
+│   ├── gen-icons.mjs             ← 重新產生圖示
+│   ├── make-screenshots.mjs      ← docs/ 底下的圖等比縮放＋加黑邊
+│   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
+├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
 └── README.md
 ```
 
+所有 `scripts/` 底下的工具都是純 Node（配 [jszip](https://npm.im/jszip) 打包 zip、[sharp](https://npm.im/sharp) 處理圖片），
+不依賴 Windows 專屬的 PowerShell／System.Drawing，Mac／Linux 一樣能跑，只要先 `npm install` 裝好依賴即可。
+
 ### 📦 打包（上架 Chrome Web Store / Microsoft Edge Add-ons / Firefox Add-ons 用）
 
-```powershell
-pwsh -File build.ps1                 # 預設：Chrome + Edge + Firefox 都打包
-pwsh -File build.ps1 -Browser chrome # 只打包 Chrome
-pwsh -File build.ps1 -Browser edge   # 只打包 Edge
-pwsh -File build.ps1 -Browser firefox
+這個專案不需要編譯／transpile，`src/` 底下就是可直接 `Load unpacked` 的原始碼；「打包」只是把它壓成上架用的 zip，
+**沒有自動化（例如 push 前自動打包）**，要更新 `dist/` 得自己手動跑一次：
+
+```bash
+npm install                          # 第一次執行，或 node_modules 被清掉時才需要
+npm run build                        # 預設：Chrome + Edge + Firefox 都打包
+npm run build -- --browser=chrome    # 只打包 Chrome
+npm run build -- --browser=edge      # 只打包 Edge
+npm run build -- --browser=firefox
 ```
 
 Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Manifest V3 與 Chrome 完全相容，
@@ -85,15 +101,27 @@ Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Mani
 要保持一致，不一致時腳本會跳警告（Edge 沿用 Chrome 的 manifest，版本必然一致，不用另外檢查）。
 
 打包結果是可重現的（reproducible build）：只要 `src/` 內容沒變，同一個瀏覽器目標每次包出來的
-zip bytes 完全相同，方便搭配 CI／pre-push hook 判斷 `dist/` 是否真的需要更新。
+zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 時判斷 `dist/` 是否真的需要更新。
 
 ### 🎨 重新產生圖示
 
-```powershell
-pwsh -File assets/gen-icons.ps1
+```bash
+npm run gen-icons
 ```
 
-以 512px 母檔縮出 16/32/48/128，同時產生兩份：`src/icons/`（開發版，帶紅點角標，`Load unpacked` 平常讀到的就是這份，方便跟已安裝的正式版分辨）與 `assets/icons-prod/`（正式版，無角標）。`build.ps1` 打包 zip 時會自動把圖示換成 `assets/icons-prod/` 底下的正式版。
+以 512px 母檔縮出 16/32/48/128，同時產生兩份：`src/icons/`（開發版，帶紅點角標，`Load unpacked` 平常讀到的就是這份，方便跟已安裝的正式版分辨）與 `assets/icons-prod/`（正式版，無角標）。`scripts/build.mjs` 打包 zip 時會自動把圖示換成 `assets/icons-prod/` 底下的正式版。
+
+### 📸 產生商店截圖（三語系 main / debug / speedtest，共 9 張 1200x800 jpg）
+
+```bash
+npm run capture-screenshots
+```
+
+用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW` 三個瀏覽器語系，實際打開一支
+bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `VIDEO_URL`，要換片直接改那行），
+分別截 popup 主畫面、頁面上的 debug 疊層、測速中的畫面，等比縮放＋黑邊填成 1200x800，輸出到 `store/`
+覆蓋同名檔案（`screenshot-<畫面>-<語系>-1200x800.jpg`）。因為要連真實 bilibili 影片頁測速，跑一輪約
+數分鐘，且吃網路狀況。
 
 ---
 

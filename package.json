@@ -1,0 +1,17 @@
+{
+  "name": "bilibili-cdn-switcher-tools",
+  "private": true,
+  "type": "module",
+  "description": "开发工具（scripts/ 底下 Node 脚本的依赖），不是扩充功能本体",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "gen-icons": "node scripts/gen-icons.mjs",
+    "make-screenshots": "node scripts/make-screenshots.mjs",
+    "capture-screenshots": "node scripts/capture-screenshots.mjs"
+  },
+  "devDependencies": {
+    "jszip": "^3.10.1",
+    "puppeteer": "^25.5.0",
+    "sharp": "^0.35.3"
+  }
+}
