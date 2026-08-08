@@ -4,3 +4,6 @@ Thumbs.db
 desktop.ini
 .DS_Store
 .vscode/
+
+# Node（scripts/capture-screenshots.mjs 用）
+node_modules/
