@@ -1,5 +1,5 @@
 // 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截 main / debug / speedtest 三張圖，
-// 等比縮放 + 黑邊填成 1200x800 jpg，輸出到 store/ 取代現有檔案。
+// 等比縮放 + 黑邊填成 1280x800 jpg，輸出到 store/ 取代現有檔案。
 //
 // 用法：npm run capture-screenshots
 //
@@ -25,7 +25,7 @@ const OUT_DIR = path.join(ROOT, "store");
 
 const VIDEO_URL = "https://www.bilibili.com/video/BV1p1n8zdEAk/";
 
-const CANVAS_W = 1200;
+const CANVAS_W = 1280;
 const CANVAS_H = 800;
 
 const LOCALES = [
