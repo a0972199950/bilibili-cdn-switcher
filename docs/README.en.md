@@ -118,7 +118,7 @@ badge dot — what `Load unpacked` normally reads, so it's easy to tell apart fr
 build) and `assets/icons-prod/` (store build, no badge). `scripts/build.mjs` automatically swaps in the
 icons from `assets/icons-prod/` when packaging zips.
 
-### 📸 Generating store screenshots (main / debug / speedtest × 3 locales, 9 files, 1200x800 jpg)
+### 📸 Generating store screenshots (main / debug / speedtest × 3 locales, 9 files, 1280x800 jpg)
 
 ```bash
 npm run capture-screenshots
@@ -128,8 +128,8 @@ Loads `src/` as an unpacked extension in Puppeteer, switches through the `en-US`
 browser locales, and opens a real bilibili video page (the URL is `VIDEO_URL` at the top of
 `scripts/capture-screenshots.mjs` — edit that line to swap videos). For each locale it captures the
 popup's main screen, the on-page debug overlay, and the speed test mid-run, letterboxes each to
-1200x800, and writes them into `store/`, overwriting the matching
-`screenshot-<view>-<locale>-1200x800.jpg` files. It runs a real speed test against bilibili's CDNs, so
+1280x800, and writes them into `store/`, overwriting the matching
+`screenshot-<view>-<locale>-1280x800.jpg` files. It runs a real speed test against bilibili's CDNs, so
 one full pass takes a few minutes and depends on network conditions.
 
 ---

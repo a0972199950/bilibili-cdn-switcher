@@ -112,7 +112,7 @@ npm run gen-icons
 
 以 512px 母档缩出 16/32/48/128，同时产生两份：`src/icons/`（开发版，带红点角标，`Load unpacked` 平常读到的就是这份，方便跟已安装的正式版分辨）与 `assets/icons-prod/`（正式版，无角标）。`scripts/build.mjs` 打包 zip 时会自动把图示换成 `assets/icons-prod/` 底下的正式版。
 
-### 📸 产生商店截图（三语系 main / debug / speedtest，共 9 张 1200x800 jpg）
+### 📸 产生商店截图（三语系 main / debug / speedtest，共 9 张 1280x800 jpg）
 
 ```bash
 npm run capture-screenshots
@@ -120,8 +120,8 @@ npm run capture-screenshots
 
 用 Puppeteer 载入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW` 三个浏览器语系，实际打开一支
 bilibili 影片页（网址写在 `scripts/capture-screenshots.mjs` 开头的 `VIDEO_URL`，要换片直接改那行），
-分别截 popup 主画面、页面上的 debug 叠层、测速中的画面，等比缩放＋黑边填成 1200x800，输出到 `store/`
-覆盖同名档案（`screenshot-<画面>-<语系>-1200x800.jpg`）。因为要连真实 bilibili 影片页测速，跑一轮约
+分别截 popup 主画面、页面上的 debug 叠层、测速中的画面，等比缩放＋黑边填成 1280x800，输出到 `store/`
+覆盖同名档案（`screenshot-<画面>-<语系>-1280x800.jpg`）。因为要连真实 bilibili 影片页测速，跑一轮约
 数分钟，且吃网络状况。
 
 ---
