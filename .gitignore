@@ -7,3 +7,6 @@ desktop.ini
 
 # Node（scripts/capture-screenshots.mjs 用）
 node_modules/
+
+# 本機密鑰：截圖用的 bilibili 登入 cookie（含 SESSDATA，等同帳號憑證，絕對不要 commit）
+.env.local

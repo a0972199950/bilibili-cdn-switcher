@@ -123,10 +123,10 @@
     "message": "华为云 融合CDN"
   },
   "cdnNoteSecondBest2": {
-    "message": "华为云 融合CDN，TW次优线路2"
+    "message": "华为云 融合CDN，TW/SG 次优线路2"
   },
   "cdnNoteSecondBest3": {
-    "message": "华为云 融合CDN，TW次优线路3"
+    "message": "华为云 融合CDN，TW/SG 次优线路3"
   },
   "cdnNoteHuawei": {
     "message": "华为云"

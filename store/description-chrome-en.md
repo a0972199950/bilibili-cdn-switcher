@@ -2,18 +2,20 @@
 
 ## Short description
 
-Smoother 4K+ playback on bilibili's web player for Taiwan / Singapore users by rerouting to a faster CDN edge. Unofficial third-party extension, not affiliated with bilibili.
+Tired of bilibili buffering? Reroutes to the fastest CDN for Taiwan/Singapore so 4K plays smoothly. Free, no setup. Unofficial.
 
 ## Detailed description
 
-[This is an independently developed, third-party extension. It is not affiliated with, authorized by, or endorsed by bilibili in any way.]
+Did you pay for a bilibili Premium membership, only to spend the whole time staring at a buffering wheel — money straight down the drain?
 
-A web-player experience booster for bilibili, built for viewers in Taiwan and Singapore.
+This bugged me for a long time, until I finally found something that actually works
 
-Overseas viewers of bilibili's web player often run into slow loading, frequent buffering, and
-stuttering when switching video quality. This extension reroutes your browser to a streaming
-CDN edge with better connectivity for Taiwan/Singapore, cutting down on buffering so even 4K
-and other high-quality video plays smoothly.
+So I decided to turn it into a browser extension. There must be plenty of people with the same problem — I hope it helps you too!
+
+🆓 This extension is completely FREE, and guaranteed to stay "FREE FOREVER"!
+⚡ Nothing to configure, just install it and it works!
+
+Open any bilibili video after installing and it switches you to the fastest route for Taiwan/Singapore behind the scenes. Faster loading, less buffering, and even 4K plays straight through.
 
 ■ Key features
 ・Works out of the box — a TW/SG-optimized route is applied by default, no setup needed
@@ -36,3 +38,5 @@ Chrome 111 or later.
 
 ■ Credits
 The CDN route list and routing strategy are ported from @roge4444's PiliNaraRogerMod and blblRogerMod projects.
+
+[This is an independently developed, third-party extension. It is not affiliated with, authorized by, or endorsed by bilibili in any way.]
