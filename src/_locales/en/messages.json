@@ -39,7 +39,7 @@
     "message": "🔍 Test node speeds"
   },
   "rateBtnLabel": {
-    "message": "⭐ Enjoying it? Leave a 5-star review"
+    "message": "⭐ Like it? Rate 5 stars"
   },
   "feedbackBtnLabel": {
     "message": "🐛 Report a bug / Request a feature"
@@ -123,10 +123,10 @@
     "message": "Huawei Cloud Hybrid CDN"
   },
   "cdnNoteSecondBest2": {
-    "message": "Huawei Cloud Hybrid CDN, TW 2nd-best route"
+    "message": "Huawei Cloud Hybrid CDN, TW/SG 2nd-best route"
   },
   "cdnNoteSecondBest3": {
-    "message": "Huawei Cloud Hybrid CDN, TW 3rd-best route"
+    "message": "Huawei Cloud Hybrid CDN, TW/SG 3rd-best route"
   },
   "cdnNoteHuawei": {
     "message": "Huawei Cloud"

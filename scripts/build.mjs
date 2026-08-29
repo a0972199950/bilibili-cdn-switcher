@@ -2,10 +2,10 @@
 // 純 Node 實作（原本是 PowerShell，Mac 沒有 pwsh 就用不了），Windows / Mac / Linux 都能跑。
 //
 // 用法：
-//   npm run build                          # Chrome + Edge + Firefox 都打包
+//   npm run build                          # Chrome + Firefox + Edge 都打包
 //   npm run build -- --browser=chrome      # 只打包 Chrome
+//   npm run build -- --browser=firefox     # 只打包 Firefox
 //   npm run build -- --browser=edge        # 只打包 Edge
-//   npm run build -- --browser=firefox
 //
 // Edge 是 Chromium 內核，Manifest V3 與 Chrome 完全相容，直接沿用 src/manifest.json，
 // 不需要另外一份 manifest.edge.json。
@@ -119,5 +119,5 @@ if (browserArg === "all") {
 }
 
 if (browserArg === "chrome" || browserArg === "all") await buildTarget("chrome", "manifest.json");
-if (browserArg === "edge" || browserArg === "all") await buildTarget("edge", "manifest.json");
 if (browserArg === "firefox" || browserArg === "all") await buildTarget("firefox", "manifest.firefox.json");
+if (browserArg === "edge" || browserArg === "all") await buildTarget("edge", "manifest.json");

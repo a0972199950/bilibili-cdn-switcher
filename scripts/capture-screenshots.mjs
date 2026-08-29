@@ -25,6 +25,46 @@ const OUT_DIR = path.join(ROOT, "store");
 
 const VIDEO_URL = "https://www.bilibili.com/video/BV1p1n8zdEAk/";
 
+// 登入 cookie 是選用的：.env.local 有 BILI_COOKIE 就帶登入狀態開影片頁，拿得到高畫質；
+// 沒有這個檔（或值是空的）就照舊用未登入狀態跑，畫質約 480P，流程其餘部分完全一樣。
+// 用 Node 內建的 loadEnvFile，不額外裝 dotenv。範例見 .env.local.example。
+try {
+  process.loadEnvFile(path.join(ROOT, ".env.local"));
+} catch {
+  // 檔案不存在或格式不對都當作沒設定，不要讓截圖整個中斷
+}
+const BILI_COOKIE = (process.env.BILI_COOKIE || "").trim();
+
+// "a=1; b=2" -> Puppeteer 的 cookie 物件陣列。值本身可能含 %3D、= 之類的字元，
+// 所以只切第一個 "="，後面整段都算 value。
+function parseCookieHeader(header) {
+  const out = [];
+  for (const part of header.split(";")) {
+    const s = part.trim();
+    if (!s) continue;
+    const eq = s.indexOf("=");
+    if (eq <= 0) continue;
+    out.push({
+      name: s.slice(0, eq).trim(),
+      value: s.slice(eq + 1).trim(),
+      domain: ".bilibili.com",
+      path: "/"
+    });
+  }
+  return out;
+}
+
+// Puppeteer 23 之後 cookie 設在 browser／browserContext 層，Page.setCookie 標記為 deprecated；
+// 兩種都試，才不會綁死在特定版本。
+async function applyLoginCookie(browser, page) {
+  if (!BILI_COOKIE) return false;
+  const cookies = parseCookieHeader(BILI_COOKIE);
+  if (!cookies.length) return false;
+  if (typeof browser.setCookie === "function") await browser.setCookie(...cookies);
+  else await page.setCookie(...cookies);
+  return true;
+}
+
 const CANVAS_W = 1280;
 const CANVAS_H = 800;
 
@@ -138,6 +178,8 @@ async function captureLocale({ chromeLang, prefix }) {
     // tabA：真實 bilibili 影片頁，content script 掛在這裡，debug/測速都靠它
     const tabA = await browser.newPage();
     await tabA.setViewport({ width: 1280, height: 900 });
+    // cookie 要在 goto 之前設，不然第一次請求還是未登入、拿到的仍是低畫質 playurl
+    log(await applyLoginCookie(browser, tabA) ? "已帶入登入 cookie（高畫質）" : "未設定 BILI_COOKIE，用未登入狀態（約 480P）");
     await tabA.goto(VIDEO_URL, { waitUntil: "networkidle2", timeout: 60000 });
     const playerHandle = await waitForPlayer(tabA);
     const downloadStartedAt = Date.now();

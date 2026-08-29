@@ -59,22 +59,26 @@ setRichText(document.getElementById("stHintBandwidth"), t("stHintBandwidth"));
 els.customHost.placeholder = t("customHostPlaceholder");
 els.debug.textContent = t("debugInitial");
 
-// -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；Edge 尚未上架，沒有網址就不顯示 --------
-// 意見回饋表單：依語言分開的 Google 表單連結。zh_CN / en 專用表單還沒建，先共用 zh_TW 那份頂著。
+// -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；沒有對應網址就不顯示 --------
+// UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 utm-tracking/campaigns.md）
+function uiLangCode() {
+  var lang = (chrome.i18n.getUILanguage() || "").toLowerCase();
+  if (lang.indexOf("zh") !== 0) return "en";
+  return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
+}
+// 意見回饋表單：依語言分開的 Google 表單連結。zhcn / en 專用表單還沒建，先共用 zhtw 那份頂著。
 var FEEDBACK_FORM_URLS = {
-  zh_TW: "https://forms.gle/HoSRGTyp3UEejave7",
-  zh_CN: "https://forms.gle/HoSRGTyp3UEejave7", // TODO: 簡體中文表單好了再換
+  zhtw: "https://forms.gle/HoSRGTyp3UEejave7",
+  zhcn: "https://forms.gle/HoSRGTyp3UEejave7", // TODO: 簡體中文表單好了再換
   en: "https://forms.gle/HoSRGTyp3UEejave7" // TODO: 英文表單好了再換
 };
-function pickFeedbackFormUrl() {
-  var lang = (chrome.i18n.getUILanguage() || "").toLowerCase();
-  if (lang.indexOf("zh") !== 0) return FEEDBACK_FORM_URLS.en;
-  return lang.indexOf("cn") !== -1 ? FEEDBACK_FORM_URLS.zh_CN : FEEDBACK_FORM_URLS.zh_TW;
-}
+function pickFeedbackFormUrl() { return FEEDBACK_FORM_URLS[uiLangCode()]; }
+// 一律用不含 slug 的短網址：商店改名後 slug 會失效，靠 ID／slug 本身跳轉才不會壞。
+// Edge Add-ons 沒有 /reviews 這層（會 404），只能導到商品頁，讓使用者自己往下捲到評論區。
 var STORE_REVIEW_URLS = {
-  chrome: "https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch/reviews",
-  firefox: "https://addons.mozilla.org/zh-TW/firefox/addon/tw-sg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98%E6%96%B9/reviews/"
-  // edge: 尚未上架 Edge Add-ons，補上後再加
+  chrome: "https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch/reviews",
+  edge: "https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp",
+  firefox: "https://addons.mozilla.org/addon/bilibili-cdn-switcher/reviews"
 };
 function detectBrowser() {
   var ua = navigator.userAgent;
@@ -84,10 +88,17 @@ function detectBrowser() {
 }
 function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
 
+// 從擴充內按評分屬於「已安裝使用者」，跟 README 的取得管道（utm_campaign=readme）分開記，
+// 免得把安裝來源報表灌成 GitHub 帶來的。
+function withUtm(url, campaign) {
+  var q = "utm_source=extension&utm_medium=referral&utm_campaign=" + campaign + "&utm_content=" + uiLangCode();
+  return url + (url.indexOf("?") === -1 ? "?" : "&") + q;
+}
+
 var reviewUrl = STORE_REVIEW_URLS[detectBrowser()];
 if (reviewUrl) {
   els.rateBtn.style.display = "";
-  els.rateBtn.addEventListener("click", function () { openTab(reviewUrl); });
+  els.rateBtn.addEventListener("click", function () { openTab(withUtm(reviewUrl, "rate")); });
 }
 var feedbackUrl = pickFeedbackFormUrl();
 if (feedbackUrl) {

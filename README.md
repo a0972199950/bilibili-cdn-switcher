@@ -4,9 +4,9 @@
 
 **語言 / Language：** 繁體中文（本頁）｜[简体中文](docs/README.zh-CN.md)｜[English](docs/README.en.md)
 
-### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Edge / Firefox 擴充
+### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Firefox / Edge 擴充
 
-### 📥 [點此從 Chrome Web Store 安裝](https://chromewebstore.google.com/detail/twsg-%E8%A7%86%E9%A2%91%E5%8A%A0%E9%80%9F-for-bilibili-%E9%9D%9E%E5%AE%98/dfaddcffoondcendifiljhdbdagebgch) ｜ [點此從 Firefox Add-ons 安裝](https://addons.mozilla.org/zh-TW/firefox/addon/bilibili-cdn-switcher/)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)
 
 </div>
 
@@ -48,7 +48,7 @@ B 站預設分配的取流節點對台灣、新加坡使用者常常繞路、不
 | 📶 **各節點測速** | 獨立頁面，顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，測速中也能重新測；不影響你手動選擇的 CDN，離開該頁即中止 |
 | 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English，涵蓋 popup、頁面提示與 debug 疊層 |
 | 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在設定中打開） |
-| 🦊 **Chrome / Edge / Firefox 三平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest） |
+| 🦊 **Chrome / Firefox / Edge 三平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest） |
 
 ---
 
@@ -70,28 +70,28 @@ bilibili-cdn-switcher/
 ├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
 ├── store/                ← 各商店上架用截圖 / 宣傳圖
 ├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
-│   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Edge + Firefox）
+│   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
 │   ├── gen-icons.mjs             ← 重新產生圖示
-│   ├── make-screenshots.mjs      ← docs/ 底下的圖等比縮放＋加黑邊
 │   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
 ├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
+├── .env.local.example     ← 截圖用登入 cookie 的範例（複製成 .env.local 再填，見下）
 └── README.md
 ```
 
 所有 `scripts/` 底下的工具都是純 Node（配 [jszip](https://npm.im/jszip) 打包 zip、[sharp](https://npm.im/sharp) 處理圖片），
 不依賴 Windows 專屬的 PowerShell／System.Drawing，Mac／Linux 一樣能跑，只要先 `npm install` 裝好依賴即可。
 
-### 📦 打包（上架 Chrome Web Store / Microsoft Edge Add-ons / Firefox Add-ons 用）
+### 📦 打包（上架 Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons 用）
 
 這個專案不需要編譯／transpile，`src/` 底下就是可直接 `Load unpacked` 的原始碼；「打包」只是把它壓成上架用的 zip，
 **沒有自動化（例如 push 前自動打包）**，要更新 `dist/` 得自己手動跑一次：
 
 ```bash
 npm install                          # 第一次執行，或 node_modules 被清掉時才需要
-npm run build                        # 預設：Chrome + Edge + Firefox 都打包
-npm run build -- --browser=chrome    # 只打包 Chrome
-npm run build -- --browser=edge      # 只打包 Edge
-npm run build -- --browser=firefox
+npm run build                        # 預設：Chrome + Firefox + Edge 都打包
+npm run build -- --browser=chrome     # 只打包 Chrome
+npm run build -- --browser=firefox    # 只打包 Firefox
+npm run build -- --browser=edge       # 只打包 Edge
 ```
 
 Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Manifest V3 與 Chrome 完全相容，
@@ -122,6 +122,12 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 分別截 popup 主畫面、頁面上的 debug 疊層、測速中的畫面，等比縮放＋黑邊填成 1280x800，輸出到 `store/`
 覆蓋同名檔案（`screenshot-<畫面>-<語系>-1280x800.jpg`）。因為要連真實 bilibili 影片頁測速，跑一輪約
 數分鐘，且吃網路狀況。
+
+**登入 cookie（選用，決定截圖畫質）**：未登入時 B 站只給約 480P，截圖裡的 `qn` 就會是 480P。
+想要高畫質截圖的話，把 `.env.local.example` 複製成 `.env.local`，填入自己的 `BILI_COOKIE`
+（登入 B 站 → DevTools → Network → 任一請求 → Request Headers → 複製整段 Cookie）。
+腳本有讀到就帶登入狀態開影片頁，沒有這個檔就照舊用未登入狀態跑，其餘流程完全一樣。
+`.env.local` 已列入 `.gitignore`，**裡面的 `SESSDATA` 等同帳號憑證，不要 commit 或外傳**。
 
 ---
 

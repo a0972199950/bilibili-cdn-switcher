@@ -366,10 +366,13 @@
       justify-content: space-between;
       gap: 8px;
       margin: 0 0 10px;
+      /* 評分按鈕不縮不換行，塞不下時整顆掉到第二行，不要反過來把標題擠成多行 */
+      flex-wrap: wrap;
     }
 
     .headerRow h1 {
       margin: 0;
+      white-space: nowrap;
     }
 
     button#rateBtn {
