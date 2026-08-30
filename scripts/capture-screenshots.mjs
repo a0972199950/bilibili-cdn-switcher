@@ -1,5 +1,5 @@
 // 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截 main / debug / speedtest 三張圖，
-// 等比縮放 + 黑邊填成 1280x800 jpg，輸出到 store/ 取代現有檔案。
+// 等比縮放 + 黑邊填成 1280x800 png，輸出到 store/ 取代現有檔案。
 //
 // 用法：npm run capture-screenshots
 //
@@ -108,13 +108,15 @@ async function waitForPlayer(page) {
 }
 
 function outFileName(view, prefix) {
-  return `screenshot-${view}-${prefix}-${CANVAS_W}x${CANVAS_H}.jpg`;
+  return `screenshot-${view}-${prefix}-${CANVAS_W}x${CANVAS_H}.png`;
 }
 
-async function saveLetterboxedJpeg(rawBuffer, outPath) {
+// 輸出 png 而非 jpg：截圖以文字和 UI 線條為主，jpeg 的區塊壓縮會讓小字邊緣糊掉，
+// png 無損、檔案雖大（單張約 0.3～1 MB）但三個商店都吃得下。
+async function saveLetterboxedPng(rawBuffer, outPath) {
   await sharp(rawBuffer)
     .resize({ width: CANVAS_W, height: CANVAS_H, fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 1 } })
-    .jpeg({ quality: 90 })
+    .png({ compressionLevel: 9 })
     .toFile(outPath);
 }
 
@@ -203,11 +205,11 @@ async function captureLocale({ chromeLang, prefix }) {
     await fs.mkdir(OUT_DIR, { recursive: true });
 
     const mainPng = await tabB.screenshot({ type: "png" });
-    await saveLetterboxedJpeg(mainPng, path.join(OUT_DIR, outFileName("main", prefix)));
+    await saveLetterboxedPng(mainPng, path.join(OUT_DIR, outFileName("main", prefix)));
     log("saved main");
 
     const debugPng = await playerHandle.screenshot({ type: "png" });
-    await saveLetterboxedJpeg(debugPng, path.join(OUT_DIR, outFileName("debug", prefix)));
+    await saveLetterboxedPng(debugPng, path.join(OUT_DIR, outFileName("debug", prefix)));
     log("saved debug");
 
     // tabB 這時是背景分頁（tabA 才是 active），page.click() 的 hit-test 邏輯在背景分頁裡
@@ -217,7 +219,7 @@ async function captureLocale({ chromeLang, prefix }) {
     await waitForSpeedtestMidway(tabB);
     await sleep(100);
     const speedPng = await tabB.screenshot({ type: "png" });
-    await saveLetterboxedJpeg(speedPng, path.join(OUT_DIR, outFileName("speedtest", prefix)));
+    await saveLetterboxedPng(speedPng, path.join(OUT_DIR, outFileName("speedtest", prefix)));
     log("saved speedtest");
   } finally {
     await browser.close();
