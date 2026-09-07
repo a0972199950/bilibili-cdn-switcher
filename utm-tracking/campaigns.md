@@ -89,6 +89,24 @@
 - **貼文**: https://www.reddit.com/r/Bilibili/comments/1vire1y/finally_fix_bilibili_buffering_issues_in_singapore/
 - **狀態**: active
 
+### 小紅書（中國版）- 貼文
+- **ID**: xiaohongshu-cn-001
+- **建立**: 2026-09-07
+- **參數**: `utm_source=xiaohongshu` · `utm_medium=social` · `utm_campaign=buffering-fix` · `utm_content=zhcn-cn-post1`
+- **Query**: `?utm_source=xiaohongshu&utm_medium=social&utm_campaign=buffering-fix&utm_content=zhcn-cn-post1`
+- **貼文**: （待補）
+- **備註**: 中國版 App（`xiaohongshu.com`）。地區用 `utm_content` 的 `cn` 標，語言仍是 `zhcn`，跟新加坡版分開才能比對兩地成效。平台一致，不另開 `utm_source`
+- **狀態**: planned
+
+### 小紅書（新加坡版）- 貼文
+- **ID**: xiaohongshu-sg-001
+- **建立**: 2026-09-07
+- **參數**: `utm_source=xiaohongshu` · `utm_medium=social` · `utm_campaign=buffering-fix` · `utm_content=zhcn-sg-post1`
+- **Query**: `?utm_source=xiaohongshu&utm_medium=social&utm_campaign=buffering-fix&utm_content=zhcn-sg-post1`
+- **貼文**: （待補）
+- **備註**: 新加坡／國際版 App（RedNote）。地區標 `sg`，語言 `zhcn`。受眾是新加坡的簡中使用者，跟 `reddit-en-001`、`gads-sg-*` 打的是同一批人
+- **狀態**: planned
+
 ---
 
 ## 付費管道（paid）
@@ -122,10 +140,10 @@
 
 | 參數 | 說明 | 允許值 |
 |:--|:--|:--|
-| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `google` |
+| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `xiaohongshu` `google` |
 | `utm_medium` | 管道類型（**只用標準值**） | `referral`（他站連入）`social`（社群）`cpc`（付費點擊）`email` |
 | `utm_campaign` | 一次推廣行動，**不含語言** | `readme` `rate` `release` `buffering-fix` `sg-keywords` `sg-conversion` |
-| `utm_content` | 語言／素材版本 | `zhtw` `zhcn` `en` `zhtw-post1` `v1-0-0` |
+| `utm_content` | 語言／素材版本 | `zhtw` `zhcn` `en` `zhtw-post1` `zhcn-cn-post1` `zhcn-sg-post1` `v1-0-0` |
 | `utm_term` | 關鍵字，僅付費搜尋使用 | `{keyword}` |
 
 ### 保留值警告
