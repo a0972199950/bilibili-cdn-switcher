@@ -17,6 +17,12 @@
   "enabledLabel": {
     "message": "Enabled"
   },
+  "autoFallbackLabel": {
+    "message": "Auto-switch on failure"
+  },
+  "autoFallbackHint": {
+    "message": "If your own network is unstable (e.g. weak Wi-Fi), auto-switching can cause repeated black screens and discard buffered video. Turn it off to avoid that."
+  },
   "cdnHostRowLabel": {
     "message": "CDN route (moves this node to the front; the original node stays as fallback)"
   },

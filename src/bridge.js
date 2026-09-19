@@ -13,6 +13,7 @@
   var DEFAULTS = {
     enabled: true,
     cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
+    autoFallback: true,
     showDebug: false
   };
 

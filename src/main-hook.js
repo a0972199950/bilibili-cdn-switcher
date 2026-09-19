@@ -25,6 +25,7 @@
   var DEFAULTS = {
     enabled: true, // 预设开启
     cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com", // 默认 TW/SG 最快；'base'=不覆写
+    autoFallback: true, // 失败自动切换：预设开启；网络本身不稳（弱 WiFi 等）的用户可关掉，避免频繁黑屏重载
     showDebug: false // debug 叠层预设关闭，避免新装用户被打扰
   };
 
@@ -234,7 +235,8 @@
   // 备援 host 取自 playurl 里的 baseUrl/backupUrl（B 站原生备援），解析 playurl 时顺手记下。
   // 第一次回退切「具名备援 host」：分段层即时差替 + player.reload()，不整页刷新，闪 toast 告知；
   // 备援 host 也播不动（或没记到可用 host）时不再自动整页重载，改弹一个不会自动消失的提示，
-  // 让用户自己按「重載並切換至備用URL」或「關閉」决定。内建功能，不提供开关。
+  // 让用户自己按「重載並切換至備用URL」或「關閉」决定。可由 popup 的「失败自动切换」开关关闭
+  // （cfg.autoFallback，预设开启）：关闭后不做任何自动切换，也不弹提示。
   var FALLBACK = { attempts: 0, lastSwitchAt: 0, tried: {} };
   var FALLBACK_MAX_ATTEMPTS = 2;
   // 冷却要盖过「换节点后播放器重建缓冲」的空窗：实测 4K 在 player.reload() 后
@@ -323,7 +325,7 @@
   }
 
   function maybeFallback(reason) {
-    if (!ACTIVE) return;
+    if (!ACTIVE || !cfg.autoFallback) return;
     if (!WATCH_RE.test(location.pathname)) return; // 非观看页（如首页 hover 预览）不回退
     if (effHost() === "backup" || FALLBACK.attempts >= FALLBACK_MAX_ATTEMPTS) return;
     var now = Date.now();
@@ -374,7 +376,7 @@
   // 若把这当成「使用者主动暂停」就永远判不到卡住 —— 用前向缓冲区分：还有缓冲的暂停
   // 才是使用者主动的；缓冲耗尽的暂停继续累计。
   function checkStall() {
-    if (!ACTIVE) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+    if (!ACTIVE || !cfg.autoFallback) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
     // 模拟模式：连播放器状态检查也略过 —— 第一次回退的 player.reload() 会让影片短暂
     // 暂停/readyState 0，若照常重置计时器，第二段（询问）会一直等不到
     var simulating = Date.now() < simulateStallUntil;
@@ -818,8 +820,10 @@
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost();
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
+    // 中途关掉「失败自动切换」：收掉正在显示的「皆无法播放」询问弹窗（persistent，不会自己消失）
+    if (!cfg.autoFallback && askToastOn) { askToastOn = false; hideToast(); }
     renderOverlay();
-    if (beforeSig === effSig(cfg)) return; // 只改了 showDebug 之类 → 不动（保留 autoHost）
+    if (beforeSig === effSig(cfg)) return; // 只改了 showDebug / autoFallback 之类 → 不动（保留 autoHost）
     autoHost = null; // 用户手动改了节点/开关：自动回退的静默覆写作废，以用户选择为准
     var afterActive = isActive(cfg);
     if (beforeActive !== afterActive) {

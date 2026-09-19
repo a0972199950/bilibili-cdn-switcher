@@ -3,11 +3,13 @@
 var DEFAULTS = {
   enabled: true,
   cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
+  autoFallback: true,
   showDebug: false
 };
 
 var els = {
   enabled: document.getElementById("enabled"),
+  autoFallback: document.getElementById("autoFallback"),
   modeList: document.getElementById("modeList"),
   modeCustom: document.getElementById("modeCustom"),
   cdnSelect: document.getElementById("cdnSelect"),
@@ -35,7 +37,7 @@ function t(key) { return chrome.i18n.getMessage(key) || key; }
 document.title = t("popupTitle");
 document.documentElement.lang = chrome.i18n.getUILanguage();
 [
-  ["headerTitle", "headerTitle"], ["enabledLabel", "enabledLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["headerTitle", "headerTitle"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["rateBtn", "rateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
@@ -218,12 +220,14 @@ Promise.all([
   var cfg = {};
   for (var k in DEFAULTS) cfg[k] = arr[1][k] === undefined ? DEFAULTS[k] : arr[1][k];
   els.enabled.checked = !!cfg.enabled;
+  els.autoFallback.checked = !!cfg.autoFallback;
   els.showDebug.checked = !!cfg.showDebug;
   currentCdnHost = cfg.cdnHost;
   buildOptions(list, cfg.cdnHost);
 });
 
 els.enabled.addEventListener("change", function () { save({ enabled: els.enabled.checked }); });
+els.autoFallback.addEventListener("change", function () { save({ autoFallback: els.autoFallback.checked }); });
 els.showDebug.addEventListener("change", function () { save({ showDebug: els.showDebug.checked }); });
 
 els.modeList.addEventListener("change", function () {
