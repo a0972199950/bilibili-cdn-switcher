@@ -17,6 +17,12 @@
   "enabledLabel": {
     "message": "启用"
   },
+  "autoFallbackLabel": {
+    "message": "失败自动切换"
+  },
+  "autoFallbackHint": {
+    "message": "网络本身不稳（如 WiFi 信号弱）时，自动切换可能造成频繁黑屏并丢弃已缓冲内容，可关闭。"
+  },
   "cdnHostRowLabel": {
     "message": "CDN 线路（换成此节点并排最前，原节点保留为 fallback）"
   },
