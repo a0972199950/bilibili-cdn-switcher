@@ -143,6 +143,15 @@
 - **備註**: 新加坡華人社區論壇（huasing.net），站方本身用簡體，跟 `sgcn-001`、`xiaohongshu-sg-001` 是同一批新加坡受眾，但獨立開 campaign 分開統計。論壇連結用 `referral`，不要用 `article`
 - **狀態**: planned
 
+### Dcard - 文章
+- **ID**: dcard-zhtw-001
+- **建立**: 2026-09-20
+- **參數**: `utm_source=dcard` · `utm_medium=social` · `utm_campaign=dcard-post1` · `utm_content=zhtw`
+- **Query**: `?utm_source=dcard&utm_medium=social&utm_campaign=dcard-post1&utm_content=zhtw`
+- **貼文**: （待補）
+- **備註**: 台灣繁中社群平台，獨立開 campaign 分開統計。Dcard 是社群平台（同 `reddit-en-001`），medium 用 `social`，不要用 `article`
+- **狀態**: planned
+
 ---
 
 ## 付費管道（paid）
@@ -176,9 +185,9 @@
 
 | 參數 | 說明 | 允許值 |
 |:--|:--|:--|
-| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `xiaohongshu` `sgcn` `shichengbbs` `bahamut` `huasing` `google` |
+| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `xiaohongshu` `sgcn` `shichengbbs` `bahamut` `huasing` `dcard` `google` |
 | `utm_medium` | 管道類型（**只用標準值**） | `referral`（他站連入）`social`（社群）`cpc`（付費點擊）`email` |
-| `utm_campaign` | 一次推廣行動，**不含語言** | `readme` `rate` `release` `buffering-fix` `sg-keywords` `sg-conversion` `sgcn-post1` `shichengbbs-post1` `bahamut-post1` `huasing-post1` |
+| `utm_campaign` | 一次推廣行動，**不含語言** | `readme` `rate` `release` `buffering-fix` `sg-keywords` `sg-conversion` `sgcn-post1` `shichengbbs-post1` `bahamut-post1` `huasing-post1` `dcard-post1` |
 | `utm_content` | 語言／素材版本 | `zhtw` `zhcn` `en` `zhtw-post1` `zhcn-cn-post1` `zhcn-sg-post1` `v1-0-0` |
 | `utm_term` | 關鍵字，僅付費搜尋使用 | `{keyword}` |
 
