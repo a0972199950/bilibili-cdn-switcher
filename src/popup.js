@@ -86,7 +86,8 @@ function detectBrowser() {
   var ua = navigator.userAgent;
   if (ua.indexOf("Firefox/") !== -1) return "firefox";
   if (ua.indexOf("Edg/") !== -1) return "edge";
-  return "chrome";
+  if (ua.indexOf("Chrome/") !== -1) return "chrome";
+  return "safari";
 }
 function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
 
