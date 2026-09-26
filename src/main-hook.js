@@ -90,12 +90,18 @@
     lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null,
     speedBps: 0, speedIdle: false
   };
+  // DASH 会把所有画质塞在同一次 playurl 回应，之后使用者切画质是「同一份清单里换 representation」、
+  // 不再打 playurl —— 所以不能只信 d.quality（那是预设画质，切了不会变）。
+  // 改成：记下每个 video representation 的路径→画质代码，再看「实际正在下载的分段」是哪一档，得出当前画质。
+  var videoQnByPath = {}; // pathname -> qn（每次解析 playurl 重建）
+  var lastVideoQn = null; // 最近实际下载过的 video 分段所属画质，比 d.quality 准
 
   var NATIVE_FETCH = window.fetch; // 存原生 fetch，供手动测速用，绕开下面装的 fetch hook
 
   // ---------------- helpers ----------------
   function asStr(v) { return typeof v === "string" ? v.trim() : ""; }
   function hostOf(url) { try { return new URL(url, location.href).host.toLowerCase(); } catch (e) { return ""; } }
+  function pathOf(url) { try { return new URL(url, location.href).pathname; } catch (e) { return ""; } }
   function replaceHost(url, host) { try { var x = new URL(url, location.href); x.host = host; return x.toString(); } catch (e) { return url; } }
   function distinct(arr) {
     var seen = {}, out = [];
@@ -115,8 +121,11 @@
     80: "1080P", 100: "1080P AI", 112: "1080P+", 116: "1080P60",
     120: "4K", 125: "HDR", 126: "Dolby Vision", 127: "8K"
   };
+  // 当前实际画质：优先用「正在下载的分段」对应的画质（切画质会即时反映），
+  // 还没下载过任何 video 分段时退回 playurl 的预设画质
+  function currentQn() { return lastVideoQn != null ? lastVideoQn : debug.lastQn; }
   function qnText() {
-    var q = debug.lastQn;
+    var q = currentQn();
     if (q == null) return "-";
     var name = QN_LABELS[q];
     return name ? name + " (" + q + ")" : String(q);
@@ -462,7 +471,12 @@
     var changed = false, vHost = null, aHost = null;
     var dash = d.dash;
     if (dash && typeof dash === "object") {
-      eachTrack(dash.video, function (top) { changed = true; var h = hostOf(top); if (!vHost) { vHost = h; noteEarlySample(top); } });
+      videoQnByPath = {}; // 这份 dash 的所有画质档，重建路径→画质对照
+      eachTrack(dash.video, function (top, track) {
+        changed = true; var h = hostOf(top);
+        if (track && typeof track.id === "number") videoQnByPath[pathOf(top)] = track.id; // dash 的 id 即画质代码 qn
+        if (!vHost) { vHost = h; noteEarlySample(top); }
+      });
       eachTrack(dash.audio, function (top) { changed = true; if (!aHost) aHost = hostOf(top); });
       if (dash.dolby && Array.isArray(dash.dolby.audio)) eachTrack(dash.dolby.audio, function (top) { changed = true; if (!aHost) aHost = hostOf(top); });
       if (dash.flac && dash.flac.audio) { var top1 = applyTrack(dash.flac.audio); if (top1) { changed = true; if (!aHost) aHost = hostOf(top1); } }
@@ -477,7 +491,7 @@
   }
   function eachTrack(arr, onTop) {
     if (!Array.isArray(arr)) return;
-    for (var i = 0; i < arr.length; i++) { var top = applyTrack(arr[i]); if (top) onTop(top); }
+    for (var i = 0; i < arr.length; i++) { var top = applyTrack(arr[i]); if (top) onTop(top, arr[i]); }
   }
   function rewriteRoot(root, source) {
     try {
@@ -655,6 +669,8 @@
 
   function noteSegment(url) {
     lastSegUrl = url;
+    var q = videoQnByPath[pathOf(url)]; // 是 video 分段才会命中；audio 分段不动画质
+    if (typeof q === "number") lastVideoQn = q;
     var h = hostOf(url);
     if (h && h !== debug.currentCdn) { debug.currentCdn = h; renderOverlay(); postDebug(); }
   }
@@ -867,7 +883,7 @@
     if (!overlayEl) {
       if (!document.documentElement) return;
       overlayEl = document.createElement("div");
-      overlayEl.id = "roger-cdn-debug";
+      overlayEl.id = "bcs-debug-overlay";
       overlayEl.style.cssText = [
         "position:absolute", "top:8px", "left:8px", "z-index:100",
         "font:12px/1.5 Consolas,Menlo,monospace", "color:#7CFC7C",
@@ -886,7 +902,7 @@
       window.postMessage({ __rogerCdn: 1, dir: "debug", payload: {
         currentCdn: debug.currentCdn, pickVideoHost: debug.pickVideoHost, pickAudioHost: debug.pickAudioHost,
         lastSource: debug.lastSource, rewriteCount: debug.rewriteCount, segRewriteCount: debug.segRewriteCount,
-        lastQn: debug.lastQn, enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), autoHost: autoHost, lastError: debug.lastError,
+        lastQn: currentQn(), enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), autoHost: autoHost, lastError: debug.lastError,
         speedBps: debug.speedBps, speedIdle: debug.speedIdle
       } }, "*");
     } catch (e) {}

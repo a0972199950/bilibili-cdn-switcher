@@ -65,16 +65,31 @@ async function applyLoginCookie(browser, page) {
   return true;
 }
 
-const CANVAS_W = 1280;
-const CANVAS_H = 800;
+// --size=WxH（預設 1280x800）：Chrome 商店固定要 1280x800；Mac App Store 想要更清晰可傳
+// --size=2560x1600（同為 16:10）。檔名本來就帶尺寸（...-<W>x<H>.png），跑不同尺寸會產生
+// 不同檔名，不會覆蓋掉別的尺寸那一套。
+const sizeArg = (process.argv.find((a) => a.startsWith("--size=")) || "").split("=")[1] || "1280x800";
+const sizeMatch = /^(\d+)x(\d+)$/.exec(sizeArg);
+if (!sizeMatch) {
+  console.error(`--size 格式錯誤：${sizeArg}，應為 <寬>x<高>，例如 2560x1600`);
+  process.exit(1);
+}
+const CANVAS_W = parseInt(sizeMatch[1], 10);
+const CANVAS_H = parseInt(sizeMatch[2], 10);
+// 以 1280 寬為基準的放大倍率，拿來同步調高 deviceScaleFactor，讓大尺寸是「原生高 DPI 直接截出來」，
+// 而不是把 1280 那套放大（放大會糊）。SCALE=1 時行為與原本完全一致。
+const SCALE = CANVAS_W / 1280;
 
+// appleLang：macOS 上 Chrome 會忽略 --lang、改跟系統 UI 語言，導致三個語系全塌成系統語言。
+// 用 NSUserDefaults 的「argument domain」以 -AppleLanguages "(xxx)" 覆蓋，才能真的切 Chrome UI 語言，
+// 讓擴充的 chrome.i18n.getUILanguage() 回傳對應語系。（Windows/Linux 靠 --lang 即可，這參數無害。）
 const LOCALES = [
-  { chromeLang: "en-US", prefix: "en" },
-  { chromeLang: "zh-CN", prefix: "zhcn" },
-  { chromeLang: "zh-TW", prefix: "zhtw" }
+  { chromeLang: "en-US", prefix: "en", appleLang: "(en-US)" },
+  { chromeLang: "zh-CN", prefix: "zhcn", appleLang: "(zh-Hans-CN)" },
+  { chromeLang: "zh-TW", prefix: "zhtw", appleLang: "(zh-Hant-TW)" }
 ];
 
-const POPUP_VIEWPORT = { width: 360, height: 560, deviceScaleFactor: 2 };
+const POPUP_VIEWPORT = { width: 360, height: 560, deviceScaleFactor: 2 * SCALE };
 const PLAYER_SELECTORS = [".bpx-player-video-area", ".bpx-player-container", "#bilibili-player", ".bpx-player-primary-area"];
 
 function log(...args) { console.log(...args); }
@@ -158,7 +173,7 @@ async function waitForSpeedtestMidway(tabB) {
   }, { timeout: 60000, polling: 100 }).catch(() => log("  （測速沒等到「完成 1 個節點且仍在測試中」，直接用目前畫面截圖）"));
 }
 
-async function captureLocale({ chromeLang, prefix }) {
+async function captureLocale({ chromeLang, prefix, appleLang }) {
   log(`\n== ${prefix} (${chromeLang}) ==`);
   const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `roger-cdn-shot-${prefix}-`));
   const browser = await puppeteer.launch({
@@ -168,6 +183,8 @@ async function captureLocale({ chromeLang, prefix }) {
       `--disable-extensions-except=${EXT_DIR}`,
       `--load-extension=${EXT_DIR}`,
       `--lang=${chromeLang}`,
+      // macOS：用 argument-domain 覆蓋 UI 語言（--lang 在 Mac 上無效）
+      "-AppleLanguages", appleLang,
       "--window-size=1400,1000",
       "--no-first-run"
     ]
@@ -179,7 +196,7 @@ async function captureLocale({ chromeLang, prefix }) {
 
     // tabA：真實 bilibili 影片頁，content script 掛在這裡，debug/測速都靠它
     const tabA = await browser.newPage();
-    await tabA.setViewport({ width: 1280, height: 900 });
+    await tabA.setViewport({ width: 1280, height: 900, deviceScaleFactor: SCALE });
     // cookie 要在 goto 之前設，不然第一次請求還是未登入、拿到的仍是低畫質 playurl
     log(await applyLoginCookie(browser, tabA) ? "已帶入登入 cookie（高畫質）" : "未設定 BILI_COOKIE，用未登入狀態（約 480P）");
     await tabA.goto(VIDEO_URL, { waitUntil: "networkidle2", timeout: 60000 });
@@ -192,6 +209,7 @@ async function captureLocale({ chromeLang, prefix }) {
     await tabB.setViewport(POPUP_VIEWPORT);
     await tabB.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: "load" });
     await sleep(300);
+    log("UI language:", await tabB.evaluate(() => chrome.i18n.getUILanguage()), "(期望對應", prefix, ")");
 
     // 開「在頁面上顯示 debug 疊層」，main / debug 兩張都要
     // #showDebug 是 opacity:0/寬高 0 的隱藏 checkbox（外觀靠 .slider 畫出來），

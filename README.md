@@ -4,22 +4,11 @@
 
 **語言 / Language：** 繁體中文（本頁）｜[简体中文](docs/README.zh-CN.md)｜[English](docs/README.en.md)
 
-### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Firefox / Edge 擴充
+### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Firefox / Edge / Safari 擴充
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ Safari（App Store，即將上架）
 
 </div>
-
----
-
-> ### 🙏 Credit / 致謝
->
-> 本專案移植自作者 **[@roge4444](https://github.com/roge4444)** 的兩個專案：
->
-> - 📦 [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod)
-> - 📦 [blblRogerMod](https://github.com/roge4444/blblRogerMod)
->
-> CDN 選線策略與節點清單皆源自上述專案，**特別感謝作者** ❤️
 
 ---
 
@@ -41,14 +30,14 @@ B 站預設分配的取流節點對台灣、新加坡使用者常常繞路、不
 | 功能 | 說明 |
 |:--|:--|
 | 🚀 **TW/SG 最優節點** | 預設換成對台/星最快的 CDN，開箱即用 |
-| 🌐 **其他 CDN 節點** | 阿里雲／騰訊雲／華為雲／Akamai／各海外節點…（來自 PiliNaraRogerMod），依所在地區自由比較切換 |
+| 🌐 **其他 CDN 節點** | 阿里雲／騰訊雲／華為雲／Akamai／各海外節點…，依所在地區自由比較切換 |
 | ✏️ **自行輸入** | 跟「清單選擇」互斥的另一個模式，可填任意 CDN host |
 | 🛑 **原始（不覆寫）** | 等同關閉，完全不動 B 站原生行為 |
 | 🔁 **失敗自動切換** | 偵測到目前 CDN 分段請求失敗、或播放持續卡住（非單純緩衝已滿），先靜默切換到 B 站原生給的備援節點（顯示提示、不整頁刷新）；備援也不行時彈出提示，讓你自行決定是否切到「備用URL」。可在彈出視窗的「失敗自動切換」開關關閉（預設開啟）；網路本身不穩時建議關閉 |
 | 📶 **各節點測速** | 獨立頁面，顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，測速中也能重新測；不影響你手動選擇的 CDN，離開該頁即中止 |
 | 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English，涵蓋 popup、頁面提示與 debug 疊層 |
 | 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在設定中打開） |
-| 🦊 **Chrome / Firefox / Edge 三平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest） |
+| 🦊 **Chrome / Firefox / Edge / Safari 四平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest）；Safari 另用 Xcode 包成 `.app`（見下方「打包 Safari」） |
 
 ---
 
@@ -65,12 +54,14 @@ bilibili-cdn-switcher/
 │   ├── cdn-list.json     ← 節點清單
 │   ├── _locales/{zh_TW,zh_CN,en}/  ← 三語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
 │   └── icons/            ← 16 / 32 / 48 / 128
-├── dist/                 ← 打包產物（.zip）
+├── dist/                 ← 打包產物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
 ├── docs/                 ← README 用的截圖 + 简体中文／English README
 ├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
-├── store/                ← 各商店上架用截圖 / 宣傳圖
+├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台三語系介紹文字
+├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，內含擴充資源用相對路徑直接引用 ../../../src/）
 ├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
 │   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
+│   ├── build-safari.mjs          ← 用 Xcode 打包 Safari 擴充成 .app（macOS-only）
 │   ├── gen-icons.mjs             ← 重新產生圖示
 │   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
 ├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
@@ -103,6 +94,30 @@ Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Mani
 打包結果是可重現的（reproducible build）：只要 `src/` 內容沒變，同一個瀏覽器目標每次包出來的
 zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 時判斷 `dist/` 是否真的需要更新。
 
+### 🍎 打包 Safari（上架 App Store 用）
+
+Safari 擴充不能像 Chrome 那樣直接載入 zip，必須包成一個「內含擴充的 App」（macOS 是 `.app`、iOS 是 `.ipa`），
+透過 App Store 分發。`safari/` 底下就是 `xcrun safari-web-extension-converter` 產生的 Xcode 工程，裡面用相對路徑
+（`../../../src/`）直接引用倉庫的 `src/`，所以**改 `src/` 不需要同步任何檔案**，重新打包就會帶到最新內容；換到任何一台
+Mac clone 整個倉庫都能跑（工程裡沒有寫死的絕對路徑）。
+
+**需求**：一台裝了完整 Xcode 的 Mac（只有 Command Line Tools 不夠）。
+
+```bash
+npm run build:safari                       # macOS，Release，ad-hoc 簽章 → dist/
+npm run build:safari -- --platform=ios     # 改打包 iOS
+npm run build:safari -- --configuration=Debug
+```
+
+腳本會呼叫 `xcodebuild`，並把 `MARKETING_VERSION` 覆蓋成 `src/manifest.json` 的 `version`（讓 .app 內部版本跟擴充一致，
+Xcode 工程預設寫死 1.0），產出兩個東西：
+
+- `dist/Bilibili CDN Switcher (<平台>).app` —— 可直接雙擊安裝／測試的 App
+- `dist/bilibili-cdn-switcher-safari-<平台>-<版本>.zip` —— 對齊其他平台的 `bilibili-cdn-switcher-<平台>-<版本>` 命名規範，方便傳給別台機器
+
+⚠️ 這裡是 **ad-hoc 簽章，只供本機測試**。真正上架 App Store 仍需在 Xcode 開啟 `safari/` 裡的工程 →
+Product > Archive > Distribute App，用你的 Apple Developer 帳號簽章上傳（這步需要簽章憑證，無法純命令列完成）。
+
 ### 🎨 重新產生圖示
 
 ```bash
@@ -114,7 +129,8 @@ npm run gen-icons
 ### 📸 產生商店截圖（三語系 main / debug / speedtest，共 9 張 1280x800 png）
 
 ```bash
-npm run capture-screenshots
+npm run capture-screenshots                      # 預設 1280x800（Chrome 商店固定要這尺寸）
+npm run capture-screenshots -- --size=2560x1600  # Mac App Store 用的高解析版；檔名帶尺寸，另存一套不覆蓋 1280x800
 ```
 
 用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW` 三個瀏覽器語系，實際打開一支
@@ -143,7 +159,7 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 | 🐛 **顯示頁面 debug 疊層** | 預設 **關閉**；獨立於重排開關，關閉重排時仍可顯示當前 CDN，方便比較 |
 
 <details>
-<summary>🔍 <b>Debug 疊層長什麼樣</b>（播放器左上角，仿 blblRogerMod <code>PlayerActivityDebug</code> 風格）</summary>
+<summary>🔍 <b>Debug 疊層長什麼樣</b>（播放器左上角）</summary>
 
 ```text
 CDN 線路
@@ -182,8 +198,20 @@ src=playinfo|playurl  rw=<改寫次數>  seg=<分段差替數>  qn=<畫質>
 
 ---
 
+## 📜 授權 License
+
+原始碼公開，採自訂的 **[Source-Available License](LICENSE)**：
+
+- ✅ 可以查看、Fork、修改原始碼，個人使用、教學／研究等非商業用途皆可自由進行
+- ❌ 不可將本專案或修改版重新包裝成競爭性的瀏覽器擴充／App／服務並對外發佈上架，也不可移除版權聲明
+- 完整條款請見 [LICENSE](LICENSE)；商業合作或例外授權需求歡迎開 issue 聯絡
+
+隱私權政策：[PRIVACY.md](PRIVACY.md)
+
+---
+
 <div align="center">
 
-Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · 移植自 [@roge4444](https://github.com/roge4444)
+Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · 靈感致謝 [@roge4444](https://github.com/roge4444) 的 [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) ／ [blblRogerMod](https://github.com/roge4444/blblRogerMod)
 
 </div>
