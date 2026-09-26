@@ -2,9 +2,10 @@
 
 ## 简短描述
 
-在网页版 bilibili 看视频还在转圈等缓冲？自动换成对台湾／新加坡最快的线路，连 4K 都流畅播。免费、免设置。非官方第三方扩展，与 bilibili 官方无关联。
+让台湾 / 新加坡用户在网页版 bilibili 上更流畅观看 4K 等高画质视频，减少缓冲与卡顿。非官方第三方扩展，与 bilibili 官方无关联。
 
 ## 详细描述
+（如果安装了篡改猴/油猴等同功能脚本，请先移除以避免冲突）
 
 你是不是也花钱开了 bilibili 大会员，结果全在转圈缓冲，钱全部打水漂？
 
@@ -33,12 +34,10 @@
 ■ 隐私说明
 本扩展不收集、不上传任何用户数据，无任何对外连接，也不含远程代码。
 所有设置仅保存在你自己的设备中。代码完全开源，欢迎查看。
+https://github.com/a0972199950/bilibili-cdn-switcher
 
 ■ 系统需求
 macOS 14 Sonoma 及以上、Safari 17 及以上；iPhone／iPad 需 iOS／iPadOS 17 及以上。
 （本扩展使用 content script 的 world: MAIN 注入，需 Safari 17 及以上才支持。）
-
-■ 致谢
-线路列表与选线策略移植自 @roge4444 的 PiliNaraRogerMod 与 blblRogerMod 项目。
 
 【本扩展为第三方个人开发，与 bilibili 官方无任何关联，亦未获其授权或背书。】
