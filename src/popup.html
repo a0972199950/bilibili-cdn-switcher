@@ -10,11 +10,30 @@
       color-scheme: light dark;
     }
 
+    /* 明确给不透明底色：macOS（新版毛玻璃/vibrancy）会让没设背景的 popup 变半透明，
+       视频透上来使灰字与细线几乎看不清。铺满不透明背景即可，跟其他浏览器观感一致。 */
+    html {
+      background: #fff;
+    }
+
     body {
       width: 320px;
       margin: 0;
       padding: 14px;
       font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html {
+        background: #1c1c1e;
+      }
+
+      body {
+        background: #1c1c1e;
+        color: #eaeaea;
+      }
     }
 
     h1 {

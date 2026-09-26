@@ -1,0 +1,270 @@
+Bilibili CDN Switcher Source-Available License
+Version 1.0
+
+Copyright (c) 2024–present John H (the "Licensor")
+
+A summary in Traditional Chinese follows at the end of this document for
+convenience. In the event of any conflict or ambiguity between the
+English text and the Chinese summary, the English text governs.
+
+================================================================================
+1. DEFINITIONS
+================================================================================
+
+1.1 "Software" means the source code, object code, documentation, CDN
+    node configuration data, icons, and other files distributed in this
+    repository, and any part of them.
+
+1.2 "Licensor" means John H, the copyright holder of the Software.
+
+1.3 "You" / "Your" means the individual or entity exercising rights under
+    this License.
+
+1.4 "Derivative Work" means any work that is based on, adapted from,
+    modified from, translated from, or incorporates a substantial portion
+    of the Software's source code, data files (including but not limited
+    to the CDN node list), or documentation — regardless of the
+    programming language, browser platform, or file format it is
+    expressed in. Independently written software that merely performs a
+    similar function (e.g., "switching bilibili's CDN host") without
+    copying, adapting, or substantially reproducing the Software's
+    expression is NOT a Derivative Work under this License.
+
+1.5 "Commercial Use" means use of the Software or a Derivative Work
+    where any of the following is true:
+      (a) You charge a fee, subscription, or other payment for access
+          to it, in whole or in part;
+      (b) You bundle, package, or distribute it as part of a paid
+          product or paid service;
+      (c) You use it to generate advertising, referral, affiliate, data
+          collection/resale, or other revenue, directly or indirectly;
+      (d) You use it internally within, or on behalf of, a for-profit
+          organization in the course of that organization's business
+          operations (excluding a single individual's personal,
+          non-revenue-generating use of a browser they use for their own
+          bilibili viewing, even if that individual is employed by a
+          for-profit organization).
+    Use that generates no revenue and is not undertaken on behalf of a
+    business (personal use, self-study, academic research, classroom
+    teaching, non-commercial demonstration, or contribution back to this
+    project) is NOT Commercial Use.
+
+1.6 "Competing Product" means a browser extension or browser add-on
+    (for any browser, on any platform) that:
+      (a) is made available to any third party (the general public, a
+          paying customer base, or any user other than You yourself),
+          whether for free or for a fee; AND
+      (b) has, as one of its core functions, rewriting, redirecting, or
+          otherwise altering the CDN/server endpoints used to deliver
+          bilibili.com (or its affiliated domains') video, live-stream,
+          or audio content, for the purpose of improving playback
+          speed, availability, or routing (the "Core Function").
+    Differences in user interface, branding, programming language, code
+    structure, or the presence of additional features unrelated to the
+    Core Function do NOT prevent an extension from being a Competing
+    Product, so long as the Core Function is present as one of its core
+    functions. A browser extension that offers CDN-rewriting only as an
+    incidental, non-advertised side effect of substantially different
+    primary functionality (for example, a general-purpose ad blocker,
+    userscript manager, or general-purpose network proxy extension with
+    no bilibili-specific logic as an advertised feature) is NOT a
+    Competing Product.
+
+    IMPORTANT — SCOPE: "Competing Product" is a descriptive category used
+    only to define what Sections 3.1–3.3 prohibit doing WITH the
+    Software or a Derivative Work of it (as "Derivative Work" is defined
+    in Section 1.4, which expressly excludes independently written
+    software). This definition, and this License as a whole, does NOT
+    grant the Licensor any right over, and does NOT restrict, extend to,
+    or apply to, any browser extension that a third party develops
+    independently — without copying, adapting, or substantially
+    reproducing the Software's source code, data files, or
+    documentation — even if that independently developed extension has
+    the same or a similar Core Function, competes with the Software in
+    the marketplace, or was inspired by the Software's existence. The
+    idea or general method of rewriting a CDN host to speed up bilibili
+    playback is not, and is not claimed to be, the Licensor's property.
+
+1.7 "Substantially the Same or Highly Similar" means a Derivative Work
+    that has the Core Function described in Section 1.6(b), even if
+    renamed, restyled, rebranded, partially rewritten in different code,
+    or bundled with additional features unrelated to the Core Function.
+    Cosmetic or incidental differences (renaming, re-icon-ing,
+    re-skinning, reordering menus, translating strings,
+    minifying/obfuscating code, trivial refactors, or adding unrelated
+    features) do NOT make a Derivative Work distinct from the Software
+    for purposes of this definition.
+
+1.8 "Redistribution" means making the Software or a Derivative Work
+    available to any person other than You, by any means, including but
+    not limited to: publishing it in a public or private code
+    repository, submitting or publishing it to any browser extension
+    marketplace or app store (including but not limited to the Chrome
+    Web Store, Firefox Add-ons, Microsoft Edge Add-ons, and the Apple
+    App Store), bundling it with other software, or hosting it as a
+    downloadable file or installable package.
+
+================================================================================
+2. GRANT OF RIGHTS
+================================================================================
+
+Subject to Section 3 (Restrictions) and Section 6 (Conditions), the
+Licensor grants You a worldwide, royalty-free, non-exclusive license to:
+
+2.1 View, read, and study the Software's source code;
+
+2.2 Fork the Software's repository on any code-hosting platform;
+
+2.3 Modify the Software and create Derivative Works from it;
+
+2.4 Use the Software and any Derivative Work You create, for personal,
+    non-commercial purposes;
+
+2.5 Use, copy, and reference the Software for teaching, academic
+    research, or other non-commercial purposes, including publishing
+    non-commercial articles, papers, or educational material that
+    quotes or discusses its source code;
+
+2.6 Build and run the Software, or a Derivative Work You created, locally
+    on Your own devices for Your own use, including in unpacked/developer
+    mode in a browser, without restriction as to the number of Your own
+    devices.
+
+================================================================================
+3. RESTRICTIONS
+================================================================================
+
+This Section restricts what You may do with the Software, or with a
+Derivative Work of it (Section 1.4). It does not restrict, and has no
+effect on, a browser extension that a third party builds independently
+without the Software or a Derivative Work of it — see the SCOPE note
+under Section 1.6.
+
+Notwithstanding Section 2, You may NOT, without the Licensor's prior
+written permission:
+
+3.1 Redistribute the Software or any Derivative Work of it, in whole or
+    substantial part, packaged or listed as a Competing Product;
+
+3.2 Rename, rebrand, or restyle (including changing the name, icon, or
+    logo of) the Software or a Derivative Work, and Redistribute the
+    result to any browser extension marketplace or app store, where the
+    result is Substantially the Same or Highly Similar to the Software;
+
+3.3 Use the Software's source code, in whole or substantial part, in any
+    browser extension that constitutes a Competing Product and involves
+    Commercial Use;
+
+3.4 Remove, obscure, or alter the Licensor's copyright notice, this
+    License, or the attribution notices present in the Software's
+    source files or documentation, whether or not You also modify the
+    underlying code;
+
+3.5 Use the Licensor's name, the Software's project name, or associated
+    logos/icons to imply endorsement of, or affiliation with, a
+    Derivative Work, without separate written permission — this is a
+    trademark/naming restriction independent of, and in addition to,
+    the copyright restrictions above, and applies even to Derivative
+    Works that are otherwise permitted under Section 2.
+
+================================================================================
+4. RESERVED RIGHTS OF THE LICENSOR
+================================================================================
+
+4.1 The Licensor may use, modify, and exploit the Software commercially
+    without any of the restrictions in Section 3, including selling it,
+    offering a paid version of it, or licensing it to others on
+    different terms.
+
+4.2 The Licensor may continue to publish official releases of the
+    Software under this or a different name, on any platform, including
+    platforms where a Derivative Work is restricted from being listed
+    under Section 3.
+
+4.3 The Licensor may release future versions of the Software, or
+    relicense future versions, under different license terms
+    (including a more permissive or a more restrictive license, or an
+    OSI-approved open source license). A change of license terms for a
+    future version does NOT retroactively change the terms under which
+    a version already released continues to be licensed to You: code
+    You have already received under this License Version 1.0 remains
+    available to You under License Version 1.0's terms, even if a later
+    version of the Software carries different terms.
+
+4.4 Nothing in this License obligates the Licensor to accept, merge, or
+    make use of any contribution, fork, bug report, or suggestion from
+    You or any third party.
+
+================================================================================
+5. CONTRIBUTIONS
+================================================================================
+
+Unless You and the Licensor agree otherwise in writing, any contribution
+(code, documentation, translations, or other material) that You
+intentionally submit to the Licensor for inclusion in the Software (for
+example, via a pull request or patch) is licensed by You to the Licensor
+under the same terms as this License, and the Licensor may additionally
+relicense Your contribution under Section 4.3 as part of the Software.
+You represent that You have the right to grant this license for any
+contribution You submit.
+
+================================================================================
+6. TERMINATION
+================================================================================
+
+6.1 This License and the rights granted under Section 2 automatically
+    terminate if You breach any provision of Section 3. Upon
+    termination, You must cease all Redistribution of the Software and
+    any Derivative Work that resulted from the breach.
+
+6.2 Sections 3.4 (attribution), 3.5 (naming/trademark), 7 (disclaimer),
+    and 8 (limitation of liability) survive termination of this
+    License.
+
+6.3 The Licensor may, at their sole discretion, reinstate Your rights
+    under this License after a breach has been cured.
+
+================================================================================
+7. DISCLAIMER OF WARRANTY
+================================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
+CONTINUED AVAILABILITY OR ACCURACY OF ANY THIRD-PARTY SERVICE (INCLUDING
+BILIBILI'S CDN INFRASTRUCTURE) THAT THE SOFTWARE INTERACTS WITH.
+
+================================================================================
+8. LIMITATION OF LIABILITY
+================================================================================
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE, INCLUDING BUT NOT LIMITED TO ANY
+INTERRUPTION, DEGRADATION, OR CHANGE IN BEHAVIOR OF THE BILIBILI SERVICE
+CAUSED BY ROUTING VIDEO REQUESTS TO A DIFFERENT CDN NODE.
+
+================================================================================
+9. GOVERNING LAW AND SEVERABILITY
+================================================================================
+
+9.1 [PLACEHOLDER — see note below] This License shall be governed by
+    the laws of Taiwan (Republic of China), without regard to its
+    conflict-of-law provisions, unless a court of competent jurisdiction
+    over You requires otherwise.
+
+9.2 If any provision of this License is held unenforceable, the
+    remaining provisions remain in full force, and the unenforceable
+    provision shall be reformed to the minimum extent necessary to make
+    it enforceable while preserving its original intent as closely as
+    possible.
+
+================================================================================
+10. HOW TO REQUEST PERMISSION
+================================================================================
+
+To request permission for a use restricted under Section 3, or to
+report a suspected violation, open an issue on the Software's GitHub
+repository or contact the Licensor through the channel listed in the
+repository's README.
