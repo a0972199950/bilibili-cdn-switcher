@@ -2,9 +2,10 @@
 
 ## Short description
 
-Tired of bilibili buffering? Reroutes to the fastest CDN for Taiwan/Singapore so 4K plays smoothly. Free, no setup. Unofficial.
+Helps Taiwan/Singapore users watch bilibili's web player more smoothly at 4K and other high-quality resolutions, with less buffering and stuttering. Unofficial third-party extension, not affiliated with bilibili.
 
 ## Detailed description
+(If you have a Tampermonkey/Greasemonkey script with the same functionality installed, please remove it first to avoid conflicts.)
 
 Did you pay for a bilibili Premium membership, only to spend the whole time staring at a buffering wheel — money straight down the drain?
 
@@ -32,11 +33,9 @@ It activates automatically as soon as you open any bilibili video page after ins
 
 ■ Privacy
 This extension does not collect or transmit any user data, makes no outbound network connections, and contains no remote code. All settings are stored locally in your own browser. The source code is fully open — feel free to review it.
+https://github.com/a0972199950/bilibili-cdn-switcher
 
 ■ Requirements
 Firefox 140 or later (142+ on Android).
-
-■ Credits
-The CDN route list and routing strategy are ported from @roge4444's PiliNaraRogerMod and blblRogerMod projects.
 
 [This is an independently developed, third-party extension. It is not affiliated with, authorized by, or endorsed by bilibili in any way.]

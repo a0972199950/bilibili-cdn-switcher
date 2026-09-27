@@ -161,23 +161,14 @@
 - **備註**: 台灣繁中社群平台，獨立開 campaign 分開統計。Dcard 是社群平台（同 `reddit-en-001`），medium 用 `social`，不要用 `article`
 - **狀態**: planned
 
-### Threads - 貼文
-- **ID**: threads-zhtw-001
-- **建立**: 2026-09-27
-- **參數**: `utm_source=threads` · `utm_medium=social` · `utm_campaign=threads-post1` · `utm_content=zhtw`
-- **Query**: `?utm_source=threads&utm_medium=social&utm_campaign=threads-post1&utm_content=zhtw`
-- **貼文**: （待補）
-- **備註**: 社群平台，獨立開 campaign 分開統計，medium 用 `social`，不要用 `article`。連結貼商店連結（見上方表格）並加上此 Query
-- **狀態**: planned
-
-### X（Twitter）- 貼文
-- **ID**: x-zhtw-001
-- **建立**: 2026-09-27
-- **參數**: `utm_source=x` · `utm_medium=social` · `utm_campaign=x-post1` · `utm_content=zhtw`
-- **Query**: `?utm_source=x&utm_medium=social&utm_campaign=x-post1&utm_content=zhtw`
-- **貼文**: （待補）
-- **備註**: 社群平台，獨立開 campaign 分開統計，medium 用 `social`，不要用 `article`。連結貼商店連結（見上方表格）並加上此 Query
-- **狀態**: planned
+### t0saki 個人部落格 - 文章
+- **ID**: t0saki-zhcn-001
+- **建立**: 2026-09-25
+- **參數**: `utm_source=t0saki` · `utm_medium=referral` · `utm_campaign=t0saki-post1` · `utm_content=zhcn`
+- **Query**: `?utm_source=t0saki&utm_medium=referral&utm_campaign=t0saki-post1&utm_content=zhcn`
+- **貼文**: https://t0saki.com/posts/china-network-from-overseas/
+- **備註**: 個人技術部落格外連，medium 用 `referral`（部落格文章連入），不要用 `article`（GA4 不認得會掉進 Unassigned）
+- **狀態**: active
 
 ---
 
@@ -212,9 +203,9 @@
 
 | 參數 | 說明 | 允許值 |
 |:--|:--|:--|
-| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `xiaohongshu` `sgcn` `shichengbbs` `bahamut` `huasing` `tiktok-internal` `dcard` `threads` `x` `google` |
+| `utm_source` | 平台 | `github` `extension` `mobile01` `reddit` `xiaohongshu` `sgcn` `shichengbbs` `bahamut` `huasing` `tiktok-internal` `dcard` `t0saki` `google` |
 | `utm_medium` | 管道類型（**只用標準值**） | `referral`（他站連入）`social`（社群）`cpc`（付費點擊）`email` |
-| `utm_campaign` | 一次推廣行動，**不含語言** | `readme` `rate` `release` `buffering-fix` `sg-keywords` `sg-conversion` `sgcn-post1` `shichengbbs-post1` `bahamut-post1` `huasing-post1` `tiktok-internal-post1` `dcard-post1` `threads-post1` `x-post1` |
+| `utm_campaign` | 一次推廣行動，**不含語言** | `readme` `rate` `release` `buffering-fix` `sg-keywords` `sg-conversion` `sgcn-post1` `shichengbbs-post1` `bahamut-post1` `huasing-post1` `tiktok-internal-post1` `dcard-post1` `t0saki-post1` |
 | `utm_content` | 語言／素材版本 | `zhtw` `zhcn` `en` `zhtw-post1` `zhcn-cn-post1` `zhcn-sg-post1` `v1-0-0` |
 | `utm_term` | 關鍵字，僅付費搜尋使用 | `{keyword}` |
 

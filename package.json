@@ -5,6 +5,7 @@
   "description": "Dev tooling only (dependencies for the Node scripts under scripts/); not the extension itself. The extension source lives in src/.",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "build:safari": "node scripts/build-safari.mjs",
     "gen-icons": "node scripts/gen-icons.mjs",
     "capture-screenshots": "node scripts/capture-screenshots.mjs"
   },
