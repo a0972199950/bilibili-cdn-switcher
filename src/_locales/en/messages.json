@@ -1,9 +1,9 @@
 {
   "extName": {
-    "message": "TW/SG Video Speedup for bilibili (Unofficial)"
+    "message": "TW/SG Speedup for bilibili (Unofficial)"
   },
   "extDescription": {
-    "message": "Smoother 4K+ playback on bilibili's web player for Taiwan / Singapore users by rerouting to a faster CDN edge. Unofficial third-party extension, not affiliated with bilibili."
+    "message": "Smoother 4K playback on web bilibili for Taiwan/Singapore users. Unofficial, not affiliated with bilibili."
   },
   "extActionTitle": {
     "message": "TW/SG Video Speedup"

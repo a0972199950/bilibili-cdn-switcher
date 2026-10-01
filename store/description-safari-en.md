@@ -13,8 +13,8 @@ This bugged me for a long time, until I finally found something that actually wo
 
 So I decided to turn it into a Safari extension. There must be plenty of people with the same problem — I hope it helps you too!
 
-🆓 This extension is completely FREE, and guaranteed to stay "FREE FOREVER"!
-⚡ Nothing to configure, just install it and it works!
+This extension is completely FREE, and guaranteed to stay "FREE FOREVER"!
+Nothing to configure, just install it and it works!
 
 Open any bilibili video after installing and it switches you to the fastest route for Taiwan/Singapore behind the scenes. Faster loading, less buffering, and even 4K plays straight through.
 
