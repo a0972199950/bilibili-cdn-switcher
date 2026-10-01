@@ -175,7 +175,7 @@ async function waitForSpeedtestMidway(tabB) {
 
 async function captureLocale({ chromeLang, prefix, appleLang }) {
   log(`\n== ${prefix} (${chromeLang}) ==`);
-  const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `roger-cdn-shot-${prefix}-`));
+  const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), `cdn-switcher-shot-${prefix}-`));
   const browser = await puppeteer.launch({
     headless: true,
     userDataDir,

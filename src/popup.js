@@ -41,7 +41,8 @@ document.documentElement.lang = chrome.i18n.getUILanguage();
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["rateBtn", "rateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
-  ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stHintLeave", "stHintLeave"]
+  ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stHintLeave", "stHintLeave"],
+  ["wnSubtitle", "whatsNewSubtitle"], ["wnClose", "whatsNewClose"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
 // 逐段解析 <b>…</b> 建 DOM 节点，避免用 innerHTML 塞入语系字串（addons-linter 会挡动态 innerHTML）
 function setRichText(el, str) {
@@ -309,7 +310,7 @@ var TOP_FRAME = { frameId: 0 };
 function pollDebug() {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (!tabs || !tabs[0]) return;
-    chrome.tabs.sendMessage(tabs[0].id, { type: "ROGER_GET_DEBUG" }, TOP_FRAME, function (resp) {
+    chrome.tabs.sendMessage(tabs[0].id, { type: "CDN_SWITCHER_GET_DEBUG" }, TOP_FRAME, function (resp) {
       if (chrome.runtime.lastError) { renderDebug(null); return; }
       renderDebug(resp && resp.debug);
     });
@@ -423,7 +424,7 @@ els.stList.addEventListener("click", function (ev) {
 
 function pollSpeedtest() {
   if (speedtestTabId == null) return;
-  chrome.tabs.sendMessage(speedtestTabId, { type: "ROGER_GET_SPEEDTEST" }, TOP_FRAME, function (resp) {
+  chrome.tabs.sendMessage(speedtestTabId, { type: "CDN_SWITCHER_GET_SPEEDTEST" }, TOP_FRAME, function (resp) {
     if (chrome.runtime.lastError) return;
     var st = resp && resp.speedTest;
     if (!st) return;
@@ -436,7 +437,7 @@ function showSpeedtestView(tabId) {
   els.mainView.style.display = "none";
   els.speedtestView.style.display = "block";
   // 开一个长连线：popup 关闭或按返回时会自动/主动断线，content script 收到 onDisconnect 就中止测速
-  try { speedtestPort = chrome.tabs.connect(tabId, { name: "roger-speedtest", frameId: 0 }); } catch (e) { speedtestPort = null; }
+  try { speedtestPort = chrome.tabs.connect(tabId, { name: "cdn-switcher-speedtest", frameId: 0 }); } catch (e) { speedtestPort = null; }
 }
 
 function showMainView() {
@@ -450,7 +451,7 @@ function showMainView() {
 function startSpeedtest(tabId) {
   els.stList.textContent = "";
   els.stMeta.textContent = "";
-  chrome.tabs.sendMessage(tabId, { type: "ROGER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
+  chrome.tabs.sendMessage(tabId, { type: "CDN_SWITCHER_RUN_SPEEDTEST", hosts: speedtestHosts }, TOP_FRAME, function (resp) {
     if (chrome.runtime.lastError || !resp || !resp.ok) {
       els.stList.textContent = t("speedtestCannotStart");
     }
@@ -477,3 +478,110 @@ els.stRetestBtn.addEventListener("click", function () {
 });
 
 setInterval(function () { pollDebug(); pollSpeedtest(); }, 1000);
+
+// -------- 版本更新提示 --------
+// storage 記著使用者「已經看過更新內容的版本」。每次開啟設定選單都跟目前擴充版本比對：
+//  - 沒有紀錄 → 新使用者：直接寫入目前版本，不跳提示
+//  - 有紀錄且較舊 → 老使用者：跳一次性提示，列出（上次版本, 目前版本] 之間新增的功能；使用者關掉提示後才寫入新版本
+//  - 較舊版本之間沒有任何要顯示的紀錄 → 不打擾，直接寫入新版本
+var VERSION_KEY = "installedVersion";
+
+function parseVer(v) {
+  var m = /^(\d+)\.(\d+)\.(\d+)$/.exec(v || "");
+  return m ? [+m[1], +m[2], +m[3]] : null;
+}
+// a > b → 正數；任一邊格式不對回 NaN
+function cmpVer(a, b) {
+  var pa = parseVer(a), pb = parseVer(b);
+  if (!pa || !pb) return NaN;
+  for (var i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] - pb[i];
+  return 0;
+}
+// changelog.json 的語系鍵是 zh_TW / zh_CN / en，跟 uiLangCode() 的 zhtw / zhcn / en 對應
+function changelogText(entry) {
+  var key = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en" }[uiLangCode()];
+  var txt = entry.text || {};
+  return txt[key] || txt.en || txt.zh_TW || "";
+}
+
+function showWhatsNew(version, entries, onClose) {
+  var box = document.getElementById("whatsNew");
+  document.getElementById("wnTitle").textContent = t("whatsNewTitle").replace("{version}", version);
+  var list = document.getElementById("wnList");
+  list.textContent = "";
+  entries.forEach(function (e) {
+    var li = document.createElement("li");
+    var tag = document.createElement("span");
+    tag.className = "wnTag" + (e.type === "fix" ? " fix" : "");
+    tag.textContent = t(e.type === "fix" ? "whatsNewTypeFix" : "whatsNewTypeFeature");
+    li.appendChild(tag);
+    li.appendChild(document.createTextNode(changelogText(e)));
+    list.appendChild(li);
+  });
+  var closed = false;
+  function close() {
+    if (closed) return;
+    closed = true;
+    box.classList.remove("show");
+    onClose();
+  }
+  // 用 onclick 賦值而不是 addEventListener：重複呼叫（例如 previewWhatsNew）時是「取代」，不會疊出多個 close 處理器
+  document.getElementById("wnClose").onclick = close;
+  document.getElementById("wnX").onclick = close;
+  box.classList.add("show");
+}
+
+function checkVersionUpdate() {
+  var current = chrome.runtime.getManifest().version;
+  chrome.storage.local.get(VERSION_KEY, function (items) {
+    var prev = items && items[VERSION_KEY];
+    if (prev === current) return;
+    if (!prev) { save({ installedVersion: current }); return; } // 新使用者
+    var diff = cmpVer(prev, current);
+    if (isNaN(diff) || diff > 0) { save({ installedVersion: current }); return; } // 紀錄壞掉或降版：重設就好
+    fetch(chrome.runtime.getURL("changelog.json"))
+      .then(function (r) { return r.json(); })
+      .then(function (log) {
+        var entries = [];
+        (log.releases || []).forEach(function (rel) { // changelog 由新到舊，顯示順序也是新版在前
+          if (cmpVer(rel.version, prev) > 0 && cmpVer(rel.version, current) <= 0) entries = entries.concat(rel.entries || []);
+        });
+        if (!entries.length) { save({ installedVersion: current }); return; }
+        showWhatsNew(current, entries, function () { save({ installedVersion: current }); });
+      })
+      .catch(function () {}); // 讀不到更新紀錄就先不寫入，下次開啟再試
+  });
+}
+checkVersionUpdate();
+
+// -------- 除錯用：預覽「更新內容」popup --------
+// 兩種用法：
+//  1. 網址列直接開 chrome-extension://<擴充 ID>/popup.html?whatsNew（或 ?whatsNew=1.4.0）
+//  2. 在 popup 的 DevTools console（工具列圖示右鍵 → 檢查彈出式視窗；不是網頁分頁的 console）呼叫 previewWhatsNew()
+// 不會讀寫 storage 的版本號，關掉就沒事，可以重複呼叫。
+//   previewWhatsNew()          預覽尚未上架（unreleased）的內容；沒有的話顯示最新一版
+//   previewWhatsNew("1.4.0")   模擬「從 1.4.0 升級到目前版本」，列出 (1.4.0, 目前版本] 之間的 releases
+// 語言跟著瀏覽器介面語言；要看別的語言就改瀏覽器語言後重開。
+function previewWhatsNew(from) {
+  var current = chrome.runtime.getManifest().version;
+  return fetch(chrome.runtime.getURL("changelog.json"))
+    .then(function (r) { return r.json(); })
+    .then(function (log) {
+      var entries = [];
+      if (from) {
+        (log.releases || []).forEach(function (rel) {
+          if (cmpVer(rel.version, from) > 0 && cmpVer(rel.version, current) <= 0) entries = entries.concat(rel.entries || []);
+        });
+      } else {
+        entries = (log.unreleased || []).length ? log.unreleased : ((log.releases || [])[0] || {}).entries || [];
+      }
+      if (!entries.length) { console.warn("previewWhatsNew: 這個範圍沒有任何更新紀錄可顯示"); return; }
+      showWhatsNew(current, entries, function () {});
+      return entries.length + " 條";
+    });
+}
+
+(function () {
+  var params = new URLSearchParams(location.search);
+  if (params.has("whatsNew")) previewWhatsNew(params.get("whatsNew") || undefined);
+})();

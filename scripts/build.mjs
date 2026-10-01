@@ -78,14 +78,23 @@ async function buildTarget(name, manifestFile) {
     const rel = path.relative(SRC, abs).split(path.sep).join("/");
     if (rel === "manifest.json" || rel === "manifest.firefox.json") continue;
     if (rel.startsWith("icons/") && iconsProdFiles.length) continue;
+    if (rel === "changelog.json") continue; // 下面另外處理：打包時要拿掉尚未上架的 unreleased
     entries.set(rel, abs);
   }
   entries.set("manifest.json", manifestPath);
   for (const f of iconsProdFiles) entries.set(`icons/${f}`, path.join(ICONS_PROD, f));
 
-  const sortedNames = [...entries.keys()].sort();
+  // changelog.json 的 unreleased 是尚未上架的功能，不該隨 zip 外流，只留已上架的 releases
+  const changelog = readJson(path.join(SRC, "changelog.json"));
+  const changelogBuf = Buffer.from(JSON.stringify({ unreleased: [], releases: changelog.releases }, null, 2) + "\n");
+
+  const sortedNames = [...entries.keys(), "changelog.json"].sort();
   const zip = new JSZip();
   for (const relName of sortedNames) {
+    if (relName === "changelog.json") {
+      zip.file(relName, changelogBuf, { date: FIXED_DATE, createFolders: false });
+      continue;
+    }
     // createFolders:false —— 不然 JSZip 會自動幫 "_locales/en/x.json" 這種路徑補上
     // "_locales/"、"_locales/en/" 這些資料夾 entry，而且時間戳是產生當下的現在時間，
     // 每次包出來的 zip bytes 就會不一樣，reproducible build 就破功了。原本 PowerShell 版本
@@ -104,7 +113,7 @@ async function buildTarget(name, manifestFile) {
 
   console.log(`\n${resolveDisplayName(manifest)} [${name}]  v${version}`);
   for (const relName of sortedNames) {
-    const size = fs.statSync(entries.get(relName)).size;
+    const size = relName === "changelog.json" ? changelogBuf.length : fs.statSync(entries.get(relName)).size;
     console.log(`  ${relName.padEnd(24)} ${String(size).padStart(7)} B`);
   }
   console.log(`-> ${zipPath}  (${buf.length} B)\n`);

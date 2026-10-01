@@ -9,7 +9,7 @@
 #   ratio = media/wall，1.0=完美即時，<1.0=落後。
 # 公平性：把同一集群的 ov(海外) 與 cn(國內) 用「同一 token、同一時間窗」並行拉，才不受時段網路波動影響。
 #
-# 用法：python3 research/live-lag-drift.py [秒數，預設120]
+# 用法：python3 research/live-streaming-support/live-lag-drift.py [秒數，預設120]
 import json, urllib.request, subprocess, socket, time, re, sys, threading
 
 cookie = subprocess.run(

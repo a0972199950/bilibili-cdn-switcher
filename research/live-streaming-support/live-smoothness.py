@@ -5,7 +5,7 @@
 #      以 1 秒為窗記錄吞吐，看：TTFB、平均吞吐、最低 1 秒窗吞吐、低於碼率的「疑似卡頓」窗數、抖動(CV)。
 #      → 若某節點 TTFB 很好但中途吞吐掉到碼率以下 → 證明「只看 TTFB」不夠。
 #
-# 用法：python3 research/live-smoothness.py
+# 用法：python3 research/live-streaming-support/live-smoothness.py
 import json, urllib.request, subprocess, socket, time, re, statistics
 
 cookie = subprocess.run(

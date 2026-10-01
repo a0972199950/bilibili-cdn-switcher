@@ -184,5 +184,20 @@
   },
   "mhCdnTargetBackup": {
     "message": "备用URL（优先）"
+  },
+  "whatsNewTitle": {
+    "message": "🎉 已更新至 v{version}"
+  },
+  "whatsNewSubtitle": {
+    "message": "这次更新的内容："
+  },
+  "whatsNewClose": {
+    "message": "知道了"
+  },
+  "whatsNewTypeFeature": {
+    "message": "新增"
+  },
+  "whatsNewTypeFix": {
+    "message": "修正"
   }
 }

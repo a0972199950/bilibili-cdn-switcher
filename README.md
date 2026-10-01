@@ -62,6 +62,10 @@ bilibili-cdn-switcher/
 ├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
 │   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
 │   ├── build-safari.mjs          ← 用 Xcode 打包 Safari 擴充成 .app（macOS-only）
+│   ├── changelog.mjs             ← 驗證 src/changelog.json；pre-push hook 用它檢查清單有沒有更新
+│   ├── release.mjs               ← 發版機械步驟（升版號、把 unreleased 搬進新版本）
+│   ├── publish-stores.mjs        ← 用 API 金鑰上傳新版 zip 到 Chrome / Edge / Firefox（不會按發布）
+│   ├── test-whats-new.mjs        ← 用真的 Chrome 測「更新內容」popup
 │   ├── gen-icons.mjs             ← 重新產生圖示
 │   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
 ├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
@@ -93,6 +97,15 @@ Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Mani
 
 打包結果是可重現的（reproducible build）：只要 `src/` 內容沒變，同一個瀏覽器目標每次包出來的
 zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 時判斷 `dist/` 是否真的需要更新。
+
+### 📝 更新紀錄與發版
+
+- `src/changelog.json` 同時記「尚未上架的新功能（`unreleased`）」與「各已上架版本相較前一版追加的內容（`releases`）」，三語（zh_TW / zh_CN / en）。
+  老使用者更新後第一次開設定選單，會看到一次性的「更新內容」popup（內容就來自這份檔案；打包進 zip 時會自動拿掉 `unreleased`）。
+- `.githooks/pre-push`：push 時若相較於分支出來的基準 `src/changelog.json` 沒有變動，會詢問是否仍要 push，選 No 就擋下。
+  `npm install` 會自動設定 `core.hooksPath`（或手動 `git config core.hooksPath .githooks`）。確定不需要記錄時：`CHANGELOG_CHECK_IGNORE=1 git push`。
+- 發版用 Claude Code 的 `/release`（`.claude/skills/release/SKILL.md`）；上架金鑰放 `.env.local`（見 `.env.local.example`）。商店的「發布」按鈕一律人工按。
+- `npm run test:whats-new`：用 puppeteer 的 Chrome 載入 `src/`，自動測更新提示 popup。
 
 ### 🍎 打包 Safari（上架 App Store 用）
 

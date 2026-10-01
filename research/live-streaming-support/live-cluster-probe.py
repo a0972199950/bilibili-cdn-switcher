@@ -3,7 +3,7 @@
 #   Q1: 直播節點 host 的 "b" 後綴是不是 backup？（看 API 回傳裡的排序與共現）
 #   Q2: 每次調 getRoomPlayInfo 拿到的集群號（gotchaNN）是不是都不同？跟房間有沒有關係？
 #
-# 用法：python3 research/live-cluster-probe.py
+# 用法：python3 research/live-streaming-support/live-cluster-probe.py
 # 需要 .env.local 裡的 BILI_COOKIE（跟截圖腳本共用）。
 import json, urllib.request, subprocess, time, re, collections
 

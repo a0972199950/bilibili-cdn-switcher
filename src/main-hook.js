@@ -1,8 +1,6 @@
 /*
  * B 站网页版 CDN 线路重排 —— MAIN world 注入脚本
  *
- * 移植自 blblRogerMod 的 selectCdnUrlsFromTrack() 与 PiliNaraRogerMod 的 CDNService。
- *
  * 实测结论（av170001）：
  *  - player.reload() / reloadAccess() 不会重打 /x/player/wbi/playurl，只重新初始化 MSE、
  *    重新「请求分段」。因此只改 playurl 无法对正在播的影片生效（除非整页重载）。
@@ -18,10 +16,10 @@
  */
 (function () {
   "use strict";
-  if (window.__ROGER_CDN_INSTALLED__) return;
-  window.__ROGER_CDN_INSTALLED__ = true;
+  if (window.__CDN_SWITCHER_INSTALLED__) return;
+  window.__CDN_SWITCHER_INSTALLED__ = true;
 
-  var CFG_KEY = "__ROGER_CDN_CFG__";
+  var CFG_KEY = "__CDN_SWITCHER_CFG__";
   var DEFAULTS = {
     enabled: true, // 预设开启
     cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com", // 默认 TW/SG 最快；'base'=不覆写
@@ -46,7 +44,7 @@
   // MAIN world 没有 chrome.i18n（页面 context 无扩充 API），toast / debug 叠层的文案由
   // bridge.js（ISOLATED world）代查後经 localStorage/postMessage 送过来，读法与 cfg 相同。
   // DEFAULT_MSGS 是 bridge 尚未推送前的保底文案（繁中，与 _locales/zh_TW 一致）。
-  var MSGS_KEY = "__ROGER_CDN_MSGS__";
+  var MSGS_KEY = "__CDN_SWITCHER_MSGS__";
   var DEFAULT_MSGS = {
     mhToastAutoSwitched: "目前 CDN 速度不佳，已自動切換至備援節點 {host}",
     mhToastAllFailed: "目前 CDN 與備援節點皆無法順利播放",
@@ -70,7 +68,7 @@
   // 自动回退的「静默覆写」：只影响本分页实际使用的节点，不写入用户设定 ——
   // popup 显示、下次手动重整仍以用户自选节点为准。备用URL 需整页重载才生效，
   // 重载前把覆写放进 sessionStorage 一次性带过去（读到就删，手动重整不会沿用）。
-  var AUTO_KEY = "__ROGER_CDN_AUTO__";
+  var AUTO_KEY = "__CDN_SWITCHER_AUTO__";
   var autoHost = null; // null = 没有覆写；否则为具名备援 host 或 "backup"
   try {
     var rawAuto = window.sessionStorage.getItem(AUTO_KEY);
@@ -203,7 +201,7 @@
     var fixed = host === document.body;
     var hasButton = !!(opts.actionText || opts.cancelText);
     toastEl = document.createElement("div");
-    toastEl.id = "roger-cdn-toast";
+    toastEl.id = "cdn-switcher-toast";
     toastEl.style.cssText = [
       fixed ? "position:fixed" : "position:absolute",
       fixed ? "top:15%" : "top:24px",
@@ -258,15 +256,15 @@
   var pendingBackupHosts = null; // rewriteRoot 期间收集用；有解析到才整批取代 backupHosts
 
   // 测试用开关（无任何 UI 入口，不影响一般用户）：在 DevTools console（页面 context）执行
-  //   __rogerCdnSimulateStall()       → 接下来 60 秒把影片当成卡住（连播放器状态检查都略过，
+  //   __cdnSwitcherSimulateStall()       → 接下来 60 秒把影片当成卡住（连播放器状态检查都略过，
   //                                     时序确定），走真实回退流程：约 9 秒切备援节点＋toast、
   //                                     约 47 秒（8 秒判定＋30 秒冷却）弹「切备用URL」提示（不会自动消失）
-  //   __rogerCdnSimulateStall(90000)  → 自订模拟时长（毫秒）；传 0 取消
-  //   __rogerCdnSimulateStall("ask")  → 不等计时，立刻弹出询问 toast（按钮为真实行为，
+  //   __cdnSwitcherSimulateStall(90000)  → 自订模拟时长（毫秒）；传 0 取消
+  //   __cdnSwitcherSimulateStall("ask")  → 不等计时，立刻弹出询问 toast（按钮为真实行为，
   //                                     按下会真的切备用URL＋整页重载）
   // 每支影片 attempts 只有一轮，要重测完整流程请重新整理或换影片。
   var simulateStallUntil = 0;
-  window.__rogerCdnSimulateStall = function (arg) {
+  window.__cdnSwitcherSimulateStall = function (arg) {
     if (arg === "ask") { askBackupSwitch("simulated"); return "ask toast shown"; }
     simulateStallUntil = Date.now() + (typeof arg === "number" ? arg : 60000);
     return simulateStallUntil > Date.now()
@@ -594,14 +592,14 @@
       proto.open = function (method, url) {
         try {
           if (ACTIVE && typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; }
-          this.__rogerUrl = url;
-          this.__rogerIsSeg = typeof url === "string" && isSegUrl(url);
+          this.__cdnSwitcherUrl = url;
+          this.__cdnSwitcherIsSeg = typeof url === "string" && isSegUrl(url);
         } catch (e) {}
         return open.call(this, method, url, arguments.length > 2 ? arguments[2] : true, arguments[3], arguments[4]);
       };
       proto.send = function () {
-        var self = this, url = self.__rogerUrl || "";
-        if (self.__rogerIsSeg) {
+        var self = this, url = self.__cdnSwitcherUrl || "";
+        if (self.__cdnSwitcherIsSeg) {
           var t0 = Date.now();
           lastSegReqAt = t0;
           self.addEventListener("load", function () {
@@ -610,11 +608,11 @@
               if (self.response instanceof ArrayBuffer) bytes = self.response.byteLength;
               else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
               addSample(bytes, Date.now() - t0, true);
-              if (shouldFallbackOnStatus(self.status, self.__rogerUrl || "")) maybeFallback("http-" + self.status);
+              if (shouldFallbackOnStatus(self.status, self.__cdnSwitcherUrl || "")) maybeFallback("http-" + self.status);
             } catch (e) {}
           });
           self.addEventListener("error", function () {
-            if (isCurrentSegHost(hostOf(self.__rogerUrl || ""))) maybeFallback("network-error");
+            if (isCurrentSegHost(hostOf(self.__cdnSwitcherUrl || ""))) maybeFallback("network-error");
           });
         }
         if (ACTIVE && PLAYURL_RE.test(url) && textDesc && respDesc) {
@@ -751,26 +749,26 @@
   // 重新测速：不管前一轮跑到哪，直接中断、开新的一代；旧一轮的 continuation 靠 gen 比对自行退出
   function runSpeedTest(hosts) {
     if (!sampleUrl()) {
-      try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-done", payload: { error: "no-sample" } }, "*"); } catch (e) {}
+      try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-done", payload: { error: "no-sample" } }, "*"); } catch (e) {}
       return;
     }
     if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
     var myGen = ++speedTestGen;
     speedTestRunning = true;
-    try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-meta", payload: { title: getVideoTitle(), qn: qnText() } }, "*"); } catch (e) {}
+    try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-meta", payload: { title: getVideoTitle(), qn: qnText() } }, "*"); } catch (e) {}
     var i = 0;
     (function next() {
       if (myGen !== speedTestGen) return; // 已被更新一轮取代，不再回报也不再继续
       if (i >= hosts.length) {
         speedTestRunning = false;
         speedTestAbort = null;
-        try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-done", payload: {} }, "*"); } catch (e) {}
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-done", payload: {} }, "*"); } catch (e) {}
         return;
       }
       var host = hosts[i++];
       measureHost(host).then(function (r) {
         if (myGen !== speedTestGen) return;
-        try { window.postMessage({ __rogerCdn: 1, dir: "speedtest-progress", payload: r }, "*"); } catch (e) {}
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: r }, "*"); } catch (e) {}
         next();
       });
     })();
@@ -786,7 +784,7 @@
   window.addEventListener("message", function (ev) {
     if (ev.source !== window) return;
     var d = ev.data;
-    if (!d || d.__rogerCdn !== 1) return;
+    if (!d || d.__cdnSwitcher !== 1) return;
     if (d.dir === "speedtest-run") { runSpeedTest((d.payload && d.payload.hosts) || []); return; }
     if (d.dir === "speedtest-stop") { stopSpeedTest(); return; }
     if (d.dir === "messages" && d.payload) { for (var mk in DEFAULT_MSGS) if (d.payload[mk]) MSGS[mk] = d.payload[mk]; return; }
@@ -832,7 +830,7 @@
   window.addEventListener("message", function (ev) {
     if (ev.source !== window) return;
     var d = ev.data;
-    if (!d || d.__rogerCdn !== 1 || d.dir !== "config") return;
+    if (!d || d.__cdnSwitcher !== 1 || d.dir !== "config") return;
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost();
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
@@ -899,7 +897,7 @@
 
   function postDebug() {
     try {
-      window.postMessage({ __rogerCdn: 1, dir: "debug", payload: {
+      window.postMessage({ __cdnSwitcher: 1, dir: "debug", payload: {
         currentCdn: debug.currentCdn, pickVideoHost: debug.pickVideoHost, pickAudioHost: debug.pickAudioHost,
         lastSource: debug.lastSource, rewriteCount: debug.rewriteCount, segRewriteCount: debug.segRewriteCount,
         lastQn: currentQn(), enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), autoHost: autoHost, lastError: debug.lastError,

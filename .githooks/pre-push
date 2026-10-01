@@ -1,0 +1,54 @@
+#!/bin/sh
+# pre-push：檢查這次 push 有沒有更新 src/changelog.json（尚未上架的新功能清單）。
+# 啟用方式：npm install 會跑 prepare 自動設定 core.hooksPath；或手動 `git config core.hooksPath .githooks`。
+#
+# 清單沒有變動時會互動詢問是否仍要 push：選 No（預設）就擋下，必須補上清單才能 push。
+# 沒有終端機可互動（例如 AI agent、CI）時一律擋下；確定這次改動不需要記錄時，
+# 用環境變數略過：CHANGELOG_CHECK_IGNORE=1 git push
+
+ROOT=$(git rev-parse --show-toplevel)
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "pre-push: 找不到 node，略過更新紀錄檢查。" >&2
+  exit 0
+fi
+
+# stdin 是 git 給的「<local_ref> <local_sha> <remote_ref> <remote_sha>」清單，先讀完，之後才能從終端機問問題
+refs=$(cat)
+
+needs_prompt=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "$local_ref" ] && continue
+  node "$ROOT/scripts/changelog.mjs" check-push "$local_ref" "$local_sha" "$remote_ref" "$remote_sha"
+  rc=$?
+  if [ "$rc" -eq 10 ]; then
+    needs_prompt=1
+  elif [ "$rc" -ne 0 ]; then
+    exit 1
+  fi
+done <<REFS
+$refs
+REFS
+
+[ "$needs_prompt" -eq 0 ] && exit 0
+
+if [ "$CHANGELOG_CHECK_IGNORE" = "1" ]; then
+  echo "pre-push: CHANGELOG_CHECK_IGNORE=1，略過更新紀錄檢查。" >&2
+  exit 0
+fi
+
+echo "" >&2
+echo "No new features/bugs found. Please check if any changes need to record." >&2
+echo "請把使用者看得到的新功能／修正寫進 src/changelog.json 的 unreleased。" >&2
+
+if ! { exec 3</dev/tty; } 2>/dev/null; then
+  echo "（沒有終端機可互動，已擋下 push。確定不需要記錄時：CHANGELOG_CHECK_IGNORE=1 git push）" >&2
+  exit 1
+fi
+printf "Ignore and push: No/Yes [y/N] " >&2
+read -r answer <&3
+exec 3<&-
+case "$answer" in
+  [Yy]|[Yy][Ee][Ss]) exit 0 ;;
+  *) echo "已取消 push：請更新 src/changelog.json 後再 push。" >&2; exit 1 ;;
+esac

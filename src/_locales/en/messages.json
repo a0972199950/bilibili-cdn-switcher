@@ -184,5 +184,20 @@
   },
   "mhCdnTargetBackup": {
     "message": "Backup URL (priority)"
+  },
+  "whatsNewTitle": {
+    "message": "🎉 Updated to v{version}"
+  },
+  "whatsNewSubtitle": {
+    "message": "What's new:"
+  },
+  "whatsNewClose": {
+    "message": "Got it"
+  },
+  "whatsNewTypeFeature": {
+    "message": "New"
+  },
+  "whatsNewTypeFix": {
+    "message": "Fix"
   }
 }

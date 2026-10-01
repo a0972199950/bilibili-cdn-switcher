@@ -3,7 +3,7 @@
 # 場景B：模擬「刷直播」——每個直播看3秒就切下一個，連切N次，比 海外(ov) vs 國內(cn) 的 TTFB。
 # TTFB = 從發出請求到收到第一個 FLV media tag 的時間（含 DNS+連線+TLS+首位元組，近似「點開到第一幀」）。
 # 每切一次也會重新調 getRoomPlayInfo，一併記錄該 API 延遲（真實切台成本的一部分）。
-# 用法：python3 research/live-surf-ttfb.py [每台停留秒=3] [room1 room2 ...]
+# 用法：python3 research/live-streaming-support/live-surf-ttfb.py [每台停留秒=3] [room1 room2 ...]
 import json, urllib.request, subprocess, socket, time, re, sys, statistics
 
 cookie = subprocess.run(["bash","-c","grep -o '^BILI_COOKIE=.*' .env.local | sed 's/^BILI_COOKIE=//'"],

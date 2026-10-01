@@ -1,0 +1,50 @@
+{
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "擴充更新後，第一次開啟設定選單會顯示一次性的「更新內容」提示，列出新增的功能與修正",
+        "zh_CN": "扩充更新后，第一次打开设定选单会显示一次性的「更新内容」提示，列出新增的功能与修正",
+        "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes"
+      }
+    }
+  ],
+  "releases": [
+    {
+      "version": "1.5.1",
+      "date": "2026-09-26",
+      "entries": [
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "修正 macOS 新版毛玻璃效果讓設定選單的文字與線條難以辨識的問題",
+            "zh_CN": "修正 macOS 新版毛玻璃效果让设定选单的文字与线条难以辨识的问题",
+            "en": "Fixed the popup text and lines being hard to read under macOS's new translucent glass effect"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "修正切換解析度後，測速頁標題與 debug 疊層的畫質標示不會更新的問題",
+            "zh_CN": "修正切换分辨率后，测速页标题与 debug 叠层的画质标示不会更新的问题",
+            "en": "Fixed the quality label in the speed-test title and debug overlay not updating after switching resolution"
+          }
+        }
+      ]
+    },
+    {
+      "version": "1.5.0",
+      "date": "2026-09-19",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "新增「失敗自動切換」開關（預設開啟）：網路本身不穩（例如 Wi-Fi 訊號弱）時可關閉，避免頻繁黑屏與丟棄已緩衝的內容",
+            "zh_CN": "新增「失败自动切换」开关（默认开启）：网络本身不稳（例如 Wi-Fi 信号弱）时可关闭，避免频繁黑屏与丢弃已缓冲的内容",
+            "en": "Added an \"Auto-switch on failure\" toggle (on by default): turn it off on an unstable connection (e.g. weak Wi-Fi) to avoid repeated black screens and discarded buffers"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,12 @@
     "build": "node scripts/build.mjs",
     "build:safari": "node scripts/build-safari.mjs",
     "gen-icons": "node scripts/gen-icons.mjs",
-    "capture-screenshots": "node scripts/capture-screenshots.mjs"
+    "capture-screenshots": "node scripts/capture-screenshots.mjs",
+    "changelog:validate": "node scripts/changelog.mjs validate",
+    "release:prepare": "node scripts/release.mjs prepare",
+    "publish-stores": "node scripts/publish-stores.mjs",
+    "test:whats-new": "node scripts/test-whats-new.mjs",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "devDependencies": {
     "jszip": "^3.10.1",

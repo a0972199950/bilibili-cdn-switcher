@@ -422,6 +422,107 @@
       color: inherit;
       margin-top: 10px;
     }
+
+    /* 更新後的「更新內容」提示：蓋在整個 popup 上的一次性遮罩，關閉後才把新版本號寫進 storage */
+    #whatsNew {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, .45);
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    #whatsNew.show {
+      display: flex;
+    }
+
+    .wnCard {
+      width: 100%;
+      max-height: 100%;
+      overflow-y: auto;
+      box-sizing: border-box;
+      padding: 14px;
+      border-radius: 10px;
+      background: #fff;
+      color: #1a1a1a;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .wnCard {
+        background: #2b2b2b;
+        color: #eaeaea;
+      }
+    }
+
+    .wnHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 0 0 6px;
+    }
+
+    #wnTitle {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    button#wnX {
+      border: 0;
+      background: transparent;
+      color: #888;
+      font: 18px/1 inherit;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    #wnSubtitle {
+      color: #888;
+      font-size: 12px;
+      margin: 0 0 6px;
+    }
+
+    #wnList {
+      margin: 0 0 12px;
+      padding: 0;
+      list-style: none;
+    }
+
+    #wnList li {
+      margin: 6px 0;
+      line-height: 1.45;
+    }
+
+    .wnTag {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 0 6px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #fff;
+      background: #00a1d6;
+    }
+
+    .wnTag.fix {
+      background: #8a8a8a;
+    }
+
+    button#wnClose {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      font: inherit;
+      cursor: pointer;
+      border-radius: 6px;
+      border: 0;
+      background: #00a1d6;
+      color: #fff;
+    }
   </style>
 </head>
 
@@ -488,6 +589,18 @@
     <div class="hint" id="stHintLeave"></div>
     <div class="hint" id="stHintBandwidth"></div>
     <div id="stList"></div>
+  </div>
+
+  <div id="whatsNew" role="dialog" aria-modal="true" aria-labelledby="wnTitle">
+    <div class="wnCard">
+      <div class="wnHeader">
+        <span id="wnTitle"></span>
+        <button id="wnX" type="button" aria-label="close">&times;</button>
+      </div>
+      <div id="wnSubtitle"></div>
+      <ul id="wnList"></ul>
+      <button id="wnClose" type="button"></button>
+    </div>
   </div>
 
   <script src="popup.js"></script>

@@ -4,7 +4,7 @@
 # 指標：
 #   ratio=收到節目秒/牆上秒 (1.0=完美即時)；drift 走勢(是否越落越多)；掉隊秒；goodput；
 #   以及「絕對直播延遲」：同時連 ov/cn，比第一個 FLV tag 的媒體時間線位置，誰更靠前＝離直播源更近。
-# 用法：python3 research/live-hbr-sustained.py [每房秒數=60] [room1 room2 ...]
+# 用法：python3 research/live-streaming-support/live-hbr-sustained.py [每房秒數=60] [room1 room2 ...]
 import json, urllib.request, subprocess, socket, time, re, sys, threading, statistics
 
 cookie = subprocess.run(["bash","-c","grep -o '^BILI_COOKIE=.*' .env.local | sed 's/^BILI_COOKIE=//'"],
