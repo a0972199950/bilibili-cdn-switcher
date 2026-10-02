@@ -1,15 +1,20 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "擴充更新後，第一次開啟設定選單會顯示一次性的「更新內容」提示，列出新增的功能與修正",
-        "zh_CN": "扩充更新后，第一次打开设定选单会显示一次性的「更新内容」提示，列出新增的功能与修正",
-        "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "1.6.0",
+      "date": "2026-10-02",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "擴充更新後，第一次開啟設定選單會顯示一次性的「更新內容」提示，列出新增的功能與修正",
+            "zh_CN": "扩充更新后，第一次打开设定选单会显示一次性的「更新内容」提示，列出新增的功能与修正",
+            "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes"
+          }
+        }
+      ]
+    },
     {
       "version": "1.5.1",
       "date": "2026-09-26",
