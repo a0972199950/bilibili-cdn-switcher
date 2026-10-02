@@ -11,9 +11,6 @@
   "popupTitle": {
     "message": "CDN 線路"
   },
-  "headerTitle": {
-    "message": "B 站 CDN 線路"
-  },
   "enabledLabel": {
     "message": "啟用"
   },
@@ -21,10 +18,10 @@
     "message": "失敗自動切換"
   },
   "autoFallbackHint": {
-    "message": "網路本身不穩（如 WiFi 訊號弱）時，自動切換可能造成頻繁黑屏並丟棄已緩衝內容，可關閉。"
+    "message": "影片或直播卡住、線路連不上時，自動換到其他可用的線路，免得一直轉圈圈。如果你的網路本身就不穩（例如 Wi-Fi 訊號弱），它可能會一直換線路、畫面黑掉重載，這種情況建議關掉。"
   },
   "cdnHostRowLabel": {
-    "message": "CDN 線路（換成此節點並排最前，原節點保留為 fallback）"
+    "message": "CDN 節點"
   },
   "modeListLabel": {
     "message": "清單選擇"
@@ -155,14 +152,8 @@
   "cdnNoteBackupUrl": {
     "message": "用 B 站提供的備援節點"
   },
-  "cdnNoteOriginal": {
-    "message": "不覆寫，等同關閉"
-  },
   "cdnNameBackupUrl": {
     "message": "備用URL"
-  },
-  "cdnNameOriginal": {
-    "message": "原始"
   },
   "mhToastAutoSwitched": {
     "message": "目前 CDN 速度不佳，已自動切換至備援節點 {host}"
@@ -199,5 +190,167 @@
   },
   "whatsNewTypeFix": {
     "message": "修正"
+  },
+  "tabVideo": {
+    "message": "影片"
+  },
+  "tabLive": {
+    "message": "直播"
+  },
+  "modeOffLabel": {
+    "message": "關閉"
+  },
+  "modeOffHintVideo": {
+    "message": "不介入一般影片的 CDN 選線，維持官方原始邏輯。"
+  },
+  "modeOffHintLive": {
+    "message": "不介入直播的 CDN 選線，維持官方原始邏輯。"
+  },
+  "advancedBtnTitle": {
+    "message": "進階設定"
+  },
+  "advancedTitle": {
+    "message": "進階設定"
+  },
+  "liveRouteOv": {
+    "message": "國際線路(ov)"
+  },
+  "liveRouteOvB": {
+    "message": "國際備用線路(ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "中國線路(cn)"
+  },
+  "liveRouteCnB": {
+    "message": "中國備用線路(cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "當前直播沒有此線路"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 測試各直播線路速度"
+  },
+  "stLiveHeaderTitle": {
+    "message": "直播線路測速"
+  },
+  "stLiveHintLeave": {
+    "message": "用「目前直播間」的串流實測各線路；離開此頁會立即停止測速。"
+  },
+  "stLiveHintBandwidth": {
+    "message": "測速會與正在播放的直播<b>搶頻寬</b>，期間畫面可能短暫卡頓，屬正常現象。每條線路約需 {sec} 秒。"
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "請先在 B 站直播間開始播放，取得串流網址後再測速。"
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "無法開始測速，請確認目前分頁是 B 站直播間。"
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "連不上任何線路，請重新整理直播間後再測速。"
+  },
+  "stLiveStartupLabel": {
+    "message": "切台卡頓"
+  },
+  "stLiveSustainLabel": {
+    "message": "持續觀看"
+  },
+  "levelLow": {
+    "message": "低"
+  },
+  "levelMid": {
+    "message": "中"
+  },
+  "levelHigh": {
+    "message": "高"
+  },
+  "sustainGood": {
+    "message": "優秀"
+  },
+  "sustainFair": {
+    "message": "中等"
+  },
+  "sustainPoor": {
+    "message": "差勁"
+  },
+  "mhToastLiveFallback": {
+    "message": "目前直播線路不佳，已自動切換至國際線路(ov)"
+  },
+  "speedtestStatusIdle": {
+    "message": "尚未測試"
+  },
+  "liveRouteRowLabel": {
+    "message": "直播線路"
+  },
+  "stLiveLagTemplate": {
+    "message": "落後 {ms}ms"
+  },
+  "liveRouteExplain": {
+    "message": "直播沒辦法像影片一樣自由挑節點：每次進直播間，B 站都會指派一組專屬節點，換成別組就播不了。所以這裡選的是「偏好哪種線路」，擴充會在 B 站給你的那組節點裡，切到你偏好的那一條。"
+  },
+  "liveModePrefLabel": {
+    "message": "偏好選擇"
+  },
+  "showDebugHint": {
+    "message": "在播放畫面左上角顯示目前實際使用的線路等技術資訊，並在下方列出同樣的內容。回報問題或比較速度時才需要打開，平常看影片不用開。"
+  },
+  "staleTabText": {
+    "message": "擴充剛更新或重新載入，重新整理後才會生效。"
+  },
+  "staleTabReloadBtn": {
+    "message": "重新整理"
+  },
+  "videoFallbackHint": {
+    "message": "若開著「失敗自動切換」，則會自動在節點失效時，為您切回官方節點。"
+  },
+  "sortBySpeedLabel": {
+    "message": "節點按測速排序"
+  },
+  "sortBySpeedHint": {
+    "message": "開啟後，測速時每測完一個節點，就會依速度由快到慢自動排好；排好的順序會記住，節點清單也會照這個順序顯示，直到下次重新測速。影片與直播都適用，關閉後恢復預設順序。"
+  },
+  "stVideoLimitTitle": {
+    "message": "影片測速門檻"
+  },
+  "stVideoLimitHint": {
+    "message": "測速時每個節點下載到這個大小、或測滿這個秒數就換下一個（先到為準）。數字越大結果越準，但整體測得越久。"
+  },
+  "stVideoMbLabel": {
+    "message": "每個節點最多下載"
+  },
+  "stVideoSecLabel": {
+    "message": "每個節點最多測"
+  },
+  "stLiveLimitTitle": {
+    "message": "直播測速門檻"
+  },
+  "stLiveLimitHint": {
+    "message": "「切台卡頓」會重複測幾次取平均；「持續觀看」會在每條線路上實際拉流幾秒，看能不能跟上直播。次數或秒數越多結果越準，但整體測得越久。"
+  },
+  "stLiveRunsLabel": {
+    "message": "切台卡頓測試次數"
+  },
+  "stLiveSecLabel": {
+    "message": "持續觀看每條線路測"
+  },
+  "unitSec": {
+    "message": "秒"
+  },
+  "unitTimes": {
+    "message": "次"
+  },
+  "resetDefault": {
+    "message": "恢復預設"
+  },
+  "staleTabTitle": {
+    "message": "這個分頁需要重新整理"
+  },
+  "stStopBtn": {
+    "message": "⏹ 停止"
+  },
+  "changelogTitle": {
+    "message": "版本更新紀錄"
+  },
+  "changelogCurrent": {
+    "message": "目前版本"
   }
 }

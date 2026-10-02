@@ -3,9 +3,65 @@
     {
       "type": "feature",
       "text": {
-        "zh_TW": "擴充更新後，第一次開啟設定選單會顯示一次性的「更新內容」提示，列出新增的功能與修正",
-        "zh_CN": "扩充更新后，第一次打开设定选单会显示一次性的「更新内容」提示，列出新增的功能与修正",
-        "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes"
+        "zh_TW": "新增更新內容提示",
+        "zh_CN": "新增更新内容提示",
+        "en": "Added a what's-new notice after updates"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "主頁顯示版本號，可查看歷史更新紀錄",
+        "zh_CN": "主页显示版本号，可查看历史更新记录",
+        "en": "Show the version number on the main page, with release history"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增直播支援（線路切換與測速）",
+        "zh_CN": "新增直播支持（线路切换与测速）",
+        "en": "Added live-stream support (route switching and speed test)"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "設定選單改版，新增進階設定頁",
+        "zh_CN": "设定选单改版，新增高级设置页",
+        "en": "Redesigned the popup and added an Advanced settings page"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "影片新增「關閉」選項",
+        "zh_CN": "视频新增「关闭」选项",
+        "en": "Added an \"Off\" option for videos"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "測速頁新增「停止」按鈕",
+        "zh_CN": "测速页新增「停止」按钮",
+        "en": "Added a \"Stop\" button to the speed test"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增「節點按測速排序」功能",
+        "zh_CN": "新增「节点按测速排序」功能",
+        "en": "Added \"Sort nodes by speed test\""
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增可調整的測速門檻",
+        "zh_CN": "新增可调整的测速门槛",
+        "en": "Added adjustable speed-test limits"
       }
     }
   ],

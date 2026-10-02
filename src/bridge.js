@@ -14,11 +14,14 @@
     enabled: true,
     cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
     autoFallback: true,
-    showDebug: false
+    showDebug: false,
+    videoEnabled: true,
+    liveEnabled: true,
+    liveRoute: "ov"
   };
 
   var latestDebug = null;
-  var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "" };
+  var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
 
   function pushConfig(cfg) {
     try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -41,7 +44,7 @@
   var MSGS_KEY = "__CDN_SWITCHER_MSGS__";
   var MSG_KEYS = [
     "mhToastAutoSwitched", "mhToastAllFailed", "mhToastReloadBackup", "mhToastClose",
-    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup"
+    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback"
   ];
   function pushMessages() {
     var msgs = {};
@@ -73,7 +76,15 @@
       speedTest.qn = d.payload.qn || "";
       return;
     }
-    if (d.dir === "speedtest-progress" && d.payload) { speedTest.results.push(d.payload); return; }
+    if (d.dir === "speedtest-avail" && d.payload) { speedTest.avail = d.payload.avail || null; return; }
+    if (d.dir === "speedtest-progress" && d.payload) {
+      // 直播测速一条线路会分几次回报（起播 → 持续），以 route 合并成同一笔；点播测速没有 route，照旧依序追加
+      var idx = -1;
+      if (d.payload.route) for (var i = 0; i < speedTest.results.length; i++) if (speedTest.results[i].route === d.payload.route) { idx = i; break; }
+      if (idx >= 0) { for (var k in d.payload) speedTest.results[idx][k] = d.payload[k]; }
+      else speedTest.results.push(d.payload);
+      return;
+    }
     if (d.dir === "speedtest-done") {
       speedTest.running = false;
       speedTest.error = (d.payload && d.payload.error) || null;
@@ -85,6 +96,8 @@
   try {
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       if (msg && msg.type === "CDN_SWITCHER_GET_DEBUG") {
+        // 顺便通知 MAIN：popup 开着了，直播间可以开始探测各线路是否存在（懒探测，见 main-hook.js）
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "debug-poll" }, "*"); } catch (e) {}
         sendResponse({ debug: latestDebug });
         return true;
       }
@@ -92,8 +105,20 @@
         // 一律直接开新一轮：MAIN world 若前一轮还在跑，runSpeedTest 自己会中断旧的再开始
         // （用 generation 计数器隔开新旧两轮的 continuation，见 main-hook.js）
         var hosts = Array.isArray(msg.hosts) ? msg.hosts : [];
-        speedTest = { running: true, results: [], total: hosts.length, error: null, title: "", qn: "" };
-        try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-run", payload: { hosts: hosts } }, "*"); } catch (e) {}
+        speedTest = { running: true, results: [], total: hosts.length, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-run", payload: { hosts: hosts, limits: msg.limits || null } }, "*"); } catch (e) {}
+        sendResponse({ ok: true });
+        return true;
+      }
+      if (msg && msg.type === "CDN_SWITCHER_RUN_LIVE_SPEEDTEST") {
+        speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}
+        sendResponse({ ok: true });
+        return true;
+      }
+      if (msg && msg.type === "CDN_SWITCHER_STOP_SPEEDTEST") {
+        speedTest.running = false;
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-stop" }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
       }

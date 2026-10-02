@@ -11,9 +11,6 @@
   "popupTitle": {
     "message": "CDN 线路"
   },
-  "headerTitle": {
-    "message": "B 站 CDN 线路"
-  },
   "enabledLabel": {
     "message": "启用"
   },
@@ -21,10 +18,10 @@
     "message": "失败自动切换"
   },
   "autoFallbackHint": {
-    "message": "网络本身不稳（如 WiFi 信号弱）时，自动切换可能造成频繁黑屏并丢弃已缓冲内容，可关闭。"
+    "message": "视频或直播卡住、线路连不上时，自动换到其他可用的线路，免得一直转圈圈。如果你的网络本身就不稳（例如 Wi-Fi 信号弱），它可能会一直换线路、画面黑掉重载，这种情况建议关掉。"
   },
   "cdnHostRowLabel": {
-    "message": "CDN 线路（换成此节点并排最前，原节点保留为 fallback）"
+    "message": "CDN 节点"
   },
   "modeListLabel": {
     "message": "清单选择"
@@ -155,14 +152,8 @@
   "cdnNoteBackupUrl": {
     "message": "用 B 站提供的备援节点"
   },
-  "cdnNoteOriginal": {
-    "message": "不覆写，等同关闭"
-  },
   "cdnNameBackupUrl": {
     "message": "备用URL"
-  },
-  "cdnNameOriginal": {
-    "message": "原始"
   },
   "mhToastAutoSwitched": {
     "message": "目前 CDN 速度不佳，已自动切换至备援节点 {host}"
@@ -199,5 +190,167 @@
   },
   "whatsNewTypeFix": {
     "message": "修正"
+  },
+  "tabVideo": {
+    "message": "视频"
+  },
+  "tabLive": {
+    "message": "直播"
+  },
+  "modeOffLabel": {
+    "message": "关闭"
+  },
+  "modeOffHintVideo": {
+    "message": "不介入普通视频的 CDN 选线，维持官方原始逻辑。"
+  },
+  "modeOffHintLive": {
+    "message": "不介入直播的 CDN 选线，维持官方原始逻辑。"
+  },
+  "advancedBtnTitle": {
+    "message": "高级设置"
+  },
+  "advancedTitle": {
+    "message": "高级设置"
+  },
+  "liveRouteOv": {
+    "message": "国际线路(ov)"
+  },
+  "liveRouteOvB": {
+    "message": "国际备用线路(ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "中国线路(cn)"
+  },
+  "liveRouteCnB": {
+    "message": "中国备用线路(cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "当前直播没有此线路"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 测试各直播线路速度"
+  },
+  "stLiveHeaderTitle": {
+    "message": "直播线路测速"
+  },
+  "stLiveHintLeave": {
+    "message": "用「当前直播间」的串流实测各线路；离开此页会立即停止测速。"
+  },
+  "stLiveHintBandwidth": {
+    "message": "测速会与正在播放的直播<b>抢带宽</b>，期间画面可能短暂卡顿，属正常现象。每条线路约需 {sec} 秒。"
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "请先在 B 站直播间开始播放，取得串流地址后再测速。"
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "无法开始测速，请确认当前标签页是 B 站直播间。"
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "连不上任何线路，请刷新直播间后再测速。"
+  },
+  "stLiveStartupLabel": {
+    "message": "切台卡顿"
+  },
+  "stLiveSustainLabel": {
+    "message": "持续观看"
+  },
+  "levelLow": {
+    "message": "低"
+  },
+  "levelMid": {
+    "message": "中"
+  },
+  "levelHigh": {
+    "message": "高"
+  },
+  "sustainGood": {
+    "message": "优秀"
+  },
+  "sustainFair": {
+    "message": "中等"
+  },
+  "sustainPoor": {
+    "message": "差劲"
+  },
+  "mhToastLiveFallback": {
+    "message": "当前直播线路不佳，已自动切换至国际线路(ov)"
+  },
+  "speedtestStatusIdle": {
+    "message": "尚未测试"
+  },
+  "liveRouteRowLabel": {
+    "message": "直播线路"
+  },
+  "stLiveLagTemplate": {
+    "message": "落后 {ms}ms"
+  },
+  "liveRouteExplain": {
+    "message": "直播没办法像视频一样自由挑节点：每次进直播间，B 站都会指派一组专属节点，换成别组就播不了。所以这里选的是「偏好哪种线路」，扩充会在 B 站给你的那组节点里，切到你偏好的那一条。"
+  },
+  "liveModePrefLabel": {
+    "message": "偏好选择"
+  },
+  "showDebugHint": {
+    "message": "在播放画面左上角显示当前实际使用的线路等技术信息，并在下方列出同样的内容。反馈问题或比较速度时才需要打开，平常看视频不用开。"
+  },
+  "staleTabText": {
+    "message": "扩充刚更新或重新加载，刷新后才会生效。"
+  },
+  "staleTabReloadBtn": {
+    "message": "刷新"
+  },
+  "videoFallbackHint": {
+    "message": "若开着「失败自动切换」，则会自动在节点失效时，为您切回官方节点。"
+  },
+  "sortBySpeedLabel": {
+    "message": "节点按测速排序"
+  },
+  "sortBySpeedHint": {
+    "message": "开启后，测速时每测完一个节点，就会依速度由快到慢自动排好；排好的顺序会记住，节点列表也会照这个顺序显示，直到下次重新测速。视频与直播都适用，关闭后恢复默认顺序。"
+  },
+  "stVideoLimitTitle": {
+    "message": "视频测速门槛"
+  },
+  "stVideoLimitHint": {
+    "message": "测速时每个节点下载到这个大小、或测满这个秒数就换下一个（先到为准）。数字越大结果越准，但整体测得越久。"
+  },
+  "stVideoMbLabel": {
+    "message": "每个节点最多下载"
+  },
+  "stVideoSecLabel": {
+    "message": "每个节点最多测"
+  },
+  "stLiveLimitTitle": {
+    "message": "直播测速门槛"
+  },
+  "stLiveLimitHint": {
+    "message": "「切台卡顿」会重复测几次取平均；「持续观看」会在每条线路上实际拉流几秒，看能不能跟上直播。次数或秒数越多结果越准，但整体测得越久。"
+  },
+  "stLiveRunsLabel": {
+    "message": "切台卡顿测试次数"
+  },
+  "stLiveSecLabel": {
+    "message": "持续观看每条线路测"
+  },
+  "unitSec": {
+    "message": "秒"
+  },
+  "unitTimes": {
+    "message": "次"
+  },
+  "resetDefault": {
+    "message": "恢复默认"
+  },
+  "staleTabTitle": {
+    "message": "这个标签页需要刷新"
+  },
+  "stStopBtn": {
+    "message": "⏹ 停止"
+  },
+  "changelogTitle": {
+    "message": "版本更新记录"
+  },
+  "changelogCurrent": {
+    "message": "当前版本"
   }
 }
