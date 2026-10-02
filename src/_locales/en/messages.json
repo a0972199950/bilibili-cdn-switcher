@@ -11,9 +11,6 @@
   "popupTitle": {
     "message": "CDN Route"
   },
-  "headerTitle": {
-    "message": "Bilibili CDN Route"
-  },
   "enabledLabel": {
     "message": "Enabled"
   },
@@ -21,10 +18,10 @@
     "message": "Auto-switch on failure"
   },
   "autoFallbackHint": {
-    "message": "If your own network is unstable (e.g. weak Wi-Fi), auto-switching can cause repeated black screens and discard buffered video. Turn it off to avoid that."
+    "message": "When a video or live stream freezes or a route can't connect, automatically switch to another working route so you aren't stuck on a spinner. If your own connection is unstable (e.g. weak Wi-Fi), it may keep switching and blank the picture while reloading — turn it off in that case."
   },
   "cdnHostRowLabel": {
-    "message": "CDN route (moves this node to the front; the original node stays as fallback)"
+    "message": "CDN node"
   },
   "modeListLabel": {
     "message": "Choose from list"
@@ -155,14 +152,8 @@
   "cdnNoteBackupUrl": {
     "message": "Use bilibili's provided backup node"
   },
-  "cdnNoteOriginal": {
-    "message": "No override, same as disabled"
-  },
   "cdnNameBackupUrl": {
     "message": "Backup URL"
-  },
-  "cdnNameOriginal": {
-    "message": "Original"
   },
   "mhToastAutoSwitched": {
     "message": "Current CDN is slow, automatically switched to backup node {host}"
@@ -199,5 +190,167 @@
   },
   "whatsNewTypeFix": {
     "message": "Fix"
+  },
+  "tabVideo": {
+    "message": "Video"
+  },
+  "tabLive": {
+    "message": "Live"
+  },
+  "modeOffLabel": {
+    "message": "Off"
+  },
+  "modeOffHintVideo": {
+    "message": "Does not touch CDN selection for regular videos; Bilibili's original behavior is kept."
+  },
+  "modeOffHintLive": {
+    "message": "Does not touch CDN selection for live streams; Bilibili's original behavior is kept."
+  },
+  "advancedBtnTitle": {
+    "message": "Advanced settings"
+  },
+  "advancedTitle": {
+    "message": "Advanced settings"
+  },
+  "liveRouteOv": {
+    "message": "International (ov)"
+  },
+  "liveRouteOvB": {
+    "message": "International backup (ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "China (cn)"
+  },
+  "liveRouteCnB": {
+    "message": "China backup (cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "Not available for this stream"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 Test live routes"
+  },
+  "stLiveHeaderTitle": {
+    "message": "Live route speed test"
+  },
+  "stLiveHintLeave": {
+    "message": "Tests each route with the stream of the current live room; leaving this page stops the test immediately."
+  },
+  "stLiveHintBandwidth": {
+    "message": "The test <b>competes for bandwidth</b> with the live stream you are watching, so the picture may stutter briefly. Each route takes about {sec} seconds."
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "Start playing a Bilibili live room first so the stream URL is known, then run the test."
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "Cannot start the test. Make sure the current tab is a Bilibili live room."
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "None of the routes could be reached. Refresh the live room and try again."
+  },
+  "stLiveStartupLabel": {
+    "message": "Switch lag"
+  },
+  "stLiveSustainLabel": {
+    "message": "Keeping up"
+  },
+  "levelLow": {
+    "message": "Low"
+  },
+  "levelMid": {
+    "message": "Mid"
+  },
+  "levelHigh": {
+    "message": "High"
+  },
+  "sustainGood": {
+    "message": "Excellent"
+  },
+  "sustainFair": {
+    "message": "Fair"
+  },
+  "sustainPoor": {
+    "message": "Poor"
+  },
+  "mhToastLiveFallback": {
+    "message": "Live route is poor; switched to International (ov)"
+  },
+  "speedtestStatusIdle": {
+    "message": "Not tested"
+  },
+  "liveRouteRowLabel": {
+    "message": "Live route"
+  },
+  "stLiveLagTemplate": {
+    "message": "{ms}ms behind"
+  },
+  "liveRouteExplain": {
+    "message": "Live streams can't switch freely between nodes like videos can: each time you enter a live room, Bilibili assigns you its own set of nodes, and any other set won't play. So what you pick here is a preferred route type, and the extension switches to that route within the set Bilibili gave you."
+  },
+  "liveModePrefLabel": {
+    "message": "Preference"
+  },
+  "showDebugHint": {
+    "message": "Shows technical info such as the route actually in use at the top-left of the player, and lists the same info below. Only needed when reporting a problem or comparing speeds."
+  },
+  "staleTabText": {
+    "message": "The extension was just updated or reloaded; refresh the tab for it to take effect."
+  },
+  "staleTabReloadBtn": {
+    "message": "Refresh"
+  },
+  "videoFallbackHint": {
+    "message": "With \"Auto-switch on failure\" on, playback switches back to Bilibili's official node automatically when this node fails."
+  },
+  "sortBySpeedLabel": {
+    "message": "Sort nodes by speed test"
+  },
+  "sortBySpeedHint": {
+    "message": "When on, each node slides into place (fastest first) as soon as its speed test finishes. The order is remembered and the node lists use it too, until you run the test again. Works for both video and live; turning it off restores the default order."
+  },
+  "stVideoLimitTitle": {
+    "message": "Video speed-test limits"
+  },
+  "stVideoLimitHint": {
+    "message": "Each node is tested until it has downloaded this much or this many seconds have passed, whichever comes first. Bigger numbers give more accurate results but the test takes longer."
+  },
+  "stVideoMbLabel": {
+    "message": "Max download per node"
+  },
+  "stVideoSecLabel": {
+    "message": "Max time per node"
+  },
+  "stLiveLimitTitle": {
+    "message": "Live speed-test limits"
+  },
+  "stLiveLimitHint": {
+    "message": "\"Switch lag\" is measured several times and averaged; \"Keeping up\" actually pulls the stream on each route for a few seconds to see whether it keeps pace. More runs or seconds give more accurate results but the test takes longer."
+  },
+  "stLiveRunsLabel": {
+    "message": "Switch-lag runs"
+  },
+  "stLiveSecLabel": {
+    "message": "Keeping-up time per route"
+  },
+  "unitSec": {
+    "message": "s"
+  },
+  "unitTimes": {
+    "message": "×"
+  },
+  "resetDefault": {
+    "message": "Reset to default"
+  },
+  "staleTabTitle": {
+    "message": "This tab needs a refresh"
+  },
+  "stStopBtn": {
+    "message": "⏹ Stop"
+  },
+  "changelogTitle": {
+    "message": "Release notes"
+  },
+  "changelogCurrent": {
+    "message": "current"
   }
 }
