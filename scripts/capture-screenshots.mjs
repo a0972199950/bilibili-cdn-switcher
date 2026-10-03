@@ -184,33 +184,65 @@ function parseSpdBps(text) {
 
 // main-hook.js 的 spd 是 10 秒捲動視窗（SPEED_WINDOW_MS）算出來的，剛開始播放時視窗還沒填滿、
 // 數字會偏低且一直往上衝；等視窗被實際下載撐滿、連續兩次讀數不再明顯往上衝，才算穩定。
-async function waitForStableSpeed(tabB, downloadStartedAt) {
-  const timeout = 25000;
+// minBps：切 4K 後要等速度真的比切換前高（4K 分段大、下載量才撐得起來）才算數。
+async function waitForStableSpeed(tabB, downloadStartedAt, { minBps = 0, timeout = 25000 } = {}) {
   const pollMs = 1000;
   const start = Date.now();
   let prevBps = null;
+  let bps = null;
   while (Date.now() - start < timeout) {
     const text = await tabB.$eval("#debug", (el) => el.textContent).catch(() => "");
-    const bps = parseSpdBps(text);
-    if (bps && Date.now() - downloadStartedAt >= 10000 && prevBps && bps <= prevBps * 1.15) {
-      return;
+    bps = parseSpdBps(text);
+    if (bps && bps > minBps && Date.now() - downloadStartedAt >= 10000 && prevBps && bps <= prevBps * 1.15) {
+      return bps;
     }
     prevBps = bps;
     await sleep(pollMs);
   }
-  log("  （等了 25 秒速度還沒穩定下來，直接用目前讀數截圖）");
+  log(`  （等了 ${timeout / 1000} 秒速度還沒穩定下來，直接用目前讀數截圖）`);
+  return bps;
 }
 
-async function waitForSpeedtestMidway(tabB) {
-  // 節點清單長、每個節點慢的話可能真的要等（有的節點會等到 timeout 才失敗），
-  // 所以在「剛好完成第 1 個、還在跑第 2 個」就馬上截圖：畫面才會同時看得到
-  // 已完成的節點跟「Testing…」那行，慢了的話「Testing…」會被捲出可視範圍外。
+async function readOverlayText(tabA) {
+  return tabA.$eval("#bcs-debug-overlay", (el) => el.textContent).catch(() => "");
+}
+
+// 把播放器畫質切到 4K（qn=120）：優先用 bpx 播放器的 window.player.requestQuality，
+// 沒有這個 API 就退回直接觸發畫質選單項目的 click。要登入大會員帳號、影片也要有 4K 才切得到。
+// 切換是否成功以 debug 疊層的 qn=4K 為準（main-hook 依實際下載中的分段判斷畫質，比播放器 UI 準）。
+const QN_4K = 120;
+async function switchTo4K(tabA) {
+  if (/qn=4K/.test(await readOverlayText(tabA))) return true;
+  const how = await tabA.evaluate((qn) => {
+    try {
+      if (window.player && typeof window.player.requestQuality === "function") {
+        window.player.requestQuality(qn);
+        return "requestQuality";
+      }
+    } catch (e) { /* 改用選單 */ }
+    const item = document.querySelector(`.bpx-player-ctrl-quality-menu-item[data-value="${qn}"]`);
+    if (item) { item.click(); return "menu"; }
+    return null;
+  }, QN_4K);
+  if (!how) { log("  （找不到切畫質的方法，維持目前畫質）"); return false; }
+  const ok = await tabA.waitForFunction(
+    () => { const el = document.getElementById("bcs-debug-overlay"); return !!(el && /qn=4K/.test(el.textContent)); },
+    { timeout: 30000, polling: 500 }
+  ).then(() => true, () => false);
+  log(ok ? `  已切到 4K（${how}）` : "  （30 秒內 debug 疊層沒出現 qn=4K，可能帳號不是大會員或影片沒有 4K）");
+  return ok;
+}
+
+async function waitForSpeedtestMidway(tabB, minDone) {
+  // 在「完成 minDone 個、仍在測試中」就馬上截圖：畫面才會同時看得到已完成的節點（開了
+  // 按速度排序，會依快→慢排在最上面）跟緊接著的「Testing…」那行。節點慢的話單一節點
+  // 可能等到門檻秒數才結束，所以 timeout 抓寬一點。
   // polling 預設用 requestAnimationFrame，但 tabB 這時是背景分頁，瀏覽器會暫停 rAF，
   // 導致條件幾乎沒被檢查、一路空等到 timeout 才發現整個測速早就跑完了。改用固定間隔 polling。
-  await tabB.waitForFunction(() => {
+  await tabB.waitForFunction((n) => {
     var st = window.lastSpeedtestState;
-    return !!(st && st.running && st.results && st.results.length >= 1);
-  }, { timeout: 60000, polling: 100 }).catch(() => log("  （測速沒等到「完成 1 個節點且仍在測試中」，直接用目前畫面截圖）"));
+    return !!(st && st.running && st.results && st.results.length >= n);
+  }, { timeout: 120000, polling: 100 }, minDone).catch(() => log(`  （測速沒等到「完成 ${minDone} 個節點且仍在測試中」，直接用目前畫面截圖）`));
 }
 
 async function captureLiveMain({ tabA, tabB, save }) {
@@ -277,10 +309,18 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // #showDebug 是 opacity:0/寬高 0 的隱藏 checkbox（外觀靠 .slider 畫出來），
     // Puppeteer 的 click() 需要有實際可點的座標，抓不到寬高 0 的元素，改用 JS 直接觸發
     await tabB.$eval("#showDebug", (el) => el.click());
+    // 開「節點按測速排序」：測速頁的結果會依速度快→慢重排，進階設定頁截圖裡這個開關也是開著的。
+    // 這設定存在 storage，同一輪後面的畫面都吃得到；每個語系是全新 userDataDir，要各自打開一次
+    await tabB.$eval("#sortBySpeed", (el) => { if (!el.checked) el.click(); });
 
     await tabA.bringToFront();
     await sleep(1500); // 等 popup.js 的 setInterval(1000ms) 至少 poll 一次，#debug 才有字可讀
-    await waitForStableSpeed(tabB, downloadStartedAt); // main 的 spd 數字等它衝上去、穩定了再截圖
+    const baseBps = await waitForStableSpeed(tabB, downloadStartedAt);
+
+    // 主頁 / debug 疊層都要顯示 4K：切畫質後重新等 10 秒視窗被 4K 分段填滿、速度衝上去並穩定再截
+    if (await switchTo4K(tabA)) {
+      await waitForStableSpeed(tabB, Date.now(), { minBps: baseBps || 0, timeout: 45000 });
+    }
 
     await fs.mkdir(OUT_DIR, { recursive: true });
 
@@ -297,7 +337,7 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // 會一直等不到而卡住逾時，跟 #showDebug 一樣改用 JS 直接觸發 click
     await tabB.$eval("#speedtestBtn", (el) => el.click());
     await tabB.waitForSelector("#speedtestView", { visible: true });
-    await waitForSpeedtestMidway(tabB);
+    await waitForSpeedtestMidway(tabB, 3);
     await sleep(100);
     await save(await popupShot(tabB, { fit: false }), "videoSpeedtest");
     await tabB.$eval("#stBackBtn", (el) => el.click()); // 返回主頁（同時中止測速）
