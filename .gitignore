@@ -18,6 +18,20 @@ safari/*.xcodeproj/xcuserdata/
 safari/*.xcworkspace/xcuserdata/
 safari/*.xcworkspace/xcshareddata/
 safari/*/DerivedData/
-
+/
 # 瀏覽器自動化工具（Playwright MCP）的暫存紀錄
 .playwright-mcp/
+
+# /cdn-speedtest 測速結果（含當地出口 IP）
+cdn-speedtest-results/
+
+
+# Python 快取
+__pycache__/
+
+# 研究資料與規格，只留本機
+research/
+spec/
+
+# 發版產物（npm run package；/release 會上傳到 GitHub Release）
+release/

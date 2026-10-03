@@ -1,12 +1,12 @@
 {
   "extName": {
-    "message": "TW/SG 影片加速 for bilibili (非官方)"
+    "message": "海外影片加速 for bilibili"
   },
   "extDescription": {
-    "message": "讓台灣 / 新加坡使用者在網頁版 bilibili 上更順暢觀看 4K 等高畫質影片，減少緩衝與卡頓。非官方第三方擴充，與 bilibili 官方無關聯。"
+    "message": "讓海外使用者在網頁版 bilibili 上更順暢觀看 4K 等高畫質影片，減少緩衝與卡頓。非官方第三方擴充，與 bilibili 官方無關聯。"
   },
   "extActionTitle": {
-    "message": "TW/SG 影片加速"
+    "message": "海外影片加速"
   },
   "popupTitle": {
     "message": "CDN 線路"
@@ -27,13 +27,10 @@
     "message": "清單選擇"
   },
   "modeCustomLabel": {
-    "message": "自行輸入"
+    "message": "自訂節點列表"
   },
   "customHostPlaceholder": {
-    "message": "輸入 CDN host，例：upos-sz-mirrorxxx.bilivideo.com"
-  },
-  "customHintDefault": {
-    "message": "只填 host（網域），不含 http:// 與路徑。"
+    "message": "輸入節點網址或 host"
   },
   "customHintInvalid": {
     "message": "請輸入有效的 host（含網域，如 xxx.bilivideo.com）。"
@@ -109,45 +106,6 @@
   },
   "errNoSample": {
     "message": "尚無分段樣本"
-  },
-  "cdnNoteRecommended": {
-    "message": "推薦 TW/SG 最快"
-  },
-  "cdnNoteAliyun": {
-    "message": "阿里雲"
-  },
-  "cdnNoteTencentCloud": {
-    "message": "騰訊雲"
-  },
-  "cdnNoteTencentCloudVod": {
-    "message": "騰訊雲 VOD加速"
-  },
-  "cdnNoteHuaweiHybrid": {
-    "message": "華為雲 融合CDN"
-  },
-  "cdnNoteSecondBest2": {
-    "message": "華為雲 融合CDN，TW/SG 次優線路2"
-  },
-  "cdnNoteSecondBest3": {
-    "message": "華為雲 融合CDN，TW/SG 次優線路3"
-  },
-  "cdnNoteHuawei": {
-    "message": "華為雲"
-  },
-  "cdnNoteAkamaiOverseas": {
-    "message": "Akamai海外"
-  },
-  "cdnNoteAliyunOverseas": {
-    "message": "阿里雲海外"
-  },
-  "cdnNoteTencentOverseas": {
-    "message": "騰訊雲海外"
-  },
-  "cdnNoteHuaweiOverseas": {
-    "message": "華為雲海外"
-  },
-  "cdnNoteBilibiliOverseas": {
-    "message": "Bilibili海外"
   },
   "cdnNoteBackupUrl": {
     "message": "用 B 站提供的備援節點"
@@ -299,9 +257,6 @@
   "staleTabReloadBtn": {
     "message": "重新整理"
   },
-  "videoFallbackHint": {
-    "message": "若開著「失敗自動切換」，則會自動在節點失效時，為您切回官方節點。"
-  },
   "sortBySpeedLabel": {
     "message": "節點按測速排序"
   },
@@ -352,5 +307,131 @@
   },
   "changelogCurrent": {
     "message": "目前版本"
+  },
+  "countryLabel": {
+    "message": "節點清單的國家／地區"
+  },
+  "countryYouAreHere": {
+    "message": "{name}（你在這裡）"
+  },
+  "countryAll": {
+    "message": "全部"
+  },
+  "countryNodeCount": {
+    "message": "{n} 個節點"
+  },
+  "durationHMS": {
+    "message": "{h} 小時 {m} 分鐘 {s} 秒"
+  },
+  "allWarnTitle": {
+    "message": "全量測速要很久"
+  },
+  "allWarnText": {
+    "message": "您正打算對全部 <b>{n}</b> 個節點測速，按照當下設定估算約需 <b>{time}</b>。"
+  },
+  "allWarnAdvice": {
+    "message": "各國家節點清單已是預先篩選出的最快第一梯隊，建議選擇個別國家，或距離您最近的國家後再測速。"
+  },
+  "allWarnQuestion": {
+    "message": "確定進行全量測速嗎？"
+  },
+  "allWarnCancel": {
+    "message": "取消，改選國家"
+  },
+  "allWarnConfirm": {
+    "message": "仍要測速全部節點"
+  },
+  "crownRank": {
+    "message": "第 {n} 名"
+  },
+  "stDescExpand": {
+    "message": "展開說明"
+  },
+  "stDescCollapse": {
+    "message": "收合說明"
+  },
+  "autoSpeedSwitchLabel": {
+    "message": "影片自動測速並切換到最快節點"
+  },
+  "autoSpeedSwitchHint": {
+    "message": "每支影片開始播放後，在背景測速目前國家的節點，自動切換到最快的節點並記住。"
+  },
+  "autoSpeedSwitchAllNote": {
+    "message": "節點清單選「全部」時無法使用，請先在主頁選擇國家。"
+  },
+  "mhToastSwitched": {
+    "message": "切換到 {host}"
+  },
+  "autoSpeedWarnTitle": {
+    "message": "確定要開啟自動測速嗎？"
+  },
+  "autoSpeedWarnText": {
+    "message": "由於每次測速的排名都不同，這有<b>極大副作用</b>：幾乎每次看影片都會因切換 CDN <b>跳一次黑畫面</b>。"
+  },
+  "autoSpeedWarnAdvice": {
+    "message": "若選定的節點大多時候都能順暢播放，不建議開啟，沒有可見的提升；若是擔心選定的節點會卡、又不想手動切換，請改用「失敗自動切換」。"
+  },
+  "autoSpeedWarnCancel": {
+    "message": "取消，維持關閉"
+  },
+  "autoSpeedWarnConfirm": {
+    "message": "仍要開啟"
+  },
+  "customHintDup": {
+    "message": "這個節點已經在列表裡了。"
+  },
+  "customAddBtn": {
+    "message": "加入"
+  },
+  "customDesc1": {
+    "message": "適合不在國家清單中，或清單裡的節點都很慢時使用。"
+  },
+  "customListEmpty": {
+    "message": "空列表"
+  },
+  "customClearBtn": {
+    "message": "清空"
+  },
+  "customDelTitle": {
+    "message": "從列表移除"
+  },
+  "customClearTitle": {
+    "message": "清空自訂節點列表？"
+  },
+  "customClearText": {
+    "message": "列表裡的 <b>{n} 個節點</b>都會被移除，並改用目前國家的第一個節點。"
+  },
+  "customClearCancel": {
+    "message": "取消"
+  },
+  "customClearConfirm": {
+    "message": "確認"
+  },
+  "resetAllBtn": {
+    "message": "恢復原始設置"
+  },
+  "resetAllTitle": {
+    "message": "恢復原始設置？"
+  },
+  "resetAllText": {
+    "message": "進階設定、影片與直播的節點設定都會回到預設，自訂節點列表會被<b>清空</b>。"
+  },
+  "importToastOk": {
+    "message": "已把測速工具推薦的 {n} 個節點加入「自訂節點列表」。打開擴充選單、選「自訂節點列表」就能使用。"
+  },
+  "importToastNone": {
+    "message": "測速工具推薦的節點都已經在「自訂節點列表」裡了。"
+  },
+  "importToastFail": {
+    "message": "沒辦法把測速推薦的節點加入「自訂節點列表」，請稍後再試一次。"
+  },
+  "autoDetectText": {
+    "message": "不知道哪些節點快？官方測速工具會測遍 300 多個節點，自動把最快的 10 個加入列表。"
+  },
+  "autoDetectBtn": {
+    "message": "⚡ 自動偵測並加入"
+  },
+  "countryMissingHint": {
+    "message": "沒有你的國家？試試最接近的國家，或是{link}。"
   }
 }

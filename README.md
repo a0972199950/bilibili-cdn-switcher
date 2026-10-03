@@ -1,12 +1,12 @@
 <div align="center">
 
-# 🎬 B 站 CDN 線路重排
+# 🎬 Bilibili CDN Route Switcher
 
-**語言 / Language：** 繁體中文（本頁）｜[简体中文](docs/README.zh-CN.md)｜[English](docs/README.en.md)
+**Language:** [繁體中文](docs/README.zh-TW.md)｜[简体中文](docs/README.zh-CN.md)｜English (this page)
 
-### 讓 🇹🇼 台灣 / 🇸🇬 新加坡 用戶看網頁版 B 站更順的 Chrome / Firefox / Edge / Safari 擴充
+### A Chrome / Firefox / Edge / Safari extension for smoother bilibili web playback for overseas viewers
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ Safari（App Store，即將上架）
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ Safari (App Store — coming soon)
 
 </div>
 
@@ -21,217 +21,225 @@ Before
 After
 ![Player debug overlay](./docs/after.png)
 
-## ✨ 這個擴充在做什麼
+## ✨ What this extension does
 
-**🎯 主要是為了讓 🇹🇼 台灣／🇸🇬 新加坡 的使用者看網頁版 B 站（www.bilibili.com）更順。**
+**🎯 It exists to make bilibili's web player (www.bilibili.com) smoother for overseas viewers (outside mainland China).**
 
-B 站預設分配的取流節點對台灣、新加坡使用者常常繞路、不夠快。這個擴充會**把影片的取流 CDN 重排、換成一個對 TW/SG 較快的最優節點**，讓緩衝與載入更順。
+Bilibili's default CDN assignment often routes overseas users through slow, roundabout paths. This extension **reroutes the video-fetching CDN to a node that tested faster for your region**, reducing buffering and load times.
 
-| 功能 | 說明 |
+| Feature | Description |
 |:--|:--|
-| 🚀 **TW/SG 最優節點** | 預設換成對台/星最快的 CDN，開箱即用 |
-| 🌐 **其他 CDN 節點** | 阿里雲／騰訊雲／華為雲／Akamai／各海外節點…，依所在地區自由比較切換 |
-| ✏️ **自行輸入** | 跟「清單選擇」互斥的另一個模式，可填任意 CDN host |
-| 🛑 **關閉** | 影片／直播各有獨立的「關閉」選項：不介入 CDN 選線、完全維持 B 站官方原始邏輯 |
-| 📺 **直播支援** | 「直播」分頁可在 國際線路(ov)／國際備用線路(ov-b)／中國線路(cn)／中國備用線路(cn-b) 之間切換，不整頁重載；進入直播間播放後才會顯示各線路的實際網址，當前直播沒有的線路會標註並變淡（仍可選）。直播線路不佳時，「失敗自動切換」會自動退回國際線路(ov)（只針對該直播間，不改變你長期的選擇） |
-| 🔁 **失敗自動切換** | 偵測到目前 CDN 分段請求失敗、或播放持續卡住（非單純緩衝已滿），先靜默切換到 B 站原生給的備援節點（顯示提示、不整頁刷新）；備援也不行時彈出提示，讓你自行決定是否切到「備用URL」。可在彈出視窗的「失敗自動切換」開關關閉（預設開啟）；網路本身不穩時建議關閉 |
-| 📶 **各節點測速** | 獨立頁面（影片、直播各一個），顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，測速中也能重新測；不影響你手動選擇的 CDN，離開該頁即中止 |
-| 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English，涵蓋 popup、頁面提示與 debug 疊層 |
-| 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在右上角齒輪的進階設定中打開） |
-| 🦊 **Chrome / Firefox / Edge / Safari 四平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest）；Safari 另用 Xcode 包成 `.app`（見下方「打包 Safari」） |
+| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (tested in Taiwan / Singapore, more countries coming soon), works out of the box |
+| 🌐 **Other CDN nodes** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / various overseas nodes…, freely switchable based on your region |
+| ✏️ **Custom input** | A mode mutually exclusive with "choose from list"; enter any CDN host |
+| 🛑 **Off** | Video and live each have their own "Off" option: CDN selection is left alone and bilibili's original behavior is kept |
+| 📺 **Live-stream support** | A "Live" tab switches between International (ov) / International backup (ov-b) / China (cn) / China backup (cn-b) without reloading the page. Actual route URLs are shown only once you are in a live room and it is playing; routes the current stream does not have are labelled and dimmed (still selectable). When a live route performs badly, "Auto-switch on failure" falls back to International (ov) for that room only, without changing your long-term choice |
+| 🔁 **Automatic failover** | Detects failed segment requests or genuinely stalled playback (not just a full buffer) and silently switches to bilibili's own backup node first (with a toast, no full-page reload); if that backup also fails, it shows a persistent prompt letting you decide whether to switch to the Backup URL. Can be turned off with the "Auto-switch on failure" toggle in the popup (on by default); turn it off if your own network is unstable |
+| 📶 **Per-node speed test** | A dedicated page (one for video, one for live) showing the video title/quality; measures download speed for each node using segments from the current video and quality, listed one by one — retestable mid-run. **Read-only, never changes your selected CDN**; leaving the page stops the test immediately |
+| 🌏 **Multi-language UI** | Automatically shows Traditional Chinese / Simplified Chinese / English based on your browser language, covering the popup, in-page toasts, and the debug overlay |
+| 🐛 **Debug overlay** | Shows the currently active CDN node (off by default, toggle it in Advanced settings behind the gear icon) |
+| 🦊 **Chrome / Firefox / Edge / Safari** | A single `src/` tree; packaging produces a per-browser zip (Edge is Chromium-based and reuses Chrome's manifest as-is); Safari is packaged into a `.app` via Xcode (see "Packaging Safari" below) |
 
 ---
 
-## 🗂️ 專案結構
+## 🗂️ Project structure
 
 ```text
 bilibili-cdn-switcher/
-├── src/                  ← 擴充本體（載入未封裝 / 打包的就是這層）
-│   ├── manifest.json          ← Chrome / Edge 用
-│   ├── manifest.firefox.json  ← Firefox 用（含 browser_specific_settings）
+├── src/                  ← Extension source (this is what "Load unpacked" / packaging uses)
+│   ├── manifest.json          ← Chrome / Edge
+│   ├── manifest.firefox.json  ← Firefox (includes browser_specific_settings)
 │   ├── popup.html / popup.js
-│   ├── main-hook.js      ← MAIN world：改寫取流 URL
-│   ├── bridge.js         ← ISOLATED world：storage / i18n ↔ 頁面 橋接
-│   ├── cdn-list.json     ← 節點清單
-│   ├── _locales/{zh_TW,zh_CN,en}/  ← 三語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
+│   ├── main-hook.js      ← MAIN world: rewrites stream URLs
+│   ├── bridge.js         ← ISOLATED world: storage / i18n bridge to the page
+│   ├── cdn-list.json     ← CDN node list
+│   ├── _locales/{zh_TW,zh_CN,en}/  ← Three-language strings (manifest uses __MSG_x__; popup.js/main-hook.js look them up at runtime)
 │   └── icons/            ← 16 / 32 / 48 / 128
-├── dist/                 ← 打包產物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
-├── docs/                 ← README 用的截圖 + 简体中文／English README
-├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
-├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台三語系介紹文字
-├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，內含擴充資源用相對路徑直接引用 ../../../src/）
-├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
-│   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
-│   ├── build-safari.mjs          ← 用 Xcode 打包 Safari 擴充成 .app（macOS-only）
-│   ├── changelog.mjs             ← 驗證 src/changelog.json；pre-push hook 用它檢查清單有沒有更新
-│   ├── release.mjs               ← 發版機械步驟（升版號、把 unreleased 搬進新版本）
-│   ├── publish-stores.mjs        ← 用 API 金鑰上傳新版 zip 到 Chrome / Edge / Firefox（不會按發布）
-│   ├── test-whats-new.mjs        ← 用真的 Chrome 測「更新內容」popup
-│   ├── gen-icons.mjs             ← 重新產生圖示
-│   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
-├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
-├── .env.local.example     ← 截圖用登入 cookie 的範例（複製成 .env.local 再填，見下）
+├── dist/                 ← Packaged output (.zip for Chrome/Firefox/Edge; .app for Safari)
+├── docs/                 ← Screenshots for the README + the Traditional / Simplified Chinese README
+├── assets/               ← 512px icon master (icons-prod is generated by gen-icons.mjs)
+├── store/                ← Store-listing screenshots / promo images + per-platform three-language copy
+├── safari/               ← Safari extension Xcode project (generated by safari-web-extension-converter; references ../../../src/ via relative paths)
+├── scripts/              ← All dev/build scripts, pure Node — runs on Windows / Mac / Linux
+│   ├── build.mjs                 ← Packages store-ready zips (Chrome + Firefox + Edge)
+│   ├── build-safari.mjs          ← Packages the Safari extension into a .app via Xcode (macOS-only)
+│   ├── gen-icons.mjs             ← Regenerates icons
+│   └── capture-screenshots.mjs   ← Automates a browser to capture the store screenshots (see below)
+├── package.json           ← Node deps for scripts/*.mjs (jszip / puppeteer / sharp)
+├── .env.local.example     ← Sample login cookie for the screenshot script (copy to .env.local)
 └── README.md
 ```
 
-所有 `scripts/` 底下的工具都是純 Node（配 [jszip](https://npm.im/jszip) 打包 zip、[sharp](https://npm.im/sharp) 處理圖片），
-不依賴 Windows 專屬的 PowerShell／System.Drawing，Mac／Linux 一樣能跑，只要先 `npm install` 裝好依賴即可。
+Everything under `scripts/` is plain Node (zipping via [jszip](https://npm.im/jszip), image work via
+[sharp](https://npm.im/sharp)) — no dependency on Windows-only PowerShell or System.Drawing, so it runs
+the same way on a Mac. Just `npm install` once to pull in the dependencies.
 
-### 📦 打包（上架 Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons 用）
+### 📦 Packaging (for Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons)
 
-這個專案不需要編譯／transpile，`src/` 底下就是可直接 `Load unpacked` 的原始碼；「打包」只是把它壓成上架用的 zip，
-**沒有自動化（例如 push 前自動打包）**，要更新 `dist/` 得自己手動跑一次：
+There's no compile/transpile step — `src/` is plain source you can `Load unpacked` directly. "Packaging"
+just zips it up for store submission, and **there's no automation for it** (e.g. nothing runs on push) —
+you need to run it by hand whenever `dist/` needs updating:
 
 ```bash
-npm install                          # 第一次執行，或 node_modules 被清掉時才需要
-npm run build                        # 預設：Chrome + Firefox + Edge 都打包
-npm run build -- --browser=chrome     # 只打包 Chrome
-npm run build -- --browser=firefox    # 只打包 Firefox
-npm run build -- --browser=edge       # 只打包 Edge
+npm install                          # first run, or whenever node_modules has been wiped
+npm run build                        # Default: package Chrome + Firefox + Edge
+npm run build -- --browser=chrome     # Chrome only
+npm run build -- --browser=firefox    # Firefox only
+npm run build -- --browser=edge       # Edge only
 ```
 
-Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Manifest V3 與 Chrome 完全相容，
-不需要另外的 manifest），Firefox 用 `src/manifest.firefox.json`。會讀對應 manifest 的 `version`，
-把 `src/` **底下的內容**（manifest 換成 `manifest.json` 放在 zip 最上層）壓成
-`dist/bilibili-cdn-switcher-<browser>-<版本>.zip`。Chrome／Firefox 兩份 manifest 的 `version`
-要保持一致，不一致時腳本會跳警告（Edge 沿用 Chrome 的 manifest，版本必然一致，不用另外檢查）。
+Chrome and Edge share `src/manifest.json` (Edge is Chromium-based and fully compatible with Chrome's
+Manifest V3, so no separate manifest is needed); Firefox uses `src/manifest.firefox.json`. The script
+reads `version` from the matching manifest and zips the **contents of `src/`** (with the chosen manifest
+renamed to `manifest.json` at the zip root) into `dist/bilibili-cdn-switcher-<browser>-<version>.zip`.
+The `version` in the Chrome and Firefox manifests must stay in sync — the script warns if they diverge
+(Edge reuses Chrome's manifest, so its version is always in sync by construction).
 
-打包結果是可重現的（reproducible build）：只要 `src/` 內容沒變，同一個瀏覽器目標每次包出來的
-zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 時判斷 `dist/` 是否真的需要更新。
+The build is reproducible: as long as `src/` hasn't changed, packaging the same browser target always
+produces byte-identical zips (Windows and Mac included), which makes it easy to check later on whether
+`dist/` actually needs updating if this ever gets wired into CI.
 
-### 📝 更新紀錄與發版
+### 🍎 Packaging Safari (for the App Store)
 
-- `src/changelog.json` 同時記「尚未上架的新功能（`unreleased`）」與「各已上架版本相較前一版追加的內容（`releases`）」，三語（zh_TW / zh_CN / en）。
-  老使用者更新後第一次開設定選單，會看到一次性的「更新內容」popup（內容就來自這份檔案；打包進 zip 時會自動拿掉 `unreleased`）。
-- `.githooks/pre-push`：push 時若相較於分支出來的基準 `src/changelog.json` 沒有變動，會詢問是否仍要 push，選 No 就擋下。
-  `npm install` 會自動設定 `core.hooksPath`（或手動 `git config core.hooksPath .githooks`）。確定不需要記錄時：`CHANGELOG_CHECK_IGNORE=1 git push`。
-- 發版用 Claude Code 的 `/release`（`.claude/skills/release/SKILL.md`）；上架金鑰放 `.env.local`（見 `.env.local.example`）。商店的「發布」按鈕一律人工按。
-- `npm run test:whats-new`：用 puppeteer 的 Chrome 載入 `src/`，自動測更新提示 popup。
+Safari extensions can't be side-loaded from a zip like Chrome — they must be wrapped in a containing app
+(a `.app` on macOS, an `.ipa` on iOS) and distributed through the App Store. The `safari/` folder is the
+Xcode project generated by `xcrun safari-web-extension-converter`; it references the repo's `src/` directly
+via relative paths (`../../../src/`), so **editing `src/` requires no file syncing** — just repackage and it
+picks up the latest. It also builds on any Mac after cloning the whole repo (there are no hardcoded absolute
+paths in the project).
 
-### 🍎 打包 Safari（上架 App Store 用）
-
-Safari 擴充不能像 Chrome 那樣直接載入 zip，必須包成一個「內含擴充的 App」（macOS 是 `.app`、iOS 是 `.ipa`），
-透過 App Store 分發。`safari/` 底下就是 `xcrun safari-web-extension-converter` 產生的 Xcode 工程，裡面用相對路徑
-（`../../../src/`）直接引用倉庫的 `src/`，所以**改 `src/` 不需要同步任何檔案**，重新打包就會帶到最新內容；換到任何一台
-Mac clone 整個倉庫都能跑（工程裡沒有寫死的絕對路徑）。
-
-**需求**：一台裝了完整 Xcode 的 Mac（只有 Command Line Tools 不夠）。
+**Requirement**: a Mac with the full Xcode installed (Command Line Tools alone isn't enough).
 
 ```bash
-npm run build:safari                       # macOS，Release，ad-hoc 簽章 → dist/
-npm run build:safari -- --platform=ios     # 改打包 iOS
+npm run build:safari                       # macOS, Release, ad-hoc signing → dist/
+npm run build:safari -- --platform=ios     # build for iOS instead
 npm run build:safari -- --configuration=Debug
 ```
 
-腳本會呼叫 `xcodebuild`，並把 `MARKETING_VERSION` 覆蓋成 `src/manifest.json` 的 `version`（讓 .app 內部版本跟擴充一致，
-Xcode 工程預設寫死 1.0），產出兩個東西：
+The script calls `xcodebuild` and overrides `MARKETING_VERSION` with the `version` from `src/manifest.json`
+(so the `.app`'s internal version matches the extension — the Xcode project hardcodes 1.0 by default),
+producing two things:
 
-- `dist/Bilibili CDN Switcher (<平台>).app` —— 可直接雙擊安裝／測試的 App
-- `dist/bilibili-cdn-switcher-safari-<平台>-<版本>.zip` —— 對齊其他平台的 `bilibili-cdn-switcher-<平台>-<版本>` 命名規範，方便傳給別台機器
+- `dist/Bilibili CDN Switcher (<platform>).app` — the app you can double-click to install/test
+- `dist/bilibili-cdn-switcher-safari-<platform>-<version>.zip` — following the same
+  `bilibili-cdn-switcher-<platform>-<version>` naming convention as the other platforms, for handing to another machine
 
-⚠️ 這裡是 **ad-hoc 簽章，只供本機測試**。真正上架 App Store 仍需在 Xcode 開啟 `safari/` 裡的工程 →
-Product > Archive > Distribute App，用你的 Apple Developer 帳號簽章上傳（這步需要簽章憑證，無法純命令列完成）。
+⚠️ This uses **ad-hoc signing and is for local testing only**. Actual App Store submission still goes through
+Xcode: open the project under `safari/` → Product > Archive > Distribute App, signing with your Apple Developer
+account (this step needs signing credentials and can't be done purely from the command line).
 
-### 🎨 重新產生圖示
+### 🎨 Regenerating icons
 
 ```bash
 npm run gen-icons
 ```
 
-以 512px 母檔縮出 16/32/48/128，同時產生兩份：`src/icons/`（開發版，帶紅點角標，`Load unpacked` 平常讀到的就是這份，方便跟已安裝的正式版分辨）與 `assets/icons-prod/`（正式版，無角標）。`scripts/build.mjs` 打包 zip 時會自動把圖示換成 `assets/icons-prod/` 底下的正式版。
+Scales the 512px master down to 16/32/48/128, producing two sets: `src/icons/` (dev build, with a red
+badge dot — what `Load unpacked` normally reads, so it's easy to tell apart from an installed store
+build) and `assets/icons-prod/` (store build, no badge). `scripts/build.mjs` automatically swaps in the
+icons from `assets/icons-prod/` when packaging zips.
 
-### 📸 產生商店截圖（三語系 main / debug / speedtest，共 9 張 1280x800 png）
+### 📸 Generating store screenshots (main / debug / speedtest × 3 locales, 9 files, 1280x800 png)
 
 ```bash
-npm run capture-screenshots                      # 預設 1280x800（Chrome 商店固定要這尺寸）
-npm run capture-screenshots -- --size=2560x1600  # Mac App Store 用的高解析版；檔名帶尺寸，另存一套不覆蓋 1280x800
+npm run capture-screenshots                      # default 1280x800 (the Chrome store requires exactly this size)
+npm run capture-screenshots -- --size=2560x1600  # high-res set for the Mac App Store; filenames include the size, so it's saved as a separate set (doesn't overwrite 1280x800)
 ```
 
-用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW` 三個瀏覽器語系，實際打開一支
-bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `VIDEO_URL`，要換片直接改那行），
-分別截 popup 主畫面、頁面上的 debug 疊層、測速中的畫面，等比縮放＋黑邊填成 1280x800，輸出到 `store/`
-覆蓋同名檔案（`screenshot-<畫面>-<語系>-1280x800.png`）。因為要連真實 bilibili 影片頁測速，跑一輪約
-數分鐘，且吃網路狀況。
+Loads `src/` as an unpacked extension in Puppeteer, switches through the `en-US` / `zh-CN` / `zh-TW`
+browser locales, and opens a real bilibili video page (the URL is `VIDEO_URL` at the top of
+`scripts/capture-screenshots.mjs` — edit that line to swap videos). For each locale it captures five
+screens — video main page, live main page, video speed test (mid-run), advanced settings, and the
+on-page debug overlay — letterboxes each to 1280x800, and writes them into `store/`, overwriting the
+matching `screenshot-<locale>-<NN>-<view>-1280x800.png` files (locale first, so files sort grouped by
+locale and in display order). The live page uses a live room picked from Bilibili's recommended list
+(set `LIVE_ROOM=<room id>` in `.env.local` to pin one). It runs a real speed test against bilibili's CDNs, so
+one full pass takes a few minutes and depends on network conditions.
 
-**登入 cookie（選用，決定截圖畫質）**：未登入時 B 站只給約 480P，截圖裡的 `qn` 就會是 480P。
-想要高畫質截圖的話，把 `.env.local.example` 複製成 `.env.local`，填入自己的 `BILI_COOKIE`
-（登入 B 站 → DevTools → Network → 任一請求 → Request Headers → 複製整段 Cookie）。
-腳本有讀到就帶登入狀態開影片頁，沒有這個檔就照舊用未登入狀態跑，其餘流程完全一樣。
-`.env.local` 已列入 `.gitignore`，**裡面的 `SESSDATA` 等同帳號憑證，不要 commit 或外傳**。
+**Login cookie (optional, controls screenshot quality)**: without login bilibili only serves ~480P, so
+`qn` in the screenshots reads 480P. For high-quality screenshots, copy `.env.local.example` to
+`.env.local` and fill in your own `BILI_COOKIE` (log in to bilibili → DevTools → Network → any request →
+Request Headers → copy the whole Cookie line). If the script finds it, it opens the video page logged in;
+without the file it runs logged-out exactly as before. `.env.local` is gitignored — **the `SESSDATA`
+inside is equivalent to account credentials, so never commit or share it**.
 
 ---
 
-## 🎛️ UI 說明
+## 🎛️ UI reference
 
-| 選項 | 行為 |
+| Option | Behavior |
 |:--|:--|
-| ⚙️ **進階設定（右上角齒輪）** | 「失敗自動切換」與「顯示頁面 debug 疊層」兩個開關收在這裡（各附白話說明），開啟 debug 疊層時同一區會顯示目前分頁的 debug 資訊；主頁標題顯示擴充在當前語系的正式名稱，「⭐ 給我 5 星鼓勵」與「🐛 問題回報」是主頁最下方的兩顆按鈕 |
-| 🔘 **啟用** | 預設 **開啟** 的總開關，同時管影片與直播；關閉後完全不改動 B 站取流（debug 疊層仍會顯示當前 CDN） |
-| 🎞️ **影片／直播分頁** | 「啟用」下面分成「影片」「直播」兩個分頁；目前分頁是直播間時，打開會自動停在「直播」 |
-| 📡 **CDN 線路** | 「清單選擇」／「自行輸入」／「關閉」互斥單選。**預設＝清單選擇，第一項＝ bilivideo（TW/SG 最快）**，其餘為各家節點、最後一項是「備用URL」；切到「自行輸入」會出現輸入框，自行填 host；「關閉」只作用於一般影片，不介入影片 CDN 選線 |
-| 📺 **直播線路** | 「偏好選擇」／「關閉」二選一，**預設＝偏好選擇，國際線路(ov)**。四個線路是同一個直播間、同一集群號下的 `ov`／`ov-b`／`cn`／`cn-b` 變體（B 站直播的簽名只在同號之間通用，點播那些節點對直播無效）；記住的是「線路種類」而非具體 host |
-| 📺 **測試各直播線路速度** | 只有在直播間播放時才能測；先檢查四條線路是否都存在（不存在的不測），再對每條線路測兩項：**切台卡頓**（連測 3 次取平均的起播時間，0–800ms 低／800–1500ms 中／超過 1500ms 高，分別以綠／黃／紅字顯示）與**持續觀看**（拉 8 秒，完全跟上＝綠字「優秀」、掉隊 1 秒內＝黃字「中等」、超過 1 秒＝紅字「差勁」）。測速會與正在播放的直播搶頻寬 |
-| 🔍 **測試各節點速度** | 按下後切到獨立的測速頁面，上方顯示目前影片標題與畫質；抓「當前影片、當前畫質」的分段，依序換各節點 host 實測下載速度（8MB 或 5 秒先到為準，5 秒內完全沒收到資料才算超時；有收到但不到 8MB 就顯示實際測到的速度），逐格顯示「等待中／測試中／結果」，可按「🔄 重新測速」重跑（測速中也能按，會中斷目前的重新開始）。**只顯示數字，不會更動你目前選擇的 CDN**；按左上角「← 返回」或關掉 popup 會立即中止測速。開啟「啟用」時，playurl 一解析完就能測，不用等真的開始播放；若「啟用」是關閉的，則要等實際下載過分段才有樣本 |
-| 🔁 **失敗自動切換 CDN** | 預設開啟，可在進階設定關閉（網路本身不穩、如 WiFi 訊號弱時建議關閉，避免頻繁黑屏重載）；開啟時偵測到分段請求失敗（403/404/5xx/網路錯誤）或播放確實卡住（8 秒內進度不動、且線路上也沒有資料在動），先靜默切到 B 站原生給的備援節點（分段層即時差替、不整頁刷新，並跳出提示）；這個備援也播不動時，改彈出一個不會自動消失的提示，讓你自己決定要不要「重載並切換至備用URL」。直播間則是：先檢查你選的線路在這個直播是否存在（不存在就直接退回國際線路 ov），之後持續一段時間沒有碼流也退回 ov |
-| 🌏 **語言** | 沒有手動切換選項，跟隨瀏覽器／作業系統語言自動顯示繁體中文／简体中文／English（其餘語言預設顯示繁體中文）；如需強制指定，可調整瀏覽器的語言偏好順序 |
-| ⏱️ **測速門檻** | 在進階設定中，分「影片」「直播」兩區：影片是每個節點最多下載幾 MB／最多測幾秒（預設 8MB／5 秒，先到為準）；直播是切台卡頓測幾次取平均／持續觀看每條線路測幾秒（預設 3 次／8 秒）。調整後永久儲存，各區有「恢復預設」 |
-| 🔢 **節點按測速排序** | 在進階設定中；預設 **關閉**。開啟後，測速時每測完一個節點就以平移動畫排到「由快到慢」的位置（影片看下載速度；直播先看持續觀看等級，同級再比切台卡頓）。排出的順序存在本機，主畫面的節點清單也照這個順序，直到下次重新測速；關閉即恢復預設順序 |
-| 🐛 **顯示頁面 debug 疊層** | 在進階設定中；預設 **關閉**；獨立於重排開關，關閉重排時仍可顯示當前 CDN，方便比較 |
+| ⚙️ **Advanced settings (gear icon, top right)** | Holds the "Auto-switch on failure" and "Show debug overlay" toggles, each with a plain-language explanation; when the debug overlay is on, the same section also shows the current tab's debug info. The main page title is the extension's official name in the current language, and "⭐ Rate 5 stars" and "🐛 Report a bug" are the two buttons at the bottom of the main page |
+| 🎞️ **Video / Live tabs** | Below "Enabled" the popup is split into "Video" and "Live" tabs; if the current tab is a live room, the popup opens on "Live" |
+| 🔘 **Enabled** | Master switch for both video and live, **on** by default; when off, bilibili's stream fetching is left completely untouched (the debug overlay still shows the current CDN) |
+| 📡 **CDN route** | "Choose from list" / "Custom input" / "Off", mutually exclusive. **Default = choose from list**. Above the list you pick a **country** (Taiwan / Singapore / All); the list then shows only that country's 10 fastest measured nodes (in the research report's order, default first entry 08ct), with "Backup URL" last, and a badge shows how many nodes the current choice has. "All" lists all ~300 nodes. On first open after installing or updating, the country is picked automatically from your IP and marked "(you are here)" (via bilibili's own zone API — no new permission needed); countries not in the list default to Taiwan. On a fresh install the node defaults to that country's first entry; switching countries also switches the node to the new country's first entry, and clears the order saved by "Sort nodes by speed test" and goes back to that country's original order; switching to "Custom input" reveals a text field for your own host; "Off" only affects regular videos and leaves their CDN selection alone |
+| 📺 **Live route** | "Preference" / "Off", **default = Preference, International (ov)**. The four routes are the `ov` / `ov-b` / `cn` / `cn-b` variants of the same cluster number for that room (bilibili live signatures only work within the same cluster number; the VOD nodes do not work for live). What is remembered is the route type, not a concrete host |
+| 📺 **Test live routes** | Only works while a live room is playing. It first checks that each of the four routes exists (missing ones are skipped), then measures two things per route: **Switch lag** (startup time, averaged over 3 runs; 0–800 ms Low / 800–1500 ms Mid / over 1500 ms High, shown in green / yellow / red) and **Keeping up** (pulls the stream for 8 seconds; fully keeping up = green "Excellent", falling behind by up to 1 s = yellow "Fair", more than 1 s = red "Poor"). The test competes for bandwidth with the live stream you are watching |
+| 🔍 **Test node speeds** | Switches to a dedicated speed-test page showing the current video's title and quality; measures download speed for each node using segments from the current video/quality (whichever comes first of 8MB or 5s; only counts as a timeout if nothing at all arrives within 5s — a partial result under 8MB is shown as-is), testing only the nodes of the current country and rendering each row as "waiting / testing / result"; the three fastest get a gold / silver / bronze crown in the top-right corner. With "All" selected, a red warning with an estimated duration (nodes × per-node second limit) appears first and steers you toward picking a country. Press "🔄 Retest" to rerun (works mid-test too, aborting the current run and starting fresh). **Read-only — never changes your selected CDN**; pressing "← Back" or closing the popup stops the test immediately. With "Enabled" on, testing is possible as soon as playurl is parsed, no need to wait for actual playback; with it off, a sample is only available after a real segment has been downloaded |
+| 🔁 **Automatic CDN failover** | On by default, can be turned off in Advanced settings (recommended if your own network is unstable, e.g. weak Wi-Fi, to avoid repeated black screens); when on, on detecting a failed segment request (403/404/5xx/network error) or genuinely stalled playback (progress frozen for 8s with no traffic on the wire), it first silently switches to bilibili's own backup node (swapped at the segment level, no full-page reload, with a toast shown); if that backup also can't play, it shows a persistent prompt letting you decide whether to "Reload and switch to Backup URL". In a live room it first checks that your chosen route exists for that stream (if not it falls straight back to International ov), and falls back to ov as well when no stream data arrives for a while |
+| ⚡ **Auto speed-test videos and switch to the fastest node** | In Advanced settings; **off** by default. Each video first plays on your chosen node; about 5 s after the first segment downloads, the current country's nodes are tested one by one in the background (using the speed-test limits), and the fastest is saved as your node (each video is tested only once). Unavailable when the country is set to "All". Because rankings differ on every test, almost every video goes black once while the CDN switches — not recommended if your node usually plays smoothly; use "Auto-switch on failure" if you're worried about stalls |
+| 🌏 **Language** | No manual switch — follows your browser/OS language, showing Traditional Chinese / Simplified Chinese / English automatically (other languages default to Traditional Chinese); to force a specific language, adjust your browser's language preference order |
+| ⏱️ **Speed-test limits** | In Advanced settings, split into video and live: video = max MB / max seconds per node (default 8MB / 5s, whichever comes first); live = switch-lag runs to average / keeping-up seconds per route (default 3 runs / 8s). Saved permanently, with a "Reset to default" link for each section |
+| 🔢 **Sort nodes by speed test** | In Advanced settings; **off** by default. When on, each node slides into its fastest-first position as soon as its test finishes (video: download speed; live: "Keeping up" level first, then switch lag). The order is saved locally and the node lists on the main page use it until you test again; turning it off restores the default order |
+| 🐛 **Show debug overlay on page** | In Advanced settings; **off** by default; independent of the routing toggle — still shows the current CDN even when routing is disabled, useful for comparison |
 
 <details>
-<summary>🔍 <b>Debug 疊層長什麼樣</b>（播放器左上角）</summary>
+<summary>🔍 <b>What the debug overlay looks like</b> (top-left of the player)</summary>
 
 ```text
-CDN 線路
-mode=on  target=cn-jxnc-cmcc-bcache-06.bilivideo.com
-cdn=<當前實際串流的 host>
-v=<video 主用 host>  a=<audio 主用 host>
-src=playinfo|playurl  rw=<改寫次數>  seg=<分段差替數>  qn=<畫質>
+CDN Route
+mode=on  target=upos-sz-mirror08ct.bilivideo.com
+cdn=<host actually streaming right now>
+v=<video host in use>  a=<audio host in use>
+src=playinfo|playurl  rw=<rewrite count>  seg=<segment swap count>  qn=<quality>
 ```
 
 </details>
 
 ---
 
-## 🗂️ 設定與檔案
+## 🗂️ Configuration files
 
-- 📋 節點清單放在 **`src/cdn-list.json`** —— 要新增／調整節點，改這個檔即可，於擴充頁「重新整理」後生效。
-- 🧩 每個項目格式：
+- 📋 The node list lives in **`src/cdn-list.json`** and is edited by hand.
+  It covers 300+ VOD nodes (de-duplicated, with live-only and confirmed-dead nodes removed);
+  each country's `nodes` is its top 10 spread across CDN pools. After testing a new country with `/cdn-speedtest`, add that country's `recommended` from `summary.json` to `countries`.
+- 🧩 Format:
 
   ```json
-  { "value": "upos-sz-mirrorhw.bilivideo.com", "name": "hw", "noteKey": "cdnNoteHuaweiHybrid" }
+  {
+    "countries": [{ "code": "TW", "dial": 886, "name": { "zh_TW": "台灣", "zh_CN": "台湾", "en": "Taiwan" }, "nodes": ["upos-sz-mirror08ct.bilivideo.com", "…"] }],
+    "pools": { "hw-biliv6": { "zh_TW": "華為雲 一般池", "zh_CN": "华为云 常规池", "en": "Huawei Cloud" } },
+    "options": [{ "value": "upos-sz-mirror08ct.bilivideo.com", "name": "08ct", "pool": "hw-biliv6" }]
+  }
   ```
 
-  `value` 特殊值：🔁 `backup`＝優先備用URL（這個特殊選項用 `nameKey` 代替 `name`）。「關閉」不在清單裡，是 popup 獨立的一個模式（存成 `videoEnabled=false`）。
-  `noteKey` 對應到 `src/_locales/{zh_TW,zh_CN,en}/messages.json` 裡的訊息鍵，讓備註文字跟著語言切換；
-  只是想快速加一個節點又不想動三份語系檔的話，也可以直接寫 `"note": "自訂備註"`（不會多語系，但能動）。
-  「自行輸入」是 popup 裡獨立的互斥選項，不算在這份清單裡。
+  `options` holds every node (also the order of the "All" choice) and is shown as "code (pool type)"; the first entry of `countries[].nodes` is that country's default; `dial` is the international calling code, matched against `country_code` from bilibili's zone API.
+  Special `value`: 🔁 `backup` = prefer the Backup URL (always last; uses `nameKey` / `noteKey` from the locale files). "Off" and "Custom input" are separate popup modes and aren't part of this list.
 
 ---
 
-## ⚠️ 注意
+## ⚠️ Notes
 
-- 🔒 一律保留原 host 為 `backupUrl` fallback，避免個別 host-bound URL 整段播不出。
-- 📍 最優節點為 TW/SG 最佳化；其他地區使用者可自行切換到較近的節點，或切到「自行輸入」模式填自己的 host。
-- 📶 「測試各節點速度」是短時間實測單一分段，結果僅供參考：CDN 是否已對這支影片、這個畫質建立快取，
-  以及路由在不同時段的壅塞狀況都會影響實際觀看體驗，測速當下最快不代表長時間播放最順。
+- 🔒 The original host is always kept as a `backupUrl` fallback, so a single host-bound URL failing doesn't break the whole segment.
+- 📍 Default nodes have been tested in Taiwan and Singapore, with more countries coming soon; users elsewhere can switch to a closer node or use "Custom input" to enter their own host.
+- 📶 "Test node speeds" is a short-lived, single-segment measurement — treat the results as a reference only: whether the CDN has already cached this video/quality, and how congested the route is at different times, both affect real playback experience. The fastest node during a test isn't necessarily the smoothest over a long viewing session.
 
 ---
 
-## 📜 授權 License
+## 📜 License
 
-原始碼公開，採自訂的 **[Source-Available License](LICENSE)**：
+Source-available under a custom **[Source-Available License](LICENSE)**:
 
-- ✅ 可以查看、Fork、修改原始碼，個人使用、教學／研究等非商業用途皆可自由進行
-- ❌ 不可將本專案或修改版重新包裝成競爭性的瀏覽器擴充／App／服務並對外發佈上架，也不可移除版權聲明
-- 完整條款請見 [LICENSE](LICENSE)；商業合作或例外授權需求歡迎開 issue 聯絡
+- ✅ You may view, fork, and modify the source; personal use, teaching/research, and other non-commercial uses are freely permitted
+- ❌ You may not repackage this project or a modified version as a competing browser extension/app/service and publish it, nor remove copyright notices
+- See [LICENSE](LICENSE) for full terms; for commercial partnerships or an exception, please open an issue
 
-隱私權政策：[PRIVACY.md](PRIVACY.md)
+Privacy policy: [PRIVACY.md](PRIVACY.md)
 
 ---
 
 <div align="center">
 
-Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · 靈感致謝 [@roge4444](https://github.com/roge4444) 的 [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) ／ [blblRogerMod](https://github.com/roge4444/blblRogerMod)
+Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · Inspired by [@roge4444](https://github.com/roge4444)'s [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) / [blblRogerMod](https://github.com/roge4444/blblRogerMod)
 
 </div>

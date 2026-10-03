@@ -1,0 +1,4 @@
+pyinstaller>=6.16
+qrcode>=7.4
+pillow>=10
+tkinterweb>=4.25

@@ -1,8 +1,8 @@
-# TW/SG Video Speedup for bilibili (Unofficial) — Firefox Add-ons listing copy
+# Overseas Video Speedup for bilibili — Firefox Add-ons listing copy
 
 ## Short description
 
-Helps Taiwan/Singapore users watch bilibili's web player more smoothly at 4K and other high-quality resolutions, with less buffering and stuttering. Unofficial third-party extension, not affiliated with bilibili.
+Helps overseas users watch bilibili's web player more smoothly at 4K and other high-quality resolutions, with less buffering and stuttering. Unofficial third-party extension, not affiliated with bilibili.
 
 ## Detailed description
 (If you have a Tampermonkey/Greasemonkey script with the same functionality installed, please remove it first to avoid conflicts.)
@@ -16,10 +16,10 @@ So I decided to turn it into a browser extension. There must be plenty of people
 🆓 This extension is completely FREE, and guaranteed to stay "FREE FOREVER"!
 ⚡ Nothing to configure, just install it and it works!
 
-Open any bilibili video after installing and it switches you to the fastest route for Taiwan/Singapore behind the scenes. Faster loading, less buffering, and even 4K plays straight through.
+Open any bilibili video after installing and it switches you to a faster route for your region behind the scenes. Faster loading, less buffering, and even 4K plays straight through.
 
 ■ Key features
-・Works out of the box — a TW/SG-optimized route is applied by default, no setup needed
+・Works out of the box — a route that tested faster is applied by default (tested in Taiwan and Singapore, more countries coming soon), no setup needed
 ・Multiple CDN routes — choose among Alibaba Cloud, Tencent Cloud, Huawei Cloud, Akamai, and more; useful for other regions too if you pick the node closest to you
 ・Custom route — enter your own CDN host manually
 ・Automatic failover — detects failed requests or stalled playback and silently switches to bilibili's own backup node first; only asks you if the backup also fails

@@ -2,6 +2,7 @@
 //
 //   node scripts/release.mjs next <major|minor|patch>   # 印出升版後的版本號（不改任何檔案）
 //   node scripts/release.mjs prepare <x.y.z>            # 把 unreleased 搬到新版本底下 + 同步所有版本號
+//   node scripts/release.mjs notes <x.y.z>              # 印出 GitHub Release 說明（該版 changelog＋下載說明，Markdown）
 //
 // prepare 會做的事：
 //   1. src/changelog.json：unreleased 整批搬到 releases 最前面（日期＝今天），unreleased 清空
@@ -66,12 +67,37 @@ function prepare(version) {
   console.log(`✔ ${current} → ${version}：changelog 已整理、manifest 與 Safari 工程版本號已同步`);
 }
 
+// GitHub Release 的說明：該版 changelog（繁中＋英文）＋ release/ 各檔案的用途
+function notes(version) {
+  const rel = readChangelog().releases.find((r) => r.version === version);
+  if (!rel) throw new Error(`changelog.json 找不到 ${version}（先跑 prepare）`);
+  const tag = (e, zh) => (e.type === "fix" ? (zh ? "修正" : "Fix") : (zh ? "新功能" : "New"));
+  const L = [];
+  L.push("## 更新內容", "", ...rel.entries.map((e) => `- **${tag(e, true)}**　${e.text.zh_TW}`), "");
+  L.push("## What's new", "", ...rel.entries.map((e) => `- **${tag(e, false)}**　${e.text.en}`), "");
+  L.push(
+    "## 下載 · Downloads", "",
+    "一般使用者請從商店安裝擴充（會自動更新）：[Chrome](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch) · " +
+      "[Firefox](https://addons.mozilla.org/addon/bilibili-cdn-switcher/) · " +
+      "[Edge](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp)。",
+    "Most users should install the extension from a store (auto-updates). The files below are for offline install.", "",
+    "| 檔案 · File | 說明 · Description |",
+    "| --- | --- |",
+    "| `CDNSpeedTest.exe` | CDN 測速工具（Windows 10/11），測完可自動建立擴充的「自訂節點列表」· CDN speed test tool for Windows |",
+    "| `bilibili-cdn-switcher-chrome.zip` | Chrome 離線安裝：解壓縮 → `chrome://extensions` 開「開發人員模式」→「載入未封裝項目」· Unzip, then *Load unpacked* in developer mode |",
+    "| `bilibili-cdn-switcher-edge.zip` | Edge 離線安裝：解壓縮 → `edge://extensions` 開「開發人員模式」→「載入解壓縮」· Unzip, then *Load unpacked* in developer mode |",
+    "| `bilibili-cdn-switcher-firefox.zip` | Firefox：未經 Mozilla 簽署，只能在 `about:debugging` 暫時載入（重開瀏覽器就消失）· Unsigned; load as a temporary add-on in `about:debugging` |",
+  );
+  return L.join("\n");
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const [cmd, arg] = process.argv.slice(2);
   try {
     if (cmd === "next") console.log(nextVersion(currentVersion(), arg));
     else if (cmd === "prepare") prepare(arg);
-    else throw new Error("用法：node scripts/release.mjs next <major|minor|patch> | prepare <x.y.z>");
+    else if (cmd === "notes") console.log(notes(arg));
+    else throw new Error("用法：node scripts/release.mjs next <major|minor|patch> | prepare <x.y.z> | notes <x.y.z>");
   } catch (e) {
     console.error(e.message);
     process.exit(1);

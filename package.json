@@ -6,12 +6,19 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "build:safari": "node scripts/build-safari.mjs",
+    "package": "node scripts/package.mjs",
     "gen-icons": "node scripts/gen-icons.mjs",
     "capture-screenshots": "node scripts/capture-screenshots.mjs",
     "changelog:validate": "node scripts/changelog.mjs validate",
-    "release:prepare": "node scripts/release.mjs prepare",
     "publish-stores": "node scripts/publish-stores.mjs",
     "test:whats-new": "node scripts/test-whats-new.mjs",
+    "invite:create": "node scripts/invite.mjs create",
+    "invite:delete": "node scripts/invite.mjs delete",
+    "invite:show": "node scripts/invite.mjs show",
+    "events:show": "node scripts/events.mjs show",
+    "lottery:add": "node scripts/lottery.mjs add",
+    "lottery:end": "node scripts/lottery.mjs end",
+    "lottery:show": "node scripts/lottery.mjs show",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "devDependencies": {

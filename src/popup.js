@@ -2,8 +2,15 @@
 
 var DEFAULTS = {
   enabled: true,
-  cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
+  cdnHost: "upos-sz-mirror08ct.bilivideo.com",
+  cdnMode: null, // 一般影片用哪份節點："list"（國家清單）或 "custom"（自訂節點列表）；null = 1.6 以前的設定，載入時遷移
+  customHosts: [], // 自訂節點列表（使用者加入的、測速工具匯入的），依加入順序
+  cdnCountry: null, // 節點清單的國家選項（cdn-list.json countries 的 code，或 "ALL"）
+  detectedCountry: "", // 依 IP 偵測到、且在清單內的國家；標「你在這裡」用
+  countryAutoDone: false, // 依 IP 自動選國家只做一次（新安裝與更新後），使用者自己選過也算
   autoFallback: true,
+  autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
+  autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
@@ -46,8 +53,17 @@ var els = {
   cdnSelectName: document.getElementById("cdnSelectName"),
   cdnSelectHost: document.getElementById("cdnSelectHost"),
   cdnSelectList: document.getElementById("cdnSelectList"),
+  countryRow: document.getElementById("countryRow"),
+  countrySelect: document.getElementById("countrySelect"),
+  countryText: document.getElementById("countryText"),
+  countryCount: document.getElementById("countryCount"),
   customHost: document.getElementById("customHost"),
   customHint: document.getElementById("customHint"),
+  customBox: document.getElementById("customBox"),
+  customAddBtn: document.getElementById("customAddBtn"),
+  customAddBox: document.getElementById("customAddBox"),
+  customCount: document.getElementById("customCount"),
+  customClearBtn: document.getElementById("customClearBtn"),
   showDebug: document.getElementById("showDebug"),
   debug: document.getElementById("debug"),
   mainView: document.getElementById("mainView"),
@@ -66,7 +82,7 @@ function t(key) { return chrome.i18n.getMessage(key) || key; }
 document.title = t("popupTitle");
 document.documentElement.lang = chrome.i18n.getUILanguage();
 [
-  ["headerTitle", "extName"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["headerTitle", "extName"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["tabVideo", "tabVideo"], ["tabLive", "tabLive"], ["advHeaderTitle", "advancedTitle"], ["advBackBtn", "stBackBtn"], ["clBackBtn", "stBackBtn"], ["clHeaderTitle", "changelogTitle"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["modeOffLabel", "modeOffLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["liveModeListLabel", "liveModePrefLabel"], ["liveModeOffLabel", "modeOffLabel"], ["liveSpeedtestBtn", "liveSpeedtestBtnLabel"],
@@ -74,13 +90,14 @@ document.documentElement.lang = chrome.i18n.getUILanguage();
   ["rateBtn", "rateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stStopBtn", "stStopBtn"], ["stHintLeave", "stHintLeave"],
-  ["liveRouteRowLabel", "liveRouteRowLabel"], ["videoFallbackHint", "videoFallbackHint"],
+  ["liveRouteRowLabel", "liveRouteRowLabel"],
   ["sortBySpeedLabel", "sortBySpeedLabel"], ["sortBySpeedHint", "sortBySpeedHint"],
   ["stVideoLimitTitle", "stVideoLimitTitle"], ["stVideoLimitHint", "stVideoLimitHint"], ["stVideoMbLabel", "stVideoMbLabel"],
   ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
   ["stLiveRunsUnit", "unitTimes"], ["stLiveSecLabel", "stLiveSecLabel"], ["stLiveSecUnit", "unitSec"], ["stLiveReset", "resetDefault"], ["liveRouteExplain", "liveRouteExplain"], ["showDebugHint", "showDebugHint"],
   ["staleTitle", "staleTabTitle"], ["staleText", "staleTabText"], ["staleReloadBtn", "staleTabReloadBtn"],
+  ["customAddBtn", "customAddBtn"], ["customClearBtn", "customClearBtn"], ["resetAllBtn", "resetAllBtn"],
   ["wnSubtitle", "whatsNewSubtitle"], ["wnClose", "whatsNewClose"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
 // 逐段解析 <b>…</b> 建 DOM 节点，避免用 innerHTML 塞入语系字串（addons-linter 会挡动态 innerHTML）
@@ -100,22 +117,24 @@ function setRichText(el, str) {
 els.gearBtn.title = t("advancedBtnTitle");
 els.gearBtn.setAttribute("aria-label", t("advancedBtnTitle"));
 els.customHost.placeholder = t("customHostPlaceholder");
+els.countrySelect.setAttribute("aria-label", t("countryLabel"));
+els.countrySelect.title = t("countryLabel");
 els.debug.textContent = t("debugInitial");
+setRichText(document.getElementById("autoSpeedSwitchHint"), t("autoSpeedSwitchHint"));
+document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwitchAllNote");
 
 // -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；沒有對應網址就不顯示 --------
-// UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 utm-tracking/campaigns.md）
+// UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 promotions/campaigns.md）
 function uiLangCode() {
   var lang = (chrome.i18n.getUILanguage() || "").toLowerCase();
   if (lang.indexOf("zh") !== 0) return "en";
   return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
 }
-// 意見回饋表單：依語言分開的 Google 表單連結。zhcn / en 專用表單還沒建，先共用 zhtw 那份頂著。
-var FEEDBACK_FORM_URLS = {
-  zhtw: "https://forms.gle/HoSRGTyp3UEejave7",
-  zhcn: "https://forms.gle/HoSRGTyp3UEejave7", // TODO: 簡體中文表單好了再換
-  en: "https://forms.gle/HoSRGTyp3UEejave7" // TODO: 英文表單好了再換
-};
-function pickFeedbackFormUrl() { return FEEDBACK_FORM_URLS[uiLangCode()]; }
+// 意見回饋表單：三語共用同一份 Google 表單（題目都是「繁中 | 簡中 | English」）。
+// 用完整的 viewform 網址（短網址 forms.gle 不吃預填參數），環境資訊題的 entry ID 見 FEEDBACK_ENV_ENTRY。
+var FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScYPTvslktKd1AUK7SsdG-j505oMjHxdfLv1wKQlduGBAemDg/viewform";
+var FEEDBACK_ENV_ENTRY = "entry.603662239"; // 表單「環境資訊」題的預填參數名
+function pickFeedbackFormUrl() { return FEEDBACK_FORM_URL; }
 // 一律用不含 slug 的短網址：商店改名後 slug 會失效，靠 ID／slug 本身跳轉才不會壞。
 // Edge Add-ons 沒有 /reviews 這層（會 404），只能導到商品頁，讓使用者自己往下捲到評論區。
 var STORE_REVIEW_URLS = {
@@ -139,6 +158,29 @@ function withUtm(url, campaign) {
   return url + (url.indexOf("?") === -1 ? "?" : "&") + q;
 }
 
+// 「自訂節點列表」：一句說明＋官方測速工具的推廣卡（「自動偵測並加入」開教學文件）
+var SPEEDTEST_DOC_URL = "https://lazy-cv.com/docs/bilibili-cdn-speedtest";
+document.getElementById("customDesc").textContent = t("customDesc1");
+document.getElementById("autoDetectText").textContent = t("autoDetectText");
+document.getElementById("autoDetectBtn").textContent = t("autoDetectBtn");
+document.getElementById("autoDetectBtn").addEventListener("click", function () {
+  openTab(withUtm(SPEEDTEST_DOC_URL, "custom_list"));
+});
+
+// 國家清單下方：「沒有你的國家？試試最接近的國家，或是{link}」，{link} 是切到自訂節點列表的按鈕
+(function renderCountryHint() {
+  var box = document.getElementById("countryHint");
+  var parts = t("countryMissingHint").split("{link}");
+  box.appendChild(document.createTextNode(parts[0]));
+  var btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "linkBtn";
+  btn.textContent = t("modeCustomLabel");
+  btn.addEventListener("click", function () { els.modeCustom.click(); });
+  box.appendChild(btn);
+  box.appendChild(document.createTextNode(parts[1] || ""));
+})();
+
 var reviewUrl = STORE_REVIEW_URLS[detectBrowser()];
 if (reviewUrl) {
   els.rateBtn.style.display = "";
@@ -147,23 +189,199 @@ if (reviewUrl) {
 var feedbackUrl = pickFeedbackFormUrl();
 if (feedbackUrl) {
   els.feedbackBtn.style.display = "";
-  els.feedbackBtn.addEventListener("click", function () { openTab(feedbackUrl); });
+  els.feedbackBtn.addEventListener("click", function () {
+    buildFeedbackEnv(function (env) {
+      openTab(feedbackUrl + "?usp=pp_url&" + FEEDBACK_ENV_ENTRY + "=" + encodeURIComponent(env));
+    });
+  });
 }
 
-var knownValues = {}; // 清单中所有 value（用来判断储存值是否在清单内，不在的话视为自行输入）
-var cdnList = []; // cdn-list.json 的 options，供测速时取节点清单与显示用的名称
+// 「問題回報」預填的環境資訊：版本、瀏覽器、目前設定、目前分頁與 debug 快照。
+// 使用者在表單上看得到、可以刪改，送不送出由使用者決定；擴充本身不會傳出這些資料。
+function browserVersion() {
+  var m = navigator.userAgent.match(/(Firefox|Edg|Chrome|Version)\/([\d.]+)/);
+  return detectBrowser() + (m ? " " + m[2] : "");
+}
+function osName() {
+  var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  return p || "-";
+}
+function buildFeedbackEnv(done) {
+  chrome.storage.local.get(DEFAULTS, function (cfg) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      var url = (tabs && tabs[0] && tabs[0].url) || "";
+      var tab = BILI_TAB_RE.test(url) ? url.split(/[?#]/)[0] : "(not bilibili)";
+      var lines = [
+        "version=" + chrome.runtime.getManifest().version + "  browser=" + browserVersion() + "  os=" + osName() + "  lang=" + chrome.i18n.getUILanguage(),
+        "enabled=" + cfg.enabled + "  autoFallback=" + cfg.autoFallback + "  sortBySpeed=" + cfg.sortBySpeed,
+        "country=" + disp(cfg.cdnCountry) + "  detected=" + disp(cfg.detectedCountry),
+        "video=" + (cfg.videoEnabled === false ? "off" : cfg.cdnHost) + "  list=" + disp(cfg.cdnMode) +
+          (cfg.cdnMode === "custom" ? "(" + (cfg.customHosts || []).length + ")" : ""),
+        "live=" + (cfg.liveEnabled === false ? "off" : cfg.liveRoute),
+        "tab=" + tab
+      ];
+      if (lastDebugText) lines.push("-- debug --", lastDebugText);
+      done(lines.join("\n"));
+    });
+  });
+}
+
+var knownValues = {}; // 清单中所有 value（1.6 以前用来判断储存值是否为自行输入，见载入时的迁移）
+var cdnMode = "list"; // 目前用哪份节点（"list" / "custom"）；选「关闭」时保留关闭前的那份
+var customHosts = []; // 自订节点列表
+var cdnList = []; // cdn-list.json 的 options（全部节点，「全部」选项的顺序），供显示名称与查找
+var cdnPools = {}; // cdn-list.json 的 pools：池类型的三语标签
 var currentCdnHost = null; // 目前生效的 cdnHost，供测速页标示「目前使用」＋点击切换比对
 var videoOn = true; // 一般影片没选「关闭」；关闭时测速页不标示「目前使用」
 
-// 具名节点：技术代号 + noteKey 註記；特殊选项（base/backup）用 nameKey + noteKey
+// cdn-list.json / changelog.json 里 { zh_TW, zh_CN, en } 形式的多语字串
+function localized(obj) {
+  if (!obj) return "";
+  var key = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en" }[uiLangCode()];
+  return obj[key] || obj.en || obj.zh_TW || "";
+}
+
+// 具名节点：「技术代号 (池类型)」；特殊选项（backup）用 nameKey + noteKey
 function cdnDisplayName(o) {
   var name = o.nameKey ? t(o.nameKey) : o.name;
-  var note = o.noteKey ? t(o.noteKey) : (o.note || "");
+  var note = o.noteKey ? t(o.noteKey) : o.pool ? localized(cdnPools[o.pool]) : (o.note || "");
   return name + (note ? " (" + note + ")" : "");
 }
 
+// -------- 國家：節點下拉只列該國的建議節點（研究報告預先篩出的前 10 名），最後接 B 站備援；「全部」列出全部節點 --------
+var COUNTRY_ALL = "ALL";
+var COUNTRY_FALLBACK = "TW"; // 偵測不到、或使用者所在國家不在清單內時的預設
+// 舊版清單裡、已確定網域不存在而移除的節點：還存著它們的使用者搬回預設
+var REMOVED_HOSTS = ["upos-sz-mirrorhwov.bilivideo.com", "cn-hk-eq-bcache-01.bilivideo.com"];
+var cdnCountries = []; // cdn-list.json 的 countries
+var countrySel = COUNTRY_FALLBACK;
+var detectedCountry = ""; // 依 IP 偵測到的國家（在清單內才有值）
+
+function findCountry(code) {
+  for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].code === code) return cdnCountries[i];
+  return null;
+}
+function validCountry(code) { return code === COUNTRY_ALL || !!findCountry(code); }
+// 目前國家要測速／列出的節點 host（不含 backup），依該國預設排序
+function countryHosts(code) {
+  if (code === COUNTRY_ALL) return cdnList.filter(function (o) { return o.value !== "backup"; }).map(function (o) { return o.value; });
+  var c = findCountry(code);
+  return c ? c.nodes.filter(function (h) { return !!findCdnOpt(h); }) : [];
+}
+// 目前這份節點（國家清單或自訂節點列表）：測速、自動測速都測這份
+function activeHosts() { return cdnMode === "custom" ? customHosts.slice() : countryHosts(countrySel); }
+// 自訂節點不一定在 cdn-list.json 裡：不在的就用 host 當名稱
+function customOpt(h) { return findCdnOpt(h) || { value: h, name: h, unknown: true }; }
+// 下拉要列的選項：國家節點 + 最後的 B 站備援；自訂節點列表就只列使用者的節點
+function visibleCdnOptions() {
+  if (cdnMode === "custom") return customHosts.map(customOpt);
+  var opts = countryHosts(countrySel).map(findCdnOpt);
+  var backup = findCdnOpt("backup");
+  if (backup) opts.push(backup);
+  return opts;
+}
+function renderCountrySelect() {
+  var sel = els.countrySelect;
+  sel.textContent = "";
+  // 目前選的國家排第一個，其餘照清單原本的順序
+  var cur0 = findCountry(countrySel);
+  (cur0 ? [cur0].concat(cdnCountries.filter(function (c) { return c !== cur0; })) : cdnCountries).forEach(function (c) {
+    var opt = document.createElement("option");
+    opt.value = c.code;
+    opt.textContent = c.code === detectedCountry ? t("countryYouAreHere").replace("{name}", localized(c.name)) : localized(c.name);
+    sel.appendChild(opt);
+  });
+  var all = document.createElement("option");
+  all.value = COUNTRY_ALL;
+  all.textContent = t("countryAll");
+  sel.appendChild(all);
+  sel.value = countrySel;
+  // 收合時顯示的文字另外放：「你在這裡」只在展開的清單裡標，已選的國家不標
+  var cur = findCountry(countrySel);
+  els.countryText.textContent = cur ? localized(cur.name) : t("countryAll");
+  var n = countryHosts(countrySel).length;
+  els.countryCount.textContent = t("countryNodeCount").replace("{n}", n);
+  els.countryCount.classList.toggle("all", countrySel === COUNTRY_ALL);
+}
+// 切換國家（或首次自動選國家）：重建下拉；節點排序一律回到該國的原始排序，不分國家記憶
+function applyCountry(code) {
+  countrySel = code;
+  if (speedOrder.video && speedOrder.video.length) {
+    speedOrder.video = [];
+    save({ speedOrder: sortOn ? speedOrder : null });
+  }
+  renderCountrySelect();
+  buildCdnSelectList(visibleCdnOptions());
+  selectCdnValue(cdnSelectValue);
+  saveAutoSpeedHosts();
+}
+// 自動測速要測的節點跟著國家走；選「全部」時不能用（約 300 個節點，背景測不完）：
+// 寫入空清單讓 content script 不測，進階設定的開關也停用並顯示原因
+var savedAutoSpeedHosts = "";
+function saveAutoSpeedHosts() {
+  var isAll = cdnMode === "list" && countrySel === COUNTRY_ALL;
+  var sw = document.getElementById("autoSpeedSwitch");
+  sw.disabled = isAll;
+  sw.closest(".advItem").classList.toggle("disabled", isAll);
+  document.getElementById("autoSpeedSwitchAllNote").style.display = isAll ? "" : "none";
+  var hosts = isAll ? [] : activeHosts();
+  var sig = hosts.join("|");
+  if (sig === savedAutoSpeedHosts) return;
+  savedAutoSpeedHosts = sig;
+  save({ autoSpeedHosts: hosts });
+}
+// 選用該國第一個節點（該國預設）：寫進 patch，並同步畫面上的選取值
+function useCountryFirstNode(code, patch) {
+  var first = countryHosts(code)[0];
+  if (!first) return;
+  patch.cdnHost = first;
+  cdnSelectValue = first;
+  if (els.modeList.checked) currentCdnHost = first;
+}
+els.countrySelect.addEventListener("change", function () {
+  var code = els.countrySelect.value;
+  if (!validCountry(code) || code === countrySel) return;
+  countryAutoPending = false; // 使用者自己選了，偵測結果晚到也不要蓋掉
+  var patch = { cdnCountry: code, countryAutoDone: true };
+  useCountryFirstNode(code, patch); // 國家選單只在清單模式顯示，切國家就直接換成該國第一個節點
+  save(patch);
+  applyCountry(code);
+});
+
+// 依 IP 判斷國家：B 站 zone API（擴充原本就有 bilibili.com 的權限，不需新增權限；不帶 cookie）。
+// 回傳清單內的國家 code；不在清單內回 ""；查詢失敗回 null（下次開啟再試）
+var ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
+var countryAutoPending = false;
+function detectCountry() {
+  return fetch(ZONE_API, { credentials: "omit", cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j || j.code !== 0 || !j.data) return null;
+      var dial = Number(j.data.country_code);
+      for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) return cdnCountries[i].code;
+      return "";
+    })
+    .catch(function () { return null; });
+}
+function autoSelectCountry(cfg) {
+  if (cfg.countryAutoDone) return;
+  countryAutoPending = true;
+  detectCountry().then(function (code) {
+    if (!countryAutoPending || code === null) return;
+    countryAutoPending = false;
+    detectedCountry = code;
+    var target = code || COUNTRY_FALLBACK;
+    var patch = { cdnCountry: target, detectedCountry: code, countryAutoDone: true };
+    // 新安裝與更新後的使用者一律換成該國第一個節點：舊版選的節點多半不在新的國家清單裡，
+    // 留著會變成下拉裡看不到的選項。用自訂節點列表的使用者不動
+    if (cdnMode !== "custom") useCountryFirstNode(target, patch);
+    save(patch);
+    applyCountry(target);
+  });
+}
+
 // -------- CDN 清单：自制下拉（原生 select 的 option 不能分两行、不能弱化网域字重，改用 div 清单模拟）--------
-var cdnSelectValue = ""; // 目前下拉「显示/选取」的 value；跟 currentCdnHost 的差别：自订模式时这里仍保留一个清单内的保底值，方便切回清单模式
+var cdnSelectValue = ""; // 目前下拉「显示/选取」的 value；选「关闭」时 currentCdnHost 不算生效，这里仍记着关闭前的选择
 
 function findCdnOpt(value) {
   for (var i = 0; i < cdnList.length; i++) if (cdnList[i].value === value) return cdnList[i];
@@ -185,21 +403,31 @@ function selectCdnValue(value) {
 }
 function buildCdnSelectList(options) {
   els.cdnSelectList.textContent = "";
+  var custom = cdnMode === "custom";
   options.forEach(function (o) {
-    knownValues[o.value] = true;
-    var isHost = o.value !== "base" && o.value !== "backup";
+    var isHost = o.value !== "base" && o.value !== "backup" && !o.unknown; // 不在清单内的自订节点名称就是 host，不再重复显示
     var row = document.createElement("div");
-    row.className = "cdnOptRow";
+    row.className = "cdnOptRow" + (custom ? " hasDel" : "");
     row.dataset.value = o.value;
     var nameEl = document.createElement("span");
     nameEl.className = "cdnOptName";
-    nameEl.textContent = cdnDisplayName(o);
+    nameEl.textContent = o.unknown ? o.value : cdnDisplayName(o);
     row.appendChild(nameEl);
     if (isHost) {
       var hostEl = document.createElement("span");
       hostEl.className = "cdnOptHost";
       hostEl.textContent = o.value;
       row.appendChild(hostEl);
+    }
+    if (custom) {
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "cdnOptDel";
+      del.textContent = "✕";
+      del.title = t("customDelTitle");
+      del.setAttribute("aria-label", t("customDelTitle"));
+      del.addEventListener("click", function (ev) { ev.stopPropagation(); removeCustomHost(o.value); });
+      row.appendChild(del);
     }
     row.addEventListener("click", function () {
       closeCdnSelect();
@@ -229,31 +457,55 @@ function normHost(s) {
   return (/^[a-z0-9.-]+(:\d+)?$/.test(s) && s.indexOf(".") >= 0) ? s : "";
 }
 
-function buildOptions(options, current, on) {
-  buildCdnSelectList(options);
-  // 还原目前选择：「关闭」优先；否则储存值在清单内 → 清单模式；不在 → 视为自行输入的 host
-  var known = !!(current && knownValues[current]);
-  selectCdnValue(known ? current : DEFAULTS.cdnHost); // 保底，切回清单模式时有值可用
-  if (!on) {
-    els.modeOff.checked = true;
-    if (!known) els.customHost.value = current || ""; // 关闭前用的是自行输入 → 切回自行输入时还在
-  } else if (known) {
-    els.modeList.checked = true;
-  } else {
-    els.modeCustom.checked = true;
-    els.customHost.value = current || "";
-  }
+function buildOptions(current, on) {
+  renderCountrySelect();
+  buildCdnSelectList(visibleCdnOptions());
+  selectCdnValue(current);
+  // 还原目前选择：「关闭」优先；否则看用的是国家清单还是自订节点列表
+  (!on ? els.modeOff : cdnMode === "custom" ? els.modeCustom : els.modeList).checked = true;
   syncModeUI();
 }
 
-// 依目前是「清单选择」「自行输入」还是「关闭」互斥显示对应的元件
+// 依目前是「清单选择」「自订节点列表」还是「关闭」互斥显示对应的元件
 function syncModeUI() {
-  var isCustom = els.modeCustom.checked, isOff = els.modeOff.checked;
-  els.cdnSelect.style.display = (isCustom || isOff) ? "none" : "block";
-  els.customHost.style.display = isCustom ? "block" : "none";
-  els.customHint.style.display = isCustom ? "block" : "none";
+  var isCustom = els.modeCustom.checked, isOff = els.modeOff.checked, hasCustom = customHosts.length > 0;
+  els.cdnSelect.style.display = isOff ? "none" : "block";
+  els.countryRow.style.display = (isCustom || isOff) ? "none" : "flex";
+  document.getElementById("countryHint").style.display = (isCustom || isOff) ? "none" : "block";
+  els.customBox.style.display = isCustom ? "block" : "none";
+  els.customAddBox.style.display = isCustom ? "block" : "none";
+  els.customCount.textContent = t("countryNodeCount").replace("{n}", customHosts.length); // 跟國家清單同一個樣式與文字
+  els.customClearBtn.disabled = !hasCustom;
   els.videoOffHint.style.display = isOff ? "block" : "none";
-  if (isCustom || isOff) closeCdnSelect();
+  els.speedtestBtn.disabled = !activeHosts().length;
+  els.speedtestBtn.parentNode.style.display = isOff ? "none" : ""; // 選「關閉」就沒有節點可測，整列藏起來
+  // 自訂節點列表是空的：下拉照樣顯示，但不能展開，文字改成「空列表」
+  var empty = isCustom && !hasCustom;
+  els.cdnSelect.classList.toggle("empty", empty);
+  els.cdnSelectTrigger.disabled = empty;
+  if (empty) {
+    els.cdnSelectName.textContent = t("customListEmpty");
+    els.cdnSelectHost.style.display = "none";
+  } else {
+    renderCdnSelectTrigger();
+  }
+  if (isOff || empty) closeCdnSelect();
+}
+
+// 换了节点那份（国家清单 ↔ 自订节点列表、自订列表增删）：重建下拉、选取值、自动测速的节点
+function rebuildCdnList() {
+  customHint("");
+  buildCdnSelectList(visibleCdnOptions());
+  applyDropdownOrder();
+  selectCdnValue(cdnSelectValue);
+  saveAutoSpeedHosts();
+  syncModeUI();
+}
+// 改用某个节点（会写进 patch 一起存）
+function useHost(host, patch) {
+  patch.cdnHost = host;
+  cdnSelectValue = host;
+  if (videoOn) currentCdnHost = host;
 }
 
 function save(patch) { chrome.storage.local.set(patch); }
@@ -263,8 +515,11 @@ Promise.all([
   fetch(chrome.runtime.getURL("cdn-list.json")).then(function (r) { return r.json(); }).catch(function () { return { options: [] }; }),
   new Promise(function (res) { chrome.storage.local.get(DEFAULTS, res); })
 ]).then(function (arr) {
-  var list = (arr[0] && arr[0].options) || [];
-  cdnList = list;
+  var data = arr[0] || {};
+  cdnList = data.options || [];
+  cdnPools = data.pools || {};
+  cdnCountries = data.countries || [];
+  addFakeCountry();
   var cfg = {};
   for (var k in DEFAULTS) cfg[k] = arr[1][k] === undefined ? DEFAULTS[k] : arr[1][k];
   // 旧版「清单里的『原始(不覆写)』」(cdnHost='base') 已被独立的「关闭」取代：搬成 videoEnabled=false
@@ -272,13 +527,36 @@ Promise.all([
     cfg.videoEnabled = false; cfg.cdnHost = DEFAULTS.cdnHost;
     save({ videoEnabled: false, cdnHost: DEFAULTS.cdnHost });
   }
+  if (REMOVED_HOSTS.indexOf(cfg.cdnHost) >= 0) {
+    cfg.cdnHost = DEFAULTS.cdnHost;
+    save({ cdnHost: DEFAULTS.cdnHost });
+  }
+  countrySel = validCountry(cfg.cdnCountry) ? cfg.cdnCountry : COUNTRY_FALLBACK;
+  detectedCountry = findCountry(cfg.detectedCountry) ? cfg.detectedCountry : "";
+  if (addFakeCountry.active) { countrySel = detectedCountry = FAKE_COUNTRY.code; cfg.countryAutoDone = true; }
   els.enabled.checked = !!cfg.enabled;
   els.autoFallback.checked = !!cfg.autoFallback;
+  document.getElementById("autoSpeedSwitch").checked = !!cfg.autoSpeedSwitch;
+  savedAutoSpeedHosts = (cfg.autoSpeedHosts || []).join("|");
   els.showDebug.checked = !!cfg.showDebug;
   syncDebugSection();
+  cdnList.forEach(function (o) { knownValues[o.value] = true; }); // 不在目前國家清單的節點也算清單內
+  customHosts = Array.isArray(cfg.customHosts) ? cfg.customHosts.slice() : [];
+  cdnMode = cfg.cdnMode === "custom" || cfg.cdnMode === "list" ? cfg.cdnMode : null;
+  if (!cdnMode) {
+    // 1.6 以前沒有 cdnMode：節點不在清單內就是當時「自行輸入」的 host，搬進自訂節點列表
+    var oldCustom = !!cfg.cdnHost && !knownValues[cfg.cdnHost];
+    cdnMode = oldCustom ? "custom" : "list";
+    if (oldCustom && customHosts.indexOf(cfg.cdnHost) < 0) customHosts.unshift(cfg.cdnHost);
+    save({ cdnMode: cdnMode, customHosts: customHosts });
+  } else if (cdnMode === "custom" && customHosts.length && customHosts.indexOf(cfg.cdnHost) < 0) {
+    cfg.cdnHost = customHosts[0]; // 列表原本是空的、後來才加入（例如測速工具匯入）：改用列表第一個
+    save({ cdnHost: cfg.cdnHost });
+  }
   currentCdnHost = cfg.cdnHost;
   videoOn = cfg.videoEnabled !== false;
-  buildOptions(list, cfg.cdnHost, videoOn);
+  buildOptions(cfg.cdnHost, videoOn);
+  saveAutoSpeedHosts();
   liveOn = cfg.liveEnabled !== false;
   liveRouteSel = LIVE_ROUTES.indexOf(cfg.liveRoute) >= 0 ? cfg.liveRoute : DEFAULTS.liveRoute;
   (liveOn ? els.liveModeList : els.liveModeOff).checked = true;
@@ -289,27 +567,49 @@ Promise.all([
   if (sortOn && cfg.speedOrder) speedOrder = { video: cfg.speedOrder.video || [], live: cfg.speedOrder.live || [] };
   applyDropdownOrder();
   LIMIT_FIELDS.forEach(function (f) { limits[f.key] = clampLimit(f, cfg[f.key]); document.getElementById(f.key).value = limits[f.key]; });
+  autoSelectCountry(cfg);
 });
 
 els.enabled.addEventListener("change", function () { save({ enabled: els.enabled.checked }); });
 els.autoFallback.addEventListener("change", function () { save({ autoFallback: els.autoFallback.checked }); });
+// 自動測速副作用大：打開前先跳警告，按「仍要開啟」才真的開；關閉不用確認
+document.getElementById("autoSpeedSwitch").addEventListener("change", function () {
+  var sw = this;
+  if (!sw.checked) { save({ autoSpeedSwitch: false }); return; }
+  sw.checked = false;
+  showWarnDialog({
+    title: t("autoSpeedWarnTitle"),
+    paras: [t("autoSpeedWarnText"), t("autoSpeedWarnAdvice")],
+    cancel: t("autoSpeedWarnCancel"),
+    confirm: t("autoSpeedWarnConfirm"),
+    onConfirm: function () { sw.checked = true; save({ autoSpeedSwitch: true }); }
+  });
+});
 // Debug（目前分頁）的文字只在開啟 debug 疊層時才顯示，跟該開關放在同一區
 function syncDebugSection() { document.getElementById("debugSection").style.display = els.showDebug.checked ? "" : "none"; }
 els.showDebug.addEventListener("change", function () { syncDebugSection(); save({ showDebug: els.showDebug.checked }); });
 
+// 國家清單 ↔ 自訂節點列表互切時，一律改用新那份的第一個節點（自訂列表是空的就先不動）；
+// 從「關閉」切回關閉前用的那份則沿用原本的節點
 els.modeList.addEventListener("change", function () {
   if (!els.modeList.checked) return;
-  syncModeUI();
   videoOn = true;
-  currentCdnHost = cdnSelectValue || DEFAULTS.cdnHost;
-  save({ videoEnabled: true, cdnHost: currentCdnHost });
+  var patch = { videoEnabled: true, cdnMode: "list" };
+  if (cdnMode !== "list") { cdnMode = "list"; useCountryFirstNode(countrySel, patch); }
+  currentCdnHost = cdnSelectValue;
+  save(patch);
+  rebuildCdnList();
 });
 els.modeCustom.addEventListener("change", function () {
   if (!els.modeCustom.checked) return;
-  syncModeUI();
-  var h = normHost(els.customHost.value);
-  if (h) { videoOn = true; currentCdnHost = h; save({ videoEnabled: true, cdnHost: h }); markCustom(true); }
-  else { els.customHost.focus(); markCustom(false); }
+  videoOn = true;
+  var patch = { videoEnabled: true, cdnMode: "custom" };
+  if ((cdnMode !== "custom" || customHosts.indexOf(cdnSelectValue) < 0) && customHosts.length) useHost(customHosts[0], patch);
+  cdnMode = "custom";
+  currentCdnHost = cdnSelectValue;
+  save(patch);
+  rebuildCdnList();
+  if (!customHosts.length) els.customHost.focus();
 });
 els.modeOff.addEventListener("change", function () {
   if (!els.modeOff.checked) return;
@@ -318,15 +618,88 @@ els.modeOff.addEventListener("change", function () {
   save({ videoEnabled: false });
 });
 
-// 自订输入：即时正规化并储存
-function markCustom(ok) {
-  els.customHint.textContent = ok ? t("customHintDefault") : t("customHintInvalid");
-  els.customHint.style.color = ok ? "#888" : "#e00";
+// -------- 自訂節點列表：輸入網址或 host 按 Enter／加入；每列可移除、可整個清空 --------
+function customHint(key) {
+  els.customHint.textContent = key ? t(key) : "";
+  els.customHint.style.display = key ? "block" : "none";
+  els.customHint.style.color = "#e00";
 }
-els.customHost.addEventListener("input", function () {
-  var h = normHost(els.customHost.value);
-  if (h) { videoOn = true; currentCdnHost = h; save({ videoEnabled: true, cdnHost: h }); markCustom(true); }
-  else { markCustom(false); }
+// 可以一次加入多個（空白、逗號、換行分隔，例如貼上測速工具「全部複製」的清單）
+function addCustomHost(text) {
+  var tokens = (text != null ? text : els.customHost.value).split(/[\s,，、]+/).filter(Boolean);
+  var added = [], bad = 0, dup = 0;
+  tokens.forEach(function (s) {
+    var h = normHost(s);
+    if (!h) bad++;
+    else if (customHosts.indexOf(h) >= 0 || added.indexOf(h) >= 0) dup++;
+    else added.push(h);
+  });
+  if (!added.length) { customHint(bad || !tokens.length ? "customHintInvalid" : "customHintDup"); return; }
+  customHint("");
+  els.customHost.value = "";
+  var wasEmpty = !customHosts.length;
+  customHosts = customHosts.concat(added);
+  var patch = { customHosts: customHosts.slice() };
+  // 列表原本是空的（目前還在用原本的節點）→ 改用第一個加入的
+  if (wasEmpty && cdnMode === "custom") useHost(added[0], patch);
+  save(patch);
+  rebuildCdnList();
+}
+els.customAddBtn.addEventListener("click", function () { addCustomHost(); });
+els.customHost.addEventListener("keydown", function (ev) { if (ev.key === "Enter") addCustomHost(); });
+// 貼上多行（單行輸入框會把換行吃掉、黏成一串）：直接全部加入
+els.customHost.addEventListener("paste", function (ev) {
+  var text = (ev.clipboardData || window.clipboardData).getData("text") || "";
+  if (!/[\r\n]/.test(text.trim())) return;
+  ev.preventDefault();
+  addCustomHost(text);
+});
+els.customHost.addEventListener("input", function () { customHint(""); });
+
+// 列表清空（或最後一個被移除）：改回國家清單、用目前國家的第一個節點
+function clearCustomHosts() {
+  customHosts = [];
+  var patch = { customHosts: [], cdnMode: "list" };
+  cdnMode = "list";
+  useCountryFirstNode(countrySel, patch);
+  if (videoOn) { els.modeList.checked = true; currentCdnHost = cdnSelectValue; }
+  save(patch);
+  rebuildCdnList();
+}
+function removeCustomHost(h) {
+  var i = customHosts.indexOf(h);
+  if (i < 0) return;
+  if (customHosts.length === 1) { closeCdnSelect(); clearCustomHosts(); return; }
+  customHosts.splice(i, 1);
+  var patch = { customHosts: customHosts.slice() };
+  if (cdnSelectValue === h) useHost(customHosts[0], patch); // 移除的是目前用的節點 → 改用列表第一個
+  save(patch);
+  rebuildCdnList();
+  els.cdnSelect.classList.add("open"); // 重建後清單還開著，方便連續移除
+}
+els.customClearBtn.addEventListener("click", function () {
+  showWarnDialog({
+    plain: true,
+    title: t("customClearTitle"),
+    paras: [t("customClearText").replace("{n}", customHosts.length)],
+    cancel: t("customClearCancel"),
+    confirm: t("customClearConfirm"),
+    onConfirm: clearCustomHosts
+  });
+});
+
+// 測速工具在 popup 開著時匯入節點：同步畫面
+chrome.storage.onChanged.addListener(function (changes, area) {
+  if (area !== "local" || !changes.customHosts) return;
+  var next = changes.customHosts.newValue || [];
+  if (next.join("|") === customHosts.join("|")) return;
+  customHosts = next.slice();
+  if (cdnMode === "custom" && customHosts.length && customHosts.indexOf(cdnSelectValue) < 0) {
+    var patch = {};
+    useHost(customHosts[0], patch);
+    save(patch);
+  }
+  rebuildCdnList();
 });
 
 // -------- 分頁：影片 / 直播 --------
@@ -484,6 +857,7 @@ function renderLiveRows() {
 function syncLiveUI() {
   els.liveSelect.style.display = liveOn ? "block" : "none";
   els.liveOffHint.style.display = liveOn ? "none" : "block";
+  els.liveSpeedtestBtn.parentNode.style.display = liveOn ? "" : "none"; // 直播選「關閉」也不顯示測速按鈕
   if (!liveOn) els.liveSelect.classList.remove("open");
 }
 
@@ -527,10 +901,11 @@ function spdText(bps, idle) {
   var s = bps >= 1048576 ? (bps / 1048576).toFixed(1) + " MB/s" : Math.round(bps / 1024) + " kB/s";
   return idle ? s + " (idle)" : s;
 }
+var lastDebugText = ""; // 最近一次 debug 文字，問題回報時預填進表單
 function renderDebug(d) {
   liveSnap = (d && d.live) || null;
   renderLiveRows();
-  if (!d) { els.debug.textContent = t("debugNoDataAfterOpen"); return; }
+  if (!d) { lastDebugText = ""; els.debug.textContent = t("debugNoDataAfterOpen"); return; }
   var lines, cdnLineIdx;
   if (d.live) {
     // 直播间：顯示直播線路資料（影片那組 v / a / qn / spd 在直播間沒有意義）
@@ -555,6 +930,7 @@ function renderDebug(d) {
     );
   }
   if (d.lastError) lines.push("err=" + disp(d.lastError));
+  lastDebugText = lines.join("\n");
   els.debug.textContent = "";
   var frag = document.createDocumentFragment();
   lines.forEach(function (l, i) {
@@ -647,7 +1023,7 @@ function rememberOrder(mode, order, st) {
 }
 // 主畫面兩個下拉清單也照存的順序（關閉排序時回到預設）
 function applyDropdownOrder() {
-  var vKeys = cdnList.map(function (o) { return o.value; });
+  var vKeys = visibleCdnOptions().map(function (o) { return o.value; });
   (sortOn ? withSaved("video", vKeys) : vKeys).forEach(function (v) {
     for (var i = 0; i < els.cdnSelectList.children.length; i++) {
       var row = els.cdnSelectList.children[i];
@@ -725,15 +1101,137 @@ document.getElementById("stVideoReset").addEventListener("click", function () { 
 document.getElementById("stLiveReset").addEventListener("click", function () { resetLimits("live"); });
 function lim(key) { return limits[key] || DEFAULTS[key]; }
 
+// -------- 恢復原始設置（進階設定最下方）--------
+// 進階設定的開關與門檻、節點排序回到預設；影片改回清單選擇、預設國家（偵測到的國家，否則台灣）的第一個節點、清空自訂節點列表；
+// 直播改回偏好選擇的國際線路。主畫面的「啟用」總開關不動
+function resetAllSettings() {
+  var code = detectedCountry || COUNTRY_FALLBACK;
+  var patch = {
+    autoFallback: DEFAULTS.autoFallback, autoSpeedSwitch: DEFAULTS.autoSpeedSwitch, showDebug: DEFAULTS.showDebug,
+    sortBySpeed: DEFAULTS.sortBySpeed, speedOrder: null,
+    videoEnabled: true, cdnMode: "list", customHosts: [], cdnCountry: code,
+    liveEnabled: true, liveRoute: DEFAULTS.liveRoute
+  };
+  els.autoFallback.checked = DEFAULTS.autoFallback;
+  document.getElementById("autoSpeedSwitch").checked = DEFAULTS.autoSpeedSwitch;
+  els.showDebug.checked = DEFAULTS.showDebug;
+  syncDebugSection();
+  sortOn = DEFAULTS.sortBySpeed;
+  document.getElementById("sortBySpeed").checked = sortOn;
+  speedOrder = { video: [], live: [] };
+  LIMIT_FIELDS.forEach(function (f) {
+    limits[f.key] = patch[f.key] = DEFAULTS[f.key];
+    document.getElementById(f.key).value = DEFAULTS[f.key];
+  });
+  // 影片
+  videoOn = true;
+  cdnMode = "list";
+  customHosts = [];
+  countrySel = code;
+  countryAutoPending = false;
+  els.modeList.checked = true;
+  useCountryFirstNode(code, patch);
+  currentCdnHost = cdnSelectValue;
+  // 直播
+  liveOn = true;
+  liveRouteSel = DEFAULTS.liveRoute;
+  els.liveModeList.checked = true;
+  save(patch);
+  renderCountrySelect();
+  rebuildCdnList();
+  syncLiveUI();
+  renderLiveRows();
+}
+document.getElementById("resetAllBtn").addEventListener("click", function () {
+  showWarnDialog({
+    plain: true,
+    title: t("resetAllTitle"),
+    paras: [t("resetAllText")],
+    cancel: t("customClearCancel"),
+    confirm: t("customClearConfirm"),
+    onConfirm: resetAllSettings
+  });
+});
+
 var speedtestMode = "video"; // "video" | "live"：测速页两种模式共用同一个画面
 var speedtestHosts = []; // 本次送出测试的 host 顺序，index 对应 speedTest.results 的顺序
 var speedtestTabId = null;
 var speedtestPort = null; // 只用来让 content script 侦测「离开测速页 / popup 关闭」→ 立即中止
 var lastSpeedtestState = null; // 最近一次 renderSpeedtest 的资料，点击切换节点后立即重绘打勾标示用
 
-function speedtestHostList() {
-  return cdnList.filter(function (o) { return o.value && o.value !== "base" && o.value !== "backup"; });
+function speedtestHostList() { return activeHosts(); }
+
+// -------- 「全部」節點測速前的警告：估算耗時（每個節點最多測滿「秒數」上限），引導改選國家 --------
+function durationText(totalSec) {
+  var h = Math.floor(totalSec / 3600), m = Math.floor(totalSec % 3600 / 60), s = totalSec % 60;
+  return t("durationHMS").replace("{h}", h).replace("{m}", m).replace("{s}", s);
 }
+// 不是「全部」就直接開測；是的話先跳警告，按確定才開測
+function confirmSpeedtestHosts(hosts, onConfirm) {
+  if (cdnMode === "custom" || countrySel !== COUNTRY_ALL) { onConfirm(); return; }
+  showWarnDialog({
+    title: t("allWarnTitle"),
+    paras: [
+      t("allWarnText").replace("{n}", hosts.length).replace("{time}", durationText(hosts.length * lim("stVideoSec"))),
+      t("allWarnAdvice"),
+      t("allWarnQuestion")
+    ],
+    cancel: t("allWarnCancel"),
+    confirm: t("allWarnConfirm"),
+    onConfirm: onConfirm
+  });
+}
+
+// 紅色警告彈窗（全量測速、開啟自動測速共用）：主按鈕是「取消」，確認只是一行小字連結，引導使用者取消。
+// plain: true（清空自訂節點列表）則是一般確認框：確認、取消兩個按鈕並排，不引導。paras 每段可含 <b>…</b>
+function showWarnDialog(o) {
+  var box = document.getElementById("allWarn");
+  box.classList.toggle("plain", !!o.plain);
+  document.getElementById("awTitle").textContent = o.title;
+  var body = document.getElementById("awBody");
+  body.textContent = "";
+  o.paras.forEach(function (txt) {
+    var p = document.createElement("p");
+    setRichText(p, txt);
+    body.appendChild(p);
+  });
+  var cancelBtn = document.getElementById("awCancel"), confirmBtn = document.getElementById("awConfirm");
+  cancelBtn.textContent = o.cancel;
+  confirmBtn.textContent = o.confirm;
+  function close() { box.classList.remove("show"); }
+  cancelBtn.onclick = function () { close(); if (o.onCancel) o.onCancel(); };
+  confirmBtn.onclick = function () { close(); o.onConfirm(); };
+  box.classList.add("show");
+  cancelBtn.focus();
+}
+
+// -------- 測速頁說明區：固定三行高，超出時顯示箭頭；展開時改成 fixed 浮在原位，不影響整頁高度 --------
+var stDesc = document.getElementById("stDesc");
+var stDescInner = document.getElementById("stDescInner");
+var stDescToggle = document.getElementById("stDescToggle");
+function setDescExpanded(on) {
+  stDesc.classList.toggle("expanded", on);
+  if (on) {
+    var r = stDesc.getBoundingClientRect();
+    stDescInner.style.top = r.top + "px";
+    stDescInner.style.left = r.left + "px";
+    stDescInner.style.width = r.width + "px";
+    stDescInner.style.maxHeight = (window.innerHeight - r.top - 8) + "px";
+  } else {
+    stDescInner.style.top = stDescInner.style.left = stDescInner.style.width = stDescInner.style.maxHeight = "";
+  }
+  stDescToggle.textContent = on ? "▴" : "▾";
+  stDescToggle.setAttribute("aria-label", t(on ? "stDescCollapse" : "stDescExpand"));
+  stDescToggle.title = t(on ? "stDescCollapse" : "stDescExpand");
+  stDescToggle.setAttribute("aria-expanded", String(on));
+}
+// 說明文字換了（影片／直播、語系）就重新判斷要不要顯示箭頭
+function syncDescOverflow() {
+  setDescExpanded(false);
+  stDesc.classList.toggle("overflowing", stDescInner.scrollHeight > stDescInner.clientHeight + 1);
+}
+stDescToggle.addEventListener("click", function () { setDescExpanded(!stDesc.classList.contains("expanded")); });
+
 
 function renderSpeedtestMeta(st) {
   els.stMeta.textContent = "";
@@ -863,6 +1361,21 @@ function renderLiveSpeedtest(st) {
   });
 }
 
+var CROWNS = ["gold", "silver", "bronze"];
+var SVG_NS = "http://www.w3.org/2000/svg";
+// i：0 / 1 / 2 = 第一／二／三名
+function crownIcon(i) {
+  var svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "stCrown " + CROWNS[i]);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", t("crownRank").replace("{n}", i + 1));
+  var path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", "M2 7l5 4 5-7 5 7 5-4-2 11H4L2 7zm2 13h16v2H4v-2z");
+  svg.appendChild(path);
+  return svg;
+}
+
 function renderSpeedtest(st) {
   if (!st) return;
   lastSpeedtestState = st;
@@ -875,6 +1388,12 @@ function renderSpeedtest(st) {
   }
   var bestHost = null, bestBps = 0;
   st.results.forEach(function (r) { if (!r.error && r.bps > bestBps) { bestBps = r.bps; bestHost = r.host; } });
+  // 目前最快的前三名戴金／銀／銅皇冠（測速中就隨結果更新）
+  var crownOf = {};
+  st.results.filter(function (r) { return r.host && !r.error && r.bps > 0; })
+    .sort(function (a, b) { return b.bps - a.bps; })
+    .slice(0, 3)
+    .forEach(function (r, i) { crownOf[r.host] = i; });
 
   var byHost = {};
   st.results.forEach(function (r) { if (r.host) byHost[r.host] = r; });
@@ -928,18 +1447,19 @@ function renderSpeedtest(st) {
 
       row.appendChild(main);
       row.appendChild(speedSpan);
+      if (host in crownOf) row.appendChild(crownIcon(crownOf[host]));
       frag.appendChild(row);
     });
     els.stList.appendChild(frag);
   });
 }
 
-// 测速页点一下节点列即直接切换：写回清单模式的选择并存档，主画面下次打开会同步显示
+// 测速页点一下节点列即直接切换：写回目前那份节点（国家清单／自订节点列表）的选择并存档，主画面下次打开会同步显示
 function applySpeedtestHost(host) {
-  if (!knownValues[host] || (videoOn && host === currentCdnHost)) return;
+  if (activeHosts().indexOf(host) < 0 || (videoOn && host === currentCdnHost)) return;
   currentCdnHost = host;
   videoOn = true;
-  els.modeList.checked = true;
+  (cdnMode === "custom" ? els.modeCustom : els.modeList).checked = true;
   selectCdnValue(host);
   syncModeUI();
   save({ videoEnabled: true, cdnHost: host });
@@ -973,13 +1493,44 @@ function showSpeedtestView(tabId, mode) {
     ? t("stLiveHintBandwidth").replace("{sec}", Math.round(lim("stLiveSec") + lim("stLiveRuns") * 1.5))
     : t("stHintBandwidth"));
   els.mainView.style.display = "none";
-  els.speedtestView.style.display = "block";
+  els.speedtestView.style.display = "";
+  enterStLayout();
+  syncDescOverflow(); // 要在畫面顯示後才量得到高度
   // 开一个长连线：popup 关闭或按返回时会自动/主动断线，content script 收到 onDisconnect 就中止测速
   try { speedtestPort = chrome.tabs.connect(tabId, { name: "cdn-switcher-speedtest", frameId: 0 }); } catch (e) { speedtestPort = null; }
 }
 
+// 測速頁版面（見 popup.html 的 html.stMode）：先讓 html 撐到 600px 向瀏覽器要最大的 popup，
+// popup 視窗跟著變大是非同步的，等 resize 停下來（或一段時間都沒有 resize＝本來就已經最大）後，
+// 再把 html 高度鎖成實際可見高度，內容剛好等於視窗，不會超出也不會留白
+var stLayoutTimer = null;
+function onStLayoutResize() {
+  clearTimeout(stLayoutTimer);
+  stLayoutTimer = setTimeout(lockStLayout, 150);
+}
+function lockStLayout() {
+  window.removeEventListener("resize", onStLayoutResize);
+  document.documentElement.style.height = window.innerHeight + "px";
+}
+function enterStLayout() {
+  var html = document.documentElement;
+  html.style.height = "";
+  html.classList.add("stMode");
+  window.addEventListener("resize", onStLayoutResize);
+  clearTimeout(stLayoutTimer);
+  stLayoutTimer = setTimeout(lockStLayout, 400);
+}
+function leaveStLayout() {
+  clearTimeout(stLayoutTimer);
+  window.removeEventListener("resize", onStLayoutResize);
+  document.documentElement.classList.remove("stMode");
+  document.documentElement.style.height = "";
+}
+
 function showMainView() {
+  setDescExpanded(false);
   els.speedtestView.style.display = "none";
+  leaveStLayout();
   els.mainView.style.display = "block";
   if (speedtestPort) { try { speedtestPort.disconnect(); } catch (e) {} speedtestPort = null; }
   speedtestTabId = null;
@@ -1001,13 +1552,16 @@ function startSpeedtest(tabId) {
 }
 
 els.speedtestBtn.addEventListener("click", function () {
-  speedtestHosts = speedtestHostList().map(function (o) { return o.value; });
-  if (!speedtestHosts.length) return;
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (!tabs || !tabs[0]) return;
-    var tabId = tabs[0].id;
-    showSpeedtestView(tabId, "video");
-    startSpeedtest(tabId);
+  var hosts = speedtestHostList();
+  if (!hosts.length) return;
+  confirmSpeedtestHosts(hosts, function () {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      if (!tabs || !tabs[0]) return;
+      var tabId = tabs[0].id;
+      showSpeedtestView(tabId, "video");
+      speedtestHosts = hosts;
+      startSpeedtest(tabId);
+    });
   });
 });
 
@@ -1032,7 +1586,9 @@ document.getElementById("stStopBtn").addEventListener("click", function () {
 els.stRetestBtn.addEventListener("click", function () {
   // 测速中也能按：main-hook.js 的 runSpeedTest 会自己中断上一轮、直接开新的
   if (speedtestTabId == null) return;
-  startSpeedtest(speedtestTabId);
+  if (speedtestMode === "live") { startSpeedtest(speedtestTabId); return; }
+  var tabId = speedtestTabId;
+  confirmSpeedtestHosts(speedtestHosts, function () { if (speedtestTabId === tabId) startSpeedtest(tabId); });
 });
 
 setInterval(function () { pollDebug(); pollSpeedtest(); }, 1000);
@@ -1137,6 +1693,21 @@ function previewWhatsNew(from) {
       showWhatsNew(current, entries, function () {});
       return entries.length + " 條";
     });
+}
+
+// -------- 除錯用：假國家（測長國名的 UI）--------
+// 網址列開 chrome-extension://<擴充 ID>/popup.html?fakeCountry：清單多一個最長國名的假國家（節點沿用台灣），
+// 並當成「你在這裡」選取。只影響這次開啟的畫面；手動切國家才會寫入 storage（之後正常開啟會因找不到而回到台灣）。
+var FAKE_COUNTRY = {
+  code: "ZZ", dial: -1,
+  name: { zh_TW: "南喬治亞與南桑威奇群島", zh_CN: "南乔治亚和南桑威奇群岛", en: "South Georgia and the South Sandwich Islands" }
+};
+function addFakeCountry() {
+  if (!new URLSearchParams(location.search).has("fakeCountry")) return;
+  var tw = findCountry("TW");
+  FAKE_COUNTRY.nodes = tw ? tw.nodes : [];
+  cdnCountries.unshift(FAKE_COUNTRY);
+  addFakeCountry.active = true;
 }
 
 (function () {

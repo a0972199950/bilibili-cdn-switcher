@@ -6,6 +6,7 @@
 //   npm run build -- --browser=chrome      # 只打包 Chrome
 //   npm run build -- --browser=firefox     # 只打包 Firefox
 //   npm run build -- --browser=edge        # 只打包 Edge
+//   node scripts/build.mjs --out=release --plain   # 輸出到 release/、檔名不帶版本（npm run package 用）
 //
 // Edge 是 Chromium 內核，Manifest V3 與 Chrome 完全相容，直接沿用 src/manifest.json，
 // 不需要另外一份 manifest.edge.json。
@@ -17,7 +18,9 @@ import JSZip from "jszip";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const SRC = path.join(ROOT, "src");
-const DIST = path.join(ROOT, "dist");
+const outArg = (process.argv.find((a) => a.startsWith("--out=")) || "").split("=")[1];
+const DIST = path.resolve(ROOT, outArg || "dist");
+const PLAIN = process.argv.includes("--plain"); // 檔名不帶版本：bilibili-cdn-switcher-<browser>.zip
 const ICONS_PROD = path.join(ROOT, "assets", "icons-prod");
 
 // zip 內每個 entry 的時間戳都固定成這個，內容沒變的話每次包出來的 zip bytes 才會完全一樣
@@ -62,7 +65,7 @@ async function buildTarget(name, manifestFile) {
   const version = manifest.version;
 
   fs.mkdirSync(DIST, { recursive: true });
-  const zipPath = path.join(DIST, `bilibili-cdn-switcher-${name}-${version}.zip`);
+  const zipPath = path.join(DIST, PLAIN ? `bilibili-cdn-switcher-${name}.zip` : `bilibili-cdn-switcher-${name}-${version}.zip`);
 
   const iconsProdFiles = fs.existsSync(ICONS_PROD)
     ? fs.readdirSync(ICONS_PROD).filter((f) => f.endsWith(".png"))

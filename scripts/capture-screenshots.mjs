@@ -1,5 +1,7 @@
-// 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截 main / debug / speedtest 三張圖，
-// 等比縮放 + 黑邊填成 1280x800 png，輸出到 store/ 取代現有檔案。
+// 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截五張圖（點播主頁 / 直播主頁 / 點播測速頁 /
+// 進階設定頁 / debug 疊層），等比縮放 + 黑邊填成 1280x800 png，輸出到 store/ 取代現有檔案。
+// 檔名 screenshot-<語系>-<序號>-<畫面>-<寬>x<高>.png：先語系、後序號，檔案總管按檔名排序時
+// 同一語系排在一起、且依 VIEWS 的順序排列。
 //
 // 用法：npm run capture-screenshots
 //
@@ -11,6 +13,9 @@
 //   要 bringToFront() 把 bilibili 影片分頁切回 active，debug/測速資料才抓得到。
 // - debug 截圖不是 popup 畫面，是「顯示 debug 疊層」開啟後、疊在播放器左上角的浮層，
 //   所以是對 bilibili 分頁的播放器 DOM 截圖，不是對 popup 分頁截圖。
+//   「顯示 debug 疊層」開關已移到進階設定頁，但 #showDebug 還在 DOM 裡，照樣用 JS 觸發即可。
+// - 直播主頁要有「正在播放的直播間」才看得到具體線路網址：每輪最後才把同一個分頁導去直播間，
+//   房間由 get_user_recommend 動態挑（直播間會下播，寫死房號很快就失效），可用 LIVE_ROOM 指定。
 import puppeteer from "puppeteer";
 import sharp from "sharp";
 import { fileURLToPath } from "node:url";
@@ -34,6 +39,8 @@ try {
   // 檔案不存在或格式不對都當作沒設定，不要讓截圖整個中斷
 }
 const BILI_COOKIE = (process.env.BILI_COOKIE || "").trim();
+// 直播間：.env.local 設 LIVE_ROOM=<房號> 就固定用那間；沒設就從推薦清單挑第一間能播的
+const LIVE_ROOM_ENV = (process.env.LIVE_ROOM || "").trim();
 
 // "a=1; b=2" -> Puppeteer 的 cookie 物件陣列。值本身可能含 %3D、= 之類的字元，
 // 所以只切第一個 "="，後面整段都算 value。
@@ -122,8 +129,41 @@ async function waitForPlayer(page) {
   throw new Error("找不到播放器元素");
 }
 
+// 順序即檔名序號，也是商店截圖想呈現的順序
+const VIEWS = {
+  videoMain: "01-video-main",
+  liveMain: "02-live-main",
+  videoSpeedtest: "03-video-speedtest",
+  advanced: "04-advanced",
+  debug: "05-debug"
+};
+
 function outFileName(view, prefix) {
-  return `screenshot-${view}-${prefix}-${CANVAS_W}x${CANVAS_H}.png`;
+  return `screenshot-${prefix}-${view}-${CANVAS_W}x${CANVAS_H}.png`;
+}
+
+// popup 實際高度由內容決定：主頁 / 進階設定頁比預設視窗高就把視窗撐高再截，才不會被切掉。
+// 測速頁不能這樣做：它的版面是鎖死 popup 可見高度（html.stMode），改視窗高度會觸發重排。
+async function popupShot(tabB, { fit }) {
+  if (!fit) return tabB.screenshot({ type: "png" });
+  const height = await tabB.evaluate(() => document.documentElement.scrollHeight);
+  const full = Math.min(Math.max(height, POPUP_VIEWPORT.height), 1100);
+  await tabB.setViewport({ ...POPUP_VIEWPORT, height: full });
+  try {
+    return await tabB.screenshot({ type: "png" });
+  } finally {
+    await tabB.setViewport(POPUP_VIEWPORT);
+  }
+}
+
+// 直播推薦清單 -> 房號候選（依序試到有一間真的在播為止）
+async function liveRoomCandidates() {
+  if (LIVE_ROOM_ENV) return [LIVE_ROOM_ENV];
+  const res = await fetch("https://api.live.bilibili.com/room/v1/room/get_user_recommend?page=1&page_size=15", {
+    headers: { "User-Agent": "Mozilla/5.0", Referer: "https://live.bilibili.com/", ...(BILI_COOKIE ? { Cookie: BILI_COOKIE } : {}) }
+  });
+  const json = await res.json();
+  return ((json && json.data) || []).map((r) => r.roomid).filter(Boolean).slice(0, 8);
 }
 
 // 輸出 png 而非 jpg：截圖以文字和 UI 線條為主，jpeg 的區塊壓縮會讓小字邊緣糊掉，
@@ -171,6 +211,28 @@ async function waitForSpeedtestMidway(tabB) {
     var st = window.lastSpeedtestState;
     return !!(st && st.running && st.results && st.results.length >= 1);
   }, { timeout: 60000, polling: 100 }).catch(() => log("  （測速沒等到「完成 1 個節點且仍在測試中」，直接用目前畫面截圖）"));
+}
+
+async function captureLiveMain({ tabA, tabB, save }) {
+  const rooms = await liveRoomCandidates();
+  if (!rooms.length) throw new Error("取不到直播間房號（可在 .env.local 設 LIVE_ROOM=<房號>）");
+  for (const room of rooms) {
+    log(`  直播間 ${room}…`);
+    await tabA.goto(`https://live.bilibili.com/${room}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await tabA.bringToFront();
+    // 切到直播 tab；popup 是在影片頁開的所以預設停在「影片」tab
+    await tabB.$eval("#tabLive", (el) => el.click());
+    // popup 每秒輪詢 debug；有 hosts 才代表正在播放。tabB 是背景分頁，rAF 會被暫停，改固定間隔 polling
+    const ok = await tabB.waitForFunction(
+      () => { const el = document.getElementById("liveSelectHost"); return !!(el && el.textContent.trim()); },
+      { timeout: 25000, polling: 500 }
+    ).then(() => true, () => false);
+    if (!ok) { log("  （這間沒播起來，換下一間）"); continue; }
+    await sleep(500);
+    await save(await popupShot(tabB, { fit: true }), "liveMain");
+    return;
+  }
+  throw new Error("試過的直播間都沒播起來，無法截直播主頁");
 }
 
 async function captureLocale({ chromeLang, prefix, appleLang }) {
@@ -222,13 +284,14 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
 
     await fs.mkdir(OUT_DIR, { recursive: true });
 
-    const mainPng = await tabB.screenshot({ type: "png" });
-    await saveLetterboxedPng(mainPng, path.join(OUT_DIR, outFileName("main", prefix)));
-    log("saved main");
+    const save = async (buf, key) => {
+      await saveLetterboxedPng(buf, path.join(OUT_DIR, outFileName(VIEWS[key], prefix)));
+      log("saved", VIEWS[key]);
+    };
 
-    const debugPng = await playerHandle.screenshot({ type: "png" });
-    await saveLetterboxedPng(debugPng, path.join(OUT_DIR, outFileName("debug", prefix)));
-    log("saved debug");
+    await save(await popupShot(tabB, { fit: true }), "videoMain");
+
+    await save(await playerHandle.screenshot({ type: "png" }), "debug");
 
     // tabB 這時是背景分頁（tabA 才是 active），page.click() 的 hit-test 邏輯在背景分頁裡
     // 會一直等不到而卡住逾時，跟 #showDebug 一樣改用 JS 直接觸發 click
@@ -236,9 +299,19 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     await tabB.waitForSelector("#speedtestView", { visible: true });
     await waitForSpeedtestMidway(tabB);
     await sleep(100);
-    const speedPng = await tabB.screenshot({ type: "png" });
-    await saveLetterboxedPng(speedPng, path.join(OUT_DIR, outFileName("speedtest", prefix)));
-    log("saved speedtest");
+    await save(await popupShot(tabB, { fit: false }), "videoSpeedtest");
+    await tabB.$eval("#stBackBtn", (el) => el.click()); // 返回主頁（同時中止測速）
+    await sleep(300);
+
+    await tabB.$eval("#gearBtn", (el) => el.click());
+    await tabB.waitForSelector("#advancedView", { visible: true });
+    await sleep(300);
+    await save(await popupShot(tabB, { fit: true }), "advanced");
+    await tabB.$eval("#advBackBtn", (el) => el.click());
+    await sleep(300);
+
+    // 直播主頁：同一個分頁導去直播間，等 popup 輪詢到「確定得到 CDN 網址」才截圖
+    await captureLiveMain({ tabA, tabB, save });
   } finally {
     await browser.close();
     await fs.rm(userDataDir, { recursive: true, force: true });

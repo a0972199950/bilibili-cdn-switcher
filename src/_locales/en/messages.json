@@ -1,12 +1,12 @@
 {
   "extName": {
-    "message": "TW/SG Speedup for bilibili (Unofficial)"
+    "message": "Overseas Video Speedup for bilibili"
   },
   "extDescription": {
-    "message": "Smoother 4K playback on web bilibili for Taiwan/Singapore users. Unofficial, not affiliated with bilibili."
+    "message": "Smoother 4K playback on web bilibili for overseas users. Unofficial, not affiliated with bilibili."
   },
   "extActionTitle": {
-    "message": "TW/SG Video Speedup"
+    "message": "Overseas Video Speedup"
   },
   "popupTitle": {
     "message": "CDN Route"
@@ -27,13 +27,10 @@
     "message": "Choose from list"
   },
   "modeCustomLabel": {
-    "message": "Custom input"
+    "message": "Custom node list"
   },
   "customHostPlaceholder": {
-    "message": "Enter a CDN host, e.g. upos-sz-mirrorxxx.bilivideo.com"
-  },
-  "customHintDefault": {
-    "message": "Host only (domain), no http:// or path."
+    "message": "Node URL or host"
   },
   "customHintInvalid": {
     "message": "Please enter a valid host (with domain, e.g. xxx.bilivideo.com)."
@@ -109,45 +106,6 @@
   },
   "errNoSample": {
     "message": "No segment sample yet"
-  },
-  "cdnNoteRecommended": {
-    "message": "Recommended, fastest for TW/SG"
-  },
-  "cdnNoteAliyun": {
-    "message": "Alibaba Cloud"
-  },
-  "cdnNoteTencentCloud": {
-    "message": "Tencent Cloud"
-  },
-  "cdnNoteTencentCloudVod": {
-    "message": "Tencent Cloud VOD Acceleration"
-  },
-  "cdnNoteHuaweiHybrid": {
-    "message": "Huawei Cloud Hybrid CDN"
-  },
-  "cdnNoteSecondBest2": {
-    "message": "Huawei Cloud Hybrid CDN, TW/SG 2nd-best route"
-  },
-  "cdnNoteSecondBest3": {
-    "message": "Huawei Cloud Hybrid CDN, TW/SG 3rd-best route"
-  },
-  "cdnNoteHuawei": {
-    "message": "Huawei Cloud"
-  },
-  "cdnNoteAkamaiOverseas": {
-    "message": "Akamai (Overseas)"
-  },
-  "cdnNoteAliyunOverseas": {
-    "message": "Alibaba Cloud (Overseas)"
-  },
-  "cdnNoteTencentOverseas": {
-    "message": "Tencent Cloud (Overseas)"
-  },
-  "cdnNoteHuaweiOverseas": {
-    "message": "Huawei Cloud (Overseas)"
-  },
-  "cdnNoteBilibiliOverseas": {
-    "message": "Bilibili (Overseas)"
   },
   "cdnNoteBackupUrl": {
     "message": "Use bilibili's provided backup node"
@@ -299,9 +257,6 @@
   "staleTabReloadBtn": {
     "message": "Refresh"
   },
-  "videoFallbackHint": {
-    "message": "With \"Auto-switch on failure\" on, playback switches back to Bilibili's official node automatically when this node fails."
-  },
   "sortBySpeedLabel": {
     "message": "Sort nodes by speed test"
   },
@@ -352,5 +307,131 @@
   },
   "changelogCurrent": {
     "message": "current"
+  },
+  "countryLabel": {
+    "message": "Country / region of the node list"
+  },
+  "countryYouAreHere": {
+    "message": "{name} (you are here)"
+  },
+  "countryAll": {
+    "message": "All"
+  },
+  "countryNodeCount": {
+    "message": "{n} nodes"
+  },
+  "durationHMS": {
+    "message": "{h} h {m} min {s} s"
+  },
+  "allWarnTitle": {
+    "message": "Testing all nodes takes a long time"
+  },
+  "allWarnText": {
+    "message": "You are about to speed-test all <b>{n}</b> nodes. With your current settings this is estimated to take about <b>{time}</b>."
+  },
+  "allWarnAdvice": {
+    "message": "Each country's list is already pre-filtered to its fastest top-tier nodes. We recommend picking a country — or the one closest to you — before testing."
+  },
+  "allWarnQuestion": {
+    "message": "Test all nodes anyway?"
+  },
+  "allWarnCancel": {
+    "message": "Cancel and pick a country"
+  },
+  "allWarnConfirm": {
+    "message": "Test all nodes anyway"
+  },
+  "crownRank": {
+    "message": "No. {n}"
+  },
+  "stDescExpand": {
+    "message": "Show more"
+  },
+  "stDescCollapse": {
+    "message": "Show less"
+  },
+  "autoSpeedSwitchLabel": {
+    "message": "Auto speed-test videos and switch to the fastest node"
+  },
+  "autoSpeedSwitchHint": {
+    "message": "After each video starts, the current country's nodes are tested in the background and the fastest one is switched to and remembered."
+  },
+  "autoSpeedSwitchAllNote": {
+    "message": "Unavailable while the node list is set to \"All\" — pick a country on the main page first."
+  },
+  "mhToastSwitched": {
+    "message": "Switched to {host}"
+  },
+  "autoSpeedWarnTitle": {
+    "message": "Turn on auto speed test?"
+  },
+  "autoSpeedWarnText": {
+    "message": "Because the ranking differs on every test, this has a <b>major side effect</b>: almost every video will <b>go black once</b> while the CDN switches."
+  },
+  "autoSpeedWarnAdvice": {
+    "message": "If your chosen node plays smoothly most of the time, keep this off — there is no visible improvement. If you're worried it may stall but don't want to switch manually, use \"Auto-switch on failure\" instead."
+  },
+  "autoSpeedWarnCancel": {
+    "message": "Cancel, keep it off"
+  },
+  "autoSpeedWarnConfirm": {
+    "message": "Turn it on anyway"
+  },
+  "customHintDup": {
+    "message": "This node is already in the list."
+  },
+  "customAddBtn": {
+    "message": "Add"
+  },
+  "customDesc1": {
+    "message": "For when your country isn't listed, or every node in the list is slow."
+  },
+  "customListEmpty": {
+    "message": "Empty list"
+  },
+  "customClearBtn": {
+    "message": "Clear"
+  },
+  "customDelTitle": {
+    "message": "Remove from list"
+  },
+  "customClearTitle": {
+    "message": "Clear the custom node list?"
+  },
+  "customClearText": {
+    "message": "All <b>{n} nodes</b> will be removed, and the first node of your current country will be used instead."
+  },
+  "customClearCancel": {
+    "message": "Cancel"
+  },
+  "customClearConfirm": {
+    "message": "Confirm"
+  },
+  "resetAllBtn": {
+    "message": "Restore original settings"
+  },
+  "resetAllTitle": {
+    "message": "Restore original settings?"
+  },
+  "resetAllText": {
+    "message": "Advanced settings and the video and live node settings will all go back to their defaults, and the custom node list will be <b>cleared</b>."
+  },
+  "importToastOk": {
+    "message": "Added {n} nodes recommended by the speed test to your Custom node list. Open the extension menu and choose \"Custom node list\" to use them."
+  },
+  "importToastNone": {
+    "message": "The nodes recommended by the speed test are already in your Custom node list."
+  },
+  "importToastFail": {
+    "message": "Couldn't add the recommended nodes to your Custom node list. Please try again later."
+  },
+  "autoDetectText": {
+    "message": "Not sure which nodes are fast? The official speed test tool tests 300+ nodes and adds the 10 fastest to this list for you."
+  },
+  "autoDetectBtn": {
+    "message": "⚡ Auto-detect & add"
+  },
+  "countryMissingHint": {
+    "message": "Your country isn't listed? Try the closest one, or use the {link}."
   }
 }

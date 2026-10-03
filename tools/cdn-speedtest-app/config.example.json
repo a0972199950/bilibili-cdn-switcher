@@ -1,0 +1,87 @@
+{
+ "upload_url": "https://script.google.com/macros/s/<部署 ID>/exec",
+ "token": "<與 Apps Script 指令碼屬性 TOKEN 相同的隨機字串>",
+ "extension_url": "https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=cdn_speedtest_app&utm_medium=referral&utm_campaign=speedtest",
+ "support_url": "https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch/support",
+ "min_down_mbps": 50,
+ "_min_down_comment": "網路檢查頁的下載速度門檻（Mbps，Cloudflare 測速）。低於此值不能開始測速。",
+ "gift_cards": {
+  "_comment": "各國禮物卡：vendor=品牌（例 Amazon.co.jp、Steam、Google Play）、amount=顯示給使用者的面額字串（例 ¥1,000、USD 10）。依偵測到的國家代碼取用，沒有該國或該國留空時用 default；default 也留空時，GUI 顯示「一張禮物卡（品牌與金額將以 email 通知）」。",
+  "default": {
+   "vendor": "Amazon",
+   "amount": "USD 10"
+  },
+  "TW": {
+   "vendor": "",
+   "amount": ""
+  },
+  "HK": {
+   "vendor": "",
+   "amount": ""
+  },
+  "MO": {
+   "vendor": "",
+   "amount": ""
+  },
+  "SG": {
+   "vendor": "",
+   "amount": ""
+  },
+  "MY": {
+   "vendor": "",
+   "amount": ""
+  },
+  "JP": {
+   "vendor": "Amazon.co.jp",
+   "amount": "¥1,500"
+  },
+  "KR": {
+   "vendor": "",
+   "amount": ""
+  },
+  "TH": {
+   "vendor": "",
+   "amount": ""
+  },
+  "VN": {
+   "vendor": "",
+   "amount": ""
+  },
+  "ID": {
+   "vendor": "",
+   "amount": ""
+  },
+  "PH": {
+   "vendor": "",
+   "amount": ""
+  },
+  "US": {
+   "vendor": "",
+   "amount": ""
+  },
+  "CA": {
+   "vendor": "",
+   "amount": ""
+  },
+  "GB": {
+   "vendor": "",
+   "amount": ""
+  },
+  "AU": {
+   "vendor": "",
+   "amount": ""
+  },
+  "NZ": {
+   "vendor": "",
+   "amount": ""
+  },
+  "DE": {
+   "vendor": "",
+   "amount": ""
+  },
+  "FR": {
+   "vendor": "",
+   "amount": ""
+  }
+ }
+}

@@ -3,17 +3,41 @@
     {
       "type": "feature",
       "text": {
-        "zh_TW": "主頁顯示版本號，可查看歷史更新紀錄",
-        "zh_CN": "主页显示版本号，可查看历史更新记录",
-        "en": "Show the version number on the main page, with release history"
+        "zh_TW": "「自行輸入」升級為「自訂節點列表」，可加入多個節點，同步支援測速與排序",
+        "zh_CN": "「自行输入」升级为「自定义节点列表」，可加入多个节点，同步支持测速与排序",
+        "en": "\"Custom input\" is now a \"Custom node list\": add multiple nodes, with speed test and sorting"
       }
     },
     {
       "type": "feature",
       "text": {
-        "zh_TW": "新增直播支援（線路切換與測速）",
-        "zh_CN": "新增直播支持（线路切换与测速）",
-        "en": "Added live-stream support (route switching and speed test)"
+        "zh_TW": "官方測速工具 CDNSpeedTest 上線。配合自訂節點列表，找出你專屬的最順節點",
+        "zh_CN": "官方测速工具 CDNSpeedTest 上线。配合自定义节点列表，找出你专属的最顺节点",
+        "en": "The official speed test tool CDNSpeedTest is here. Pair it with the Custom node list to find the smoothest nodes for you"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "國家清單把目前選的國家排在最前面",
+        "zh_CN": "国家清单把当前选择的国家排在最前面",
+        "en": "The selected country is now listed first"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增版本號與更新紀錄查詢",
+        "zh_CN": "新增版本号与更新记录查询",
+        "en": "Added the version number and release history"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增直播支援!!",
+        "zh_CN": "新增直播支持!!",
+        "en": "Live streams are now supported!!"
       }
     },
     {
@@ -54,6 +78,46 @@
         "zh_TW": "新增可調整的測速門檻",
         "zh_CN": "新增可调整的测速门槛",
         "en": "Added adjustable speed-test limits"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "CDN 節點數量大幅更新，並人工測試依照國家篩選最優節點",
+        "zh_CN": "CDN 节点数量大幅更新，并人工测试按国家筛选最优节点",
+        "en": "Greatly expanded the CDN node list, with the best nodes hand-tested and filtered by country"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "測速前三名顯示皇冠",
+        "zh_CN": "测速前三名显示皇冠",
+        "en": "Crowns for the top 3 in speed tests"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增影片自動測速並切換最快節點（預設關閉）",
+        "zh_CN": "新增视频自动测速并切换最快节点（默认关闭）",
+        "en": "New option to auto speed-test and switch to the fastest node (off by default)"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "「問題回報」會自動帶入版本、設定與 debug 資訊；回報表單支援繁中／簡中／英文，填寫 Email 會收到確認信與追蹤連結",
+        "zh_CN": "「问题反馈」会自动带入版本、设置与 debug 信息；反馈表单支持繁中／简中／英文，填写 Email 会收到确认信与追踪链接",
+        "en": "\"Report a bug\" now pre-fills the version, settings and debug info; the feedback form supports Traditional Chinese / Simplified Chinese / English, and leaving an email gets you a confirmation with a tracking link"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "切換節點或線路時顯示提示",
+        "zh_CN": "切换节点或线路时显示提示",
+        "en": "Show a notice when switching node or route"
       }
     }
   ],

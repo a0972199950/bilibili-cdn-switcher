@@ -22,12 +22,16 @@
   var CFG_KEY = "__CDN_SWITCHER_CFG__";
   var DEFAULTS = {
     enabled: true, // 预设开启
-    cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com", // 默认 TW/SG 最快；'base'=不覆写
+    cdnHost: "upos-sz-mirror08ct.bilivideo.com", // 默认：TW/SG 实测都是第一梯队；'base'=不覆写
     autoFallback: true, // 失败自动切换：预设开启；网络本身不稳（弱 WiFi 等）的用户可关掉，避免频繁黑屏重载
     showDebug: false, // debug 叠层预设关闭，避免新装用户被打扰
     videoEnabled: true, // 一般影片的「关闭」：false = 不介入影片 CDN 选线（enabled 是总开关，管影片与直播）
     liveEnabled: true, // 直播的「关闭」：false = 不介入直播 CDN 选线
-    liveRoute: "ov" // 直播线路偏好：ov / ovb / cn / cnb（记的是线路种类，不是具体 host，集群号随房间而变）
+    liveRoute: "ov", // 直播线路偏好：ov / ovb / cn / cnb（记的是线路种类，不是具体 host，集群号随房间而变）
+    autoSpeedSwitch: false, // 影片自动测速并切换到最快节点（进阶设定，预设关闭）
+    autoSpeedHosts: [], // 自动测速要测的节点（popup 依目前国家写入）
+    stVideoMb: 8, // 测速门槛（与 popup 进阶设定共用）
+    stVideoSec: 5
   };
 
   var cfg = readCfg();
@@ -56,7 +60,12 @@
     mhDebugTitle: "CDN 線路",
     mhCdnTargetOriginal: "原始（不覆寫）",
     mhCdnTargetBackup: "備用URL（優先）",
-    mhToastLiveFallback: "目前直播線路不佳，已自動切換至國際線路(ov)"
+    mhToastLiveFallback: "目前直播線路不佳，已自動切換至國際線路(ov)",
+    mhToastSwitched: "切換到 {host}",
+    liveRouteOv: "國際線路(ov)",
+    liveRouteOvB: "國際備用線路(ov-b)",
+    liveRouteCn: "中國線路(cn)",
+    liveRouteCnB: "中國備用線路(cn-b)"
   };
   var MSGS = readMsgs();
   function readMsgs() {
@@ -445,7 +454,7 @@
   function swapSegHost(url) { return replaceHost(url, effHost()); }
 
   // ---------------- 直播（live.bilibili.com）----------------
-  // 研究结论见 research/live-streaming-support/README.md：
+  // 实测结论：
   //  - 直播流（FLV 长连线、m3u8、m4s）都由页面 fetch 发出，路径含 /live-bvc/，host 形如
   //    d1--{ov|cn}-gotcha{N}[b].bilivideo.com。token 绑「集群号 N」、在同号的 ov / ovb / cn / cnb 之间通用，
   //    所以「换线路」= 把 host 改成同号的另一种变体；点播那套 upos 节点对直播一律 403/959，不能用。
@@ -960,6 +969,7 @@
 
   function noteSegment(url) {
     lastSegUrl = url;
+    maybeScheduleAutoTest();
     var q = videoQnByPath[pathOf(url)]; // 是 video 分段才会命中；audio 分段不动画质
     if (typeof q === "number") lastVideoQn = q;
     var h = hostOf(url);
@@ -1070,6 +1080,62 @@
       measureHost(host).then(function (r) {
         if (myGen !== speedTestGen) return;
         try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: r }, "*"); } catch (e) {}
+        next();
+      });
+    })();
+  }
+
+  // ---------------- 影片自动测速并切换到最快节点（进阶设定，预设关闭）----------------
+  // 每支影片先用目前选的节点播放，第一个分段下载完、过几秒（让起播先顺下来）后在背景逐一测速，
+  // 测完把最快的节点回报给 bridge 写进 storage（等同用户自己换节点：播放器内重载、存起来下次沿用）。
+  // 同一支影片（含切换节点或整页重载后）只测一次：测过的影片记在 sessionStorage。
+  // 与手动测速共用 speedTestGen：popup 开始手动测速会让自动测速这一轮作废。
+  var AUTO_TEST_KEY = "__CDN_SWITCHER_AUTOTEST__";
+  var AUTO_TEST_DELAY_MS = 5000;
+  var autoTestKey = null, autoTestTimer = null, autoTestRunning = false;
+  function videoKey() {
+    try { var u = new URL(location.href); return u.pathname + "|" + (u.searchParams.get("p") || "1"); } catch (e) { return location.pathname; }
+  }
+  function testedKeys() {
+    try { return JSON.parse(window.sessionStorage.getItem(AUTO_TEST_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function markTested(key) {
+    var ks = testedKeys();
+    if (ks.indexOf(key) < 0) ks.push(key);
+    try { window.sessionStorage.setItem(AUTO_TEST_KEY, JSON.stringify(ks.slice(-50))); } catch (e) {}
+  }
+  function maybeScheduleAutoTest() {
+    if (IS_LIVE_PAGE || !ACTIVE || !cfg.autoSpeedSwitch || !isActive(cfg)) return;
+    if (!WATCH_RE.test(location.pathname)) return;
+    var key = videoKey();
+    if (key === autoTestKey) return;
+    autoTestKey = key;
+    if (testedKeys().indexOf(key) >= 0) return;
+    markTested(key);
+    clearTimeout(autoTestTimer);
+    autoTestTimer = setTimeout(function () {
+      if (videoKey() === key && cfg.autoSpeedSwitch && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || []);
+    }, AUTO_TEST_DELAY_MS);
+  }
+  function runAutoSpeedTest(hosts) {
+    if (speedTestRunning || autoTestRunning || !hosts.length || !sampleUrl()) return;
+    stMaxBytes = clampNum(cfg.stVideoMb, 1, 100, ST_DEFAULT_MB) * 1024 * 1024;
+    stMaxMs = clampNum(cfg.stVideoSec, 1, 60, ST_DEFAULT_SEC) * 1000;
+    var myGen = ++speedTestGen;
+    autoTestRunning = true;
+    var best = null, i = 0;
+    (function next() {
+      if (myGen !== speedTestGen) { autoTestRunning = false; return; } // 被手动测速取代
+      if (i >= hosts.length) {
+        autoTestRunning = false;
+        speedTestAbort = null;
+        if (best && best.host !== cfg.cdnHost && cfg.autoSpeedSwitch) {
+          try { window.postMessage({ __cdnSwitcher: 1, dir: "autotest-done", payload: { host: best.host, from: cfg.cdnHost } }, "*"); } catch (e) {}
+        }
+        return;
+      }
+      measureHost(hosts[i++]).then(function (r) {
+        if (!r.error && r.bps > 0 && (!best || r.bps > best.bps)) best = r;
         next();
       });
     })();
@@ -1383,7 +1449,14 @@
       // 直播页只看直播设定：开关/线路变了 → 自动回退的覆写作废，播放器内重载让新线路生效（不整页重载）
       if (beforeLiveSig !== liveSig(cfg)) {
         live.autoRoute = null; liveFb.lastAt = 0;
-        if (live.sampleUrl) liveReload();
+        if (live.sampleUrl) {
+          liveReload();
+          // 換線路（不含開／關）跟影片換節點一樣弹 toast 告知换到哪条线路
+          if (beforeLiveSig !== "off" && liveActive()) {
+            var rk = { ov: "liveRouteOv", ovb: "liveRouteOvB", cn: "liveRouteCn", cnb: "liveRouteCnB" }[liveRouteOf(cfg)];
+            showToast(MSGS.mhToastSwitched.replace("{host}", MSGS[rk] || liveRouteOf(cfg)));
+          }
+        }
         postDebug();
       }
       return;
@@ -1391,14 +1464,39 @@
     if (beforeSig === effSig(cfg)) return; // 只改了 showDebug / autoFallback 之类 → 不动（保留 autoHost）
     autoHost = null; // 用户手动改了节点/开关：自动回退的静默覆写作废，以用户选择为准
     var afterActive = isActive(cfg);
+    // 换节点（手动或自动测速）会闪一下黑画面：跟失败自动切换一样弹 toast 告知换到哪个节点；
+    // 只开/关重排不算换节点，不弹
+    var switchedText = (beforeActive && afterActive && WATCH_RE.test(location.pathname))
+      ? MSGS.mhToastSwitched.replace("{host}", cfg.cdnHost === "backup" ? MSGS.mhCdnTargetBackup : cfg.cdnHost) : "";
     if (beforeActive !== afterActive) {
       fullReload(); // 需安装/移除 hook（开/关重排、切到/离开「原始」）
     } else if (cfg.cdnHost === "backup" || beforeEffHost === "backup") {
+      toastAfterReload(switchedText);
       fullReload(); // 「备用」走 playurl 层，需重打 playurl 才生效 → 整页重载
-    } else if (!playerReload()) {
-      fullReload(); // 具名节点：播放器内重载（分段层即时导向）
+    } else if (playerReload()) {
+      if (switchedText) showToast(switchedText); // 具名节点：播放器内重载（分段层即时导向）
+    } else {
+      toastAfterReload(switchedText);
+      fullReload();
     }
   });
+
+  // 整页重载才生效的切换：toast 文字先放 sessionStorage，重载后等播放器出现再弹（读到就删）
+  var SWITCH_TOAST_KEY = "__CDN_SWITCHER_SWITCH_TOAST__";
+  function toastAfterReload(text) {
+    if (!text) return;
+    try { window.sessionStorage.setItem(SWITCH_TOAST_KEY, text); } catch (e) {}
+  }
+  (function showPendingSwitchToast() {
+    var text = null;
+    try { text = window.sessionStorage.getItem(SWITCH_TOAST_KEY); window.sessionStorage.removeItem(SWITCH_TOAST_KEY); } catch (e) {}
+    if (!text) return;
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (getToastHost() !== document.body || tries > 40) { clearInterval(iv); showToast(text); }
+    }, 500);
+  })();
 
   // ---------------- Debug overlay（仅在有播放器时，显示于其左上角）----------------
   var overlayEl = null;

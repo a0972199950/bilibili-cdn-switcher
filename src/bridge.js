@@ -12,12 +12,16 @@
   var CFG_KEY = "__CDN_SWITCHER_CFG__";
   var DEFAULTS = {
     enabled: true,
-    cdnHost: "cn-jxnc-cmcc-bcache-06.bilivideo.com",
+    cdnHost: "upos-sz-mirror08ct.bilivideo.com",
     autoFallback: true,
     showDebug: false,
     videoEnabled: true,
     liveEnabled: true,
-    liveRoute: "ov"
+    liveRoute: "ov",
+    autoSpeedSwitch: false,
+    autoSpeedHosts: [],
+    stVideoMb: 8,
+    stVideoSec: 5
   };
 
   var latestDebug = null;
@@ -44,7 +48,8 @@
   var MSGS_KEY = "__CDN_SWITCHER_MSGS__";
   var MSG_KEYS = [
     "mhToastAutoSwitched", "mhToastAllFailed", "mhToastReloadBackup", "mhToastClose",
-    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback"
+    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback", "mhToastSwitched",
+    "liveRouteOv", "liveRouteOvB", "liveRouteCn", "liveRouteCnB"
   ];
   function pushMessages() {
     var msgs = {};
@@ -56,6 +61,39 @@
   // 启动即同步一次
   loadAndPush();
   pushMessages();
+
+  // 測速工具（CDNSpeedTest.exe）測完後會用瀏覽器開 https://www.bilibili.com/#cdnsw-import=1.<host>,<host>…，
+  // 這裡把節點交給 background 接到「自訂節點列表」後面（background 只收 cdn-list.json 裡有的節點），
+  // 拿掉網址上的 hash 免得重新整理又匯入一次，再在頁面上提示結果
+  var IMPORT_RE = /^#cdnsw-import=1\.([a-z0-9.,-]+)$/i;
+  function importFromHash() {
+    if (window.top !== window) return;
+    var m = IMPORT_RE.exec(location.hash || "");
+    if (!m) return;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    var hosts = m[1].toLowerCase().split(",").filter(Boolean).slice(0, 50);
+    try {
+      chrome.runtime.sendMessage({ type: "CDN_SWITCHER_IMPORT_CUSTOM", hosts: hosts }, function (r) {
+        void chrome.runtime.lastError;
+        var key = !r || !r.ok ? "importToastFail" : r.added ? "importToastOk" : "importToastNone";
+        showImportToast(chrome.i18n.getMessage(key).replace("{n}", r && r.added));
+      });
+    } catch (e) {}
+  }
+  function showImportToast(text) {
+    function show() {
+      var el = document.createElement("div");
+      el.textContent = text;
+      el.style.cssText = "position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:2147483647;" +
+        "max-width:min(560px,90vw);padding:14px 20px;border-radius:10px;background:#00AEEC;color:#fff;" +
+        "font:600 15px/1.5 -apple-system,'Segoe UI','Microsoft JhengHei',sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25);cursor:pointer";
+      el.addEventListener("click", function () { el.remove(); });
+      document.documentElement.appendChild(el);
+      setTimeout(function () { el.remove(); }, 15000);
+    }
+    if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
+  }
+  importFromHash();
 
   // chrome.storage 变更 → 重新推送
   try {
@@ -83,6 +121,18 @@
       if (d.payload.route) for (var i = 0; i < speedTest.results.length; i++) if (speedTest.results[i].route === d.payload.route) { idx = i; break; }
       if (idx >= 0) { for (var k in d.payload) speedTest.results[idx][k] = d.payload[k]; }
       else speedTest.results.push(d.payload);
+      return;
+    }
+    // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
+    // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点，就不覆盖
+    if (d.dir === "autotest-done" && d.payload && d.payload.host) {
+      var p = d.payload;
+      try {
+        chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost }, function (items) {
+          if (!items.autoSpeedSwitch || items.cdnHost !== p.from) return;
+          chrome.storage.local.set({ cdnHost: p.host, videoEnabled: true });
+        });
+      } catch (e) {}
       return;
     }
     if (d.dir === "speedtest-done") {

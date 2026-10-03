@@ -1,0 +1,5 @@
+# 本機設定（含接收網址與 token），不進版控
+config.json
+.venv/
+build/
+dist/
