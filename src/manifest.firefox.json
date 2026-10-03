@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "version": "2.0.0",
   "description": "__MSG_extDescription__",
-  "default_locale": "zh_TW",
+  "default_locale": "en",
   "browser_specific_settings": {
     "gecko": {
       "id": "bilibili-cdn-switcher@a0972199950.github.io",

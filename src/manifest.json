@@ -3,7 +3,7 @@
   "name": "__MSG_extName__",
   "version": "2.0.0",
   "description": "__MSG_extDescription__",
-  "default_locale": "zh_TW",
+  "default_locale": "en",
   "permissions": [
     "storage"
   ],
