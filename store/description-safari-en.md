@@ -22,8 +22,8 @@ Celebrating the big 2.0.0 update!!
 
 ■ Key features
 ・Works out of the box — no setup at all, it just works once installed
-・Expanded from Taiwan / Singapore to support every country! Use the "Custom node list" to cover any country not yet listed
-・Listed countries have their fastest nodes picked through real hands-on testing, with more countries coming soon... Use the "Custom node list" to cover any country not yet listed
+・Worldwide support — expanded from Taiwan / Singapore to support every country! Use the "Custom node list" to cover any country not yet listed
+・Hand-tested nodes — listed countries have their fastest nodes picked through real hands-on testing, with more countries coming soon... Use the "Custom node list" to cover any country not yet listed
 ・Live stream support — new in 2.0! Switch live rooms between the international and China routes and their backups; falls back to the international route automatically when the route is poor
 ・Greatly expanded CDN nodes — around 300 nodes across Alibaba Cloud, Tencent Cloud, Huawei Cloud, Akamai, and more
 ・Custom node list — add as many nodes of your own as you like, with speed test and sorting too
