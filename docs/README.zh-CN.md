@@ -12,14 +12,21 @@
 
 ---
 
-![Extension popup settings](main.png)
+<div align="center">
+
+![扩展弹出窗口](readme-zhcn-main.png)
+
+</div>
+
 ---
 
-Before
-![alt text](before.png)
+使用前（关闭扩展）
 
-After
-![Player debug overlay](after.png)
+![关闭扩展时的 debug 叠层](readme-zhcn-before.png)
+
+使用后（启用扩展）
+
+![启用扩展时的 debug 叠层](readme-zhcn-after.png)
 
 ## ✨ 这个扩充在做什么
 
@@ -142,6 +149,12 @@ bilibili 影片页（网址写在 `scripts/capture-screenshots.mjs` 开头的 `V
 按档名排序时同语系会排在一起并照画面顺序）。直播主页的直播间从 B 站推荐清单动态挑选，
 要固定房间可在 `.env.local` 设 `LIVE_ROOM=<房号>`。因为要连真实 bilibili 影片页测速，跑一轮约
 数分钟，且吃网络状况。
+
+同一轮也会把 README 用的图输出到 `docs/`（不加黑边、2x、按语系各一组，不受 `--size` 影响）：
+`readme-<语系>-main.png`（popup 主页）、`readme-<语系>-before.png`（关闭扩展）、
+`readme-<语系>-after.png`（启用扩展），后两张是 debug 叠层并把 `spd` 圈红框。用脚本开头的
+`README_VIDEO_URL` 那支影片、播放器能选的最高画质，速度取决于当下你的网络，每次跑都会不同。`--readme-only` 只重拍这几张、不动
+`store/`，`--locale=en|zhcn|zhtw` 可只跑单一语系。
 
 **登入 cookie（选用，决定截图画质）**：未登入时 B 站只给约 480P，截图里的 `qn` 就会是 480P。
 想要高画质截图的话，把 `.env.local.example` 复制成 `.env.local`，填入自己的 `BILI_COOKIE`

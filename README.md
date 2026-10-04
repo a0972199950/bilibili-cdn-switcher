@@ -12,14 +12,21 @@
 
 ---
 
-![Extension popup settings](./docs/main.png)
+<div align="center">
+
+![Extension popup](./docs/readme-en-main.png)
+
+</div>
+
 ---
 
-Before
-![alt text](./docs/before.png)
+Before (extension off)
 
-After
-![Player debug overlay](./docs/after.png)
+![Debug overlay with the extension off](./docs/readme-en-before.png)
+
+After (extension on)
+
+![Debug overlay with the extension on](./docs/readme-en-after.png)
 
 ## ✨ What this extension does
 
@@ -155,6 +162,13 @@ matching `screenshot-<locale>-<NN>-<view>-1280x800.png` files (locale first, so 
 locale and in display order). The live page uses a live room picked from Bilibili's recommended list
 (set `LIVE_ROOM=<room id>` in `.env.local` to pin one). It runs a real speed test against bilibili's CDNs, so
 one full pass takes a few minutes and depends on network conditions.
+
+The same pass also writes the README images into `docs/` (uncropped, 2x, one set per locale, independent of
+`--size`): `readme-<locale>-main.png` (popup), `readme-<locale>-before.png` (extension off) and
+`readme-<locale>-after.png` (extension on), the last two being the debug overlay with `spd` boxed in red.
+They use `README_VIDEO_URL` at the top of the script at the highest quality the player offers, and the
+speeds depend on your network at the time, so they vary from run to run. `--readme-only` redoes just these images without
+touching `store/`, and `--locale=en|zhcn|zhtw` limits the run to one locale.
 
 **Login cookie (optional, controls screenshot quality)**: without login bilibili only serves ~480P, so
 `qn` in the screenshots reads 480P. For high-quality screenshots, copy `.env.local.example` to
