@@ -25,6 +25,20 @@
       color: #1a1a1a;
     }
 
+    /* 日文：依詞組換行（Chrome / Edge 119+ 的 auto-phrase），避免把「経過」「再読み込み」之類的詞拆開；
+       不支援的瀏覽器會忽略這條、退回一般規則。line-break: strict 讓小寫假名、長音符不會跑到行首。 */
+    :lang(ja) {
+      word-break: auto-phrase;
+      line-break: strict;
+    }
+
+    /* 韓文：單字之間本來就有空格，照空格換行（keep-all），不在字中間斷開；
+       真的放不下的長字串（網址等）再由 overflow-wrap 強制斷。 */
+    :lang(ko) {
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
     @media (prefers-color-scheme: dark) {
       html {
         background: #1c1c1e;
@@ -355,7 +369,8 @@
     #debug {
       font: 12px/1.5 Consolas, Menlo, monospace;
       white-space: pre-wrap;
-      word-break: break-all;
+      /* 網址等長字串照樣能斷，但一般文字（尚無資料的提示）不會被逐字拆開，日韓文的換行規則也照常套用 */
+      overflow-wrap: anywhere;
       background: rgba(0, 0, 0, .06);
       border: 1px solid rgba(128, 128, 128, .25);
       border-radius: 6px;

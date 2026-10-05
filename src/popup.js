@@ -119,7 +119,7 @@ function setRichText(el, str) {
 // -------- 介面語言（進階設定第一項）--------
 // 選項存 localStorage（i18n.js 開頭同步讀）＋ chrome.storage.local 的 uiLang / uiMsgs（bridge.js 的頁內提示用，uiMsgs 為 null = 跟隨瀏覽器）。
 // 切換後整個 popup 重載，並記一個 sessionStorage 旗標，重載完回到進階設定頁
-var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English" };
+var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English", ja: "日本語", ko: "한국어" };
 var uiLangSelect = document.getElementById("uiLangSelect");
 ["auto"].concat(UI_LANGS).forEach(function (code) {
   var opt = document.createElement("option");
@@ -156,9 +156,13 @@ document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwit
 // UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 promotions/campaigns.md）
 function uiLangCode() {
   var lang = (uiLanguage() || "").toLowerCase();
+  if (lang.indexOf("ja") === 0) return "ja";
+  if (lang.indexOf("ko") === 0) return "ko";
   if (lang.indexOf("zh") !== 0) return "en";
   return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
 }
+// uiLangCode() → cdn-list.json / changelog.json 多語字串的語系鍵
+var LOCALIZED_KEYS = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en", ja: "ja", ko: "ko" };
 // 意見回饋表單：三語共用同一份 Google 表單（題目都是「繁中 | 簡中 | English」）。
 // 用完整的 viewform 網址（短網址 forms.gle 不吃預填參數），環境資訊題的 entry ID 見 FEEDBACK_ENV_ENTRY。
 var FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScYPTvslktKd1AUK7SsdG-j505oMjHxdfLv1wKQlduGBAemDg/viewform";
@@ -259,14 +263,14 @@ var knownValues = {}; // 清单中所有 value（1.6 以前用来判断储存值
 var cdnMode = "list"; // 目前用哪份节点（"list" / "custom"）；选「关闭」时保留关闭前的那份
 var customHosts = []; // 自订节点列表
 var cdnList = []; // cdn-list.json 的 options（全部节点，「全部」选项的顺序），供显示名称与查找
-var cdnPools = {}; // cdn-list.json 的 pools：池类型的三语标签
+var cdnPools = {}; // cdn-list.json 的 pools：池类型的多语标签
 var currentCdnHost = null; // 目前生效的 cdnHost，供测速页标示「目前使用」＋点击切换比对
 var videoOn = true; // 一般影片没选「关闭」；关闭时测速页不标示「目前使用」
 
-// cdn-list.json / changelog.json 里 { zh_TW, zh_CN, en } 形式的多语字串
+// cdn-list.json / changelog.json 里 { zh_TW, zh_CN, en, ja, ko } 形式的多语字串（ja / ko 缺的话退回 en）
 function localized(obj) {
   if (!obj) return "";
-  var key = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en" }[uiLangCode()];
+  var key = LOCALIZED_KEYS[uiLangCode()];
   return obj[key] || obj.en || obj.zh_TW || "";
 }
 
@@ -1643,9 +1647,9 @@ function cmpVer(a, b) {
   for (var i = 0; i < 3; i++) if (pa[i] !== pb[i]) return pa[i] - pb[i];
   return 0;
 }
-// changelog.json 的語系鍵是 zh_TW / zh_CN / en，跟 uiLangCode() 的 zhtw / zhcn / en 對應
+// changelog.json 的語系鍵對應見 LOCALIZED_KEYS；舊版紀錄沒有 ja / ko，會退回 en
 function changelogText(entry) {
-  var key = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en" }[uiLangCode()];
+  var key = LOCALIZED_KEYS[uiLangCode()];
   var txt = entry.text || {};
   return txt[key] || txt.en || txt.zh_TW || "";
 }
@@ -1732,7 +1736,7 @@ function previewWhatsNew(from) {
 // 並當成「你在這裡」選取。只影響這次開啟的畫面；手動切國家才會寫入 storage（之後正常開啟會因找不到而回到台灣）。
 var FAKE_COUNTRY = {
   code: "ZZ", dial: -1,
-  name: { zh_TW: "南喬治亞與南桑威奇群島", zh_CN: "南乔治亚和南桑威奇群岛", en: "South Georgia and the South Sandwich Islands" }
+  name: { zh_TW: "南喬治亞與南桑威奇群島", zh_CN: "南乔治亚和南桑威奇群岛", en: "South Georgia and the South Sandwich Islands", ja: "サウスジョージア・サウスサンドウィッチ諸島", ko: "사우스조지아 사우스샌드위치 제도" }
 };
 function addFakeCountry() {
   if (!new URLSearchParams(location.search).has("fakeCountry")) return;

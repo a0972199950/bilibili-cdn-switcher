@@ -56,7 +56,7 @@
 - **參數**: `utm_source=extension` · `utm_medium=referral` · `utm_campaign=rate` · `utm_content=<UI 語言>`
 - **Query**: `?utm_source=extension&utm_medium=referral&utm_campaign=rate&utm_content=zhtw`
 - **位置**: `src/popup.js` 的 `STORE_REVIEW_URLS`，由 `withUtm()` 在點擊時動態組出
-- **備註**: `utm_content` 依擴充當下的 UI 語言自動代入 `zhtw` / `zhcn` / `en`。**必須跟 `campaign=readme` 分開** —— 按這顆按鈕的人已經是安裝過的使用者，混在一起會把安裝來源報表灌成 GitHub 帶來的
+- **備註**: `utm_content` 依擴充當下的 UI 語言自動代入 `zhtw` / `zhcn` / `en` / `ja` / `ko`。**必須跟 `campaign=readme` 分開** —— 按這顆按鈕的人已經是安裝過的使用者，混在一起會把安裝來源報表灌成 GitHub 帶來的
 - **狀態**: active
 
 ### GitHub Releases

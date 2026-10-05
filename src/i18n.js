@@ -4,7 +4,7 @@
 // popup.js 一開始就要用 t()），並同步寫進 chrome.storage.local 的 uiLang / uiMsgs，後者給 bridge.js 的頁內提示用。
 (function () {
   "use strict";
-  var LANGS = ["zh_TW", "zh_CN", "en"]; // 對應 _locales/ 資料夾，新增語言時一併加到這裡
+  var LANGS = ["zh_TW", "zh_CN", "en", "ja", "ko"]; // 對應 _locales/ 資料夾，新增語言時一併加到這裡
   var PREF_KEY = "uiLang";
   var pref = "auto";
   try { pref = window.localStorage.getItem(PREF_KEY) || "auto"; } catch (e) {}

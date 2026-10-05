@@ -3,7 +3,7 @@
 // changelog.json 結構：
 //   unreleased: [entry]                       ← 尚未上架的新功能清單
 //   releases:   [{version, date, entries}]    ← 已上架：該版本相較於上一版新增的清單（新 → 舊）
-//   entry:      {type: "feature" | "fix", text: {zh_TW, zh_CN, en}}
+//   entry:      {type: "feature" | "fix", text: {zh_TW, zh_CN, en, ja, ko}}
 //
 // 用法：
 //   node scripts/changelog.mjs validate                          # 驗證格式
@@ -18,7 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const ROOT = path.resolve(__dirname, "..");
 export const CHANGELOG_REL = "src/changelog.json";
 export const CHANGELOG_PATH = path.join(ROOT, CHANGELOG_REL);
-export const LANGS = ["zh_TW", "zh_CN", "en"];
+export const LANGS = ["zh_TW", "zh_CN", "en", "ja", "ko"];
 export const ENTRY_TYPES = ["feature", "fix"];
 
 const EXIT_UNCHANGED = 10;
