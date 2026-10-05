@@ -1,15 +1,20 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "微調 UI",
-        "zh_CN": "微调 UI",
-        "en": "Minor UI tweaks"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.0.1",
+      "date": "2026-10-05",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "微調 UI",
+            "zh_CN": "微调 UI",
+            "en": "Minor UI tweaks"
+          }
+        }
+      ]
+    },
     {
       "version": "2.0.0",
       "date": "2026-10-03",
