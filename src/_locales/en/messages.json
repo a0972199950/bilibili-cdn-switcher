@@ -8,6 +8,9 @@
   "extActionTitle": {
     "message": "Overseas Video Speedup"
   },
+  "popupHeaderTitle": {
+    "message": "Video Speedup for bilibili"
+  },
   "popupTitle": {
     "message": "CDN Route"
   },
@@ -24,10 +27,10 @@
     "message": "CDN node"
   },
   "modeListLabel": {
-    "message": "Choose from list"
+    "message": "List"
   },
   "modeCustomLabel": {
-    "message": "Custom node list"
+    "message": "Custom"
   },
   "customHostPlaceholder": {
     "message": "Node URL or host"
@@ -166,6 +169,15 @@
   },
   "advancedBtnTitle": {
     "message": "Advanced settings"
+  },
+  "advancedBtnLabel": {
+    "message": "Settings"
+  },
+  "uiLangLabel": {
+    "message": "Language"
+  },
+  "uiLangAuto": {
+    "message": "Auto (browser)"
   },
   "advancedTitle": {
     "message": "Advanced settings"

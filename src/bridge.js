@@ -44,18 +44,23 @@
 
   // MAIN world 拿不到 chrome.i18n（页面 context 无扩充 API），toast / debug 叠层要用的
   // 语系文案由这里（ISOLATED world）代查後推过去，作法与 cfg 相同（localStorage + postMessage）。
-  // 语言不会在分页存活期间变动，开局推一次即可，不用像 cfg 那样监听变更。
+  // 开局推一次；使用者在 popup 切换语言（uiMsgs 变更）时会再推一次。
   var MSGS_KEY = "__CDN_SWITCHER_MSGS__";
   var MSG_KEYS = [
     "mhToastAutoSwitched", "mhToastAllFailed", "mhToastReloadBackup", "mhToastClose",
     "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback", "mhToastSwitched",
     "liveRouteOv", "liveRouteOvB", "liveRouteCn", "liveRouteCnB"
   ];
+  // 使用者在 popup 進階設定選了語言時，popup 會把該語系的整份文案存在 storage 的 uiMsgs，優先用它
+  function localMsg(uiMsgs, k) { return (uiMsgs && uiMsgs[k]) || chrome.i18n.getMessage(k); }
   function pushMessages() {
-    var msgs = {};
-    try { MSG_KEYS.forEach(function (k) { msgs[k] = chrome.i18n.getMessage(k); }); } catch (e) {}
-    try { window.localStorage.setItem(MSGS_KEY, JSON.stringify(msgs)); } catch (e) {}
-    try { window.postMessage({ __cdnSwitcher: 1, dir: "messages", payload: msgs }, "*"); } catch (e) {}
+    function push(uiMsgs) {
+      var msgs = {};
+      try { MSG_KEYS.forEach(function (k) { msgs[k] = localMsg(uiMsgs, k); }); } catch (e) {}
+      try { window.localStorage.setItem(MSGS_KEY, JSON.stringify(msgs)); } catch (e) {}
+      try { window.postMessage({ __cdnSwitcher: 1, dir: "messages", payload: msgs }, "*"); } catch (e) {}
+    }
+    try { chrome.storage.local.get({ uiMsgs: null }, function (items) { push(items.uiMsgs); }); } catch (e) { push(null); }
   }
 
   // 启动即同步一次
@@ -76,7 +81,11 @@
       chrome.runtime.sendMessage({ type: "CDN_SWITCHER_IMPORT_CUSTOM", hosts: hosts }, function (r) {
         void chrome.runtime.lastError;
         var key = !r || !r.ok ? "importToastFail" : r.added ? "importToastOk" : "importToastNone";
-        showImportToast(chrome.i18n.getMessage(key).replace("{n}", r && r.added));
+        try {
+          chrome.storage.local.get({ uiMsgs: null }, function (items) {
+            showImportToast(localMsg(items.uiMsgs, key).replace("{n}", r && r.added));
+          });
+        } catch (e) {}
       });
     } catch (e) {}
   }
@@ -100,6 +109,7 @@
     chrome.storage.onChanged.addListener(function (changes, area) {
       if (area !== "local") return;
       loadAndPush();
+      if (changes.uiMsgs) pushMessages();
     });
   } catch (e) {}
 

@@ -8,6 +8,9 @@
   "extActionTitle": {
     "message": "海外视频加速"
   },
+  "popupHeaderTitle": {
+    "message": "海外视频加速 for bilibili"
+  },
   "popupTitle": {
     "message": "CDN 线路"
   },
@@ -166,6 +169,15 @@
   },
   "advancedBtnTitle": {
     "message": "高级设置"
+  },
+  "advancedBtnLabel": {
+    "message": "高级设置"
+  },
+  "uiLangLabel": {
+    "message": "语言 / Language"
+  },
+  "uiLangAuto": {
+    "message": "跟随浏览器"
   },
   "advancedTitle": {
     "message": "高级设置"

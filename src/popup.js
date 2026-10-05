@@ -78,11 +78,13 @@ var els = {
 };
 
 // -------- i18n：套用 chrome.i18n 訊息到靜態文字節點 --------
-function t(key) { return chrome.i18n.getMessage(key) || key; }
+// 使用者在進階設定選了語言時，優先讀 i18n.js 載入的那份語系；沒選就走 chrome.i18n（依瀏覽器語言）
+function t(key) { return (uiMessages && uiMessages[key]) || chrome.i18n.getMessage(key) || key; }
+function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "-") : chrome.i18n.getUILanguage(); }
 document.title = t("popupTitle");
-document.documentElement.lang = chrome.i18n.getUILanguage();
+document.documentElement.lang = uiLanguage();
 [
-  ["headerTitle", "extName"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["headerTitle", "popupHeaderTitle"], ["gearBtnLabel", "advancedBtnLabel"], ["uiLangLabel", "uiLangLabel"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["tabVideo", "tabVideo"], ["tabLive", "tabLive"], ["advHeaderTitle", "advancedTitle"], ["advBackBtn", "stBackBtn"], ["clBackBtn", "stBackBtn"], ["clHeaderTitle", "changelogTitle"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["modeOffLabel", "modeOffLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["liveModeListLabel", "liveModePrefLabel"], ["liveModeOffLabel", "modeOffLabel"], ["liveSpeedtestBtn", "liveSpeedtestBtnLabel"],
@@ -114,6 +116,33 @@ function setRichText(el, str) {
   }
   if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
 }
+// -------- 介面語言（進階設定第一項）--------
+// 選項存 localStorage（i18n.js 開頭同步讀）＋ chrome.storage.local 的 uiLang / uiMsgs（bridge.js 的頁內提示用，uiMsgs 為 null = 跟隨瀏覽器）。
+// 切換後整個 popup 重載，並記一個 sessionStorage 旗標，重載完回到進階設定頁
+var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English" };
+var uiLangSelect = document.getElementById("uiLangSelect");
+["auto"].concat(UI_LANGS).forEach(function (code) {
+  var opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = code === "auto" ? t("uiLangAuto") : UI_LANG_NAMES[code];
+  uiLangSelect.appendChild(opt);
+});
+uiLangSelect.value = uiLangPref;
+document.getElementById("uiLangText").textContent = uiLangSelect.options[uiLangSelect.selectedIndex].textContent;
+uiLangSelect.setAttribute("aria-label", t("uiLangLabel"));
+uiLangSelect.addEventListener("change", function () {
+  var v = uiLangSelect.value;
+  setUiLangPref(v);
+  try { window.sessionStorage.setItem("reopenAdvanced", "1"); } catch (e) {}
+  chrome.storage.local.set({ uiLang: v, uiMsgs: v === "auto" ? null : loadUiMessages(v) }, function () { location.reload(); });
+});
+// localStorage 被清掉、與 storage 對不上時，以 storage 為準重載一次
+chrome.storage.local.get({ uiLang: "auto" }, function (items) {
+  var v = items.uiLang;
+  if (v === uiLangPref || (v !== "auto" && UI_LANGS.indexOf(v) < 0)) return;
+  setUiLangPref(v);
+  try { if (window.localStorage.getItem("uiLang") === v) location.reload(); } catch (e) {}
+});
 els.gearBtn.title = t("advancedBtnTitle");
 els.gearBtn.setAttribute("aria-label", t("advancedBtnTitle"));
 els.customHost.placeholder = t("customHostPlaceholder");
@@ -126,7 +155,7 @@ document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwit
 // -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；沒有對應網址就不顯示 --------
 // UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 promotions/campaigns.md）
 function uiLangCode() {
-  var lang = (chrome.i18n.getUILanguage() || "").toLowerCase();
+  var lang = (uiLanguage() || "").toLowerCase();
   if (lang.indexOf("zh") !== 0) return "en";
   return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
 }
@@ -730,6 +759,9 @@ function hideAdvancedView() {
   els.mainView.style.display = "block";
 }
 els.gearBtn.addEventListener("click", showAdvancedView);
+try {
+  if (window.sessionStorage.getItem("reopenAdvanced")) { window.sessionStorage.removeItem("reopenAdvanced"); showAdvancedView(); }
+} catch (e) {}
 
 // -------- 版本號 → 版本更新紀錄頁 --------
 // 只列已上架的 releases（新 → 舊），每條沿用「更新內容」提示的新增／修正標籤
