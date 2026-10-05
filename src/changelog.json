@@ -1,5 +1,14 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "微調 UI",
+        "zh_CN": "微调 UI",
+        "en": "Minor UI tweaks"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.0.0",
