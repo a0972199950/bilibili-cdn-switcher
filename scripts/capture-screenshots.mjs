@@ -474,8 +474,12 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // 會一直等不到而卡住逾時，跟 #showDebug 一樣改用 JS 直接觸發 click
     await tabB.$eval("#speedtestBtn", (el) => el.click());
     await tabB.waitForSelector("#speedtestView", { visible: true });
+    // 開了「按速度排序」時，每測完一個節點 popup 會用 inline transform 做 .45s 的排名位移動畫（flipRender），
+    // 截圖剛好撞上就會拍到動畫中間。tabB 是背景分頁，動畫時鐘不可靠（等 getAnimations() 清空可能永遠等不到），
+    // 所以直接把清單的過渡效果關掉：排名一變就直接是最終位置，任何時間點截圖都是穩定的畫面
+    await tabB.addStyleTag({ content: "#stList, #stList * { transition: none !important; animation: none !important; }" });
     await waitForSpeedtestMidway(tabB, 3);
-    await sleep(100);
+    await sleep(300);
     await save(await popupShot(tabB, { fit: false }), "videoSpeedtest");
     await tabB.$eval("#stBackBtn", (el) => el.click()); // 返回主頁（同時中止測速）
     await sleep(300);
