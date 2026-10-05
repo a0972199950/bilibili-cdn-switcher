@@ -43,7 +43,7 @@ B 站預設分配的取流節點對海外使用者常常繞路、不夠快。這
 | 📺 **直播支援** | 「直播」分頁可在 國際線路(ov)／國際備用線路(ov-b)／中國線路(cn)／中國備用線路(cn-b) 之間切換，不整頁重載；進入直播間播放後才會顯示各線路的實際網址，當前直播沒有的線路會標註並變淡（仍可選）。直播線路不佳時，「失敗自動切換」會自動退回國際線路(ov)（只針對該直播間，不改變你長期的選擇） |
 | 🔁 **失敗自動切換** | 偵測到目前 CDN 分段請求失敗、或播放持續卡住（非單純緩衝已滿），先靜默切換到 B 站原生給的備援節點（顯示提示、不整頁刷新）；備援也不行時彈出提示，讓你自行決定是否切到「備用URL」。可在彈出視窗的「失敗自動切換」開關關閉（預設開啟）；網路本身不穩時建議關閉 |
 | 📶 **各節點測速** | 獨立頁面（影片、直播各一個），顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，測速中也能重新測；不影響你手動選擇的 CDN，離開該頁即中止 |
-| 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English，涵蓋 popup、頁面提示與 debug 疊層 |
+| 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English／日本語／한국어（也可在進階設定手動選擇），涵蓋 popup、頁面提示與 debug 疊層 |
 | 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在右上角齒輪的進階設定中打開） |
 | 🦊 **Chrome / Firefox / Edge / Safari 四平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest）；Safari 另用 Xcode 包成 `.app`（見下方「打包 Safari」） |
 
@@ -60,12 +60,12 @@ bilibili-cdn-switcher/
 │   ├── main-hook.js      ← MAIN world：改寫取流 URL
 │   ├── bridge.js         ← ISOLATED world：storage / i18n ↔ 頁面 橋接
 │   ├── cdn-list.json     ← 節點清單
-│   ├── _locales/{zh_TW,zh_CN,en}/  ← 三語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
+│   ├── _locales/{zh_TW,zh_CN,en,ja,ko}/  ← 五語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
 │   └── icons/            ← 16 / 32 / 48 / 128
 ├── dist/                 ← 打包產物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
 ├── docs/                 ← README 用的截圖 + 繁體中文／简体中文 README
 ├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
-├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台三語系介紹文字
+├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台五語系介紹文字
 ├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，內含擴充資源用相對路徑直接引用 ../../../src/）
 ├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
 │   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
@@ -75,7 +75,7 @@ bilibili-cdn-switcher/
 │   ├── publish-stores.mjs        ← 用 API 金鑰上傳新版 zip 到 Chrome / Edge / Firefox（不會按發布）
 │   ├── test-whats-new.mjs        ← 用真的 Chrome 測「更新內容」popup
 │   ├── gen-icons.mjs             ← 重新產生圖示
-│   └── capture-screenshots.mjs   ← 自動開瀏覽器截三語系商店截圖（見下）
+│   └── capture-screenshots.mjs   ← 自動開瀏覽器截五語系商店截圖（見下）
 ├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
 ├── .env.local.example     ← 截圖用登入 cookie 的範例（複製成 .env.local 再填，見下）
 └── README.md
@@ -108,7 +108,7 @@ zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 
 
 ### 📝 更新紀錄與發版
 
-- `src/changelog.json` 同時記「尚未上架的新功能（`unreleased`）」與「各已上架版本相較前一版追加的內容（`releases`）」，三語（zh_TW / zh_CN / en）。
+- `src/changelog.json` 同時記「尚未上架的新功能（`unreleased`）」與「各已上架版本相較前一版追加的內容（`releases`）」，五語（zh_TW / zh_CN / en / ja / ko）。
   老使用者更新後第一次開設定選單，會看到一次性的「更新內容」popup（內容就來自這份檔案；打包進 zip 時會自動拿掉 `unreleased`）。
 - `.githooks/pre-push`：push 時若相較於分支出來的基準 `src/changelog.json` 沒有變動，會詢問是否仍要 push，選 No 就擋下。
   `npm install` 會自動設定 `core.hooksPath`（或手動 `git config core.hooksPath .githooks`）。確定不需要記錄時：`CHANGELOG_CHECK_IGNORE=1 git push`。
@@ -147,14 +147,14 @@ npm run gen-icons
 
 以 512px 母檔縮出 16/32/48/128，同時產生兩份：`src/icons/`（開發版，帶紅點角標，`Load unpacked` 平常讀到的就是這份，方便跟已安裝的正式版分辨）與 `assets/icons-prod/`（正式版，無角標）。`scripts/build.mjs` 打包 zip 時會自動把圖示換成 `assets/icons-prod/` 底下的正式版。
 
-### 📸 產生商店截圖（三語系 main / debug / speedtest，共 9 張 1280x800 png）
+### 📸 產生商店截圖（五語系 × 五個畫面，共 25 張 1280x800 png）
 
 ```bash
 npm run capture-screenshots                      # 預設 1280x800（Chrome 商店固定要這尺寸）
 npm run capture-screenshots -- --size=2560x1600  # Mac App Store 用的高解析版；檔名帶尺寸，另存一套不覆蓋 1280x800
 ```
 
-用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW` 三個瀏覽器語系，實際打開一支
+用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW`／`ja`／`ko` 五個瀏覽器語系，實際打開一支
 bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `VIDEO_URL`，要換片直接改那行），
 分別截點播主頁、直播主頁、點播測速頁（測速中）、進階設定頁、頁面上的 debug 疊層五張，等比縮放＋黑邊填成
 1280x800，輸出到 `store/` 覆蓋同名檔案（`screenshot-<語系>-<序號>-<畫面>-1280x800.png`，語系在前，
@@ -166,7 +166,7 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 `readme-<語系>-main.png`（popup 主頁）、`readme-<語系>-before.png`（關閉擴充）、
 `readme-<語系>-after.png`（啟用擴充），後兩張是 debug 疊層並把 `spd` 圈紅框。用腳本開頭的
 `README_VIDEO_URL` 那支影片、播放器能選的最高畫質，速度取決於當下你的網路，每次跑都會不同。`--readme-only` 只重拍這幾張、不動
-`store/`，`--locale=en|zhcn|zhtw` 可只跑單一語系。
+`store/`，`--locale=en|zhcn|zhtw|ja|ko` 可只跑單一語系。
 
 **登入 cookie（選用，決定截圖畫質）**：未登入時 B 站只給約 480P，截圖裡的 `qn` 就會是 480P。
 想要高畫質截圖的話，把 `.env.local.example` 複製成 `.env.local`，填入自己的 `BILI_COOKIE`
@@ -189,7 +189,7 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 | 🔍 **測試各節點速度** | 按下後切到獨立的測速頁面，上方顯示目前影片標題與畫質；抓「當前影片、當前畫質」的分段，依序換各節點 host 實測下載速度（8MB 或 5 秒先到為準，5 秒內完全沒收到資料才算超時；有收到但不到 8MB 就顯示實際測到的速度），只測目前國家清單內的節點，逐格顯示「等待中／測試中／結果」，最快的前三名在右上角戴上金／銀／銅皇冠；選「全部」時開測前會先跳紅色警告並估算耗時（節點數 × 每節點秒數上限），引導改選國家。可按「🔄 重新測速」重跑（測速中也能按，會中斷目前的重新開始）。**只顯示數字，不會更動你目前選擇的 CDN**；按左上角「← 返回」或關掉 popup 會立即中止測速。開啟「啟用」時，playurl 一解析完就能測，不用等真的開始播放；若「啟用」是關閉的，則要等實際下載過分段才有樣本 |
 | 🔁 **失敗自動切換 CDN** | 預設開啟，可在進階設定關閉（網路本身不穩、如 WiFi 訊號弱時建議關閉，避免頻繁黑屏重載）；開啟時偵測到分段請求失敗（403/404/5xx/網路錯誤）或播放確實卡住（8 秒內進度不動、且線路上也沒有資料在動），先靜默切到 B 站原生給的備援節點（分段層即時差替、不整頁刷新，並跳出提示）；這個備援也播不動時，改彈出一個不會自動消失的提示，讓你自己決定要不要「重載並切換至備用URL」。直播間則是：先檢查你選的線路在這個直播是否存在（不存在就直接退回國際線路 ov），之後持續一段時間沒有碼流也退回 ov |
 | ⚡ **影片自動測速並切換到最快節點** | 在進階設定中；預設 **關閉**。每支影片先用目前選的節點播，第一個分段下載完約 5 秒後，在背景依「測速門檻」逐一測速目前國家清單的節點，測完自動把選擇的節點換成最快的並存起來（同一支影片只測一次）。國家選「全部」時無法使用。由於每次測速名次都不同，幾乎每支影片都會因切換 CDN 黑畫面一次，選定節點大多能順暢播放時不建議開；擔心卡頓請改用「失敗自動切換」 |
-| 🌏 **語言** | 沒有手動切換選項，跟隨瀏覽器／作業系統語言自動顯示繁體中文／简体中文／English（其餘語言預設顯示繁體中文）；如需強制指定，可調整瀏覽器的語言偏好順序 |
+| 🌏 **語言** | 預設跟隨瀏覽器／作業系統語言，自動顯示繁體中文／简体中文／English／日本語／한국어（其餘語言顯示英文）；如需強制指定，可在 popup 的「進階設定 → 語言」選擇 |
 | ⏱️ **測速門檻** | 在進階設定中，分「影片」「直播」兩區：影片是每個節點最多下載幾 MB／最多測幾秒（預設 8MB／5 秒，先到為準）；直播是切台卡頓測幾次取平均／持續觀看每條線路測幾秒（預設 3 次／8 秒）。調整後永久儲存，各區有「恢復預設」 |
 | 🔢 **節點按測速排序** | 在進階設定中；預設 **關閉**。開啟後，測速時每測完一個節點就以平移動畫排到「由快到慢」的位置（影片看下載速度；直播先看持續觀看等級，同級再比切台卡頓）。排出的順序存在本機，主畫面的節點清單也照這個順序，直到下次重新測速；關閉即恢復預設順序 |
 | 🐛 **顯示頁面 debug 疊層** | 在進階設定中；預設 **關閉**；獨立於重排開關，關閉重排時仍可顯示當前 CDN，方便比較 |

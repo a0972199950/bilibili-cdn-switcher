@@ -1,4 +1,4 @@
-// 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截五張圖（點播主頁 / 直播主頁 / 點播測速頁 /
+// 用 Puppeteer 載入 unpacked 擴充功能，依五語系各截五張圖（點播主頁 / 直播主頁 / 點播測速頁 /
 // 進階設定頁 / debug 疊層），等比縮放 + 黑邊填成 1280x800 png，輸出到 store/ 取代現有檔案。
 // 檔名 screenshot-<語系>-<序號>-<畫面>-<寬>x<高>.png：先語系、後序號，檔案總管按檔名排序時
 // 同一語系排在一起、且依 VIEWS 的順序排列。
@@ -9,7 +9,7 @@
 //   readme-<語系>-after.png   啟用擴充時的 debug 疊層，spd 圈紅框
 //   before / after 用 README_VIDEO_URL 那支影片、播放器能選的最高畫質，各取樣一段時間：
 //   before 截取樣窗口內「最慢」的讀數、after 截「最快」的讀數（都是真實讀數，但是挑過的）。
-// --locale=en|zhcn|zhtw：只跑指定語系（可與 --readme-only 併用）。
+// --locale=en|zhcn|zhtw|ja|ko：只跑指定語系（可與 --readme-only 併用）。
 // --readme-only：只重拍 README 圖（不動 store/），迭代 README 圖時用，省時間。
 //
 // 用法：npm run capture-screenshots
@@ -101,13 +101,15 @@ const CANVAS_H = parseInt(sizeMatch[2], 10);
 // 而不是把 1280 那套放大（放大會糊）。SCALE=1 時行為與原本完全一致。
 const SCALE = CANVAS_W / 1280;
 
-// appleLang：macOS 上 Chrome 會忽略 --lang、改跟系統 UI 語言，導致三個語系全塌成系統語言。
+// appleLang：macOS 上 Chrome 會忽略 --lang、改跟系統 UI 語言，導致所有語系全塌成系統語言。
 // 用 NSUserDefaults 的「argument domain」以 -AppleLanguages "(xxx)" 覆蓋，才能真的切 Chrome UI 語言，
-// 讓擴充的 chrome.i18n.getUILanguage() 回傳對應語系。（Windows/Linux 靠 --lang 即可，這參數無害。）
+// 讓擴充的 chrome.i18n.getUILanguage() 回傳對應語系。（Windows 靠 --lang、Linux 靠 LANGUAGE 環境變數，這參數無害。）
 const LOCALES = [
   { chromeLang: "en-US", prefix: "en", appleLang: "(en-US)" },
   { chromeLang: "zh-CN", prefix: "zhcn", appleLang: "(zh-Hans-CN)" },
-  { chromeLang: "zh-TW", prefix: "zhtw", appleLang: "(zh-Hant-TW)" }
+  { chromeLang: "zh-TW", prefix: "zhtw", appleLang: "(zh-Hant-TW)" },
+  { chromeLang: "ja", prefix: "ja", appleLang: "(ja-JP)" },
+  { chromeLang: "ko", prefix: "ko", appleLang: "(ko-KR)" }
 ];
 
 const POPUP_VIEWPORT = { width: 360, height: 560, deviceScaleFactor: 2 * SCALE };
@@ -399,6 +401,8 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
   const browser = await puppeteer.launch({
     headless: true,
     userDataDir,
+    // Linux 版 Chromium 的介面語言看 LANGUAGE 環境變數（--lang 只對 Windows 有效、Mac 靠下面的 AppleLanguages）
+    env: { ...process.env, LANGUAGE: chromeLang.replace("-", "_") },
     args: [
       `--disable-extensions-except=${EXT_DIR}`,
       `--load-extension=${EXT_DIR}`,
@@ -406,7 +410,9 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
       // macOS：用 argument-domain 覆蓋 UI 語言（--lang 在 Mac 上無效）
       "-AppleLanguages", appleLang,
       "--window-size=1400,1000",
-      "--no-first-run"
+      "--no-first-run",
+      // 以 root 執行（CI、雲端容器）時 Chromium 不給開 sandbox，一般使用者帳號執行不會加這條
+      ...(process.getuid && process.getuid() === 0 ? ["--no-sandbox"] : [])
     ]
   });
 

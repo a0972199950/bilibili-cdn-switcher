@@ -149,14 +149,14 @@ function amoJwt() {
   const sig = crypto.createHmac("sha256", env("AMO_JWT_SECRET")).update(`${head}.${body}`).digest("base64url");
   return `${head}.${body}.${sig}`;
 }
-const AMO_LOCALES = { "en-US": ["en", "en"], "zh-TW": ["zhtw", "zh_TW"], "zh-CN": ["zhcn", "zh_CN"] }; // AMO locale → [store 檔名後綴, changelog 語系鍵]
+const AMO_LOCALES = { "en-US": ["en", "en"], "zh-TW": ["zhtw", "zh_TW"], "zh-CN": ["zhcn", "zh_CN"], ja: ["ja", "ja"], ko: ["ko", "ko"] }; // AMO locale → [store 檔名後綴, changelog 語系鍵]
 
 // store/description-firefox-*.md：「簡短描述」＝ summary、「詳細描述」＝ description
 function parseStoreDescription(suffix) {
   const md = fs.readFileSync(path.join(ROOT, "store", `description-firefox-${suffix}.md`), "utf8").replace(/\r\n/g, "\n");
   const sections = md.split(/^## /m).slice(1);
   const pick = (re) => (sections.find((s) => re.test(s.split("\n")[0])) || "").split("\n").slice(1).join("\n").trim();
-  return { summary: pick(/簡短描述|简短描述|Short description/i), description: pick(/詳細描述|详细描述|Detailed description/i) };
+  return { summary: pick(/簡短描述|简短描述|Short description|簡単な説明|간단한 설명/i), description: pick(/詳細描述|详细描述|Detailed description|詳細な説明|자세한 설명/i) };
 }
 function releaseNotesFor(langKey) {
   const rel = changelog.releases.find((r) => r.version === version);
@@ -239,7 +239,7 @@ console.log("\n—— 還需要你手動做的事 ——");
 for (const b of targets) {
   if (manualListing[b]) {
     const [dash, key] = manualListing[b];
-    console.log(`• ${b}：到 ${dash} 確認草稿 → 貼上 store/description-${key}-{zhtw,zhcn,en}.md 的各語言簡介（API 不能改文案／圖片，圖片在 store/*.png）→ 自己按「發布」`);
+    console.log(`• ${b}：到 ${dash} 確認草稿 → 貼上 store/description-${key}-{zhtw,zhcn,en,ja,ko}.md 的各語言簡介（API 不能改文案／圖片，圖片在 store/*.png）→ 自己按「發布」`);
   } else if (!flag("submit-firefox")) {
     console.log("• firefox：套件已驗證；確認後執行 `npm run publish-stores -- --browser=firefox --submit-firefox` 送審（AMO 沒有草稿，這步等同發布按鈕）");
   } else {
