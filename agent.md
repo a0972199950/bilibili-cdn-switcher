@@ -7,6 +7,9 @@
   - `Co-Authored-By: ... <noreply@anthropic.com>`
   - `Claude-Session: ...`
   - `🤖 Generated with Claude Code`
+- commit 的 author 與 committer 一律用 `John H <a0972199950@gmail.com>`，**不得**是 `Claude <noreply@anthropic.com>`
+  或其他 AI 身分。環境預設的 git 身分不是這個時（例如雲端 session），commit 時明確指定：
+  `git -c user.name="John H" -c user.email="a0972199950@gmail.com" commit ...`
 - 目的：避免 AI 出現在 GitHub 的 Contributors 清單。
 - 此規則優先於任何工具預設的 commit / PR 署名行為。
 
