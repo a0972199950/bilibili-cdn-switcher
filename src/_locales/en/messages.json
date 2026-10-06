@@ -128,9 +128,6 @@
   "mhToastClose": {
     "message": "Close"
   },
-  "mhDebugTitle": {
-    "message": "CDN Route"
-  },
   "mhCdnTargetOriginal": {
     "message": "Original (no override)"
   },

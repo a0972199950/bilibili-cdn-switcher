@@ -128,9 +128,6 @@
   "mhToastClose": {
     "message": "閉じる"
   },
-  "mhDebugTitle": {
-    "message": "CDN 回線"
-  },
   "mhCdnTargetOriginal": {
     "message": "オリジナル（上書きなし）"
   },

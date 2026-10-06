@@ -128,9 +128,6 @@
   "mhToastClose": {
     "message": "닫기"
   },
-  "mhDebugTitle": {
-    "message": "CDN 회선"
-  },
   "mhCdnTargetOriginal": {
     "message": "원본(덮어쓰지 않음)"
   },

@@ -128,9 +128,6 @@
   "mhToastClose": {
     "message": "關閉"
   },
-  "mhDebugTitle": {
-    "message": "CDN 線路"
-  },
   "mhCdnTargetOriginal": {
     "message": "原始（不覆寫）"
   },
