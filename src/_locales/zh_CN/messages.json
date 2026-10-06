@@ -176,6 +176,18 @@
   "uiLangAuto": {
     "message": "跟随浏览器"
   },
+  "uiThemeLabel": {
+    "message": "外观主题"
+  },
+  "uiThemeSystem": {
+    "message": "跟随系统"
+  },
+  "uiThemeLight": {
+    "message": "明亮"
+  },
+  "uiThemeDark": {
+    "message": "黑暗"
+  },
   "advancedTitle": {
     "message": "高级设置"
   },

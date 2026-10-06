@@ -176,6 +176,18 @@
   "uiLangAuto": {
     "message": "브라우저 설정 따름"
   },
+  "uiThemeLabel": {
+    "message": "테마"
+  },
+  "uiThemeSystem": {
+    "message": "시스템 설정 따름"
+  },
+  "uiThemeLight": {
+    "message": "라이트"
+  },
+  "uiThemeDark": {
+    "message": "다크"
+  },
   "advancedTitle": {
     "message": "고급 설정"
   },

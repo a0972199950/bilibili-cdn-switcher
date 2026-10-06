@@ -176,6 +176,18 @@
   "uiLangAuto": {
     "message": "ブラウザに合わせる"
   },
+  "uiThemeLabel": {
+    "message": "テーマ"
+  },
+  "uiThemeSystem": {
+    "message": "システムに合わせる"
+  },
+  "uiThemeLight": {
+    "message": "ライト"
+  },
+  "uiThemeDark": {
+    "message": "ダーク"
+  },
   "advancedTitle": {
     "message": "詳細設定"
   },

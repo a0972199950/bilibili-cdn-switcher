@@ -84,7 +84,7 @@ function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "
 document.title = t("popupTitle");
 document.documentElement.lang = uiLanguage();
 [
-  ["headerTitle", "popupHeaderTitle"], ["gearBtnLabel", "advancedBtnLabel"], ["uiLangLabel", "uiLangLabel"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["headerTitle", "popupHeaderTitle"], ["gearBtnLabel", "advancedBtnLabel"], ["uiLangLabel", "uiLangLabel"], ["uiThemeLabel", "uiThemeLabel"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["tabVideo", "tabVideo"], ["tabLive", "tabLive"], ["advHeaderTitle", "advancedTitle"], ["advBackBtn", "stBackBtn"], ["clBackBtn", "stBackBtn"], ["clHeaderTitle", "changelogTitle"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["modeOffLabel", "modeOffLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["liveModeListLabel", "liveModePrefLabel"], ["liveModeOffLabel", "modeOffLabel"], ["liveSpeedtestBtn", "liveSpeedtestBtnLabel"],
@@ -142,6 +142,33 @@ chrome.storage.local.get({ uiLang: "auto" }, function (items) {
   if (v === uiLangPref || (v !== "auto" && UI_LANGS.indexOf(v) < 0)) return;
   setUiLangPref(v);
   try { if (window.localStorage.getItem("uiLang") === v) location.reload(); } catch (e) {}
+});
+// -------- 外觀主題（進階設定第二項）：跟隨系統／明亮／黑暗 --------
+// 選項存 localStorage（theme.js 在 <head> 同步讀、畫面出來前就套好）＋ chrome.storage.local 的 uiTheme；切換即時生效，不用重載
+var UI_THEME_KEYS = { system: "uiThemeSystem", light: "uiThemeLight", dark: "uiThemeDark" };
+var uiThemeSelect = document.getElementById("uiThemeSelect");
+UI_THEMES.forEach(function (code) {
+  var opt = document.createElement("option");
+  opt.value = code;
+  opt.textContent = t(UI_THEME_KEYS[code]);
+  uiThemeSelect.appendChild(opt);
+});
+function syncUiThemeSelect() {
+  uiThemeSelect.value = getUiTheme();
+  document.getElementById("uiThemeText").textContent = uiThemeSelect.options[uiThemeSelect.selectedIndex].textContent;
+}
+syncUiThemeSelect();
+uiThemeSelect.setAttribute("aria-label", t("uiThemeLabel"));
+uiThemeSelect.addEventListener("change", function () {
+  setUiTheme(uiThemeSelect.value);
+  syncUiThemeSelect();
+  chrome.storage.local.set({ uiTheme: uiThemeSelect.value });
+});
+// localStorage 被清掉、與 storage 對不上時，以 storage 為準
+chrome.storage.local.get({ uiTheme: "system" }, function (items) {
+  if (items.uiTheme === getUiTheme() || UI_THEMES.indexOf(items.uiTheme) < 0) return;
+  setUiTheme(items.uiTheme);
+  syncUiThemeSelect();
 });
 els.gearBtn.title = t("advancedBtnTitle");
 els.gearBtn.setAttribute("aria-label", t("advancedBtnTitle"));

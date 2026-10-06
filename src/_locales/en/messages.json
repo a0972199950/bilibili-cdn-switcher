@@ -176,6 +176,18 @@
   "uiLangAuto": {
     "message": "Auto (browser)"
   },
+  "uiThemeLabel": {
+    "message": "Theme"
+  },
+  "uiThemeSystem": {
+    "message": "System"
+  },
+  "uiThemeLight": {
+    "message": "Light"
+  },
+  "uiThemeDark": {
+    "message": "Dark"
+  },
   "advancedTitle": {
     "message": "Advanced settings"
   },

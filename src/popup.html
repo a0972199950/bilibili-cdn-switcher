@@ -5,15 +5,91 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title></title>
+  <!-- 外觀主題要在畫面出來前套上，不然會先閃一下另一個主題，所以放 <head> 同步載入 -->
+  <script src="theme.js"></script>
   <style>
-    :root {
-      color-scheme: light dark;
+    /* 外觀主題：theme.js 依進階設定（跟隨系統／明亮／黑暗）在 <html> 設 data-theme="light" | "dark"，
+       顏色一律透過下面的變數取用。黑暗＝原本的深色設計；明亮參照測速工具 CDNSpeedTest 的配色
+       （淺灰底＋白色卡片、B 站粉主色、天藍連結）。 */
+    :root,
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f5f7;
+      --bg-clear: rgba(244, 245, 247, 0);
+      --text: #18191c;
+      --muted: #61666d;
+      --placeholder: #9499a0;
+      --line: #e3e5e7;
+      --border: #e3e5e7;
+      --border-soft: #e3e5e7;
+      --control-bg: #fff;
+      --raised: #fff;
+      --accent: #fb7299;
+      --accent-hover: #e85c86;
+      --accent-text: #fff;
+      --hover-bg: #ffecf1;
+      --selected-bg: #ffdce6;
+      --link: #00aeec;
+      --ok: #2ba471;
+      --fair: #c98a00;
+      --danger: #d93025;
+      --danger-strong: #d93025;
+      --danger-hover: #b3261e;
+      --danger-soft: rgba(217, 48, 37, .1);
+      --danger-border: rgba(217, 48, 37, .55);
+      --warn: #b36b00;
+      --warn-bar: #f0a020;
+      --warn-bg: #fff4e5;
+      --slider-off: #c9ccd0;
+      --tag-fix: #9499a0;
+      --code-bg: #fafbfc;
+      --promo-bg: #ffecf1;
+      --promo-border: #f5c2d1;
+      --promo-text: #61666d;
+      --top-bar: #fb7299;
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #1c1c1e;
+      --bg-clear: rgba(28, 28, 30, 0);
+      --text: #eaeaea;
+      --muted: #888;
+      --placeholder: #999;
+      --line: rgba(128, 128, 128, .3);
+      --border: rgba(128, 128, 128, .4);
+      --border-soft: rgba(128, 128, 128, .25);
+      --control-bg: transparent;
+      --raised: #2b2b2b;
+      --accent: #00a1d6;
+      --accent-hover: #0090c0;
+      --accent-text: #fff;
+      --hover-bg: rgba(0, 161, 214, .12);
+      --selected-bg: rgba(0, 161, 214, .18);
+      --link: #00a1d6;
+      --ok: #3ddc84;
+      --fair: #ffc83d;
+      --danger: #ff6b6b;
+      --danger-strong: #e00;
+      --danger-hover: #c62828;
+      --danger-soft: rgba(224, 0, 0, .1);
+      --danger-border: rgba(255, 107, 107, .55);
+      --warn: #e08a00;
+      --warn-bar: #f0a020;
+      --warn-bg: rgba(240, 160, 32, .12);
+      --slider-off: #bbb;
+      --tag-fix: #8a8a8a;
+      --code-bg: rgba(255, 255, 255, .06);
+      --promo-bg: rgba(0, 161, 214, .08);
+      --promo-border: rgba(0, 161, 214, .35);
+      --promo-text: #aaa;
+      --top-bar: transparent;
     }
 
     /* 明确给不透明底色：macOS（新版毛玻璃/vibrancy）会让没设背景的 popup 变半透明，
        视频透上来使灰字与细线几乎看不清。铺满不透明背景即可，跟其他浏览器观感一致。 */
     html {
-      background: #fff;
+      background: var(--bg);
     }
 
     body {
@@ -21,8 +97,10 @@
       margin: 0;
       padding: 14px;
       font: 13px/1.5 -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
-      background: #fff;
-      color: #1a1a1a;
+      background: var(--bg);
+      color: var(--text);
+      /* 明亮主題頂端的粉色細條（同 CDNSpeedTest 標題下的分隔線）；用 inset 陰影畫在 padding 裡，不影響版面高度 */
+      box-shadow: inset 0 3px 0 var(--top-bar);
     }
 
     /* 日文：依詞組換行（Chrome / Edge 119+ 的 auto-phrase），避免把「経過」「再読み込み」之類的詞拆開；
@@ -39,16 +117,6 @@
       overflow-wrap: break-word;
     }
 
-    @media (prefers-color-scheme: dark) {
-      html {
-        background: #1c1c1e;
-      }
-
-      body {
-        background: #1c1c1e;
-        color: #eaeaea;
-      }
-    }
 
     h1 {
       font-size: 14px;
@@ -64,14 +132,14 @@
     }
 
     .hint {
-      color: #888;
+      color: var(--muted);
       font-size: 11px;
       margin: 4px 0 8px;
     }
 
     hr {
       border: 0;
-      border-top: 1px solid rgba(128, 128, 128, .3);
+      border-top: 1px solid var(--line);
       margin: 12px 0;
     }
 
@@ -91,9 +159,9 @@
       font: inherit;
       text-align: left;
       cursor: pointer;
-      border: 1px solid rgba(128, 128, 128, .4);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      background: transparent;
+      background: var(--control-bg);
       color: inherit;
     }
 
@@ -111,7 +179,7 @@
 
     .cdnSelectHost {
       font-size: 10px;
-      color: #888;
+      color: var(--muted);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -119,7 +187,7 @@
 
     .cdnSelectArrow {
       flex: 0 0 auto;
-      color: #888;
+      color: var(--muted);
       font-size: 10px;
       transition: transform .15s;
     }
@@ -136,17 +204,11 @@
       top: calc(100% + 4px);
       max-height: 220px;
       overflow-y: auto;
-      background: #fff;
-      border: 1px solid rgba(128, 128, 128, .4);
+      background: var(--raised);
+      border: 1px solid var(--border);
       border-radius: 6px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
       z-index: 10;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .cdnSelectList {
-        background: #2b2b2b;
-      }
     }
 
     .cdnSelect.open .cdnSelectList {
@@ -161,11 +223,11 @@
     }
 
     .cdnOptRow:hover {
-      background: rgba(0, 161, 214, .12);
+      background: var(--hover-bg);
     }
 
     .cdnOptRow.selected {
-      background: rgba(0, 161, 214, .18);
+      background: var(--selected-bg);
     }
 
     .cdnOptRow.selected .cdnOptName {
@@ -178,7 +240,7 @@
 
     .cdnOptHost {
       font-size: 10px;
-      color: #888;
+      color: var(--muted);
     }
 
     /* 自訂節點列表：每列右側的移除鈕 */
@@ -198,18 +260,18 @@
       border: 0;
       border-radius: 4px;
       background: transparent;
-      color: #888;
+      color: var(--muted);
       font: 14px/22px sans-serif;
       cursor: pointer;
     }
 
     .cdnOptDel:hover {
-      background: rgba(229, 57, 53, .15);
-      color: #e53935;
+      background: var(--danger-soft);
+      color: var(--danger-strong);
     }
 
     .customDesc {
-      color: #888;
+      color: var(--muted);
       font-size: 11px;
       margin: 2px 0 8px;
     }
@@ -219,7 +281,7 @@
     }
 
     .customDesc a {
-      color: #00a1d6;
+      color: var(--link);
       cursor: pointer;
     }
 
@@ -256,41 +318,35 @@
 
     .cdnSelect.empty .cdnSelectName,
     .cdnSelect.empty .cdnSelectArrow {
-      color: #999;
+      color: var(--placeholder);
     }
 
     /* 清空：跟「加入」同尺寸，紅底白字 */
     .customAddRow button.customClearBtn {
-      border: 1px solid #e53935;
+      border: 1px solid var(--danger-strong);
       border-radius: 3px;
-      background: #e53935;
+      background: var(--danger-strong);
       color: #fff;
     }
 
     .customAddRow button.customClearBtn:hover:not(:disabled) {
-      background: #c62828;
-      border-color: #c62828;
+      background: var(--danger-hover);
+      border-color: var(--danger-hover);
     }
 
     /* 官方測速工具的推廣卡：淺藍底，整列藍色按鈕「自動偵測並加入」 */
     .autoDetectCard {
       margin: 0 0 8px;
       padding: 8px 10px;
-      border: 1px solid rgba(0, 161, 214, .35);
+      border: 1px solid var(--promo-border);
       border-radius: 8px;
-      background: rgba(0, 161, 214, .08);
+      background: var(--promo-bg);
     }
 
     .autoDetectCard p {
       margin: 0 0 6px;
       font-size: 11px;
-      color: #666;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .autoDetectCard p {
-        color: #aaa;
-      }
+      color: var(--promo-text);
     }
 
     button#autoDetectBtn {
@@ -298,15 +354,15 @@
       padding: 6px 8px;
       border: 0;
       border-radius: 6px;
-      background: #00a1d6;
-      color: #fff;
+      background: var(--accent);
+      color: var(--accent-text);
       font: inherit;
       font-weight: 600;
       cursor: pointer;
     }
 
     button#autoDetectBtn:hover {
-      background: #0090c0;
+      background: var(--accent-hover);
     }
 
     /* 國家清單下方：沒有你的國家時的引導，「自訂節點列表」是切換模式的連結按鈕 */
@@ -314,7 +370,7 @@
       padding: 0;
       border: 0;
       background: none;
-      color: #00a1d6;
+      color: var(--link);
       font: inherit;
       text-decoration: underline;
       cursor: pointer;
@@ -340,7 +396,7 @@
     .slider {
       position: absolute;
       inset: 0;
-      background: #bbb;
+      background: var(--slider-off);
       border-radius: 22px;
       transition: .15s;
       cursor: pointer;
@@ -359,7 +415,7 @@
     }
 
     .switch input:checked+.slider {
-      background: #00a1d6;
+      background: var(--accent);
     }
 
     .switch input:checked+.slider::before {
@@ -371,21 +427,15 @@
       white-space: pre-wrap;
       /* 網址等長字串照樣能斷，但一般文字（尚無資料的提示）不會被逐字拆開，日韓文的換行規則也照常套用 */
       overflow-wrap: anywhere;
-      background: rgba(0, 0, 0, .06);
-      border: 1px solid rgba(128, 128, 128, .25);
+      background: var(--code-bg);
+      border: 1px solid var(--border-soft);
       border-radius: 6px;
       padding: 8px;
       min-height: 72px;
     }
 
-    @media (prefers-color-scheme: dark) {
-      #debug {
-        background: rgba(255, 255, 255, .06);
-      }
-    }
-
     .cdnnow {
-      color: #00a1d6;
+      color: var(--accent);
       font-weight: 600;
     }
 
@@ -410,8 +460,8 @@
       font: inherit;
       cursor: pointer;
       border-radius: 6px;
-      border: 1px solid rgba(128, 128, 128, .4);
-      background: transparent;
+      border: 1px solid var(--border);
+      background: var(--control-bg);
       color: inherit;
     }
 
@@ -469,13 +519,13 @@
     }
 
     .versionRow button.linkBtn {
-      color: #888;
+      color: var(--muted);
       font-size: 11px;
     }
 
     .clRelease {
       padding: 10px 0;
-      border-bottom: 1px solid rgba(128, 128, 128, .28);
+      border-bottom: 1px solid var(--line);
     }
 
     .clRelease:last-child {
@@ -497,12 +547,12 @@
       margin-left: 6px;
       font-size: 11px;
       font-weight: 400;
-      color: #00a1d6;
+      color: var(--accent);
     }
 
     .clDate {
       font-size: 11px;
-      color: #888;
+      color: var(--muted);
     }
 
     .clRelease ul {
@@ -523,9 +573,9 @@
       gap: 8px;
       margin: 0 0 10px;
       padding: 8px 10px 8px 9px;
-      border-left: 3px solid #f0a020;
+      border-left: 3px solid var(--warn-bar);
       border-radius: 4px;
-      background: rgba(240, 160, 32, .12);
+      background: var(--warn-bg);
       font-size: 12px;
       line-height: 1.5;
     }
@@ -535,7 +585,7 @@
       width: 16px;
       height: 16px;
       margin-top: 1px;
-      fill: #f0a020;
+      fill: var(--warn-bar);
     }
 
     #staleBanner .alertBody {
@@ -548,7 +598,7 @@
     }
 
     #staleBanner .alertDesc {
-      color: #888;
+      color: var(--muted);
     }
 
     #staleBanner .alertAction {
@@ -559,7 +609,7 @@
       background: none;
       font: inherit;
       font-weight: 600;
-      color: #00a1d6;
+      color: var(--link);
       cursor: pointer;
       white-space: nowrap;
     }
@@ -570,7 +620,7 @@
 
     .advItem {
       padding: 10px 0;
-      border-bottom: 1px solid rgba(128, 128, 128, .28);
+      border-bottom: 1px solid var(--line);
     }
 
     /* 暫時不能用的選項（例如自動測速在國家選「全部」時）：開關變淡、不能按，底下用橘字說明原因 */
@@ -584,7 +634,7 @@
     }
 
     .hint.advDisabledNote {
-      color: #e08a00;
+      color: var(--warn);
     }
 
     .advItem:last-child {
@@ -618,9 +668,9 @@
       padding: 3px 6px;
       font: inherit;
       text-align: right;
-      border: 1px solid rgba(128, 128, 128, .4);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      background: transparent;
+      background: var(--control-bg);
       color: inherit;
     }
 
@@ -628,7 +678,7 @@
       display: inline-block;
       min-width: 22px;
       margin-left: 4px;
-      color: #888;
+      color: var(--muted);
     }
 
     /* 「恢復預設」：沒有外框、像超連結的底線文字 */
@@ -638,7 +688,7 @@
       background: none;
       font: inherit;
       font-size: 12px;
-      color: #00a1d6;
+      color: var(--link);
       text-decoration: underline;
       cursor: pointer;
     }
@@ -656,13 +706,7 @@
     }
 
     button#resetAllBtn {
-      color: #e00;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      button#resetAllBtn {
-        color: #ff6b6b;
-      }
+      color: var(--danger);
     }
 
     .stActions {
@@ -678,22 +722,14 @@
       font: inherit;
       cursor: pointer;
       border-radius: 6px;
-      border: 1px solid rgba(224, 0, 0, .55);
-      background: transparent;
-      color: #e00;
+      border: 1px solid var(--danger-border);
+      background: var(--control-bg);
+      color: var(--danger);
       white-space: nowrap;
     }
 
     button#stStopBtn:hover:not(:disabled) {
-      background: rgba(224, 0, 0, .1);
-    }
-
-
-    @media (prefers-color-scheme: dark) {
-      button#stStopBtn {
-        color: #ff6b6b;
-        border-color: rgba(255, 107, 107, .55);
-      }
+      background: var(--danger-soft);
     }
 
     button#stBackBtn,
@@ -704,8 +740,8 @@
       font: inherit;
       cursor: pointer;
       border-radius: 6px;
-      border: 1px solid rgba(128, 128, 128, .4);
-      background: transparent;
+      border: 1px solid var(--border);
+      background: var(--control-bg);
       color: inherit;
       white-space: nowrap;
     }
@@ -757,13 +793,7 @@
       bottom: 0;
       height: 12px;
       pointer-events: none;
-      background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #fff);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      #stDesc.overflowing:not(.expanded)::after {
-        background: linear-gradient(to bottom, rgba(28, 28, 30, 0), #1c1c1e);
-      }
+      background: linear-gradient(to bottom, var(--bg-clear), var(--bg));
     }
 
     /* 展開：改成 fixed 浮在原位上方，不推動下面的版面 */
@@ -774,14 +804,8 @@
       overflow-y: auto;
       box-sizing: border-box;
       padding: 0 0 22px;
-      background: #fff;
+      background: var(--bg);
       box-shadow: 0 6px 12px -4px rgba(0, 0, 0, .3);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      #stDesc.expanded #stDescInner {
-        background: #1c1c1e;
-      }
     }
 
     /* 展開／收合箭頭：收合時壓在第三行右下角，左邊用漸層淡出文字 */
@@ -794,16 +818,10 @@
       border: 0;
       font-size: 14px;
       line-height: 16px;
-      color: #00a1d6;
+      color: var(--accent);
       cursor: pointer;
       z-index: 1;
-      background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff 18px);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      button#stDescToggle {
-        background: linear-gradient(to right, rgba(28, 28, 30, 0), #1c1c1e 18px);
-      }
+      background: linear-gradient(to right, var(--bg-clear), var(--bg) 18px);
     }
 
     #stDesc.overflowing button#stDescToggle {
@@ -814,7 +832,7 @@
       display: block;
       font-size: 12px;
       font-weight: 400;
-      color: #888;
+      color: var(--muted);
       margin-top: 2px;
     }
 
@@ -829,7 +847,7 @@
       justify-content: space-between;
       gap: 8px;
       padding: 6px 4px;
-      border-bottom: 1px solid rgba(128, 128, 128, .28);
+      border-bottom: 1px solid var(--line);
     }
 
     .stRow:last-child {
@@ -848,11 +866,11 @@
     }
 
     .stRow.stClickable:hover {
-      background: rgba(0, 161, 214, .12);
+      background: var(--hover-bg);
     }
 
     .stRow.stCurrent {
-      background: rgba(0, 161, 214, .18);
+      background: var(--selected-bg);
     }
 
     .stRow.stCurrent .stRowTitle {
@@ -873,7 +891,7 @@
 
     .stRowHost {
       font-size: 10px;
-      color: #888;
+      color: var(--muted);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -882,20 +900,20 @@
     .stRow .stSpeed {
       flex: 0 0 auto;
       white-space: nowrap;
-      color: #888;
+      color: var(--muted);
     }
 
     .stRow.stTesting .stSpeed {
-      color: #00a1d6;
+      color: var(--accent);
     }
 
     .stRow.stBest .stSpeed {
-      color: #00a1d6;
+      color: var(--accent);
       font-weight: 600;
     }
 
     .stRow.stErr .stSpeed {
-      color: #e00;
+      color: var(--danger-strong);
     }
 
     .stRow.stMissing .stRowTitle,
@@ -906,7 +924,7 @@
     .stRow .stRowNote {
       margin-left: 6px;
       font-size: 11px;
-      color: #e08a00;
+      color: var(--warn);
     }
 
     .stRow .stMetrics {
@@ -917,48 +935,34 @@
       font-size: 11px;
       line-height: 1.6;
       white-space: nowrap;
-      color: #888;
+      color: var(--muted);
     }
 
     .stMetrics .stMetricLabel {
-      color: #888;
+      color: var(--muted);
     }
 
     .stMetrics .stMetricErr {
-      color: #e00;
+      color: var(--danger-strong);
     }
 
     .lvTesting {
-      color: #00a1d6;
+      color: var(--accent);
     }
 
     .lvGood {
-      color: #1a9a43;
+      color: var(--ok);
       font-weight: 600;
     }
 
     .lvFair {
-      color: #c98a00;
+      color: var(--fair);
       font-weight: 600;
     }
 
     .lvBad {
-      color: #e00;
+      color: var(--danger);
       font-weight: 600;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .lvGood {
-        color: #3ddc84;
-      }
-
-      .lvFair {
-        color: #ffc83d;
-      }
-
-      .lvBad {
-        color: #ff6b6b;
-      }
     }
 
     .headerRow {
@@ -991,14 +995,14 @@
       white-space: nowrap;
       cursor: pointer;
       border-radius: 14px;
-      border: 1px solid #00a1d6;
-      background: transparent;
-      color: #00a1d6;
+      border: 1px solid var(--accent);
+      background: var(--control-bg);
+      color: var(--accent);
     }
 
     button.iconBtn:hover {
-      color: #fff;
-      background: #00a1d6;
+      color: var(--accent-text);
+      background: var(--accent);
     }
 
     button.iconBtn svg {
@@ -1010,7 +1014,7 @@
     .tabs {
       display: flex;
       margin: 10px 0 10px;
-      border-bottom: 1px solid rgba(128, 128, 128, .3);
+      border-bottom: 1px solid var(--line);
     }
 
     button.tab {
@@ -1022,7 +1026,7 @@
       border-bottom: 2px solid transparent;
       margin-bottom: -1px;
       background: transparent;
-      color: #888;
+      color: var(--muted);
     }
 
     button.tab:hover {
@@ -1030,9 +1034,9 @@
     }
 
     button.tab.active {
-      color: #00a1d6;
+      color: var(--accent);
       font-weight: 600;
-      border-bottom-color: #00a1d6;
+      border-bottom-color: var(--accent);
     }
 
     /* 直播下拉：這個直播沒有此線路 → 名稱與網址變淡並加註記，但仍可點選（不禁止使用者選） */
@@ -1046,7 +1050,7 @@
     .liveMissingNote {
       margin-left: 6px;
       font-size: 11px;
-      color: #e08a00;
+      color: var(--warn);
     }
 
     .footerBtns {
@@ -1066,8 +1070,8 @@
     }
 
     button#feedbackBtn {
-      border: 1px solid rgba(128, 128, 128, .4);
-      background: transparent;
+      border: 1px solid var(--border);
+      background: var(--control-bg);
       color: inherit;
     }
 
@@ -1103,18 +1107,19 @@
       gap: 4px;
       padding-bottom: 1px;
       border-bottom: 1px solid currentColor;
-      color: #888;
+      color: var(--muted);
       cursor: pointer;
     }
 
     .countryPick:hover,
     .countryPick:focus-within {
-      color: #00a1d6;
+      color: var(--accent);
     }
 
     /* 國名太長時截斷成「…」，不要把節點下拉擠扁 */
     #countryText,
-    #uiLangText {
+    #uiLangText,
+    #uiThemeText {
       min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1135,28 +1140,21 @@
     }
 
     .countryPick select option {
-      background: #fff;
-      color: #1a1a1a;
+      background: var(--raised);
+      color: var(--text);
       font-weight: 400;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .countryPick select option {
-        background: #2b2b2b;
-        color: #eaeaea;
-      }
     }
 
     /* 目前選項有幾個節點：灰色小字 */
     .countryCount {
       margin-left: auto;
       font-size: 11px;
-      color: #888;
+      color: var(--muted);
       white-space: nowrap;
     }
 
     .countryCount.all {
-      color: #e00;
+      color: var(--danger-strong);
     }
 
     /* 測速前三名：右上角戴金／銀／銅皇冠，順時針轉 30 度 */
@@ -1221,17 +1219,10 @@
       box-sizing: border-box;
       padding: 14px;
       border-radius: 10px;
-      border-top: 4px solid #e00;
-      background: #fff;
-      color: #1a1a1a;
+      border-top: 4px solid var(--danger-strong);
+      background: var(--raised);
+      color: var(--text);
       box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .awCard {
-        background: #2b2b2b;
-        color: #eaeaea;
-      }
     }
 
     .awHead {
@@ -1241,24 +1232,14 @@
       margin: 0 0 8px;
       font-size: 15px;
       font-weight: 600;
-      color: #e00;
+      color: var(--danger);
     }
 
     .awHead svg {
       flex: 0 0 auto;
       width: 20px;
       height: 20px;
-      fill: #e00;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .awHead {
-        color: #ff6b6b;
-      }
-
-      .awHead svg {
-        fill: #ff6b6b;
-      }
+      fill: var(--danger);
     }
 
     .awCard p {
@@ -1267,13 +1248,7 @@
     }
 
     .awCard p b {
-      color: #e00;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .awCard p b {
-        color: #ff6b6b;
-      }
+      color: var(--danger);
     }
 
     .awBtns {
@@ -1291,8 +1266,8 @@
       cursor: pointer;
       border-radius: 6px;
       border: 0;
-      background: #00a1d6;
-      color: #fff;
+      background: var(--accent);
+      color: var(--accent-text);
     }
 
     button#awConfirm {
@@ -1302,7 +1277,7 @@
       background: none;
       font: inherit;
       font-size: 11px;
-      color: #e00;
+      color: var(--danger-strong);
       opacity: .8;
       text-decoration: underline;
       cursor: pointer;
@@ -1327,13 +1302,13 @@
 
     #allWarn.plain button#awConfirm {
       border: 0;
-      background: #00a1d6;
-      color: #fff;
+      background: var(--accent);
+      color: var(--accent-text);
     }
 
     #allWarn.plain button#awCancel {
-      border: 1px solid rgba(128, 128, 128, .4);
-      background: transparent;
+      border: 1px solid var(--border);
+      background: var(--control-bg);
       color: inherit;
     }
 
@@ -1361,16 +1336,9 @@
       box-sizing: border-box;
       padding: 14px;
       border-radius: 10px;
-      background: #fff;
-      color: #1a1a1a;
+      background: var(--raised);
+      color: var(--text);
       box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .wnCard {
-        background: #2b2b2b;
-        color: #eaeaea;
-      }
     }
 
     .wnHeader {
@@ -1389,14 +1357,14 @@
     button#wnX {
       border: 0;
       background: transparent;
-      color: #888;
+      color: var(--muted);
       font: 18px/1 inherit;
       cursor: pointer;
       padding: 0 2px;
     }
 
     #wnSubtitle {
-      color: #888;
+      color: var(--muted);
       font-size: 12px;
       margin: 0 0 6px;
     }
@@ -1418,12 +1386,12 @@
       padding: 0 6px;
       border-radius: 8px;
       font-size: 11px;
-      color: #fff;
-      background: #00a1d6;
+      color: var(--accent-text);
+      background: var(--accent);
     }
 
     .wnTag.fix {
-      background: #8a8a8a;
+      background: var(--tag-fix);
     }
 
     button#wnClose {
@@ -1434,9 +1402,66 @@
       cursor: pointer;
       border-radius: 6px;
       border: 0;
-      background: #00a1d6;
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    /* 明亮主題：進階設定各項、更新紀錄各版、測速清單做成白色圓角卡片（CDNSpeedTest 的灰底白卡） */
+    :root[data-theme="light"] .advItem,
+    :root[data-theme="light"] .clRelease {
+      margin: 0 0 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--raised);
+    }
+
+    :root[data-theme="light"] .advItem:last-child,
+    :root[data-theme="light"] .clRelease:last-child {
+      border-bottom: 1px solid var(--line);
+    }
+
+    :root[data-theme="light"] #stList {
+      padding: 4px 6px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--raised);
+    }
+
+    /* 明亮主題：原生 radio 跟主色一致，輸入框與「加入／清空」按鈕改成白卡圓角（黑暗主題維持原生外觀） */
+    :root[data-theme="light"] {
+      accent-color: var(--accent);
+    }
+
+    :root[data-theme="light"] .customAddRow input,
+    :root[data-theme="light"] .customAddRow button {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--control-bg);
+      color: var(--text);
+      outline-color: var(--accent);
+    }
+
+    :root[data-theme="light"] .customAddRow button:hover:not(:disabled) {
+      background: var(--hover-bg);
+    }
+
+    :root[data-theme="light"] .customAddRow button.customClearBtn {
+      border-color: var(--danger-strong);
+      background: var(--danger-strong);
       color: #fff;
     }
+
+    :root[data-theme="light"] .customAddRow button.customClearBtn:hover:not(:disabled) {
+      border-color: var(--danger-hover);
+      background: var(--danger-hover);
+    }
+
+    :root[data-theme="light"] .cdnSelectList {
+      border-color: var(--line);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+    }
+
   </style>
 </head>
 
@@ -1572,6 +1597,13 @@
       <div class="row">
         <span id="uiLangLabel"></span>
         <span class="countryPick"><span id="uiLangText"></span><span class="countryArrow" aria-hidden="true">▾</span><select id="uiLangSelect"></select></span>
+      </div>
+    </div>
+
+    <div class="advItem">
+      <div class="row">
+        <span id="uiThemeLabel"></span>
+        <span class="countryPick"><span id="uiThemeText"></span><span class="countryArrow" aria-hidden="true">▾</span><select id="uiThemeSelect"></select></span>
       </div>
     </div>
 
