@@ -31,7 +31,7 @@ Celebrating the big 2.0.0 update!!
 ・Per-node speed test — dedicated pages for videos and live streams compare each node's / route's speed in real time, with crowns for the top 3; stop anytime, adjust the test limits, and optionally sort nodes by the results
 ・Auto-switch to the fastest node — optional (off by default): speed-tests in the background for each video and switches to the fastest node automatically
 ・Live status display — shows the CDN route actually in use in the top-left corner of the player, handy for comparing results
-・Multi-language UI — automatically switches between Traditional Chinese / Simplified Chinese / English based on your system language
+・Multi-language UI — automatically switches between Traditional Chinese / Simplified Chinese / English / Japanese / Korean based on your system language
 ・One-click disable — turns off completely, restoring Safari's original behavior; videos and live streams can also be turned off separately
 
 ■ How to use

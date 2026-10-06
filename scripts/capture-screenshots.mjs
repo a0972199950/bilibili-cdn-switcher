@@ -1,16 +1,8 @@
-// 用 Puppeteer 載入 unpacked 擴充功能，依三語系各截五張圖（點播主頁 / 直播主頁 / 點播測速頁 /
+// 用 Puppeteer 載入 unpacked 擴充功能，依五語系各截五張圖（點播主頁 / 直播主頁 / 點播測速頁 /
 // 進階設定頁 / debug 疊層），等比縮放 + 黑邊填成 1280x800 png，輸出到 store/ 取代現有檔案。
 // 檔名 screenshot-<語系>-<序號>-<畫面>-<寬>x<高>.png：先語系、後序號，檔案總管按檔名排序時
 // 同一語系排在一起、且依 VIEWS 的順序排列。
-//
-// 同一輪順便輸出 README 用的圖到 docs/（依語系各一組，不加黑邊、不受 --size 影響）：
-//   readme-<語系>-main.png    popup 主頁
-//   readme-<語系>-before.png  關閉擴充（mode=off）時的 debug 疊層，spd 圈紅框
-//   readme-<語系>-after.png   啟用擴充時的 debug 疊層，spd 圈紅框
-//   before / after 用 README_VIDEO_URL 那支影片、播放器能選的最高畫質，各取樣一段時間：
-//   before 截取樣窗口內「最慢」的讀數、after 截「最快」的讀數（都是真實讀數，但是挑過的）。
-// --locale=en|zhcn|zhtw：只跑指定語系（可與 --readme-only 併用）。
-// --readme-only：只重拍 README 圖（不動 store/），迭代 README 圖時用，省時間。
+// --locale=en|zhcn|zhtw|ja|ko：只跑指定語系。
 //
 // 用法：npm run capture-screenshots
 //
@@ -36,13 +28,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const EXT_DIR = path.join(ROOT, "src");
 const OUT_DIR = path.join(ROOT, "store");
-const DOCS_DIR = path.join(ROOT, "docs");
 
 const VIDEO_URL = "https://www.bilibili.com/video/BV1p1n8zdEAk/";
-// README 的 before / after 專用影片：長片、碼率高，慢節點與快節點的差距才拉得開
-const README_VIDEO_URL = "https://www.bilibili.com/video/BV1euE3zDEuy/";
-const README_SAMPLE_MS = 45000; // before / after 各取樣多久
-const README_ONLY = process.argv.includes("--readme-only");
 
 // 登入 cookie 是選用的：.env.local 有 BILI_COOKIE 就帶登入狀態開影片頁，拿得到高畫質；
 // 沒有這個檔（或值是空的）就照舊用未登入狀態跑，畫質約 480P，流程其餘部分完全一樣。
@@ -101,13 +88,15 @@ const CANVAS_H = parseInt(sizeMatch[2], 10);
 // 而不是把 1280 那套放大（放大會糊）。SCALE=1 時行為與原本完全一致。
 const SCALE = CANVAS_W / 1280;
 
-// appleLang：macOS 上 Chrome 會忽略 --lang、改跟系統 UI 語言，導致三個語系全塌成系統語言。
+// appleLang：macOS 上 Chrome 會忽略 --lang、改跟系統 UI 語言，導致所有語系全塌成系統語言。
 // 用 NSUserDefaults 的「argument domain」以 -AppleLanguages "(xxx)" 覆蓋，才能真的切 Chrome UI 語言，
-// 讓擴充的 chrome.i18n.getUILanguage() 回傳對應語系。（Windows/Linux 靠 --lang 即可，這參數無害。）
+// 讓擴充的 chrome.i18n.getUILanguage() 回傳對應語系。（Windows 靠 --lang、Linux 靠 LANGUAGE 環境變數，這參數無害。）
 const LOCALES = [
   { chromeLang: "en-US", prefix: "en", appleLang: "(en-US)" },
   { chromeLang: "zh-CN", prefix: "zhcn", appleLang: "(zh-Hans-CN)" },
-  { chromeLang: "zh-TW", prefix: "zhtw", appleLang: "(zh-Hant-TW)" }
+  { chromeLang: "zh-TW", prefix: "zhtw", appleLang: "(zh-Hant-TW)" },
+  { chromeLang: "ja", prefix: "ja", appleLang: "(ja-JP)" },
+  { chromeLang: "ko", prefix: "ko", appleLang: "(ko-KR)" }
 ];
 
 const POPUP_VIEWPORT = { width: 360, height: 560, deviceScaleFactor: 2 * SCALE };
@@ -178,118 +167,6 @@ async function liveRoomCandidates() {
   });
   const json = await res.json();
   return ((json && json.data) || []).map((r) => r.roomid).filter(Boolean).slice(0, 8);
-}
-
-const README_DPR = 2; // README 圖固定 2x，文字才不糊；與 --size 無關
-
-// README 用的 debug 疊層截圖：只截疊層本身（四周留一點播放器畫面當背景），並把 spd=… 那段圈紅框，
-// 讓 before / after 的速度差一眼看得出來。疊層是單一文字節點（white-space:pre），
-// 用 Range 取 "spd=" 起到結尾的邊界框。
-async function overlayReadmeShot(tabA) {
-  const info = await tabA.evaluate(() => {
-    const el = document.getElementById("bcs-debug-overlay");
-    if (!el || !el.firstChild) return null;
-    const text = el.firstChild.textContent;
-    const idx = text.lastIndexOf("spd=");
-    if (idx < 0) return null;
-    const range = document.createRange();
-    range.setStart(el.firstChild, idx);
-    range.setEnd(el.firstChild, text.length);
-    const box = el.getBoundingClientRect();
-    const spd = range.getBoundingClientRect();
-    return {
-      box: { x: box.left + scrollX, y: box.top + scrollY, w: box.width, h: box.height },
-      spd: { x: spd.left + scrollX, y: spd.top + scrollY, w: spd.width, h: spd.height }
-    };
-  });
-  if (!info) throw new Error("讀不到 debug 疊層或 spd 欄位");
-  const pad = 12;
-  const clip = {
-    x: Math.max(0, info.box.x - pad), y: Math.max(0, info.box.y - pad),
-    width: info.box.w + pad * 2, height: info.box.h + pad * 2, scale: README_DPR
-  };
-  const raw = await tabA.screenshot({ type: "png", clip });
-  const m = 4; // 紅框比文字外擴的邊距
-  const rx = (info.spd.x - clip.x - m) * README_DPR;
-  const ry = (info.spd.y - clip.y - m) * README_DPR;
-  const rw = (info.spd.w + m * 2) * README_DPR;
-  const rh = (info.spd.h + m * 2) * README_DPR;
-  const meta = await sharp(raw).metadata();
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${meta.width}" height="${meta.height}">` +
-    `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="none" stroke="#e0452b" stroke-width="${3 * README_DPR / 2}"/></svg>`;
-  return sharp(raw).composite([{ input: Buffer.from(svg) }]).png({ compressionLevel: 9 }).toBuffer();
-}
-
-async function saveReadmePng(buf, prefix, name) {
-  await fs.mkdir(DOCS_DIR, { recursive: true });
-  await fs.writeFile(path.join(DOCS_DIR, `readme-${prefix}-${name}.png`), buf);
-  log("saved docs readme", name);
-}
-
-// 切到播放器目前可選的最高畫質（讀 player 的支援清單，排除 0=自動），回傳實際畫質 qn。
-// 擴充關閉時疊層不顯示 qn，所以這裡改看播放器自己回報的 realQ。
-async function ensureBestQuality(tabA) {
-  const best = await tabA.evaluate(() => {
-    try {
-      const list = (window.player.getSupportedQualityList() || []).filter((q) => q > 0);
-      return list.length ? Math.max(...list) : null;
-    } catch (e) { return null; }
-  });
-  if (!best) throw new Error("讀不到播放器的畫質清單");
-  // 已經是這個畫質時 requestQuality 會直接丟 "Same as current quality"，所以只在不同時才切
-  await tabA.evaluate((qn) => {
-    try { if (window.player.getQuality().realQ !== qn) window.player.requestQuality(qn); } catch (e) { /* 交給下面的等待判斷 */ }
-  }, best);
-  await tabA.waitForFunction(
-    (qn) => { try { return window.player.getQuality().realQ === qn; } catch (e) { return false; } },
-    { timeout: 30000, polling: 500 }, best
-  ).catch(() => log(`  （30 秒內畫質沒切到 ${best}，維持目前畫質）`));
-  return best;
-}
-
-// 取樣一段時間，pick 為 "min" 取最慢、"max" 取最快：每次出現更極端的 spd 讀數就立刻截圖留著，
-// 取樣結束回傳最後留下的那張。只看正值讀數（停頓時的 0 / "-" 不算）。
-async function sampleExtremeShot(tabA, pick, durationMs) {
-  const start = Date.now();
-  let bestBps = null;
-  let bestShot = null;
-  while (Date.now() - start < durationMs) {
-    const bps = parseSpdBps(await readOverlayText(tabA));
-    if (bps && (bestBps === null || (pick === "min" ? bps < bestBps : bps > bestBps))) {
-      try {
-        bestShot = await overlayReadmeShot(tabA);
-        bestBps = bps;
-      } catch { /* 疊層剛好在重繪，下一輪再試 */ }
-    }
-    await sleep(1000);
-  }
-  if (!bestShot) throw new Error("取樣期間沒讀到任何 spd");
-  log(`  ${pick === "min" ? "最慢" : "最快"}讀數 ${(bestBps / 1048576).toFixed(2)} MB/s`);
-  return bestShot;
-}
-
-// README 的 before / after：同一支影片、同一個最高畫質，開 / 關擴充各取樣一次。
-// 先 after（擴充預設是開的），再把擴充關掉拍 before，順序不要反。
-async function captureReadmeCompare({ tabA, tabB, prefix }) {
-  for (const { mode, name, pick } of [
-    { mode: "on", name: "after", pick: "max" },
-    { mode: "off", name: "before", pick: "min" }
-  ]) {
-    log(`  README ${name}（擴充${mode === "on" ? "開" : "關"}）…`);
-    if (mode === "off") await tabB.$eval("#enabled", (el) => { if (el.checked) el.click(); });
-    // 第二輪是同一個網址，直接 goto 會被當成同頁導覽而 ERR_ABORTED，先離開再進
-    await tabA.goto("about:blank").catch(() => {}); // 上一頁還在載入時偶爾 ERR_ABORTED，無所謂
-    await tabA.goto(README_VIDEO_URL, { waitUntil: "networkidle2", timeout: 60000 });
-    await waitForPlayer(tabA);
-    await tabA.bringToFront();
-    await sleep(3000);
-    const qn = await ensureBestQuality(tabA);
-    log(`  畫質 qn=${qn}`);
-    await sleep(12000); // 10 秒速度視窗要先被實際下載填滿，讀數才不會偏低
-    const text = await readOverlayText(tabA);
-    if (!new RegExp(`mode=${mode}`).test(text)) throw new Error(`疊層不是 mode=${mode}：${text}`);
-    await saveReadmePng(await sampleExtremeShot(tabA, pick, README_SAMPLE_MS), prefix, name);
-  }
 }
 
 // 輸出 png 而非 jpg：截圖以文字和 UI 線條為主，jpeg 的區塊壓縮會讓小字邊緣糊掉，
@@ -399,6 +276,8 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
   const browser = await puppeteer.launch({
     headless: true,
     userDataDir,
+    // Linux 版 Chromium 的介面語言看 LANGUAGE 環境變數（--lang 只對 Windows 有效、Mac 靠下面的 AppleLanguages）
+    env: { ...process.env, LANGUAGE: chromeLang.replace("-", "_") },
     args: [
       `--disable-extensions-except=${EXT_DIR}`,
       `--load-extension=${EXT_DIR}`,
@@ -406,7 +285,9 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
       // macOS：用 argument-domain 覆蓋 UI 語言（--lang 在 Mac 上無效）
       "-AppleLanguages", appleLang,
       "--window-size=1400,1000",
-      "--no-first-run"
+      "--no-first-run",
+      // 以 root 執行（CI、雲端容器）時 Chromium 不給開 sandbox，一般使用者帳號執行不會加這條
+      ...(process.getuid && process.getuid() === 0 ? ["--no-sandbox"] : [])
     ]
   });
 
@@ -439,11 +320,6 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // 這設定存在 storage，同一輪後面的畫面都吃得到；每個語系是全新 userDataDir，要各自打開一次
     await tabB.$eval("#sortBySpeed", (el) => { if (!el.checked) el.click(); });
 
-    if (README_ONLY) {
-      await captureReadmeCompare({ tabA, tabB, prefix });
-      return;
-    }
-
     await tabA.bringToFront();
     await sleep(1500); // 等 popup.js 的 setInterval(1000ms) 至少 poll 一次，#debug 才有字可讀
     const baseBps = await waitForStableSpeed(tabB, downloadStartedAt);
@@ -460,13 +336,7 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
       log("saved", VIEWS[key]);
     };
 
-    const mainShot = await popupShot(tabB, { fit: true });
-    await save(mainShot, "videoMain");
-    // popup 視窗本身就是 2x * SCALE；README 版固定 2x，SCALE>1 時縮回去
-    await saveReadmePng(
-      SCALE === 1 ? mainShot : await sharp(mainShot).resize({ width: Math.round(POPUP_VIEWPORT.width * README_DPR) }).png().toBuffer(),
-      prefix, "main"
-    );
+    await save(await popupShot(tabB, { fit: true }), "videoMain");
 
     await save(await playerHandle.screenshot({ type: "png" }), "debug");
 
@@ -494,8 +364,6 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // 直播主頁：同一個分頁導去直播間，等 popup 輪詢到「確定得到 CDN 網址」才截圖
     await captureLiveMain({ tabA, tabB, save });
 
-    // README 的 before / after 放最後：要換影片、把擴充關掉，不能影響前面的商店截圖
-    await captureReadmeCompare({ tabA, tabB, prefix });
   } finally {
     await browser.close();
     await fs.rm(userDataDir, { recursive: true, force: true });

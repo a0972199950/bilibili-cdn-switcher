@@ -57,7 +57,6 @@
     mhToastAllFailed: "目前 CDN 與備援節點皆無法順利播放",
     mhToastReloadBackup: "重載並切換至備用URL",
     mhToastClose: "關閉",
-    mhDebugTitle: "CDN 線路",
     mhCdnTargetOriginal: "原始（不覆寫）",
     mhCdnTargetBackup: "備用URL（優先）",
     mhToastLiveFallback: "目前直播線路不佳，已自動切換至國際線路(ov)",
@@ -1512,7 +1511,6 @@
   }
   function buildLiveDebugText() {
     var lines = [
-      MSGS.mhDebugTitle,
       "mode=" + (liveActive() ? "on" : "off") + "  target=" + liveRouteOf(cfg)
     ];
     if (live.autoRoute) lines.push("auto-fallback -> " + live.autoRoute);
@@ -1525,7 +1523,6 @@
   function buildDebugText() {
     if (IS_LIVE_PAGE) return buildLiveDebugText();
     var lines = [
-      MSGS.mhDebugTitle,
       "mode=" + (cfg.enabled ? "on" : "off") + "  target=" + cdnTargetLabel()
     ];
     if (autoHost) lines.push("auto-fallback -> " + autoHost); // 静默覆写：独立一行、纯英文，避免跟上面的使用者设定混在一起

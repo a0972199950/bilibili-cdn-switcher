@@ -48,7 +48,7 @@
   var MSGS_KEY = "__CDN_SWITCHER_MSGS__";
   var MSG_KEYS = [
     "mhToastAutoSwitched", "mhToastAllFailed", "mhToastReloadBackup", "mhToastClose",
-    "mhDebugTitle", "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback", "mhToastSwitched",
+    "mhCdnTargetOriginal", "mhCdnTargetBackup", "mhToastLiveFallback", "mhToastSwitched",
     "liveRouteOv", "liveRouteOvB", "liveRouteCn", "liveRouteCnB"
   ];
   // 使用者在 popup 進階設定選了語言時，popup 會把該語系的整份文案存在 storage 的 uiMsgs，優先用它

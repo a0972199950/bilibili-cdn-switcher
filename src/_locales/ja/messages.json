@@ -1,0 +1,446 @@
+{
+  "extName": {
+    "message": "海外動画加速 for bilibili"
+  },
+  "extDescription": {
+    "message": "海外からでも Web 版 bilibili で 4K などの高画質動画をスムーズに再生し、バッファリングやカクつきを減らします。非公式のサードパーティ製拡張機能で、bilibili 公式とは関係ありません。"
+  },
+  "extActionTitle": {
+    "message": "海外動画加速"
+  },
+  "popupHeaderTitle": {
+    "message": "海外動画加速 for bilibili"
+  },
+  "popupTitle": {
+    "message": "CDN 回線"
+  },
+  "enabledLabel": {
+    "message": "有効"
+  },
+  "autoFallbackLabel": {
+    "message": "失敗時に自動切り替え"
+  },
+  "autoFallbackHint": {
+    "message": "動画や配信が止まったり回線につながらなかったりしたとき、使える別の回線へ自動で切り替え、読み込み中のまま止まるのを防ぎます。お使いのネットワーク自体が不安定な場合（Wi-Fi の電波が弱いなど）は、切り替えを繰り返して画面が暗転・再読み込みすることがあるため、オフをおすすめします。"
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN ノード"
+  },
+  "modeListLabel": {
+    "message": "リスト"
+  },
+  "modeCustomLabel": {
+    "message": "カスタム"
+  },
+  "customHostPlaceholder": {
+    "message": "ノードの URL またはホスト"
+  },
+  "customHintInvalid": {
+    "message": "有効なホストを入力してください（ドメインを含む。例：xxx.bilivideo.com）。"
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 各ノードの速度をテスト"
+  },
+  "rateBtnLabel": {
+    "message": "⭐ 気に入ったら星 5 つで応援"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 不具合の報告・機能のリクエスト"
+  },
+  "showDebugLabel": {
+    "message": "ページにデバッグ表示を出す"
+  },
+  "debugSectionLabel": {
+    "message": "デバッグ（現在のタブ）"
+  },
+  "debugInitial": {
+    "message": "まだデータがありません。bilibili の動画ページで開いてください。"
+  },
+  "debugNoDataAfterOpen": {
+    "message": "まだデータがありません。bilibili の動画ページで再生を始めてから、このウィンドウを開いてください。"
+  },
+  "stBackBtn": {
+    "message": "← 戻る"
+  },
+  "stHeaderTitle": {
+    "message": "ノード速度テスト"
+  },
+  "stRetestBtn": {
+    "message": "🔄 再テスト"
+  },
+  "stHintLeave": {
+    "message": "「現在の動画・現在の画質」のセグメントで各ノードを実測します。このページを離れるとテストはすぐに止まります。"
+  },
+  "stHintBandwidth": {
+    "message": "ここで測るのは各ノードの<b>理論上の最大帯域</b>で、再生中に実際に使われる速度とは異なります。動画はそこまでの帯域を必要としないことも多いため、デバッグ表示より高い数値になるのは正常です。"
+  },
+  "speedtestNoSampleHint": {
+    "message": "先に bilibili の動画ページで再生を始め、セグメントのサンプルを取得してからテストしてください。"
+  },
+  "speedtestCannotStart": {
+    "message": "テストを開始できません。現在のタブが bilibili の動画ページか確認してください。"
+  },
+  "speedtestStatusTesting": {
+    "message": "テスト中…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "キャンセル済み"
+  },
+  "speedtestStatusWaiting": {
+    "message": "待機中"
+  },
+  "speedtestFailedTemplate": {
+    "message": "失敗（{err}）"
+  },
+  "errNoData": {
+    "message": "応答なし"
+  },
+  "errNoStream": {
+    "message": "ストリームを読み込めません"
+  },
+  "errTimeout": {
+    "message": "時間切れ"
+  },
+  "errNetworkError": {
+    "message": "ネットワークエラー"
+  },
+  "errReadError": {
+    "message": "読み込み中断"
+  },
+  "errNoSample": {
+    "message": "セグメントのサンプルがありません"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "bilibili 提供のバックアップノードを使用"
+  },
+  "cdnNameBackupUrl": {
+    "message": "バックアップ URL"
+  },
+  "mhToastAutoSwitched": {
+    "message": "現在の CDN が遅いため、バックアップノード {host} に自動で切り替えました"
+  },
+  "mhToastAllFailed": {
+    "message": "現在の CDN もバックアップノードもスムーズに再生できません"
+  },
+  "mhToastReloadBackup": {
+    "message": "再読み込みしてバックアップ URL に切り替え"
+  },
+  "mhToastClose": {
+    "message": "閉じる"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "オリジナル（上書きなし）"
+  },
+  "mhCdnTargetBackup": {
+    "message": "バックアップ URL（優先）"
+  },
+  "whatsNewTitle": {
+    "message": "🎉 v{version} に更新しました"
+  },
+  "whatsNewSubtitle": {
+    "message": "今回の更新内容："
+  },
+  "whatsNewClose": {
+    "message": "OK"
+  },
+  "whatsNewTypeFeature": {
+    "message": "新機能"
+  },
+  "whatsNewTypeFix": {
+    "message": "修正"
+  },
+  "tabVideo": {
+    "message": "動画"
+  },
+  "tabLive": {
+    "message": "ライブ"
+  },
+  "modeOffLabel": {
+    "message": "オフ"
+  },
+  "modeOffHintVideo": {
+    "message": "通常動画の CDN 選択には介入せず、公式の元の動作を維持します。"
+  },
+  "modeOffHintLive": {
+    "message": "ライブ配信の CDN 選択には介入せず、公式の元の動作を維持します。"
+  },
+  "advancedBtnTitle": {
+    "message": "詳細設定"
+  },
+  "advancedBtnLabel": {
+    "message": "設定"
+  },
+  "uiLangLabel": {
+    "message": "言語 / Language"
+  },
+  "uiLangAuto": {
+    "message": "ブラウザに合わせる"
+  },
+  "advancedTitle": {
+    "message": "詳細設定"
+  },
+  "liveRouteOv": {
+    "message": "国際回線(ov)"
+  },
+  "liveRouteOvB": {
+    "message": "国際予備回線(ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "中国回線(cn)"
+  },
+  "liveRouteCnB": {
+    "message": "中国予備回線(cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "この配信にはこの回線がありません"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 ライブ回線の速度をテスト"
+  },
+  "stLiveHeaderTitle": {
+    "message": "ライブ回線速度テスト"
+  },
+  "stLiveHintLeave": {
+    "message": "「現在のライブ配信」のストリームで各回線を実測します。このページを離れるとテストはすぐに止まります。"
+  },
+  "stLiveHintBandwidth": {
+    "message": "テストは視聴中のライブ配信と<b>帯域を奪い合う</b>ため、その間は映像が一時的に止まることがありますが正常です。1 回線あたり約 {sec} 秒かかります。"
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "先に bilibili のライブ配信ページで再生を始め、ストリーム URL を取得してからテストしてください。"
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "テストを開始できません。現在のタブが bilibili のライブ配信ページか確認してください。"
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "どの回線にも接続できません。ライブ配信ページを再読み込みしてから、もう一度テストしてください。"
+  },
+  "stLiveStartupLabel": {
+    "message": "切り替え遅延"
+  },
+  "stLiveSustainLabel": {
+    "message": "継続視聴"
+  },
+  "levelLow": {
+    "message": "低"
+  },
+  "levelMid": {
+    "message": "中"
+  },
+  "levelHigh": {
+    "message": "高"
+  },
+  "sustainGood": {
+    "message": "優秀"
+  },
+  "sustainFair": {
+    "message": "普通"
+  },
+  "sustainPoor": {
+    "message": "不良"
+  },
+  "mhToastLiveFallback": {
+    "message": "現在のライブ回線が不調のため、国際回線(ov)に自動で切り替えました"
+  },
+  "speedtestStatusIdle": {
+    "message": "未テスト"
+  },
+  "liveRouteRowLabel": {
+    "message": "ライブ回線"
+  },
+  "stLiveLagTemplate": {
+    "message": "{ms}ms 遅れ"
+  },
+  "liveRouteExplain": {
+    "message": "ライブ配信は動画のように自由にノードを選べません。配信ページに入るたびに bilibili が専用のノード一式を割り当て、別の組に替えると再生できなくなります。そのため、ここで選ぶのは「どの種類の回線を優先するか」で、拡張機能は bilibili から割り当てられたノードの中から、その回線に切り替えます。"
+  },
+  "liveModePrefLabel": {
+    "message": "優先する回線"
+  },
+  "showDebugHint": {
+    "message": "プレーヤーの左上に、実際に使われている回線などの技術情報を表示し、下にも同じ内容を一覧表示します。不具合の報告や速度の比較をするときだけオンにすれば十分です。"
+  },
+  "staleTabText": {
+    "message": "拡張機能が更新または再読み込みされました。ページを再読み込みすると反映されます。"
+  },
+  "staleTabReloadBtn": {
+    "message": "再読み込み"
+  },
+  "sortBySpeedLabel": {
+    "message": "テスト結果でノードを並べ替え"
+  },
+  "sortBySpeedHint": {
+    "message": "オンにすると、速度テストで各ノードの計測が終わるたびに速い順へ自動で並べ替えます。並び順は記憶され、次に再テストするまでノードリストもこの順で表示されます。動画とライブの両方に適用され、オフにすると既定の順に戻ります。"
+  },
+  "stVideoLimitTitle": {
+    "message": "動画テストの上限"
+  },
+  "stVideoLimitHint": {
+    "message": "各ノードは、このサイズをダウンロードするか、この秒数が経過した時点（早い方）で次のノードに移ります。数値を大きくすると結果は正確になりますが、テスト全体に時間がかかります。"
+  },
+  "stVideoMbLabel": {
+    "message": "ノードごとの最大ダウンロード量"
+  },
+  "stVideoSecLabel": {
+    "message": "ノードごとの最大時間"
+  },
+  "stLiveLimitTitle": {
+    "message": "ライブテストの上限"
+  },
+  "stLiveLimitHint": {
+    "message": "「切り替え遅延」は複数回計測して平均を取り、「継続視聴」は各回線で実際に数秒間ストリームを受信して配信に追いつけるかを確認します。回数や秒数を増やすと結果は正確になりますが、テスト全体に時間がかかります。"
+  },
+  "stLiveRunsLabel": {
+    "message": "切り替え遅延の計測回数"
+  },
+  "stLiveSecLabel": {
+    "message": "継続視聴の回線ごとの時間"
+  },
+  "unitSec": {
+    "message": "秒"
+  },
+  "unitTimes": {
+    "message": "回"
+  },
+  "resetDefault": {
+    "message": "既定に戻す"
+  },
+  "staleTabTitle": {
+    "message": "このタブは再読み込みが必要です"
+  },
+  "stStopBtn": {
+    "message": "⏹ 停止"
+  },
+  "changelogTitle": {
+    "message": "更新履歴"
+  },
+  "changelogCurrent": {
+    "message": "現在のバージョン"
+  },
+  "countryLabel": {
+    "message": "ノードリストの国・地域"
+  },
+  "countryYouAreHere": {
+    "message": "{name}（現在地）"
+  },
+  "countryAll": {
+    "message": "すべて"
+  },
+  "countryNodeCount": {
+    "message": "{n} ノード"
+  },
+  "durationHMS": {
+    "message": "{h} 時間 {m} 分 {s} 秒"
+  },
+  "allWarnTitle": {
+    "message": "全ノードのテストには時間がかかります"
+  },
+  "allWarnText": {
+    "message": "全 <b>{n}</b> ノードの速度をテストしようとしています。現在の設定では約 <b>{time}</b> かかる見込みです。"
+  },
+  "allWarnAdvice": {
+    "message": "各国のノードリストは、あらかじめ最速クラスのノードに絞り込まれています。国、またはお住まいに最も近い国を選んでからテストすることをおすすめします。"
+  },
+  "allWarnQuestion": {
+    "message": "それでも全ノードをテストしますか？"
+  },
+  "allWarnCancel": {
+    "message": "キャンセルして国を選ぶ"
+  },
+  "allWarnConfirm": {
+    "message": "全ノードをテストする"
+  },
+  "crownRank": {
+    "message": "{n} 位"
+  },
+  "stDescExpand": {
+    "message": "説明を表示"
+  },
+  "stDescCollapse": {
+    "message": "説明を閉じる"
+  },
+  "autoSpeedSwitchLabel": {
+    "message": "動画を自動テストして最速ノードに切り替え"
+  },
+  "autoSpeedSwitchHint": {
+    "message": "動画の再生が始まるたびに、現在の国のノードをバックグラウンドでテストし、最速のノードに自動で切り替えて記憶します。"
+  },
+  "autoSpeedSwitchAllNote": {
+    "message": "ノードリストが「すべて」のときは使えません。先にメイン画面で国を選んでください。"
+  },
+  "mhToastSwitched": {
+    "message": "{host} に切り替えました"
+  },
+  "autoSpeedWarnTitle": {
+    "message": "自動テストをオンにしますか？"
+  },
+  "autoSpeedWarnText": {
+    "message": "テストのたびに順位が変わるため、<b>大きな副作用</b>があります：ほぼ毎回、動画を見るたびに CDN の切り替えで<b>画面が一度暗転</b>します。"
+  },
+  "autoSpeedWarnAdvice": {
+    "message": "選んだノードでたいていスムーズに再生できるなら、目に見える改善はないためオフのままをおすすめします。止まるのが心配だけれど手動で切り替えたくない場合は、「失敗時に自動切り替え」を使ってください。"
+  },
+  "autoSpeedWarnCancel": {
+    "message": "キャンセル（オフのまま）"
+  },
+  "autoSpeedWarnConfirm": {
+    "message": "それでもオンにする"
+  },
+  "customHintDup": {
+    "message": "このノードはすでにリストにあります。"
+  },
+  "customAddBtn": {
+    "message": "追加"
+  },
+  "customDesc1": {
+    "message": "国のリストにない場合や、リストのノードがどれも遅い場合に使います。"
+  },
+  "customListEmpty": {
+    "message": "リストは空です"
+  },
+  "customClearBtn": {
+    "message": "クリア"
+  },
+  "customDelTitle": {
+    "message": "リストから削除"
+  },
+  "customClearTitle": {
+    "message": "カスタムノードリストをクリアしますか？"
+  },
+  "customClearText": {
+    "message": "リスト内の <b>{n} ノード</b>がすべて削除され、現在の国の最初のノードが使われます。"
+  },
+  "customClearCancel": {
+    "message": "キャンセル"
+  },
+  "customClearConfirm": {
+    "message": "確認"
+  },
+  "resetAllBtn": {
+    "message": "初期設定に戻す"
+  },
+  "resetAllTitle": {
+    "message": "初期設定に戻しますか？"
+  },
+  "resetAllText": {
+    "message": "詳細設定、動画とライブのノード設定はすべて既定に戻り、カスタムノードリストは<b>クリア</b>されます。"
+  },
+  "importToastOk": {
+    "message": "速度テストツールがおすすめする {n} ノードを「カスタムノードリスト」に追加しました。拡張機能のメニューを開き、「カスタム」を選ぶと使えます。"
+  },
+  "importToastNone": {
+    "message": "速度テストツールがおすすめするノードは、すでに「カスタムノードリスト」にあります。"
+  },
+  "importToastFail": {
+    "message": "おすすめノードを「カスタムノードリスト」に追加できませんでした。しばらくしてからもう一度お試しください。"
+  },
+  "autoDetectText": {
+    "message": "どのノードが速いかわからない？公式の速度テストツールが 300 以上のノードをテストし、最速の 10 個をこのリストに自動で追加します。"
+  },
+  "autoDetectBtn": {
+    "message": "⚡ 自動検出して追加"
+  },
+  "countryMissingHint": {
+    "message": "お住まいの国がない場合は、最も近い国を試すか、{link}でノードを追加してください。"
+  }
+}

@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "介面新增日文與韓文",
+        "zh_CN": "界面新增日文与韩文",
+        "en": "The interface is now available in Japanese and Korean",
+        "ja": "日本語と韓国語の表示に対応",
+        "ko": "일본어와 한국어 인터페이스 지원"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.0.1",
@@ -10,7 +21,9 @@
           "text": {
             "zh_TW": "微調 UI",
             "zh_CN": "微调 UI",
-            "en": "Minor UI tweaks"
+            "en": "Minor UI tweaks",
+            "ja": "UI を微調整",
+            "ko": "UI 미세 조정"
           }
         }
       ]
@@ -24,7 +37,9 @@
           "text": {
             "zh_TW": "「自行輸入」升級為「自訂節點列表」，可加入多個節點，同步支援測速與排序",
             "zh_CN": "「自行输入」升级为「自定义节点列表」，可加入多个节点，同步支持测速与排序",
-            "en": "\"Custom input\" is now a \"Custom node list\": add multiple nodes, with speed test and sorting"
+            "en": "\"Custom input\" is now a \"Custom node list\": add multiple nodes, with speed test and sorting",
+            "ja": "「手動入力」が「カスタムノードリスト」に進化。複数のノードを追加でき、速度テストと並べ替えにも対応",
+            "ko": "'직접 입력'이 '사용자 지정 노드 목록'으로 바뀌었습니다. 여러 노드를 추가할 수 있고 속도 테스트와 정렬도 지원합니다"
           }
         },
         {
@@ -32,7 +47,9 @@
           "text": {
             "zh_TW": "官方測速工具 CDNSpeedTest 上線。配合自訂節點列表，找出你專屬的最順節點",
             "zh_CN": "官方测速工具 CDNSpeedTest 上线。配合自定义节点列表，找出你专属的最顺节点",
-            "en": "The official speed test tool CDNSpeedTest is here. Pair it with the Custom node list to find the smoothest nodes for you"
+            "en": "The official speed test tool CDNSpeedTest is here. Pair it with the Custom node list to find the smoothest nodes for you",
+            "ja": "公式の速度テストツール CDNSpeedTest を公開。カスタムノードリストと組み合わせて、あなたに最適なノードを見つけられます",
+            "ko": "공식 속도 테스트 도구 CDNSpeedTest가 출시되었습니다. 사용자 지정 노드 목록과 함께 사용해 나에게 가장 빠른 노드를 찾아보세요"
           }
         },
         {
@@ -40,7 +57,9 @@
           "text": {
             "zh_TW": "國家清單把目前選的國家排在最前面",
             "zh_CN": "国家清单把当前选择的国家排在最前面",
-            "en": "The selected country is now listed first"
+            "en": "The selected country is now listed first",
+            "ja": "選択中の国をリストの先頭に表示",
+            "ko": "선택한 국가를 목록 맨 위에 표시"
           }
         },
         {
@@ -48,7 +67,9 @@
           "text": {
             "zh_TW": "新增版本號與更新紀錄查詢",
             "zh_CN": "新增版本号与更新记录查询",
-            "en": "Added the version number and release history"
+            "en": "Added the version number and release history",
+            "ja": "バージョン番号と更新履歴の確認を追加",
+            "ko": "버전 번호와 업데이트 기록 보기 추가"
           }
         },
         {
@@ -56,7 +77,9 @@
           "text": {
             "zh_TW": "新增直播支援!!",
             "zh_CN": "新增直播支持!!",
-            "en": "Live streams are now supported!!"
+            "en": "Live streams are now supported!!",
+            "ja": "ライブ配信に対応しました!!",
+            "ko": "라이브 방송을 지원합니다!!"
           }
         },
         {
@@ -64,7 +87,9 @@
           "text": {
             "zh_TW": "設定選單改版，新增進階設定頁",
             "zh_CN": "设定选单改版，新增高级设置页",
-            "en": "Redesigned the popup and added an Advanced settings page"
+            "en": "Redesigned the popup and added an Advanced settings page",
+            "ja": "設定メニューを刷新し、詳細設定ページを追加",
+            "ko": "설정 메뉴를 개편하고 고급 설정 페이지 추가"
           }
         },
         {
@@ -72,7 +97,9 @@
           "text": {
             "zh_TW": "影片新增「關閉」選項",
             "zh_CN": "视频新增「关闭」选项",
-            "en": "Added an \"Off\" option for videos"
+            "en": "Added an \"Off\" option for videos",
+            "ja": "動画に「オフ」の選択肢を追加",
+            "ko": "영상에 '끄기' 옵션 추가"
           }
         },
         {
@@ -80,7 +107,9 @@
           "text": {
             "zh_TW": "測速頁新增「停止」按鈕",
             "zh_CN": "测速页新增「停止」按钮",
-            "en": "Added a \"Stop\" button to the speed test"
+            "en": "Added a \"Stop\" button to the speed test",
+            "ja": "速度テスト画面に「停止」ボタンを追加",
+            "ko": "속도 테스트 화면에 '중지' 버튼 추가"
           }
         },
         {
@@ -88,7 +117,9 @@
           "text": {
             "zh_TW": "新增「節點按測速排序」功能",
             "zh_CN": "新增「节点按测速排序」功能",
-            "en": "Added \"Sort nodes by speed test\""
+            "en": "Added \"Sort nodes by speed test\"",
+            "ja": "「テスト結果でノードを並べ替え」機能を追加",
+            "ko": "'속도 테스트 순으로 노드 정렬' 기능 추가"
           }
         },
         {
@@ -96,7 +127,9 @@
           "text": {
             "zh_TW": "新增可調整的測速門檻",
             "zh_CN": "新增可调整的测速门槛",
-            "en": "Added adjustable speed-test limits"
+            "en": "Added adjustable speed-test limits",
+            "ja": "速度テストの上限を調整できるように",
+            "ko": "속도 테스트 한도 조정 기능 추가"
           }
         },
         {
@@ -104,7 +137,9 @@
           "text": {
             "zh_TW": "CDN 節點數量大幅更新，並人工測試依照國家篩選最優節點",
             "zh_CN": "CDN 节点数量大幅更新，并人工测试按国家筛选最优节点",
-            "en": "Greatly expanded the CDN node list, with the best nodes hand-tested and filtered by country"
+            "en": "Greatly expanded the CDN node list, with the best nodes hand-tested and filtered by country",
+            "ja": "CDN ノードを大幅に更新し、国ごとに最適なノードを手動テストで選別",
+            "ko": "CDN 노드를 대폭 업데이트하고, 국가별 최적 노드를 직접 테스트해 선별"
           }
         },
         {
@@ -112,7 +147,9 @@
           "text": {
             "zh_TW": "測速前三名顯示皇冠",
             "zh_CN": "测速前三名显示皇冠",
-            "en": "Crowns for the top 3 in speed tests"
+            "en": "Crowns for the top 3 in speed tests",
+            "ja": "速度テストの上位 3 位に王冠を表示",
+            "ko": "속도 테스트 상위 3위에 왕관 표시"
           }
         },
         {
@@ -120,7 +157,9 @@
           "text": {
             "zh_TW": "新增影片自動測速並切換最快節點（預設關閉）",
             "zh_CN": "新增视频自动测速并切换最快节点（默认关闭）",
-            "en": "New option to auto speed-test and switch to the fastest node (off by default)"
+            "en": "New option to auto speed-test and switch to the fastest node (off by default)",
+            "ja": "動画を自動テストして最速ノードに切り替える機能を追加（既定はオフ）",
+            "ko": "영상 자동 속도 테스트 후 가장 빠른 노드로 전환하는 기능 추가(기본값 끔)"
           }
         },
         {
@@ -128,7 +167,9 @@
           "text": {
             "zh_TW": "「問題回報」會自動帶入版本、設定與 debug 資訊；回報表單支援繁中／簡中／英文，填寫 Email 會收到確認信與追蹤連結",
             "zh_CN": "「问题反馈」会自动带入版本、设置与 debug 信息；反馈表单支持繁中／简中／英文，填写 Email 会收到确认信与追踪链接",
-            "en": "\"Report a bug\" now pre-fills the version, settings and debug info; the feedback form supports Traditional Chinese / Simplified Chinese / English, and leaving an email gets you a confirmation with a tracking link"
+            "en": "\"Report a bug\" now pre-fills the version, settings and debug info; the feedback form supports Traditional Chinese / Simplified Chinese / English, and leaving an email gets you a confirmation with a tracking link",
+            "ja": "「不具合の報告」でバージョン・設定・デバッグ情報を自動入力。報告フォームは繁体字中国語／簡体字中国語／英語に対応し、メールアドレスを記入すると確認メールと追跡リンクが届きます",
+            "ko": "'문제 신고' 시 버전, 설정, 디버그 정보가 자동으로 입력됩니다. 신고 양식은 중국어 번체/간체/영어를 지원하며, 이메일을 입력하면 확인 메일과 추적 링크를 받을 수 있습니다"
           }
         },
         {
@@ -136,7 +177,9 @@
           "text": {
             "zh_TW": "切換節點或線路時顯示提示",
             "zh_CN": "切换节点或线路时显示提示",
-            "en": "Show a notice when switching node or route"
+            "en": "Show a notice when switching node or route",
+            "ja": "ノードや回線を切り替えたときに通知を表示",
+            "ko": "노드나 회선을 전환할 때 알림 표시"
           }
         }
       ]
@@ -150,7 +193,9 @@
           "text": {
             "zh_TW": "擴充更新後，第一次開啟設定選單會顯示一次性的「更新內容」提示，列出新增的功能與修正",
             "zh_CN": "扩充更新后，第一次打开设定选单会显示一次性的「更新内容」提示，列出新增的功能与修正",
-            "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes"
+            "en": "After an update, the settings popup now shows a one-time \"What's new\" notice listing the new features and fixes",
+            "ja": "拡張機能の更新後、設定メニューを初めて開いたときに、新機能と修正をまとめた「更新内容」を一度だけ表示",
+            "ko": "확장 프로그램 업데이트 후 설정 메뉴를 처음 열면 새 기능과 수정 사항을 정리한 '업데이트 내용'을 한 번 보여 줍니다"
           }
         }
       ]
@@ -164,7 +209,9 @@
           "text": {
             "zh_TW": "修正 macOS 新版毛玻璃效果讓設定選單的文字與線條難以辨識的問題",
             "zh_CN": "修正 macOS 新版毛玻璃效果让设定选单的文字与线条难以辨识的问题",
-            "en": "Fixed the popup text and lines being hard to read under macOS's new translucent glass effect"
+            "en": "Fixed the popup text and lines being hard to read under macOS's new translucent glass effect",
+            "ja": "macOS の新しいすりガラス効果で、設定メニューの文字や線が見づらくなる問題を修正",
+            "ko": "macOS의 새 반투명 유리 효과 때문에 설정 메뉴의 글자와 선이 잘 보이지 않던 문제 수정"
           }
         },
         {
@@ -172,7 +219,9 @@
           "text": {
             "zh_TW": "修正切換解析度後，測速頁標題與 debug 疊層的畫質標示不會更新的問題",
             "zh_CN": "修正切换分辨率后，测速页标题与 debug 叠层的画质标示不会更新的问题",
-            "en": "Fixed the quality label in the speed-test title and debug overlay not updating after switching resolution"
+            "en": "Fixed the quality label in the speed-test title and debug overlay not updating after switching resolution",
+            "ja": "解像度を切り替えたあと、速度テスト画面のタイトルとデバッグ表示の画質表記が更新されない問題を修正",
+            "ko": "해상도를 바꾼 뒤 속도 테스트 화면 제목과 디버그 오버레이의 화질 표시가 갱신되지 않던 문제 수정"
           }
         }
       ]
@@ -186,7 +235,9 @@
           "text": {
             "zh_TW": "新增「失敗自動切換」開關（預設開啟）：網路本身不穩（例如 Wi-Fi 訊號弱）時可關閉，避免頻繁黑屏與丟棄已緩衝的內容",
             "zh_CN": "新增「失败自动切换」开关（默认开启）：网络本身不稳（例如 Wi-Fi 信号弱）时可关闭，避免频繁黑屏与丢弃已缓冲的内容",
-            "en": "Added an \"Auto-switch on failure\" toggle (on by default): turn it off on an unstable connection (e.g. weak Wi-Fi) to avoid repeated black screens and discarded buffers"
+            "en": "Added an \"Auto-switch on failure\" toggle (on by default): turn it off on an unstable connection (e.g. weak Wi-Fi) to avoid repeated black screens and discarded buffers",
+            "ja": "「失敗時に自動切り替え」スイッチを追加（既定はオン）：ネットワーク自体が不安定（Wi-Fi の電波が弱いなど）なときはオフにすると、暗転の繰り返しやバッファの破棄を防げます",
+            "ko": "'실패 시 자동 전환' 스위치 추가(기본값 켬): 네트워크 자체가 불안정할 때(예: Wi-Fi 신호가 약함) 끄면 화면이 반복해서 검게 변하거나 버퍼가 버려지는 것을 막을 수 있습니다"
           }
         }
       ]

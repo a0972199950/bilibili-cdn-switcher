@@ -1,0 +1,446 @@
+{
+  "extName": {
+    "message": "해외 영상 가속 for bilibili"
+  },
+  "extDescription": {
+    "message": "해외에서도 웹 bilibili에서 4K 등 고화질 영상을 더 매끄럽게 재생하고 버퍼링과 끊김을 줄여 줍니다. 비공식 서드파티 확장 프로그램이며 bilibili 공식과 관련이 없습니다."
+  },
+  "extActionTitle": {
+    "message": "해외 영상 가속"
+  },
+  "popupHeaderTitle": {
+    "message": "해외 영상 가속 for bilibili"
+  },
+  "popupTitle": {
+    "message": "CDN 회선"
+  },
+  "enabledLabel": {
+    "message": "사용"
+  },
+  "autoFallbackLabel": {
+    "message": "실패 시 자동 전환"
+  },
+  "autoFallbackHint": {
+    "message": "영상이나 라이브가 멈추거나 회선에 연결되지 않으면 사용 가능한 다른 회선으로 자동 전환해 로딩만 계속되는 상황을 막습니다. 사용 중인 네트워크 자체가 불안정하다면(예: Wi-Fi 신호가 약함) 회선을 계속 바꾸면서 화면이 꺼졌다가 다시 로드될 수 있으니 끄는 것을 권장합니다."
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN 노드"
+  },
+  "modeListLabel": {
+    "message": "목록"
+  },
+  "modeCustomLabel": {
+    "message": "사용자 지정"
+  },
+  "customHostPlaceholder": {
+    "message": "노드 URL 또는 호스트"
+  },
+  "customHintInvalid": {
+    "message": "올바른 호스트를 입력하세요(도메인 포함, 예: xxx.bilivideo.com)."
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 노드별 속도 테스트"
+  },
+  "rateBtnLabel": {
+    "message": "⭐ 마음에 드셨다면 별 5개로 응원해 주세요"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 문제 신고 / 기능 요청"
+  },
+  "showDebugLabel": {
+    "message": "페이지에 디버그 오버레이 표시"
+  },
+  "debugSectionLabel": {
+    "message": "디버그(현재 탭)"
+  },
+  "debugInitial": {
+    "message": "아직 데이터가 없습니다. bilibili 영상 페이지에서 열어 주세요."
+  },
+  "debugNoDataAfterOpen": {
+    "message": "아직 데이터가 없습니다. bilibili 영상 페이지에서 재생을 시작한 뒤 이 창을 열어 주세요."
+  },
+  "stBackBtn": {
+    "message": "← 뒤로"
+  },
+  "stHeaderTitle": {
+    "message": "노드 속도 테스트"
+  },
+  "stRetestBtn": {
+    "message": "🔄 다시 테스트"
+  },
+  "stHintLeave": {
+    "message": "'현재 영상, 현재 화질'의 세그먼트로 각 노드를 실측합니다. 이 페이지를 나가면 테스트가 즉시 중단됩니다."
+  },
+  "stHintBandwidth": {
+    "message": "여기서 측정하는 것은 각 노드의 <b>이론상 최대 대역폭</b>으로, 재생 중 실제로 사용하는 속도와는 다릅니다. 영상은 이만큼의 대역폭이 필요하지 않은 경우가 많아 디버그 오버레이보다 숫자가 높게 나오는 것이 정상입니다."
+  },
+  "speedtestNoSampleHint": {
+    "message": "먼저 bilibili 영상 페이지에서 재생을 시작해 세그먼트 샘플을 얻은 뒤 테스트하세요."
+  },
+  "speedtestCannotStart": {
+    "message": "테스트를 시작할 수 없습니다. 현재 탭이 bilibili 영상 페이지인지 확인하세요."
+  },
+  "speedtestStatusTesting": {
+    "message": "테스트 중…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "취소됨"
+  },
+  "speedtestStatusWaiting": {
+    "message": "대기 중"
+  },
+  "speedtestFailedTemplate": {
+    "message": "실패({err})"
+  },
+  "errNoData": {
+    "message": "응답 없음"
+  },
+  "errNoStream": {
+    "message": "스트림을 읽을 수 없음"
+  },
+  "errTimeout": {
+    "message": "시간 초과"
+  },
+  "errNetworkError": {
+    "message": "네트워크 오류"
+  },
+  "errReadError": {
+    "message": "읽기 중단"
+  },
+  "errNoSample": {
+    "message": "세그먼트 샘플 없음"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "bilibili가 제공하는 백업 노드 사용"
+  },
+  "cdnNameBackupUrl": {
+    "message": "백업 URL"
+  },
+  "mhToastAutoSwitched": {
+    "message": "현재 CDN이 느려서 백업 노드 {host}(으)로 자동 전환했습니다"
+  },
+  "mhToastAllFailed": {
+    "message": "현재 CDN과 백업 노드 모두 원활하게 재생할 수 없습니다"
+  },
+  "mhToastReloadBackup": {
+    "message": "새로고침하고 백업 URL로 전환"
+  },
+  "mhToastClose": {
+    "message": "닫기"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "원본(덮어쓰지 않음)"
+  },
+  "mhCdnTargetBackup": {
+    "message": "백업 URL(우선)"
+  },
+  "whatsNewTitle": {
+    "message": "🎉 v{version}(으)로 업데이트됨"
+  },
+  "whatsNewSubtitle": {
+    "message": "이번 업데이트 내용:"
+  },
+  "whatsNewClose": {
+    "message": "확인"
+  },
+  "whatsNewTypeFeature": {
+    "message": "신규"
+  },
+  "whatsNewTypeFix": {
+    "message": "수정"
+  },
+  "tabVideo": {
+    "message": "영상"
+  },
+  "tabLive": {
+    "message": "라이브"
+  },
+  "modeOffLabel": {
+    "message": "끄기"
+  },
+  "modeOffHintVideo": {
+    "message": "일반 영상의 CDN 선택에 개입하지 않고 공식 기본 동작을 유지합니다."
+  },
+  "modeOffHintLive": {
+    "message": "라이브의 CDN 선택에 개입하지 않고 공식 기본 동작을 유지합니다."
+  },
+  "advancedBtnTitle": {
+    "message": "고급 설정"
+  },
+  "advancedBtnLabel": {
+    "message": "설정"
+  },
+  "uiLangLabel": {
+    "message": "언어 / Language"
+  },
+  "uiLangAuto": {
+    "message": "브라우저 설정 따름"
+  },
+  "advancedTitle": {
+    "message": "고급 설정"
+  },
+  "liveRouteOv": {
+    "message": "국제 회선(ov)"
+  },
+  "liveRouteOvB": {
+    "message": "국제 예비 회선(ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "중국 회선(cn)"
+  },
+  "liveRouteCnB": {
+    "message": "중국 예비 회선(cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "이 방송에는 이 회선이 없습니다"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 라이브 회선 속도 테스트"
+  },
+  "stLiveHeaderTitle": {
+    "message": "라이브 회선 속도 테스트"
+  },
+  "stLiveHintLeave": {
+    "message": "'현재 라이브 방송'의 스트림으로 각 회선을 실측합니다. 이 페이지를 나가면 테스트가 즉시 중단됩니다."
+  },
+  "stLiveHintBandwidth": {
+    "message": "테스트가 시청 중인 라이브와 <b>대역폭을 나눠 쓰므로</b> 그동안 화면이 잠시 끊길 수 있으며 이는 정상입니다. 회선당 약 {sec}초가 걸립니다."
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "먼저 bilibili 라이브 방송에서 재생을 시작해 스트림 URL을 얻은 뒤 테스트하세요."
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "테스트를 시작할 수 없습니다. 현재 탭이 bilibili 라이브 방송인지 확인하세요."
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "어떤 회선에도 연결할 수 없습니다. 라이브 방송을 새로고침한 뒤 다시 테스트하세요."
+  },
+  "stLiveStartupLabel": {
+    "message": "전환 지연"
+  },
+  "stLiveSustainLabel": {
+    "message": "연속 시청"
+  },
+  "levelLow": {
+    "message": "낮음"
+  },
+  "levelMid": {
+    "message": "보통"
+  },
+  "levelHigh": {
+    "message": "높음"
+  },
+  "sustainGood": {
+    "message": "우수"
+  },
+  "sustainFair": {
+    "message": "보통"
+  },
+  "sustainPoor": {
+    "message": "나쁨"
+  },
+  "mhToastLiveFallback": {
+    "message": "현재 라이브 회선 상태가 나빠 국제 회선(ov)으로 자동 전환했습니다"
+  },
+  "speedtestStatusIdle": {
+    "message": "테스트 안 함"
+  },
+  "liveRouteRowLabel": {
+    "message": "라이브 회선"
+  },
+  "stLiveLagTemplate": {
+    "message": "{ms}ms 지연"
+  },
+  "liveRouteExplain": {
+    "message": "라이브는 영상처럼 노드를 자유롭게 고를 수 없습니다. 방송에 들어갈 때마다 bilibili가 전용 노드 묶음을 배정하며, 다른 묶음으로 바꾸면 재생되지 않습니다. 그래서 여기서 고르는 것은 '어떤 종류의 회선을 선호하는지'이고, 확장 프로그램은 bilibili가 배정한 노드 중에서 그 회선으로 전환합니다."
+  },
+  "liveModePrefLabel": {
+    "message": "선호 회선"
+  },
+  "showDebugHint": {
+    "message": "플레이어 왼쪽 위에 실제로 사용 중인 회선 등 기술 정보를 표시하고, 아래에도 같은 내용을 보여 줍니다. 문제를 신고하거나 속도를 비교할 때만 켜면 됩니다."
+  },
+  "staleTabText": {
+    "message": "확장 프로그램이 업데이트되었거나 다시 로드되었습니다. 페이지를 새로고침해야 적용됩니다."
+  },
+  "staleTabReloadBtn": {
+    "message": "새로고침"
+  },
+  "sortBySpeedLabel": {
+    "message": "속도 테스트 순으로 노드 정렬"
+  },
+  "sortBySpeedHint": {
+    "message": "켜면 속도 테스트에서 노드 하나의 측정이 끝날 때마다 빠른 순으로 자동 정렬됩니다. 정렬 순서는 기억되며, 다시 테스트할 때까지 노드 목록도 이 순서로 표시됩니다. 영상과 라이브 모두 적용되며, 끄면 기본 순서로 돌아갑니다."
+  },
+  "stVideoLimitTitle": {
+    "message": "영상 테스트 한도"
+  },
+  "stVideoLimitHint": {
+    "message": "각 노드는 이 크기만큼 다운로드하거나 이 시간이 지나면(먼저 도달한 쪽) 다음 노드로 넘어갑니다. 값이 클수록 결과가 정확하지만 전체 테스트 시간이 길어집니다."
+  },
+  "stVideoMbLabel": {
+    "message": "노드당 최대 다운로드"
+  },
+  "stVideoSecLabel": {
+    "message": "노드당 최대 시간"
+  },
+  "stLiveLimitTitle": {
+    "message": "라이브 테스트 한도"
+  },
+  "stLiveLimitHint": {
+    "message": "'전환 지연'은 여러 번 측정해 평균을 내고, '연속 시청'은 각 회선에서 실제로 몇 초간 스트림을 받아 라이브를 따라갈 수 있는지 확인합니다. 횟수나 시간이 많을수록 결과가 정확하지만 전체 테스트 시간이 길어집니다."
+  },
+  "stLiveRunsLabel": {
+    "message": "전환 지연 측정 횟수"
+  },
+  "stLiveSecLabel": {
+    "message": "연속 시청 회선당 시간"
+  },
+  "unitSec": {
+    "message": "초"
+  },
+  "unitTimes": {
+    "message": "회"
+  },
+  "resetDefault": {
+    "message": "기본값으로"
+  },
+  "staleTabTitle": {
+    "message": "이 탭은 새로고침이 필요합니다"
+  },
+  "stStopBtn": {
+    "message": "⏹ 중지"
+  },
+  "changelogTitle": {
+    "message": "업데이트 기록"
+  },
+  "changelogCurrent": {
+    "message": "현재 버전"
+  },
+  "countryLabel": {
+    "message": "노드 목록의 국가/지역"
+  },
+  "countryYouAreHere": {
+    "message": "{name}(현재 위치)"
+  },
+  "countryAll": {
+    "message": "전체"
+  },
+  "countryNodeCount": {
+    "message": "노드 {n}개"
+  },
+  "durationHMS": {
+    "message": "{h}시간 {m}분 {s}초"
+  },
+  "allWarnTitle": {
+    "message": "전체 노드 테스트는 오래 걸립니다"
+  },
+  "allWarnText": {
+    "message": "전체 <b>{n}</b>개 노드의 속도를 테스트하려고 합니다. 현재 설정으로는 약 <b>{time}</b> 정도 걸릴 것으로 예상됩니다."
+  },
+  "allWarnAdvice": {
+    "message": "국가별 노드 목록은 이미 가장 빠른 상위 노드로 추려져 있습니다. 국가나 가장 가까운 국가를 고른 뒤 테스트하는 것을 권장합니다."
+  },
+  "allWarnQuestion": {
+    "message": "그래도 전체 노드를 테스트할까요?"
+  },
+  "allWarnCancel": {
+    "message": "취소하고 국가 선택"
+  },
+  "allWarnConfirm": {
+    "message": "전체 노드 테스트"
+  },
+  "crownRank": {
+    "message": "{n}위"
+  },
+  "stDescExpand": {
+    "message": "설명 펼치기"
+  },
+  "stDescCollapse": {
+    "message": "설명 접기"
+  },
+  "autoSpeedSwitchLabel": {
+    "message": "영상 자동 속도 테스트 후 가장 빠른 노드로 전환"
+  },
+  "autoSpeedSwitchHint": {
+    "message": "영상 재생이 시작될 때마다 현재 국가의 노드를 백그라운드에서 테스트하고, 가장 빠른 노드로 자동 전환해 기억합니다."
+  },
+  "autoSpeedSwitchAllNote": {
+    "message": "노드 목록이 '전체'일 때는 사용할 수 없습니다. 먼저 메인 화면에서 국가를 선택하세요."
+  },
+  "mhToastSwitched": {
+    "message": "{host}(으)로 전환했습니다"
+  },
+  "autoSpeedWarnTitle": {
+    "message": "자동 속도 테스트를 켤까요?"
+  },
+  "autoSpeedWarnText": {
+    "message": "테스트할 때마다 순위가 달라지기 때문에 <b>큰 부작용</b>이 있습니다. 거의 모든 영상에서 CDN 전환 때문에 <b>화면이 한 번 검게 변합니다</b>."
+  },
+  "autoSpeedWarnAdvice": {
+    "message": "선택한 노드로 대부분 원활하게 재생된다면 눈에 띄는 개선이 없으므로 끈 상태를 권장합니다. 끊길까 걱정되지만 직접 전환하고 싶지 않다면 '실패 시 자동 전환'을 사용하세요."
+  },
+  "autoSpeedWarnCancel": {
+    "message": "취소(끈 상태 유지)"
+  },
+  "autoSpeedWarnConfirm": {
+    "message": "그래도 켜기"
+  },
+  "customHintDup": {
+    "message": "이 노드는 이미 목록에 있습니다."
+  },
+  "customAddBtn": {
+    "message": "추가"
+  },
+  "customDesc1": {
+    "message": "국가 목록에 없거나 목록의 노드가 모두 느릴 때 사용하세요."
+  },
+  "customListEmpty": {
+    "message": "빈 목록"
+  },
+  "customClearBtn": {
+    "message": "비우기"
+  },
+  "customDelTitle": {
+    "message": "목록에서 제거"
+  },
+  "customClearTitle": {
+    "message": "사용자 지정 노드 목록을 비울까요?"
+  },
+  "customClearText": {
+    "message": "목록의 <b>노드 {n}개</b>가 모두 제거되고, 현재 국가의 첫 번째 노드를 사용합니다."
+  },
+  "customClearCancel": {
+    "message": "취소"
+  },
+  "customClearConfirm": {
+    "message": "확인"
+  },
+  "resetAllBtn": {
+    "message": "초기 설정으로 복원"
+  },
+  "resetAllTitle": {
+    "message": "초기 설정으로 복원할까요?"
+  },
+  "resetAllText": {
+    "message": "고급 설정과 영상·라이브의 노드 설정이 모두 기본값으로 돌아가고, 사용자 지정 노드 목록은 <b>비워집니다</b>."
+  },
+  "importToastOk": {
+    "message": "속도 테스트 도구가 추천한 노드 {n}개를 '사용자 지정 노드 목록'에 추가했습니다. 확장 프로그램 메뉴를 열고 '사용자 지정'을 선택하면 사용할 수 있습니다."
+  },
+  "importToastNone": {
+    "message": "속도 테스트 도구가 추천한 노드가 이미 '사용자 지정 노드 목록'에 있습니다."
+  },
+  "importToastFail": {
+    "message": "추천 노드를 '사용자 지정 노드 목록'에 추가하지 못했습니다. 잠시 후 다시 시도해 주세요."
+  },
+  "autoDetectText": {
+    "message": "어떤 노드가 빠른지 모르겠나요? 공식 속도 테스트 도구가 300개 이상의 노드를 테스트해 가장 빠른 10개를 이 목록에 자동으로 추가합니다."
+  },
+  "autoDetectBtn": {
+    "message": "⚡ 자동 감지 후 추가"
+  },
+  "countryMissingHint": {
+    "message": "내 국가가 없나요? 가장 가까운 국가를 사용해 보거나 {link}에서 노드를 추가하세요."
+  }
+}
