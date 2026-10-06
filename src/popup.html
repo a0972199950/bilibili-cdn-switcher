@@ -30,6 +30,13 @@
       --hover-bg: #ffecf1;
       --selected-bg: #ffdce6;
       --link: #00aeec;
+      --primary: #00aeec;
+      --primary-hover: #0099d1;
+      --primary-text: #fff;
+      --secondary-border: #e3e5e7;
+      --secondary-text: #18191c;
+      --secondary-hover-bg: #f1f2f3;
+      --radio-border: #c9ccd0;
       --ok: #2ba471;
       --fair: #c98a00;
       --danger: #d93025;
@@ -43,8 +50,8 @@
       --slider-off: #c9ccd0;
       --tag-fix: #9499a0;
       --code-bg: #fafbfc;
-      --promo-bg: #ffecf1;
-      --promo-border: #f5c2d1;
+      --promo-bg: #e6f7fd;
+      --promo-border: #b3e6f8;
       --promo-text: #61666d;
       --top-bar: #fb7299;
     }
@@ -67,6 +74,13 @@
       --hover-bg: rgba(0, 161, 214, .12);
       --selected-bg: rgba(0, 161, 214, .18);
       --link: #00a1d6;
+      --primary: #00a1d6;
+      --primary-hover: #0090c0;
+      --primary-text: #fff;
+      --secondary-border: #00a1d6;
+      --secondary-text: #00a1d6;
+      --secondary-hover-bg: #00a1d6;
+      --radio-border: #888;
       --ok: #3ddc84;
       --fair: #ffc83d;
       --danger: #ff6b6b;
@@ -354,15 +368,15 @@
       padding: 6px 8px;
       border: 0;
       border-radius: 6px;
-      background: var(--accent);
-      color: var(--accent-text);
+      background: var(--primary);
+      color: var(--primary-text);
       font: inherit;
       font-weight: 600;
       cursor: pointer;
     }
 
     button#autoDetectBtn:hover {
-      background: var(--accent-hover);
+      background: var(--primary-hover);
     }
 
     /* 國家清單下方：沒有你的國家時的引導，「自訂節點列表」是切換模式的連結按鈕 */
@@ -995,14 +1009,23 @@
       white-space: nowrap;
       cursor: pointer;
       border-radius: 14px;
-      border: 1px solid var(--accent);
+      border: 1px solid var(--secondary-border);
       background: var(--control-bg);
-      color: var(--accent);
+      color: var(--secondary-text);
     }
 
     button.iconBtn:hover {
-      color: var(--accent-text);
-      background: var(--accent);
+      color: var(--primary-text);
+      background: var(--secondary-hover-bg);
+    }
+
+    /* 明亮主題：次要按鈕 hover 只淡灰底，不反白；齒輪圖示用主題粉點綴 */
+    :root[data-theme="light"] button.iconBtn:hover {
+      color: var(--secondary-text);
+    }
+
+    :root[data-theme="light"] button.iconBtn svg {
+      fill: var(--accent);
     }
 
     button.iconBtn svg {
@@ -1266,8 +1289,8 @@
       cursor: pointer;
       border-radius: 6px;
       border: 0;
-      background: var(--accent);
-      color: var(--accent-text);
+      background: var(--primary);
+      color: var(--primary-text);
     }
 
     button#awConfirm {
@@ -1302,8 +1325,8 @@
 
     #allWarn.plain button#awConfirm {
       border: 0;
-      background: var(--accent);
-      color: var(--accent-text);
+      background: var(--primary);
+      color: var(--primary-text);
     }
 
     #allWarn.plain button#awCancel {
@@ -1402,8 +1425,8 @@
       cursor: pointer;
       border-radius: 6px;
       border: 0;
-      background: var(--accent);
-      color: var(--accent-text);
+      background: var(--primary);
+      color: var(--primary-text);
     }
 
     /* 明亮主題：進階設定各項、更新紀錄各版、測速清單做成白色圓角卡片（CDNSpeedTest 的灰底白卡） */
@@ -1429,8 +1452,40 @@
     }
 
     /* 明亮主題：原生 radio 跟主色一致，輸入框與「加入／清空」按鈕改成白卡圓角（黑暗主題維持原生外觀） */
-    :root[data-theme="light"] {
-      accent-color: var(--accent);
+    /* 明亮主題：鍵盤焦點改成淡藍光暈，取代原生的粗黑框（確認框開啟時會自動聚焦按鈕） */
+    :root[data-theme="light"] button:focus-visible,
+    :root[data-theme="light"] select:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 174, 236, .3);
+    }
+
+    :root[data-theme="light"] input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      flex: 0 0 auto;
+      width: 15px;
+      height: 15px;
+      margin: 0 2px 0 0;
+      border: 1.5px solid var(--radio-border);
+      border-radius: 50%;
+      background: var(--control-bg);
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+
+    :root[data-theme="light"] input[type="radio"]:hover {
+      border-color: var(--accent);
+    }
+
+    :root[data-theme="light"] input[type="radio"]:checked {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 3px var(--control-bg);
+      background: var(--accent);
+    }
+
+    :root[data-theme="light"] input[type="radio"]:focus-visible {
+      outline: 2px solid var(--hover-bg);
+      outline-offset: 1px;
     }
 
     :root[data-theme="light"] .customAddRow input,
@@ -1439,7 +1494,7 @@
       border-radius: 6px;
       background: var(--control-bg);
       color: var(--text);
-      outline-color: var(--accent);
+      outline-color: var(--primary);
     }
 
     :root[data-theme="light"] .customAddRow button:hover:not(:disabled) {
