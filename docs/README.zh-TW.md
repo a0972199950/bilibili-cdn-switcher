@@ -2,7 +2,7 @@
 
 # 🎬 B 站 CDN 線路重排
 
-**語言 / Language：** 繁體中文（本頁）｜[简体中文](README.zh-CN.md)｜[English](../README.md)
+**語言 / Language：** 繁體中文（本頁）｜[简体中文](README.zh-CN.md)｜[English](../README.md)｜[日本語](README.ja.md)｜[한국어](README.ko.md)
 
 ### 讓海外用戶看網頁版 B 站更順的 Chrome / Firefox / Edge / Safari 擴充
 
@@ -22,11 +22,11 @@
 
 使用前（關閉擴充）
 
-![關閉擴充時的 debug 疊層](readme-zhtw-before.png)
+![關閉擴充時的 debug 疊層](readme-before.png)
 
 使用後（啟用擴充）
 
-![啟用擴充時的 debug 疊層](readme-zhtw-after.png)
+![啟用擴充時的 debug 疊層](readme-after.png)
 
 ## ✨ 這個擴充在做什麼
 
@@ -63,7 +63,7 @@ bilibili-cdn-switcher/
 │   ├── _locales/{zh_TW,zh_CN,en,ja,ko}/  ← 五語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
 │   └── icons/            ← 16 / 32 / 48 / 128
 ├── dist/                 ← 打包產物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
-├── docs/                 ← README 用的截圖 + 繁體中文／简体中文 README
+├── docs/                 ← README 用的截圖 + 繁體中文／简体中文／日本語／한국어 README
 ├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
 ├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台五語系介紹文字
 ├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，內含擴充資源用相對路徑直接引用 ../../../src/）
@@ -162,11 +162,7 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 要固定房間可在 `.env.local` 設 `LIVE_ROOM=<房號>`。因為要連真實 bilibili 影片頁測速，跑一輪約
 數分鐘，且吃網路狀況。
 
-同一輪也會把 README 用的圖輸出到 `docs/`（不加黑邊、2x、依語系各一組，不受 `--size` 影響）：
-`readme-<語系>-main.png`（popup 主頁）、`readme-<語系>-before.png`（關閉擴充）、
-`readme-<語系>-after.png`（啟用擴充），後兩張是 debug 疊層並把 `spd` 圈紅框。用腳本開頭的
-`README_VIDEO_URL` 那支影片、播放器能選的最高畫質，速度取決於當下你的網路，每次跑都會不同。`--readme-only` 只重拍這幾張、不動
-`store/`，`--locale=en|zhcn|zhtw|ja|ko` 可只跑單一語系。
+`--locale=en|zhcn|zhtw|ja|ko` 可只跑單一語系。`docs/` 裡 README 用的圖不由腳本產生，是手動維護的。
 
 **登入 cookie（選用，決定截圖畫質）**：未登入時 B 站只給約 480P，截圖裡的 `qn` 就會是 480P。
 想要高畫質截圖的話，把 `.env.local.example` 複製成 `.env.local`，填入自己的 `BILI_COOKIE`
@@ -198,7 +194,6 @@ bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `V
 <summary>🔍 <b>Debug 疊層長什麼樣</b>（播放器左上角）</summary>
 
 ```text
-CDN 線路
 mode=on  target=upos-sz-mirror08ct.bilivideo.com
 cdn=<當前實際串流的 host>
 v=<video 主用 host>  a=<audio 主用 host>
