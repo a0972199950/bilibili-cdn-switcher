@@ -1,0 +1,89 @@
+# Safari 版打包檢查：在 macOS runner 上用 xcodebuild 打包（不簽章、不上傳），
+# 確認 Xcode 工程打包得起來，且 .appex 內容與 App Store 用的名稱正確。
+name: Safari build check
+
+on:
+  pull_request:
+    paths:
+      - "safari/**"
+      - "src/**"
+      - "assets/icons-prod/**"
+      - "scripts/safari-ext-name.py"
+      - ".github/workflows/safari-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: build (${{ matrix.platform }})
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos
+            scheme: Bilibili CDN Switcher (macOS)
+            destination: generic/platform=macOS
+            products: Release
+          - platform: ios
+            scheme: Bilibili CDN Switcher (iOS)
+            destination: generic/platform=iOS
+            products: Release-iphoneos
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: xcodebuild
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project "safari/Bilibili CDN Switcher/Bilibili CDN Switcher.xcodeproj" \
+            -scheme "${{ matrix.scheme }}" \
+            -configuration Release \
+            -destination "${{ matrix.destination }}" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: 檢查產物
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PRODUCTS: build/Build/Products/${{ matrix.products }}
+        run: |
+          set -euo pipefail
+          APP="$PRODUCTS/Overseas Video Speedup for Bili.app"
+          if [ "$PLATFORM" = macos ]; then
+            CONTENTS="$APP/Contents"; RES="$CONTENTS/Resources"; PLUGINS="$CONTENTS/PlugIns"
+          else
+            CONTENTS="$APP"; RES="$APP"; PLUGINS="$APP/PlugIns"
+          fi
+          APPEX="$PLUGINS/Bilibili CDN Switcher Extension.appex"
+          if [ "$PLATFORM" = macos ]; then EXTRES="$APPEX/Contents/Resources"; else EXTRES="$APPEX"; fi
+          fail=0
+
+          name=$(/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$CONTENTS/Info.plist")
+          echo "CFBundleDisplayName: $name"
+          [ "$name" = "Overseas Video Speedup for Bili" ] || { echo "::error::App 顯示名稱不對：$name"; fail=1; }
+
+          for lang in zh-Hant zh-Hans; do
+            f="$RES/$lang.lproj/InfoPlist.strings"
+            [ -f "$f" ] || { echo "::error::缺少 $f"; fail=1; continue; }
+            echo "$lang: $(plutil -extract CFBundleDisplayName raw "$f")"
+          done
+
+          # .appex 要包含 src/ 底下的每個檔案或資料夾
+          for entry in src/*; do
+            base=$(basename "$entry")
+            [ -e "$EXTRES/$base" ] || { echo "::error::.appex 缺少 $base"; fail=1; }
+          done
+
+          # extName 只在 Safari 版替換，src/_locales 要維持原樣
+          for loc in en ja ko zh_CN zh_TW; do
+            built=$(plutil -extract extName.message raw "$EXTRES/_locales/$loc/messages.json")
+            echo "$loc extName: $built"
+            case "$built" in *[Bb]ilibili*) echo "::error::$loc 的 extName 還含 bilibili"; fail=1;; esac
+          done
+          git diff --exit-code -- src/ || { echo "::error::打包過程改到了 src/"; fail=1; }
+
+          exit $fail
