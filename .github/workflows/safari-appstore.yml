@@ -95,10 +95,13 @@ jobs:
       - name: Archive
         run: |
           set -o pipefail
+          EXTRA=()
           if [ "${{ matrix.platform }}" = macos ]; then
             SCHEME="Bilibili CDN Switcher (macOS)"; DEST="generic/platform=macOS"
           else
             SCHEME="Bilibili CDN Switcher (iOS)"; DEST="generic/platform=iOS"
+            # iOS 開發用描述檔需要註冊裝置，CI 沒有，所以 Archive 直接用發布憑證簽
+            EXTRA=(CODE_SIGN_IDENTITY="Apple Distribution")
           fi
           xcodebuild archive \
             -project "$PROJECT" \
@@ -112,7 +115,8 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             CODE_SIGN_STYLE=Automatic \
-            CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            "${EXTRA[@]}"
 
       - name: 匯出${{ env.UPLOAD == 'true' && '並上傳' || '' }}
         run: |
