@@ -100,8 +100,9 @@ jobs:
             SCHEME="Bilibili CDN Switcher (macOS)"; DEST="generic/platform=macOS"
           else
             SCHEME="Bilibili CDN Switcher (iOS)"; DEST="generic/platform=iOS"
-            # iOS 開發用描述檔需要註冊裝置，CI 沒有，所以 Archive 直接用發布憑證簽
-            EXTRA=(CODE_SIGN_IDENTITY="Apple Distribution")
+            # 自動簽章 Archive 時會先要 iOS 開發用描述檔，那需要已註冊的裝置，CI 沒有。
+            # 所以 iOS 先不簽章 Archive，下一步 -exportArchive 再用發布憑證簽（App Store 版只看匯出時的簽章）
+            EXTRA=(CODE_SIGNING_ALLOWED=NO)
           fi
           xcodebuild archive \
             -project "$PROJECT" \
