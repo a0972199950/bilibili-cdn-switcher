@@ -47,6 +47,14 @@
 		2B5DF6353066315B00949CE2 /* _locales in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6233066315B00949CE2 /* _locales */; };
 		2B5DF6363066315B00949CE2 /* cdn-list.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6243066315B00949CE2 /* cdn-list.json */; };
 		2B5DF6373066315B00949CE2 /* main-hook.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6253066315B00949CE2 /* main-hook.js */; };
+		2B5DF6393066315B00949CE2 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6383066315B00949CE2 /* background.js */; };
+		2B5DF63A3066315B00949CE2 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6383066315B00949CE2 /* background.js */; };
+		2B5DF63C3066315B00949CE2 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63B3066315B00949CE2 /* i18n.js */; };
+		2B5DF63D3066315B00949CE2 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63B3066315B00949CE2 /* i18n.js */; };
+		2B5DF63F3066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
+		2B5DF6403066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
+		2B5DF6423066315B00949CE2 /* changelog.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6413066315B00949CE2 /* changelog.json */; };
+		2B5DF6433066315B00949CE2 /* changelog.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6413066315B00949CE2 /* changelog.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -124,6 +132,10 @@
 		2B5DF6233066315B00949CE2 /* _locales */ = {isa = PBXFileReference; lastKnownFileType = folder; name = _locales; path = ../../../src/_locales; sourceTree = "<group>"; };
 		2B5DF6243066315B00949CE2 /* cdn-list.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "cdn-list.json"; path = "../../../src/cdn-list.json"; sourceTree = "<group>"; };
 		2B5DF6253066315B00949CE2 /* main-hook.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "main-hook.js"; path = "../../../src/main-hook.js"; sourceTree = "<group>"; };
+		2B5DF6383066315B00949CE2 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../../src/background.js; sourceTree = "<group>"; };
+		2B5DF63B3066315B00949CE2 /* i18n.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = i18n.js; path = ../../../src/i18n.js; sourceTree = "<group>"; };
+		2B5DF63E3066315B00949CE2 /* theme.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = theme.js; path = ../../../src/theme.js; sourceTree = "<group>"; };
+		2B5DF6413066315B00949CE2 /* changelog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = changelog.json; path = ../../../src/changelog.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -262,6 +274,10 @@
 				2B5DF6233066315B00949CE2 /* _locales */,
 				2B5DF6243066315B00949CE2 /* cdn-list.json */,
 				2B5DF6253066315B00949CE2 /* main-hook.js */,
+				2B5DF6383066315B00949CE2 /* background.js */,
+				2B5DF63B3066315B00949CE2 /* i18n.js */,
+				2B5DF63E3066315B00949CE2 /* theme.js */,
+				2B5DF6413066315B00949CE2 /* changelog.json */,
 			);
 			name = Resources;
 			path = "Shared (Extension)";
@@ -441,6 +457,10 @@
 				2B5DF6353066315B00949CE2 /* _locales in Resources */,
 				2B5DF6373066315B00949CE2 /* main-hook.js in Resources */,
 				2B5DF6303066315B00949CE2 /* bridge.js in Resources */,
+				2B5DF63A3066315B00949CE2 /* background.js in Resources */,
+				2B5DF63D3066315B00949CE2 /* i18n.js in Resources */,
+				2B5DF6403066315B00949CE2 /* theme.js in Resources */,
+				2B5DF6433066315B00949CE2 /* changelog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -457,6 +477,10 @@
 				2B5DF62C3066315B00949CE2 /* _locales in Resources */,
 				2B5DF62E3066315B00949CE2 /* main-hook.js in Resources */,
 				2B5DF6273066315B00949CE2 /* bridge.js in Resources */,
+				2B5DF6393066315B00949CE2 /* background.js in Resources */,
+				2B5DF63C3066315B00949CE2 /* i18n.js in Resources */,
+				2B5DF63F3066315B00949CE2 /* theme.js in Resources */,
+				2B5DF6423066315B00949CE2 /* changelog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
