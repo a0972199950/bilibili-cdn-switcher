@@ -1,0 +1,22 @@
+# 查 App Store Connect 上的 build 處理狀態與 TestFlight 設定（只讀）。
+name: App Store Connect status
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/asc-status.yml"
+      - "scripts/asc-status.py"
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pyjwt cryptography
+      - name: 查詢
+        env:
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: python3 scripts/asc-status.py | tee -a "$GITHUB_STEP_SUMMARY"
