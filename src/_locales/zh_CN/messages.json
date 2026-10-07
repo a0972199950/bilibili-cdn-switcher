@@ -3,7 +3,7 @@
     "message": "海外视频加速 for bilibili"
   },
   "extDescription": {
-    "message": "让海外使用者在网页版 bilibili 上更顺畅观看 4K 等高画质视频，减少缓冲与卡顿。非官方第三方扩充，与 bilibili 官方无关联。"
+    "message": "让海外用户在网页版 bilibili 上更流畅地观看 4K 等高画质视频，减少缓冲与卡顿。非官方第三方扩展，与 bilibili 官方无关联。"
   },
   "extActionTitle": {
     "message": "海外视频加速"
@@ -21,13 +21,13 @@
     "message": "失败自动切换"
   },
   "autoFallbackHint": {
-    "message": "视频或直播卡住、线路连不上时，自动换到其他可用的线路，免得一直转圈圈。如果你的网络本身就不稳（例如 Wi-Fi 信号弱），它可能会一直换线路、画面黑掉重载，这种情况建议关掉。"
+    "message": "视频或直播卡住、线路连不上时，自动换到其他可用线路。网络本身不稳（如 Wi-Fi 信号弱）时可能频繁切换、画面黑屏重新加载，建议关闭。"
   },
   "cdnHostRowLabel": {
     "message": "CDN 节点"
   },
   "modeListLabel": {
-    "message": "清单选择"
+    "message": "列表选择"
   },
   "modeCustomLabel": {
     "message": "自定义节点列表"
@@ -48,16 +48,16 @@
     "message": "🐛 问题反馈／功能许愿"
   },
   "showDebugLabel": {
-    "message": "显示页面 debug 叠层"
+    "message": "显示页面 debug 浮层"
   },
   "debugSectionLabel": {
-    "message": "Debug（目前分页）"
+    "message": "Debug（当前标签页）"
   },
   "debugInitial": {
-    "message": "尚未取得资料，请在 B 站影片页开启。"
+    "message": "尚未获取数据，请在 B 站视频页打开。"
   },
   "debugNoDataAfterOpen": {
-    "message": "尚未取得资料。请在 B 站影片页播放后再开此视窗。"
+    "message": "尚未获取数据。请在 B 站视频页播放后再打开此窗口。"
   },
   "stBackBtn": {
     "message": "← 返回"
@@ -69,16 +69,16 @@
     "message": "🔄 重新测速"
   },
   "stHintLeave": {
-    "message": "用「目前影片、目前画质」的分段实测各节点；离开此页会立即停止测速。"
+    "message": "用「当前视频、当前画质」的分段实测各节点；离开此页会立即停止测速。"
   },
   "stHintBandwidth": {
-    "message": "这里测到的是各节点的<b>理论最大频宽</b>，跟播放当下实际用到的速度不同——影片可能根本用不到这么高的频宽，所以比 debug 叠层看到的数字高是正常的。"
+    "message": "这里测的是各节点的<b>理论最大带宽</b>，不是播放时实际用到的速度，所以比 debug 浮层的数字高是正常的。"
   },
   "speedtestNoSampleHint": {
-    "message": "请先在 B 站影片页开始播放，取得分段样本后再测速。"
+    "message": "请先在 B 站视频页开始播放，获取分段样本后再测速。"
   },
   "speedtestCannotStart": {
-    "message": "无法开始测速，请确认目前分页是 B 站影片页。"
+    "message": "无法开始测速，请确认当前标签页是 B 站视频页。"
   },
   "speedtestStatusTesting": {
     "message": "测试中…"
@@ -96,7 +96,7 @@
     "message": "无回应"
   },
   "errNoStream": {
-    "message": "无法读取串流"
+    "message": "无法读取视频流"
   },
   "errTimeout": {
     "message": "超时"
@@ -111,25 +111,25 @@
     "message": "尚无分段样本"
   },
   "cdnNoteBackupUrl": {
-    "message": "用 B 站提供的备援节点"
+    "message": "用 B 站提供的备用节点"
   },
   "cdnNameBackupUrl": {
     "message": "备用URL"
   },
   "mhToastAutoSwitched": {
-    "message": "目前 CDN 速度不佳，已自动切换至备援节点 {host}"
+    "message": "当前 CDN 速度不佳，已自动切换至备用节点 {host}"
   },
   "mhToastAllFailed": {
-    "message": "目前 CDN 与备援节点皆无法顺利播放"
+    "message": "当前 CDN 与备用节点均无法流畅播放"
   },
   "mhToastReloadBackup": {
-    "message": "重载并切换至备用URL"
+    "message": "重新加载并切换至备用URL"
   },
   "mhToastClose": {
     "message": "关闭"
   },
   "mhCdnTargetOriginal": {
-    "message": "原始（不覆写）"
+    "message": "原始（不覆盖）"
   },
   "mhCdnTargetBackup": {
     "message": "备用URL（优先）"
@@ -183,10 +183,10 @@
     "message": "跟随系统"
   },
   "uiThemeLight": {
-    "message": "明亮"
+    "message": "浅色"
   },
   "uiThemeDark": {
-    "message": "黑暗"
+    "message": "深色"
   },
   "advancedTitle": {
     "message": "高级设置"
@@ -213,13 +213,13 @@
     "message": "直播线路测速"
   },
   "stLiveHintLeave": {
-    "message": "用「当前直播间」的串流实测各线路；离开此页会立即停止测速。"
+    "message": "用「当前直播间」的直播流实测各线路；离开此页会立即停止测速。"
   },
   "stLiveHintBandwidth": {
     "message": "测速会与正在播放的直播<b>抢带宽</b>，期间画面可能短暂卡顿，属正常现象。每条线路约需 {sec} 秒。"
   },
   "liveSpeedtestNoSampleHint": {
-    "message": "请先在 B 站直播间开始播放，取得串流地址后再测速。"
+    "message": "请先在 B 站直播间开始播放，获取直播流地址后再测速。"
   },
   "liveSpeedtestCannotStart": {
     "message": "无法开始测速，请确认当前标签页是 B 站直播间。"
@@ -249,7 +249,7 @@
     "message": "中等"
   },
   "sustainPoor": {
-    "message": "差劲"
+    "message": "较差"
   },
   "mhToastLiveFallback": {
     "message": "当前直播线路不佳，已自动切换至国际线路(ov)"
@@ -264,16 +264,16 @@
     "message": "落后 {ms}ms"
   },
   "liveRouteExplain": {
-    "message": "直播没办法像视频一样自由挑节点：每次进直播间，B 站都会指派一组专属节点，换成别组就播不了。所以这里选的是「偏好哪种线路」，扩充会在 B 站给你的那组节点里，切到你偏好的那一条。"
+    "message": "直播无法像视频一样自由挑节点：B 站每次会指派一组专属节点，换别组就播不了。所以这里选的是「偏好的线路类型」，扩展会在那组节点里切到这条。"
   },
   "liveModePrefLabel": {
     "message": "偏好选择"
   },
   "showDebugHint": {
-    "message": "在播放画面左上角显示当前实际使用的线路等技术信息，并在下方列出同样的内容。反馈问题或比较速度时才需要打开，平常看视频不用开。"
+    "message": "在播放画面左上角显示当前使用的线路等技术信息，下方也会列出。反馈问题或比较速度时再开即可。"
   },
   "staleTabText": {
-    "message": "扩充刚更新或重新加载，刷新后才会生效。"
+    "message": "扩展刚更新或重新加载，刷新后才会生效。"
   },
   "staleTabReloadBtn": {
     "message": "刷新"
@@ -282,13 +282,13 @@
     "message": "节点按测速排序"
   },
   "sortBySpeedHint": {
-    "message": "开启后，测速时每测完一个节点，就会依速度由快到慢自动排好；排好的顺序会记住，节点列表也会照这个顺序显示，直到下次重新测速。视频与直播都适用，关闭后恢复默认顺序。"
+    "message": "开启后，测速时节点会按速度由快到慢自动排序，并记住顺序直到下次测速。视频与直播都适用，关闭后恢复默认顺序。"
   },
   "stVideoLimitTitle": {
     "message": "视频测速门槛"
   },
   "stVideoLimitHint": {
-    "message": "测速时每个节点下载到这个大小、或测满这个秒数就换下一个（先到为准）。数字越大结果越准，但整体测得越久。"
+    "message": "每个节点下载到这个大小或测满这个秒数（先到为准）就换下一个。数字越大越准，但测得越久。"
   },
   "stVideoMbLabel": {
     "message": "每个节点最多下载"
@@ -300,7 +300,7 @@
     "message": "直播测速门槛"
   },
   "stLiveLimitHint": {
-    "message": "「切台卡顿」会重复测几次取平均；「持续观看」会在每条线路上实际拉流几秒，看能不能跟上直播。次数或秒数越多结果越准，但整体测得越久。"
+    "message": "「切台卡顿」测几次取平均；「持续观看」在每条线路实际拉流几秒，看能否跟上直播。数字越大越准，但测得越久。"
   },
   "stLiveRunsLabel": {
     "message": "切台卡顿测试次数"
@@ -348,10 +348,10 @@
     "message": "全量测速要很久"
   },
   "allWarnText": {
-    "message": "您正打算对全部 <b>{n}</b> 个节点测速，按照当前设置估算约需 <b>{time}</b>。"
+    "message": "全部 <b>{n}</b> 个节点测速，按当前设置约需 <b>{time}</b>。"
   },
   "allWarnAdvice": {
-    "message": "各国家节点列表已是预先筛选出的最快第一梯队，建议选择单个国家，或离您最近的国家后再测速。"
+    "message": "各国列表已筛选出最快的节点，建议先选国家（或离您最近的国家）再测速。"
   },
   "allWarnQuestion": {
     "message": "确定进行全量测速吗？"
@@ -390,7 +390,7 @@
     "message": "由于每次测速的排名都不同，这有<b>极大副作用</b>：几乎每次看视频都会因切换 CDN <b>黑屏一次</b>。"
   },
   "autoSpeedWarnAdvice": {
-    "message": "若选定的节点大多时候都能流畅播放，不建议开启，没有可见的提升；若是担心选定的节点会卡、又不想手动切换，请改用「失败自动切换」。"
+    "message": "选定的节点大多能流畅播放的话，开了也没有明显提升；怕卡又不想手动切换，请改用「失败自动切换」。"
   },
   "autoSpeedWarnCancel": {
     "message": "取消，保持关闭"
@@ -405,7 +405,7 @@
     "message": "加入"
   },
   "customDesc1": {
-    "message": "适合不在国家清单中，或清单里的节点都很慢时使用。"
+    "message": "适合不在国家列表中，或列表里的节点都很慢时使用。"
   },
   "customListEmpty": {
     "message": "空列表"
@@ -438,7 +438,7 @@
     "message": "高级设置、视频与直播的节点设置都会恢复默认，自定义节点列表会被<b>清空</b>。"
   },
   "importToastOk": {
-    "message": "已把测速工具推荐的 {n} 个节点加入「自定义节点列表」。打开扩展菜单、选「自定义节点列表」就能使用。"
+    "message": "已将测速工具推荐的 {n} 个节点加入「自定义节点列表」，在扩展菜单选择它即可使用。"
   },
   "importToastNone": {
     "message": "测速工具推荐的节点都已经在「自定义节点列表」里了。"

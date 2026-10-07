@@ -659,6 +659,11 @@
       margin: 0;
     }
 
+    /* 開關／下拉型選項的標題，跟數值型選項的 .advTitle 一樣用粗體 */
+    .advItem > .row > span:first-child {
+      font-weight: 600;
+    }
+
     .advItem .hint {
       margin: 4px 0 0;
     }
@@ -1046,6 +1051,7 @@
       margin-bottom: -1px;
       background: transparent;
       color: var(--muted);
+      font-weight: 600;
     }
 
     button.tab:hover {
@@ -1054,7 +1060,6 @@
 
     button.tab.active {
       color: var(--accent);
-      font-weight: 600;
       border-bottom-color: var(--accent);
     }
 

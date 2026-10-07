@@ -21,7 +21,7 @@
     "message": "Auto-switch on failure"
   },
   "autoFallbackHint": {
-    "message": "When a video or live stream freezes or a route can't connect, automatically switch to another working route so you aren't stuck on a spinner. If your own connection is unstable (e.g. weak Wi-Fi), it may keep switching and blank the picture while reloading — turn it off in that case."
+    "message": "Switches to another working route when a video or live stream freezes or can't connect. On an unstable connection (e.g. weak Wi-Fi) it may keep switching and blank the picture, so turn it off."
   },
   "cdnHostRowLabel": {
     "message": "CDN node"
@@ -72,7 +72,7 @@
     "message": "Tests each node using segments from the current video and quality; leaving this page stops the test immediately."
   },
   "stHintBandwidth": {
-    "message": "This measures each node's <b>theoretical maximum bandwidth</b>, not the actual speed used during playback — playback may not need this much bandwidth, so a higher number here than in the debug overlay is normal."
+    "message": "This measures each node's <b>theoretical maximum bandwidth</b>, not the speed used during playback, so it's normal for it to be higher than the debug overlay."
   },
   "speedtestNoSampleHint": {
     "message": "Start playback on a bilibili video page first to get a segment sample before testing."
@@ -111,16 +111,16 @@
     "message": "No segment sample yet"
   },
   "cdnNoteBackupUrl": {
-    "message": "Use bilibili's provided backup node"
+    "message": "Use the backup node provided by bilibili"
   },
   "cdnNameBackupUrl": {
     "message": "Backup URL"
   },
   "mhToastAutoSwitched": {
-    "message": "Current CDN is slow, automatically switched to backup node {host}"
+    "message": "Current CDN is slow; switched to backup node {host}"
   },
   "mhToastAllFailed": {
-    "message": "Neither the current CDN nor the backup node can play smoothly"
+    "message": "Playback isn't smooth on either the current CDN or the backup node"
   },
   "mhToastReloadBackup": {
     "message": "Reload and switch to Backup URL"
@@ -132,7 +132,7 @@
     "message": "Original (no override)"
   },
   "mhCdnTargetBackup": {
-    "message": "Backup URL (priority)"
+    "message": "Backup URL (preferred)"
   },
   "whatsNewTitle": {
     "message": "🎉 Updated to v{version}"
@@ -159,10 +159,10 @@
     "message": "Off"
   },
   "modeOffHintVideo": {
-    "message": "Does not touch CDN selection for regular videos; Bilibili's original behavior is kept."
+    "message": "Does not touch CDN selection for regular videos; bilibili's original behavior is kept."
   },
   "modeOffHintLive": {
-    "message": "Does not touch CDN selection for live streams; Bilibili's original behavior is kept."
+    "message": "Does not touch CDN selection for live streams; bilibili's original behavior is kept."
   },
   "advancedBtnTitle": {
     "message": "Advanced settings"
@@ -219,10 +219,10 @@
     "message": "The test <b>competes for bandwidth</b> with the live stream you are watching, so the picture may stutter briefly. Each route takes about {sec} seconds."
   },
   "liveSpeedtestNoSampleHint": {
-    "message": "Start playing a Bilibili live room first so the stream URL is known, then run the test."
+    "message": "Start playing a bilibili live room first so the stream URL is known, then run the test."
   },
   "liveSpeedtestCannotStart": {
-    "message": "Cannot start the test. Make sure the current tab is a Bilibili live room."
+    "message": "Cannot start the test. Make sure the current tab is a bilibili live room."
   },
   "liveSpeedtestUnavailableHint": {
     "message": "None of the routes could be reached. Refresh the live room and try again."
@@ -252,7 +252,7 @@
     "message": "Poor"
   },
   "mhToastLiveFallback": {
-    "message": "Live route is poor; switched to International (ov)"
+    "message": "Live route is unstable; switched to International (ov)"
   },
   "speedtestStatusIdle": {
     "message": "Not tested"
@@ -264,13 +264,13 @@
     "message": "{ms}ms behind"
   },
   "liveRouteExplain": {
-    "message": "Live streams can't switch freely between nodes like videos can: each time you enter a live room, Bilibili assigns you its own set of nodes, and any other set won't play. So what you pick here is a preferred route type, and the extension switches to that route within the set Bilibili gave you."
+    "message": "Live streams can't switch nodes freely like videos: bilibili assigns each viewer its own set of nodes, and other sets won't play. So you pick a preferred route type, and the extension switches to it within that set."
   },
   "liveModePrefLabel": {
     "message": "Preference"
   },
   "showDebugHint": {
-    "message": "Shows technical info such as the route actually in use at the top-left of the player, and lists the same info below. Only needed when reporting a problem or comparing speeds."
+    "message": "Shows technical info such as the route in use at the top-left of the player, and lists it below too. Only needed for bug reports or speed comparisons."
   },
   "staleTabText": {
     "message": "The extension was just updated or reloaded; refresh the tab for it to take effect."
@@ -282,13 +282,13 @@
     "message": "Sort nodes by speed test"
   },
   "sortBySpeedHint": {
-    "message": "When on, each node slides into place (fastest first) as soon as its speed test finishes. The order is remembered and the node lists use it too, until you run the test again. Works for both video and live; turning it off restores the default order."
+    "message": "When on, nodes are sorted fastest-first as the test runs, and the order is kept until the next test. Applies to video and live; turn off to restore the default order."
   },
   "stVideoLimitTitle": {
     "message": "Video speed-test limits"
   },
   "stVideoLimitHint": {
-    "message": "Each node is tested until it has downloaded this much or this many seconds have passed, whichever comes first. Bigger numbers give more accurate results but the test takes longer."
+    "message": "Each node is tested until it downloads this much or this many seconds pass, whichever comes first. Higher values are more accurate but slower."
   },
   "stVideoMbLabel": {
     "message": "Max download per node"
@@ -300,7 +300,7 @@
     "message": "Live speed-test limits"
   },
   "stLiveLimitHint": {
-    "message": "\"Switch lag\" is measured several times and averaged; \"Keeping up\" actually pulls the stream on each route for a few seconds to see whether it keeps pace. More runs or seconds give more accurate results but the test takes longer."
+    "message": "\"Switch lag\" is averaged over several runs; \"Keeping up\" pulls the stream on each route for a few seconds to see if it keeps pace. Higher values are more accurate but slower."
   },
   "stLiveRunsLabel": {
     "message": "Switch-lag runs"
@@ -348,10 +348,10 @@
     "message": "Testing all nodes takes a long time"
   },
   "allWarnText": {
-    "message": "You are about to speed-test all <b>{n}</b> nodes. With your current settings this is estimated to take about <b>{time}</b>."
+    "message": "Testing all <b>{n}</b> nodes will take about <b>{time}</b> with your current settings."
   },
   "allWarnAdvice": {
-    "message": "Each country's list is already pre-filtered to its fastest top-tier nodes. We recommend picking a country — or the one closest to you — before testing."
+    "message": "Each country's list already contains its fastest nodes. Pick a country (or the closest one) before testing."
   },
   "allWarnQuestion": {
     "message": "Test all nodes anyway?"
@@ -363,7 +363,7 @@
     "message": "Test all nodes anyway"
   },
   "crownRank": {
-    "message": "No. {n}"
+    "message": "#{n}"
   },
   "stDescExpand": {
     "message": "Show more"
@@ -372,10 +372,10 @@
     "message": "Show less"
   },
   "autoSpeedSwitchLabel": {
-    "message": "Auto speed-test videos and switch to the fastest node"
+    "message": "Auto-switch videos to the fastest node"
   },
   "autoSpeedSwitchHint": {
-    "message": "After each video starts, the current country's nodes are tested in the background and the fastest one is switched to and remembered."
+    "message": "After each video starts, your current country's nodes are tested in the background and the fastest one is selected and remembered."
   },
   "autoSpeedSwitchAllNote": {
     "message": "Unavailable while the node list is set to \"All\" — pick a country on the main page first."
@@ -387,10 +387,10 @@
     "message": "Turn on auto speed test?"
   },
   "autoSpeedWarnText": {
-    "message": "Because the ranking differs on every test, this has a <b>major side effect</b>: almost every video will <b>go black once</b> while the CDN switches."
+    "message": "Because the ranking differs on every test, this has a <b>major side effect</b>: almost every video will <b>briefly go black</b> while the CDN switches."
   },
   "autoSpeedWarnAdvice": {
-    "message": "If your chosen node plays smoothly most of the time, keep this off — there is no visible improvement. If you're worried it may stall but don't want to switch manually, use \"Auto-switch on failure\" instead."
+    "message": "If your chosen node usually plays smoothly, this brings no visible benefit. Worried about stalls but don't want to switch manually? Use \"Auto-switch on failure\" instead."
   },
   "autoSpeedWarnCancel": {
     "message": "Cancel, keep it off"
@@ -429,16 +429,16 @@
     "message": "Confirm"
   },
   "resetAllBtn": {
-    "message": "Restore original settings"
+    "message": "Reset all settings"
   },
   "resetAllTitle": {
-    "message": "Restore original settings?"
+    "message": "Reset all settings?"
   },
   "resetAllText": {
     "message": "Advanced settings and the video and live node settings will all go back to their defaults, and the custom node list will be <b>cleared</b>."
   },
   "importToastOk": {
-    "message": "Added {n} nodes recommended by the speed test to your Custom node list. Open the extension menu and choose \"Custom node list\" to use them."
+    "message": "Added {n} nodes recommended by the speed test to your Custom list. Choose \"Custom\" in the extension menu to use them."
   },
   "importToastNone": {
     "message": "The nodes recommended by the speed test are already in your Custom node list."
@@ -453,6 +453,6 @@
     "message": "⚡ Auto-detect & add"
   },
   "countryMissingHint": {
-    "message": "Your country isn't listed? Try the closest one, or use the {link}."
+    "message": "Your country isn't listed? Try the closest one, or add your own nodes under {link}."
   }
 }
