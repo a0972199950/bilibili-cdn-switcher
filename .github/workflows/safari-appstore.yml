@@ -1,0 +1,164 @@
+# Safari 版上架：在 macOS runner 上 Archive → 簽章 → 上傳到 App Store Connect。
+#
+# 需要的 repo secrets（Settings › Secrets and variables › Actions）：
+#   ASC_ISSUER_ID  App Store Connect API 的 Issuer ID
+#   ASC_KEY_ID     API 金鑰的 Key ID（角色要 Admin，才能讓 Xcode 自動建立發布憑證）
+#   ASC_KEY_P8     下載的 AuthKey_<Key ID>.p8 整個檔案內容
+#
+# 用法：Actions › Safari App Store › Run workflow，選平台。
+#   上傳後到 App Store Connect 選這個 build 送審；「提交審核／發布」一律人工按。
+# PR 改到這個檔時會自動跑一次「只簽章、不上傳」，用來確認金鑰與簽章設定可用。
+name: Safari App Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 平台
+        type: choice
+        options: [macos, ios, both]
+        default: macos
+      upload:
+        description: 上傳到 App Store Connect（不勾只簽章匯出，產物放在 Artifacts）
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - ".github/workflows/safari-appstore.yml"
+
+concurrency:
+  group: safari-appstore-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      platforms: ${{ steps.p.outputs.platforms }}
+    steps:
+      - id: p
+        run: |
+          case "${{ inputs.platform || 'both' }}" in
+            macos) echo 'platforms=["macos"]' >> "$GITHUB_OUTPUT" ;;
+            ios)   echo 'platforms=["ios"]' >> "$GITHUB_OUTPUT" ;;
+            *)     echo 'platforms=["macos","ios"]' >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  archive:
+    needs: plan
+    name: ${{ matrix.platform }}
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(needs.plan.outputs.platforms) }}
+    env:
+      PROJECT: safari/Bilibili CDN Switcher/Bilibili CDN Switcher.xcodeproj
+      TEAM_ID: RN6N3K4U8J
+      # workflow_dispatch 才上傳；PR 只驗證簽章
+      UPLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.upload && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: 準備 App Store Connect API 金鑰
+        env:
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for v in ASC_ISSUER_ID ASC_KEY_ID ASC_KEY_P8; do
+            [ -n "${!v}" ] || { echo "::error::repo secret $v 是空的或不存在"; missing=1; }
+          done
+          [ $missing = 0 ] || exit 1
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY_PATH"
+          grep -q "BEGIN PRIVATE KEY" "$KEY_PATH" || { echo "::error::ASC_KEY_P8 看起來不是 .p8 檔內容"; exit 1; }
+          {
+            echo "KEY_PATH=$KEY_PATH"
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: 決定 build number
+        run: |
+          # 每次上傳的 build number 都要比上一次大；Xcode 工程寫的是手動上傳用的值，CI 改用 run number 往上加
+          BASE=$(grep -m1 -o 'CURRENT_PROJECT_VERSION = [0-9]*' "$PROJECT/project.pbxproj" | grep -o '[0-9]*$')
+          echo "BUILD_NUMBER=$((BASE + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "build number: $((BASE + GITHUB_RUN_NUMBER))"
+
+      - name: Archive
+        run: |
+          set -o pipefail
+          EXTRA=()
+          if [ "${{ matrix.platform }}" = macos ]; then
+            SCHEME="Bilibili CDN Switcher (macOS)"; DEST="generic/platform=macOS"
+          else
+            SCHEME="Bilibili CDN Switcher (iOS)"; DEST="generic/platform=iOS"
+            # 自動簽章 Archive 時會先要 iOS 開發用描述檔，那需要已註冊的裝置，CI 沒有。
+            # 所以 iOS 先不簽章 Archive，下一步 -exportArchive 再用發布憑證簽（App Store 版只看匯出時的簽章）
+            EXTRA=(CODE_SIGNING_ALLOWED=NO)
+          fi
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination "$DEST" \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            "${EXTRA[@]}"
+
+      - name: 匯出${{ env.UPLOAD == 'true' && '並上傳' || '' }}
+        run: |
+          set -o pipefail
+          DESTINATION=$([ "$UPLOAD" = true ] && echo upload || echo export)
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>$DESTINATION</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/app.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :ApplicationProperties:CFBundleShortVersionString" "$RUNNER_TEMP/app.xcarchive/Info.plist")
+          if [ "$UPLOAD" = true ]; then
+            echo "### ${{ matrix.platform }}：已上傳 $VERSION ($BUILD_NUMBER)，App Store Connect 處理完後即可選來送審" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ${{ matrix.platform }}：$VERSION ($BUILD_NUMBER) 簽章匯出成功（未上傳）" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 保存匯出的安裝檔
+        if: env.UPLOAD != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: safari-${{ matrix.platform }}-${{ env.BUILD_NUMBER }}
+          path: ${{ runner.temp }}/export
+          retention-days: 7
+
+      - name: 清除金鑰
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8

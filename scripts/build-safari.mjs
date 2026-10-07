@@ -77,9 +77,10 @@ try {
   process.exit(1);
 }
 
-// 產物：build/Build/Products/<Configuration>[-iphoneos]/Bilibili CDN Switcher.app
+// 產物：build/Build/Products/<Configuration>[-iphoneos]/<PRODUCT_NAME>.app
 const productDirName = platform === "ios" ? `${configuration}-iphoneos` : configuration;
-const appName = "Bilibili CDN Switcher.app";
+// 名稱要跟 Xcode 工程 App target 的 PRODUCT_NAME 一致（App Store 不允許名稱含 bilibili，所以跟工程資料夾名不同）
+const appName = "Overseas Video Speedup for Bili.app";
 const builtApp = path.join(DERIVED, "Build", "Products", productDirName, appName);
 
 if (!fs.existsSync(builtApp)) {
