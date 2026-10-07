@@ -1,0 +1,3 @@
+/* App 名稱：要跟 App Store Connect 的繁中名稱、scripts/safari-ext-name.py 的 zh_TW 一致 */
+"CFBundleDisplayName" = "海外影片加速 for B站";
+"CFBundleName" = "海外影片加速 for B站";

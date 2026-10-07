@@ -4,5 +4,7 @@
 <dict>
 	<key>SFSafariWebExtensionConverterVersion</key>
 	<string>26.3</string>
+	<key>LSHasLocalizedDisplayName</key>
+	<true/>
 </dict>
 </plist>
