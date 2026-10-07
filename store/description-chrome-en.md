@@ -32,6 +32,7 @@ Celebrating the big 2.0.0 update!!
 ・Auto-switch to the fastest node — optional (off by default): speed-tests in the background for each video and switches to the fastest node automatically
 ・Live status display — shows the CDN route actually in use in the top-left corner of the player, handy for comparing results
 ・Multi-language UI — automatically switches between Traditional Chinese / Simplified Chinese / English / Japanese / Korean based on your browser language
+・Light / dark theme — new in 2.1! Pick the look in Advanced settings: System, Light, or Dark
 ・One-click disable — turns off completely, restoring the browser's original behavior; videos and live streams can also be turned off separately
 
 ■ How to use
