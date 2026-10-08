@@ -1573,6 +1573,8 @@ function onStLayoutResize() {
 }
 function lockStLayout() {
   window.removeEventListener("resize", onStLayoutResize);
+  // iPad Safari 的 popover 回報的 innerHeight 可能比實際可見高度小很多，鎖下去會把清單裁掉；量到不合理的值就維持 600px
+  if (window.innerHeight < 300) return;
   document.documentElement.style.height = window.innerHeight + "px";
 }
 function enterStLayout() {

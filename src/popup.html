@@ -494,14 +494,15 @@
        popup 視窗大小由內容決定（上限 600 DIP；頁面縮放 110% 時只剩約 545 CSS px），flex 需要確定的外層高度，所以分兩段：
        先讓 html 撐到 600px 向瀏覽器要最大的 popup，等視窗大小穩定後，popup.js 再把 html 高度鎖成實際可見高度
        （不鎖的話，縮放超過 100% 時 600px 會超出可見範圍，Chrome 在外層加捲動條、底部多出空白）。
-       排版用 100vh（= popup 真正可見的高度），標題、說明、按鈕固定高，剩下的空間都給清單 */
+       body 跟著 html 的明確高度走，標題、說明、按鈕固定高，剩下的空間都給清單。
+       不用 100vh：iPad Safari 的 popover 裡用 100vh 時，測速頁只剩標題列、下面整片空白 */
     html.stMode {
       height: 600px;
       overflow: hidden;
     }
 
     html.stMode body {
-      height: calc(100vh - 28px); /* 扣掉 body 上下 padding；不用 border-box，免得寬度也被 padding 吃掉、跟主頁不一樣寬 */
+      height: calc(100% - 28px); /* 扣掉 body 上下 padding；不用 border-box，免得寬度也被 padding 吃掉、跟主頁不一樣寬 */
       overflow: hidden;
     }
 
