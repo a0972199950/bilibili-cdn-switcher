@@ -2,7 +2,8 @@
 # Xcode 打包 Safari 擴充時執行（擴充 target 的「Safari Extension Name」build phase）。
 #
 # App Store 不允許名稱含 bilibili（Guideline 4.1(c)），且 App Store 上的名稱要和安裝後顯示的一致（2.3.8）。
-# 其他瀏覽器的名稱要保留「for bilibili」，所以 src/_locales 不動，只改 .appex 裡複製出來的那份 extName。
+# 其他瀏覽器的名稱要保留「for bilibili」，所以 src/_locales 不動，只改 .appex 裡複製出來的那份：
+# extName（擴充功能清單）、popupHeaderTitle（popup 標題）、extActionTitle（工具列按鈕提示）都換成 App 名稱。
 # 名稱要跟 Xcode 的 CFBundleDisplayName（含 InfoPlist.strings）以及 App Store Connect 上的 App 名稱一致。
 #
 # 用法：python3 safari-ext-name.py <.appex 裡的 _locales 目錄>
@@ -26,8 +27,10 @@ for locale in sorted(os.listdir(locales_dir)):
         continue
     with open(path, encoding="utf-8") as f:
         messages = json.load(f)
-    messages["extName"]["message"] = NAMES.get(locale, EN)
+    name = NAMES.get(locale, EN)
+    for key in ("extName", "popupHeaderTitle", "extActionTitle"):
+        messages[key]["message"] = name
     with open(path, "w", encoding="utf-8") as f:
         json.dump(messages, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    print(f"{locale}: extName -> {messages['extName']['message']}")
+    print(f"{locale}: extName / popupHeaderTitle / extActionTitle -> {name}")
