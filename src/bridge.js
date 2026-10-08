@@ -152,9 +152,14 @@
     }
   });
 
+  // popup 的查询 / 测速指令只由最上层 frame 回应：iPad Safari 送讯息时不能指定 frameId: 0（见 popup.js 的 sendToTop），
+  // 会送到所有 frame，iframe 里的 bridge 不能抢着回应
+  var isTopFrame = window.top === window;
+
   // 回应 popup 查询 / 测速指令
   try {
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
+      if (!isTopFrame) return;
       if (msg && msg.type === "CDN_SWITCHER_GET_DEBUG") {
         // 顺便通知 MAIN：popup 开着了，直播间可以开始探测各线路是否存在（懒探测，见 main-hook.js）
         try { window.postMessage({ __cdnSwitcher: 1, dir: "debug-poll" }, "*"); } catch (e) {}
@@ -193,7 +198,7 @@
   // 还是直接关掉 popup（浏览器自动断线），content script 都会收到 onDisconnect → 立刻中止测速
   try {
     chrome.runtime.onConnect.addListener(function (port) {
-      if (!port || port.name !== "cdn-switcher-speedtest") return;
+      if (!isTopFrame || !port || port.name !== "cdn-switcher-speedtest") return;
       port.onDisconnect.addListener(function () {
         speedTest.running = false;
         try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-stop" }, "*"); } catch (e) {}
