@@ -4,6 +4,8 @@
 // 同一語系排在一起、且依 VIEWS 的順序排列。
 // --locale=en|zhcn|zhtw|ja|ko：只跑指定語系。
 // --safari：拍 Mac App Store 用的 Safari 版截圖（檔名前綴 screenshot-safari-），見下方 SAFARI 的說明。
+// --views=videoSpeedtest,advanced：只存指定的畫面（VIEWS 的 key），只重拍其中幾張時用；沒指定 liveMain 就不進直播間。
+// --speedtest-full：測速頁等全部節點測完再截圖，並切到第一名的節點（見 SPEEDTEST_FULL 說明）。
 //
 // 用法：npm run capture-screenshots
 //
@@ -150,6 +152,15 @@ async function waitForPlayer(page) {
 }
 
 // 順序即檔名序號，也是商店截圖想呈現的順序
+// --views：只存這幾個畫面；其餘畫面的流程照跑（後面的畫面要靠前面的操作），只是不存檔
+const viewsArg = (process.argv.find((a) => a.startsWith("--views=")) || "").split("=")[1];
+const ONLY_VIEWS = viewsArg ? new Set(viewsArg.split(",")) : null;
+
+// --speedtest-full：預設測速頁是「測到一半」就截圖（畫面同時有結果和 Testing…）。但測速是真的連網測，同一個節點
+// 每輪速度差很多，打勾的「目前選用」節點常常排在後面，商店截圖看起來像預設選錯。這個選項改成等全部節點測完
+// （有開按速度排序，前三名就是最快的三個），再點第一名那列切過去，打勾和皇冠第一名會是同一個節點
+const SPEEDTEST_FULL = process.argv.includes("--speedtest-full");
+
 const VIEWS = {
   videoMain: "01-video-main",
   liveMain: "02-live-main",
@@ -253,6 +264,14 @@ async function switchTo4K(tabA) {
   return ok;
 }
 
+// --speedtest-full 用：等這一輪全部節點測完（running 變回 false）。節點多、慢的節點會等到門檻秒數，timeout 抓寬
+async function waitForSpeedtestDone(tabB) {
+  await tabB.waitForFunction(() => {
+    var st = window.lastSpeedtestState;
+    return !!(st && !st.running && st.results && st.results.length > 0);
+  }, { timeout: 300000, polling: 200 }).catch(() => log("  （測速沒在時限內全部測完，直接用目前畫面截圖）"));
+}
+
 async function waitForSpeedtestMidway(tabB, minDone) {
   // 在「完成 minDone 個、仍在測試中」就馬上截圖：畫面才會同時看得到已完成的節點（開了
   // 按速度排序，會依快→慢排在最上面）跟緊接著的「Testing…」那行。節點慢的話單一節點
@@ -350,6 +369,7 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     await fs.mkdir(OUT_DIR, { recursive: true });
 
     const save = async (buf, key) => {
+      if (ONLY_VIEWS && !ONLY_VIEWS.has(key)) return;
       await saveLetterboxedPng(buf, path.join(OUT_DIR, outFileName(VIEWS[key], prefix)));
       log("saved", VIEWS[key]);
     };
@@ -366,8 +386,15 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     // 截圖剛好撞上就會拍到動畫中間。tabB 是背景分頁，動畫時鐘不可靠（等 getAnimations() 清空可能永遠等不到），
     // 所以直接把清單的過渡效果關掉：排名一變就直接是最終位置，任何時間點截圖都是穩定的畫面
     await tabB.addStyleTag({ content: "#stList, #stList * { transition: none !important; animation: none !important; }" });
-    await waitForSpeedtestMidway(tabB, 3);
-    await sleep(300);
+    if (SPEEDTEST_FULL) {
+      await waitForSpeedtestDone(tabB);
+      // 測完後點第一名那列（測速頁點一列＝切到那個節點），打勾的「目前選用」就跟皇冠第一名是同一個
+      await tabB.$eval("#stList .stRow", (el) => el.click());
+      await sleep(800);
+    } else {
+      await waitForSpeedtestMidway(tabB, 3);
+      await sleep(300);
+    }
     await save(await popupShot(tabB, { fit: false }), "videoSpeedtest");
     await tabB.$eval("#stBackBtn", (el) => el.click()); // 返回主頁（同時中止測速）
     await sleep(300);
@@ -380,7 +407,7 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     await sleep(300);
 
     // 直播主頁：同一個分頁導去直播間，等 popup 輪詢到「確定得到 CDN 網址」才截圖
-    await captureLiveMain({ tabA, tabB, save });
+    if (!ONLY_VIEWS || ONLY_VIEWS.has("liveMain")) await captureLiveMain({ tabA, tabB, save });
 
   } finally {
     await browser.close();
