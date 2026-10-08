@@ -1,20 +1,58 @@
 <!DOCTYPE html>
+<!-- 由 scripts/gen-safari-onboarding.mjs 產生，請改那支腳本，不要直接改這個檔 -->
 <html lang="zh-Hans">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <link rel="stylesheet" href="../Style.css">
     <script src="../Script.js" defer></script>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="哔速 - 海外B站加速图标">
-    <p class="platform-ios">你可以在“设置”App 中开启“哔速 - 海外B站加速”的 Safari 扩展。</p>
-    <p class="platform-mac state-unknown" data-newer-text="你可以在“设置”的扩展项目中开启“哔速 - 海外B站加速”。">你可以在 Safari 偏好设置的“扩展”项目中开启“哔速 - 海外B站加速”。</p>
-    <p class="platform-mac state-on" data-newer-text="“哔速 - 海外B站加速”扩展目前已开启，可以在“设置”的扩展项目中将它关闭。">“哔速 - 海外B站加速”扩展目前已开启，可以在 Safari 偏好设置的“扩展”项目中将它关闭。</p>
-    <p class="platform-mac state-off" data-newer-text="“哔速 - 海外B站加速”扩展目前已关闭，可以在“设置”的扩展项目中将它开启。">“哔速 - 海外B站加速”扩展目前已关闭，可以在 Safari 偏好设置的“扩展”项目中将它开启。</p>
-    <button class="platform-mac open-preferences" data-newer-text="退出并打开 Safari 设置…">退出并打开 Safari 偏好设置…</button>
+  <header class="hero">
+    <img class="hero-icon" src="../Icon.png" width="88" height="88" alt="哔速图标">
+    <h1>哔速 - 海外B站加速</h1>
+    <p class="tagline">让海外用户在网页版 B站更流畅地观看 4K 视频</p>
+  </header>
+
+  <main>
+  <section class="guide platform-ipad">
+    <h2>在 iPad 上开启扩展</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>点下方按钮，用 Safari 打开 bilibili.com。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">用 Safari 打开 bilibili</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>点地址栏右侧的扩展图标，再点<b>“管理扩展”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div><div class="m-menu"><div class="m-row hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>管理扩展</span></div><div class="m-row dim"><span class="m-dot"></span><span>其他扩展</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>打开<b>“哔速 - 海外B站加速”</b>的开关，点右上角的 ✓ 完成。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-sheet"><div class="m-sheet-title">管理扩展<span class="m-done">✓</span></div><div class="m-label">已安装</div><div class="m-row"><img class="app-icon" src="../Icon.png" alt=""><span class="grow">哔速 - 海外B站加速</span><span class="toggle on hl"></span></div><div class="m-row dim"><span class="m-dot"></span><span class="grow">其他扩展</span><span class="toggle on"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>再点一次扩展图标，点<b>“哔速”</b>，选择<b>“始终允许”</b>。刷新页面就完成了。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-alert"><div class="m-alert-title"><img class="app-icon" src="../Icon.png" alt=""><span>要允许“哔速”访问 bilibili.com 吗？</span></div><div class="m-btn">允许一天</div><div class="m-btn hl">始终允许</div></div></figure></li>
+    </ol>
+    <p class="alt">也可以到<b>“设置”›“App”›“Safari浏览器”›“扩展”</b>开启。</p>
+  </section>
+
+  <section class="guide platform-iphone">
+    <h2>在 iPhone 上开启扩展</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>打开<b>“设置”</b>App，前往<b>“App”›“Safari浏览器”›“扩展”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-crumbs"><span class="m-crumb">设置</span><span class="m-chev">›</span><span class="m-crumb">App</span><span class="m-chev">›</span><span class="m-crumb">Safari浏览器</span><span class="m-chev">›</span><span class="m-crumb hl">扩展</span></div></figure></li>
+      <li><div class="step-text"><span class="num">2</span><p>点<b>“哔速 - 海外B站加速”</b>，打开<b>“允许扩展”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-sheet"><div class="m-sheet-title"><img class="app-icon" src="../Icon.png" alt=""><span>哔速 - 海外B站加速</span></div><div class="m-row"><span class="grow">允许扩展</span><span class="toggle on hl"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>在下方的网站权限中，把<b>“bilibili.com”</b>设为<b>“允许”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-sheet"><div class="m-row"><span class="grow">bilibili.com</span><span class="m-value hl">允许 ›</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>点下方按钮，用 Safari 打开 bilibili.com，刷新页面就完成了。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">用 Safari 打开 bilibili</button></li>
+    </ol>
+    <p class="alt">iOS 17 及更早版本的路径是<b>“设置”›“Safari浏览器”›“扩展”</b>。也可以在 Safari 地址栏的页面菜单点<b>“管理扩展”</b>。</p>
+  </section>
+
+  <section class="guide platform-mac">
+    <h2>在 Mac 上开启扩展</h2>
+    <p class="status state-unknown">请在 Safari 设置的“扩展”中开启“哔速”。</p>
+    <p class="status state-on">“哔速”目前已开启，可以在 Safari 设置的“扩展”中将它关闭。</p>
+    <p class="status state-off">“哔速”目前已关闭，按照下面的步骤开启。</p>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>点下方按钮，这个 App 会退出，并打开 Safari 设置的<b>“扩展”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-tabs"><span class="m-tab">通用</span><span class="m-tab">标签页</span><span class="m-tab hl">扩展</span><span class="m-tab">高级</span></div></div></figure><button class="primary open-preferences" type="button">退出并打开 Safari 设置</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>勾选<b>“哔速 - 海外B站加速”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-row"><span class="m-check hl">✓</span><img class="app-icon" src="../Icon.png" alt=""><span class="grow">哔速 - 海外B站加速</span></div><div class="m-row dim"><span class="m-check"></span><span class="m-dot"></span><span class="grow">其他扩展</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>用 Safari 打开 bilibili.com，点工具栏上的哔速图标，选择<b>“在此网站上始终允许”</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意图</figcaption><div class="m-toolbar"><span class="m-url">bilibili.com</span><span class="m-tbicon hl"><img class="app-icon" src="../Icon.png" alt=""></span></div><div class="m-menu right"><div class="m-row hl"><span>在此网站上始终允许</span></div></div></figure></li>
+    </ol>
+  </section>
+  </main>
+
+  <footer class="disclaimer">非官方第三方工具，与 bilibili 官方无关。</footer>
 </body>
 </html>

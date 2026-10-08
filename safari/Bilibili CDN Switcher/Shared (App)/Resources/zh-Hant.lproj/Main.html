@@ -1,20 +1,58 @@
 <!DOCTYPE html>
+<!-- 由 scripts/gen-safari-onboarding.mjs 產生，請改那支腳本，不要直接改這個檔 -->
 <html lang="zh-Hant">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <link rel="stylesheet" href="../Style.css">
     <script src="../Script.js" defer></script>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="嗶速 - 海外B站加速圖示">
-    <p class="platform-ios">你可以在「設定」App 中開啟「嗶速 - 海外B站加速」的 Safari 擴充功能。</p>
-    <p class="platform-mac state-unknown" data-newer-text="你可以在「設定」的擴充功能項目中開啟「嗶速 - 海外B站加速」。">你可以在 Safari 偏好設定的「擴充功能」項目中開啟「嗶速 - 海外B站加速」。</p>
-    <p class="platform-mac state-on" data-newer-text="「嗶速 - 海外B站加速」擴充功能目前已開啟，可以在「設定」的擴充功能項目中將它關閉。">「嗶速 - 海外B站加速」擴充功能目前已開啟，可以在 Safari 偏好設定的「擴充功能」項目中將它關閉。</p>
-    <p class="platform-mac state-off" data-newer-text="「嗶速 - 海外B站加速」擴充功能目前已關閉，可以在「設定」的擴充功能項目中將它開啟。">「嗶速 - 海外B站加速」擴充功能目前已關閉，可以在 Safari 偏好設定的「擴充功能」項目中將它開啟。</p>
-    <button class="platform-mac open-preferences" data-newer-text="結束並開啟 Safari 設定…">結束並開啟 Safari 偏好設定…</button>
+  <header class="hero">
+    <img class="hero-icon" src="../Icon.png" width="88" height="88" alt="嗶速圖示">
+    <h1>嗶速 - 海外B站加速</h1>
+    <p class="tagline">讓海外使用者在網頁版 B站更順暢觀看 4K 影片</p>
+  </header>
+
+  <main>
+  <section class="guide platform-ipad">
+    <h2>在 iPad 上開啟擴充功能</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>點下方按鈕，用 Safari 打開 bilibili.com。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">用 Safari 開啟 bilibili</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>點網址列右側的延伸功能圖示，再點<b>「管理延伸功能」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div><div class="m-menu"><div class="m-row hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>管理延伸功能</span></div><div class="m-row dim"><span class="m-dot"></span><span>其他延伸功能</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>打開<b>「嗶速 - 海外B站加速」</b>的開關，點右上角的 ✓ 完成。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-sheet"><div class="m-sheet-title">管理延伸功能<span class="m-done">✓</span></div><div class="m-label">已安裝</div><div class="m-row"><img class="app-icon" src="../Icon.png" alt=""><span class="grow">嗶速 - 海外B站加速</span><span class="toggle on hl"></span></div><div class="m-row dim"><span class="m-dot"></span><span class="grow">其他延伸功能</span><span class="toggle on"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>再點一次延伸功能圖示，點<b>「嗶速」</b>，選擇<b>「一律允許」</b>。重新整理頁面就完成了。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-alert"><div class="m-alert-title"><img class="app-icon" src="../Icon.png" alt=""><span>要允許「嗶速」取用 bilibili.com 嗎？</span></div><div class="m-btn">允許一天</div><div class="m-btn hl">一律允許</div></div></figure></li>
+    </ol>
+    <p class="alt">也可以到<b>「設定」›「App」›「Safari」›「延伸功能」</b>開啟。</p>
+  </section>
+
+  <section class="guide platform-iphone">
+    <h2>在 iPhone 上開啟擴充功能</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>打開<b>「設定」</b>App，前往<b>「App」›「Safari」›「延伸功能」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-crumbs"><span class="m-crumb">設定</span><span class="m-chev">›</span><span class="m-crumb">App</span><span class="m-chev">›</span><span class="m-crumb">Safari</span><span class="m-chev">›</span><span class="m-crumb hl">延伸功能</span></div></figure></li>
+      <li><div class="step-text"><span class="num">2</span><p>點<b>「嗶速 - 海外B站加速」</b>，打開<b>「允許延伸功能」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-sheet"><div class="m-sheet-title"><img class="app-icon" src="../Icon.png" alt=""><span>嗶速 - 海外B站加速</span></div><div class="m-row"><span class="grow">允許延伸功能</span><span class="toggle on hl"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>在下方的網站權限中，把<b>「bilibili.com」</b>設為<b>「允許」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-sheet"><div class="m-row"><span class="grow">bilibili.com</span><span class="m-value hl">允許 ›</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>點下方按鈕，用 Safari 打開 bilibili.com，重新整理頁面就完成了。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">用 Safari 開啟 bilibili</button></li>
+    </ol>
+    <p class="alt">iOS 17 以前的路徑是<b>「設定」›「Safari」›「延伸功能」</b>。也可以在 Safari 網址列的頁面選單點<b>「管理延伸功能」</b>。</p>
+  </section>
+
+  <section class="guide platform-mac">
+    <h2>在 Mac 上開啟擴充功能</h2>
+    <p class="status state-unknown">請在 Safari 設定的「延伸功能」中開啟「嗶速」。</p>
+    <p class="status state-on">「嗶速」目前已開啟，可以在 Safari 設定的「延伸功能」中將它關閉。</p>
+    <p class="status state-off">「嗶速」目前已關閉，照下面的步驟開啟。</p>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>點下方按鈕，這個 App 會結束，並打開 Safari 設定的<b>「延伸功能」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-tabs"><span class="m-tab">一般</span><span class="m-tab">標籤頁</span><span class="m-tab hl">延伸功能</span><span class="m-tab">進階</span></div></div></figure><button class="primary open-preferences" type="button">結束並開啟 Safari 設定</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>勾選<b>「嗶速 - 海外B站加速」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-row"><span class="m-check hl">✓</span><img class="app-icon" src="../Icon.png" alt=""><span class="grow">嗶速 - 海外B站加速</span></div><div class="m-row dim"><span class="m-check"></span><span class="m-dot"></span><span class="grow">其他延伸功能</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>用 Safari 打開 bilibili.com，點工具列上的嗶速圖示，選擇<b>「在此網站上一律允許」</b>。</p></div><figure class="mock" aria-hidden="true"><figcaption>示意圖</figcaption><div class="m-toolbar"><span class="m-url">bilibili.com</span><span class="m-tbicon hl"><img class="app-icon" src="../Icon.png" alt=""></span></div><div class="m-menu right"><div class="m-row hl"><span>在此網站上一律允許</span></div></div></figure></li>
+    </ol>
+  </section>
+  </main>
+
+  <footer class="disclaimer">非官方第三方工具，與 bilibili 官方無關。</footer>
 </body>
 </html>
