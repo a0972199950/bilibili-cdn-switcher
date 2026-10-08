@@ -1,11 +1,9 @@
-function show(platform, enabled, useSettingsInsteadOfPreferences) {
+// ViewController.swift 載入完頁面後呼叫：
+//   iOS：show('iphone') 或 show('ipad')
+//   macOS：show('mac')，查到擴充開關狀態後再呼叫 show('mac', true/false)
+// 第三個參數是 Xcode 範本留下的（macOS 13 以後叫「設定」不叫「偏好設定」），引導頁一律用最新系統的說法，不再使用
+function show(platform, enabled) {
     document.body.classList.add(`platform-${platform}`);
-
-    if (useSettingsInsteadOfPreferences) {
-        for (const el of document.querySelectorAll('[data-newer-text]')) {
-            el.innerText = el.dataset.newerText;
-        }
-    }
 
     if (typeof enabled === "boolean") {
         document.body.classList.toggle(`state-on`, enabled);
@@ -16,8 +14,14 @@ function show(platform, enabled, useSettingsInsteadOfPreferences) {
     }
 }
 
-function openPreferences() {
-    webkit.messageHandlers.controller.postMessage("open-preferences");
+function post(action) {
+    webkit.messageHandlers.controller.postMessage(action);
 }
 
-document.querySelector("button.open-preferences").addEventListener("click", openPreferences);
+for (const button of document.querySelectorAll("button.open-preferences")) {
+    button.addEventListener("click", () => post("open-preferences"));
+}
+
+for (const button of document.querySelectorAll("button.open-safari")) {
+    button.addEventListener("click", () => post("open-safari"));
+}

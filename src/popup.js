@@ -1014,6 +1014,23 @@ function renderDebug(d) {
 // iframe（广告/元件），debug 会拿不到资料、测速甚至会卡在该 iframe 的残留状态而一直报错。
 var TOP_FRAME = { frameId: 0 };
 
+// 送訊息給分頁最上層 frame 的 content script。iPad Safari 上帶 frameId 選項送疑似會失敗（測速頁顯示無法開始），
+// 所以失敗時改成不帶選項再送一次；bridge.js 只在最上層 frame 回應，效果跟指定 frameId: 0 一樣。
+// cb 照舊在 sendMessage 的回呼裡執行，呼叫端可以直接檢查 chrome.runtime.lastError。
+function sendToTop(tabId, msg, cb) {
+  function plain() { chrome.tabs.sendMessage(tabId, msg, cb); }
+  try {
+    chrome.tabs.sendMessage(tabId, msg, TOP_FRAME, function (resp) {
+      if (chrome.runtime.lastError) { plain(); return; }
+      cb(resp);
+    });
+  } catch (e) { plain(); }
+}
+function connectTop(tabId, name) {
+  try { return chrome.tabs.connect(tabId, { name: name, frameId: 0 }); } catch (e) {}
+  try { return chrome.tabs.connect(tabId, { name: name }); } catch (e) { return null; }
+}
+
 // 擴充剛重新載入／更新時，已經開著的 B 站分頁裡還是舊的 content script（已跟擴充斷線，收不到訊息），
 // 瀏覽器不會自動把新的注入進去，要重新整理分頁才行。連續兩次聯絡不上 B 站分頁就提示並提供重新整理按鈕
 // （只失敗一次可能是分頁剛好在載入中，不急著提示）。
@@ -1032,7 +1049,7 @@ function pollDebug() {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (!tabs || !tabs[0]) return;
     var onBili = BILI_TAB_RE.test(tabs[0].url || "");
-    chrome.tabs.sendMessage(tabs[0].id, { type: "CDN_SWITCHER_GET_DEBUG" }, TOP_FRAME, function (resp) {
+    sendToTop(tabs[0].id, { type: "CDN_SWITCHER_GET_DEBUG" }, function (resp) {
       if (chrome.runtime.lastError) {
         debugMissCount++;
         setStale(onBili && tabs[0].status === "complete" && debugMissCount >= 2);
@@ -1293,7 +1310,11 @@ function syncDescOverflow() {
   setDescExpanded(false);
   stDesc.classList.toggle("overflowing", stDescInner.scrollHeight > stDescInner.clientHeight + 1);
 }
-stDescToggle.addEventListener("click", function () { setDescExpanded(!stDesc.classList.contains("expanded")); });
+// 點說明區任何地方都能展開／收合（平板上只點箭頭太小）；箭頭在說明區裡，點它也會走到這裡
+stDesc.addEventListener("click", function () {
+  if (!stDesc.classList.contains("overflowing")) return;
+  setDescExpanded(!stDesc.classList.contains("expanded"));
+});
 
 
 function renderSpeedtestMeta(st) {
@@ -1537,7 +1558,7 @@ els.stList.addEventListener("click", function (ev) {
 
 function pollSpeedtest() {
   if (speedtestTabId == null) return;
-  chrome.tabs.sendMessage(speedtestTabId, { type: "CDN_SWITCHER_GET_SPEEDTEST" }, TOP_FRAME, function (resp) {
+  sendToTop(speedtestTabId, { type: "CDN_SWITCHER_GET_SPEEDTEST" }, function (resp) {
     if (chrome.runtime.lastError) return;
     var st = resp && resp.speedTest;
     if (!st) return;
@@ -1560,7 +1581,7 @@ function showSpeedtestView(tabId, mode) {
   enterStLayout();
   syncDescOverflow(); // 要在畫面顯示後才量得到高度
   // 开一个长连线：popup 关闭或按返回时会自动/主动断线，content script 收到 onDisconnect 就中止测速
-  try { speedtestPort = chrome.tabs.connect(tabId, { name: "cdn-switcher-speedtest", frameId: 0 }); } catch (e) { speedtestPort = null; }
+  speedtestPort = connectTop(tabId, "cdn-switcher-speedtest");
 }
 
 // 測速頁版面（見 popup.html 的 html.stMode）：先讓 html 撐到 600px 向瀏覽器要最大的 popup，
@@ -1573,6 +1594,8 @@ function onStLayoutResize() {
 }
 function lockStLayout() {
   window.removeEventListener("resize", onStLayoutResize);
+  // iPad Safari 的 popover 回報的 innerHeight 可能比實際可見高度小很多，鎖下去會把清單裁掉；量到不合理的值就維持 600px
+  if (window.innerHeight < 300) return;
   document.documentElement.style.height = window.innerHeight + "px";
 }
 function enterStLayout() {
@@ -1607,9 +1630,12 @@ function startSpeedtest(tabId) {
   var msg = live
     ? { type: "CDN_SWITCHER_RUN_LIVE_SPEEDTEST", limits: { runs: lim("stLiveRuns"), sec: lim("stLiveSec") } }
     : { type: "CDN_SWITCHER_RUN_SPEEDTEST", hosts: speedtestHosts, limits: { mb: lim("stVideoMb"), sec: lim("stVideoSec") } };
-  chrome.tabs.sendMessage(tabId, msg, TOP_FRAME, function (resp) {
-    if (chrome.runtime.lastError || !resp || !resp.ok) {
-      els.stList.textContent = t(live ? "liveSpeedtestCannotStart" : "speedtestCannotStart");
+  sendToTop(tabId, msg, function (resp) {
+    var err = chrome.runtime.lastError;
+    if (err || !resp || !resp.ok) {
+      // 附上瀏覽器給的原因（沒有的話標出是哪種情況），使用者回報截圖時才看得出卡在哪
+      var why = err ? err.message : !resp ? "no response" : "not ok";
+      els.stList.textContent = t(live ? "liveSpeedtestCannotStart" : "speedtestCannotStart") + " (" + why + ")";
     }
   });
 }
@@ -1643,7 +1669,7 @@ els.stBackBtn.addEventListener("click", showMainView);
 document.getElementById("stStopBtn").addEventListener("click", function () {
   if (speedtestTabId == null) return;
   if (lastSpeedtestState) { lastSpeedtestState.running = false; renderSpeedtest(lastSpeedtestState); }
-  chrome.tabs.sendMessage(speedtestTabId, { type: "CDN_SWITCHER_STOP_SPEEDTEST" }, TOP_FRAME, function () { void chrome.runtime.lastError; });
+  sendToTop(speedtestTabId, { type: "CDN_SWITCHER_STOP_SPEEDTEST" }, function () { void chrome.runtime.lastError; });
 });
 
 els.stRetestBtn.addEventListener("click", function () {

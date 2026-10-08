@@ -1,61 +1,492 @@
+/* App 打開後的引導頁（Main.html 由 scripts/gen-safari-onboarding.mjs 產生）。固定淺色主題 */
+
 * {
     -webkit-user-select: none;
     -webkit-user-drag: none;
     cursor: default;
+    box-sizing: border-box;
 }
 
 :root {
-    color-scheme: light dark;
+    color-scheme: light;
 
-    --spacing: 20px;
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --line: #e3e4e8;
+    --accent: #f25d8e;
+    --accent-soft: #fde7ef;
+    --toggle-on: #34c759;
+    --link: #0a84ff;
 }
 
 html {
-    height: 100%;
+    background: var(--bg);
 }
 
 body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-
-    gap: var(--spacing);
-    margin: 0 calc(var(--spacing) * 2);
-    height: 100%;
-
-    font: -apple-system-short-body;
-    text-align: center;
+    margin: 0 auto;
+    max-width: 640px;
+    padding: 32px 20px 28px;
+    background: var(--bg);
+    color: var(--text);
+    font: -apple-system-body;
+    font-family: -apple-system, "PingFang TC", "PingFang SC", sans-serif;
+    line-height: 1.5;
 }
 
-body:not(.platform-mac, .platform-ios) :is(.platform-mac, .platform-ios) {
+/* ---- 依裝置顯示對應的段落 ---- */
+
+.guide {
     display: none;
 }
 
-body.platform-ios .platform-mac {
-    display: none;
+body.platform-ipad .platform-ipad,
+body.platform-iphone .platform-iphone,
+body.platform-mac .platform-mac {
+    display: block;
 }
 
-body.platform-mac .platform-ios {
-    display: none;
-}
-
-body.platform-ios .platform-mac {
-    display: none;
-}
-
-body:not(.state-on, .state-off) :is(.state-on, .state-off) {
-    display: none;
-}
-
-body.state-on :is(.state-off, .state-unknown) {
-    display: none;
-}
-
+body:not(.state-on, .state-off) :is(.state-on, .state-off),
+body.state-on :is(.state-off, .state-unknown),
 body.state-off :is(.state-on, .state-unknown) {
     display: none;
 }
 
-button {
-    font-size: 1em;
+/* ---- 頁首 ---- */
+
+.hero {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.hero-icon {
+    border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(242, 93, 142, .25);
+}
+
+.hero h1 {
+    margin: 14px 0 4px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.tagline {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+}
+
+/* ---- 步驟 ---- */
+
+.guide h2 {
+    margin: 0 0 12px;
+    font-size: 19px;
+}
+
+.status {
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    font-size: 15px;
+}
+
+.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.steps > li {
+    margin: 0 0 14px;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--card);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+
+.step-text {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.step-text p {
+    margin: 0;
+    font-size: 16px;
+}
+
+.num {
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 26px;
+    text-align: center;
+}
+
+button.primary {
+    display: block;
+    width: calc(100% - 38px);
+    margin: 14px 0 0 38px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button.primary:active {
+    opacity: .8;
+}
+
+.alt {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+.disclaimer {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ---- 示意圖：用 HTML 畫的簡化介面，重點用粉色框標出來 ---- */
+
+.mock {
+    position: relative;
+    margin: 14px 0 0 38px;
+    padding: 26px 14px 14px;
+    border-radius: 12px;
+    background: #eceef2;
+    font-size: 14px;
+}
+
+.mock figcaption {
+    position: absolute;
+    top: 6px;
+    left: 12px;
+    color: #9a9aa0;
+    font-size: 11px;
+}
+
+.hl {
+    outline: 2.5px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+.ext-icon {
+    width: 20px;
+    height: 20px;
+    color: #3a3a3c;
+    flex: 0 0 auto;
+}
+
+.app-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    flex: 0 0 auto;
+}
+
+.m-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    background: #c7c7cc;
+    flex: 0 0 auto;
+}
+
+.grow {
+    flex: 1 1 auto;
+}
+
+.dim {
+    opacity: .45;
+}
+
+/* 網址列 */
+.m-urlbar,
+.m-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+.m-toolbar {
+    border-radius: 10px;
+}
+
+.m-url {
+    flex: 1 1 auto;
+    font-weight: 600;
+    text-align: center;
+}
+
+.m-urlicon,
+.m-tbicon {
+    display: flex;
+    padding: 2px;
+}
+
+.m-reload {
+    color: #3a3a3c;
+}
+
+/* 選單、清單、對話框 */
+.m-menu,
+.m-sheet,
+.m-alert,
+.m-window {
+    margin-top: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: var(--card);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+}
+
+.m-sheet:first-of-type,
+.m-alert:first-of-type,
+.m-window:first-of-type {
+    margin-top: 0;
+}
+
+.m-menu {
+    max-width: 260px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.m-menu.right {
+    margin-right: 0;
+}
+
+.m-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 4px;
+}
+
+.m-row + .m-row {
+    border-top: 1px solid var(--line);
+}
+
+.m-sheet-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    padding: 6px 0 8px;
+    font-weight: 600;
+}
+
+.m-done {
+    position: absolute;
+    right: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--link);
+    color: #fff;
+    font-size: 13px;
+    line-height: 24px;
+    text-align: center;
+}
+
+.m-label {
+    padding: 2px 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.toggle {
+    position: relative;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 24px;
+    border-radius: 12px;
+    background: #d1d1d6;
+}
+
+.toggle::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .2);
+}
+
+.toggle.on {
+    background: var(--toggle-on);
+}
+
+.toggle.on::after {
+    left: 18px;
+}
+
+.toggle.hl {
+    border-radius: 12px;
+}
+
+.m-alert {
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 12px;
+    text-align: center;
+}
+
+/* iPad 開權限要點兩個對話框：並排，中間一個箭頭；太窄就上下排 */
+.m-alerts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.m-alerts .m-alert {
+    flex: 1 1 200px;
+    margin: 0;
+}
+
+.m-arrow {
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.m-alert-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.m-btn {
+    margin-top: 6px;
+    padding: 7px;
+    border-radius: 8px;
+    background: #f2f2f7;
+    color: var(--link);
+}
+
+/* iPhone 設定路徑 */
+.m-crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.m-crumb {
+    padding: 5px 10px;
+    border-radius: 8px;
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+
+.m-chev,
+.m-value {
+    color: var(--muted);
+}
+
+.m-value.hl {
+    padding: 0 4px;
+}
+
+/* Mac 設定視窗 */
+.m-titlebar {
+    display: flex;
+    gap: 6px;
+    padding: 4px 2px 8px;
+}
+
+.m-titlebar i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff5f57;
+}
+
+.m-titlebar i:nth-child(2) {
+    background: #febc2e;
+}
+
+.m-titlebar i:nth-child(3) {
+    background: #28c840;
+}
+
+.m-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    padding-bottom: 6px;
+}
+
+.m-tab {
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: var(--muted);
+}
+
+.m-tab.hl {
+    color: var(--text);
+    background: #f2f2f7;
+}
+
+.m-check {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid #b0b0b5;
+    font-size: 12px;
+    line-height: 15px;
+    text-align: center;
+}
+
+.m-check.hl {
+    border-color: var(--link);
+    background: var(--link);
+    color: #fff;
+}
+
+/* 窄螢幕（iPhone）：示意圖不縮排，留給內容更多寬度 */
+@media (max-width: 480px) {
+    .mock {
+        margin-left: 0;
+    }
+
+    button.primary {
+        width: 100%;
+        margin-left: 0;
+    }
 }

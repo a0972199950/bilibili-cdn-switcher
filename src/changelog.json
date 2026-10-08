@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "「各節點測速」頁的說明文字，點整塊區域就能展開或收合，不用再對準右下角的小箭頭",
+        "zh_CN": "「各节点测速」页的说明文字，点整块区域就能展开或收起，不用再对准右下角的小箭头",
+        "en": "On the Node speed test page, tap anywhere on the description to expand or collapse it, instead of aiming for the small arrow",
+        "ja": "「ノード速度テスト」ページの説明文は、どこをタップしても展開・折りたたみできるようになりました。右下の小さな矢印を狙う必要はありません",
+        "ko": "「노드 속도 테스트」 페이지의 설명은 아무 곳이나 눌러 펼치거나 접을 수 있습니다. 오른쪽 아래의 작은 화살표를 누를 필요가 없습니다"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.1.0",

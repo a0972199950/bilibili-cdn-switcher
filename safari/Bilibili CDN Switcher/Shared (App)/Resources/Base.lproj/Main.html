@@ -1,20 +1,58 @@
 <!DOCTYPE html>
+<!-- 由 scripts/gen-safari-onboarding.mjs 產生，請改那支腳本，不要直接改這個檔 -->
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'">
-
+    <meta name="color-scheme" content="light">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
     <link rel="stylesheet" href="../Style.css">
     <script src="../Script.js" defer></script>
 </head>
 <body>
-    <img src="../Icon.png" width="128" height="128" alt="BiBoost - Speedup for Bili Icon">
-    <p class="platform-ios">You can turn on BiBoost - Speedup for Bili’s Safari extension in Settings.</p>
-    <p class="platform-mac state-unknown" data-newer-text="You can turn on BiBoost - Speedup for Bili’s extension in the Extensions section of Safari Settings.">You can turn on BiBoost - Speedup for Bili’s extension in Safari Extensions preferences.</p>
-    <p class="platform-mac state-on" data-newer-text="BiBoost - Speedup for Bili’s extension is currently on. You can turn it off in the Extensions section of Safari Settings.">BiBoost - Speedup for Bili’s extension is currently on. You can turn it off in Safari Extensions preferences.</p>
-    <p class="platform-mac state-off" data-newer-text="BiBoost - Speedup for Bili’s extension is currently off. You can turn it on in the Extensions section of Safari Settings.">BiBoost - Speedup for Bili’s extension is currently off. You can turn it on in Safari Extensions preferences.</p>
-    <button class="platform-mac open-preferences" data-newer-text="Quit and Open Safari Settings…">Quit and Open Safari Extensions Preferences…</button>
+  <header class="hero">
+    <img class="hero-icon" src="../Icon.png" width="88" height="88" alt="BiBoost icon">
+    <h1>BiBoost - Speedup for Bili</h1>
+    <p class="tagline">Smoother 4K playback on web bilibili for overseas users</p>
+  </header>
+
+  <main>
+  <section class="guide platform-ipad">
+    <h2>Turn on the extension on iPad</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>Tap the button below to open bilibili.com in Safari.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">Open bilibili in Safari</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>Tap the Extensions icon on the right of the address bar, then tap <b>Manage Extensions</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div><div class="m-menu"><div class="m-row hl"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Manage Extensions</span></div><div class="m-row dim"><span class="m-dot"></span><span>Other extension</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>Turn on <b>BiBoost - Speedup for Bili</b>, then tap ✓ to finish.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-sheet"><div class="m-sheet-title">Manage Extensions<span class="m-done">✓</span></div><div class="m-label">Installed</div><div class="m-row"><img class="app-icon" src="../Icon.png" alt=""><span class="grow">BiBoost - Speedup for Bili</span><span class="toggle on hl"></span></div><div class="m-row dim"><span class="m-dot"></span><span class="grow">Other extension</span><span class="toggle on"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>Tap the Extensions icon again, tap <b>BiBoost</b>, choose <b>Always Allow…</b>, then <b>Always Allow on This Website</b>. Reload the page and you're done.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-alerts"><div class="m-alert"><div class="m-alert-title"><span>“BiBoost - Speedup for Bili” would like to access bilibili.com.</span></div><div class="m-btn">Allow for One Day</div><div class="m-btn hl">Always Allow…</div><div class="m-btn">Cancel</div></div><span class="m-arrow">→</span><div class="m-alert"><div class="m-btn hl">Always Allow on This Website</div><div class="m-btn">Always Allow on Every Website</div><div class="m-btn">Cancel</div></div></div></figure></li>
+    </ol>
+    <p class="alt">You can also turn it on in <b>Settings › Apps › Safari › Extensions</b>.</p>
+  </section>
+
+  <section class="guide platform-iphone">
+    <h2>Turn on the extension on iPhone</h2>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>Open the <b>Settings</b> app and go to <b>Apps › Safari › Extensions</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-crumbs"><span class="m-crumb">Settings</span><span class="m-chev">›</span><span class="m-crumb">Apps</span><span class="m-chev">›</span><span class="m-crumb">Safari</span><span class="m-chev">›</span><span class="m-crumb hl">Extensions</span></div></figure></li>
+      <li><div class="step-text"><span class="num">2</span><p>Tap <b>BiBoost - Speedup for Bili</b> and turn on <b>Allow Extension</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-sheet"><div class="m-sheet-title"><img class="app-icon" src="../Icon.png" alt=""><span>BiBoost - Speedup for Bili</span></div><div class="m-row"><span class="grow">Allow Extension</span><span class="toggle on hl"></span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>Under website permissions, set <b>bilibili.com</b> to <b>Allow</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-sheet"><div class="m-row"><span class="grow">bilibili.com</span><span class="m-value hl">Allow ›</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">4</span><p>Tap the button below to open bilibili.com in Safari. Reload the page and you're done.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-urlbar"><span class="m-url">bilibili.com</span><span class="m-urlicon"><svg class="ext-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h10.5a2 2 0 0 1 2 2V10h1.25a1.75 1.75 0 0 1 0 3.5H16.5v2a2 2 0 0 1-2 2H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span><span class="m-reload">↻</span></div></figure><button class="primary open-safari" type="button">Open bilibili in Safari</button></li>
+    </ol>
+    <p class="alt">On iOS 17 or earlier, the path is <b>Settings › Safari › Extensions</b>. You can also tap <b>Manage Extensions</b> in Safari's page menu.</p>
+  </section>
+
+  <section class="guide platform-mac">
+    <h2>Turn on the extension on Mac</h2>
+    <p class="status state-unknown">Turn on BiBoost in the Extensions section of Safari Settings.</p>
+    <p class="status state-on">BiBoost is on. You can turn it off in the Extensions section of Safari Settings.</p>
+    <p class="status state-off">BiBoost is off. Follow the steps below to turn it on.</p>
+    <ol class="steps">
+      <li><div class="step-text"><span class="num">1</span><p>Click the button below. This app quits and Safari Settings opens to <b>Extensions</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-tabs"><span class="m-tab">General</span><span class="m-tab">Tabs</span><span class="m-tab hl">Extensions</span><span class="m-tab">Advanced</span></div></div></figure><button class="primary open-preferences" type="button">Quit and Open Safari Settings</button></li>
+      <li><div class="step-text"><span class="num">2</span><p>Select the checkbox next to <b>BiBoost - Speedup for Bili</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-window"><div class="m-titlebar"><i></i><i></i><i></i></div><div class="m-row"><span class="m-check hl">✓</span><img class="app-icon" src="../Icon.png" alt=""><span class="grow">BiBoost - Speedup for Bili</span></div><div class="m-row dim"><span class="m-check"></span><span class="m-dot"></span><span class="grow">Other extension</span></div></div></figure></li>
+      <li><div class="step-text"><span class="num">3</span><p>Open bilibili.com in Safari, click the BiBoost icon in the toolbar, and choose <b>Always Allow on This Website</b>.</p></div><figure class="mock" aria-hidden="true"><figcaption>Illustration</figcaption><div class="m-toolbar"><span class="m-url">bilibili.com</span><span class="m-tbicon hl"><img class="app-icon" src="../Icon.png" alt=""></span></div><div class="m-menu right"><div class="m-row hl"><span>Always Allow on This Website</span></div></div></figure></li>
+    </ol>
+  </section>
+  </main>
+
+  <footer class="disclaimer">Unofficial third-party tool. Not affiliated with bilibili.</footer>
 </body>
 </html>
