@@ -1310,7 +1310,11 @@ function syncDescOverflow() {
   setDescExpanded(false);
   stDesc.classList.toggle("overflowing", stDescInner.scrollHeight > stDescInner.clientHeight + 1);
 }
-stDescToggle.addEventListener("click", function () { setDescExpanded(!stDesc.classList.contains("expanded")); });
+// 點說明區任何地方都能展開／收合（平板上只點箭頭太小）；箭頭在說明區裡，點它也會走到這裡
+stDesc.addEventListener("click", function () {
+  if (!stDesc.classList.contains("overflowing")) return;
+  setDescExpanded(!stDesc.classList.contains("expanded"));
+});
 
 
 function renderSpeedtestMeta(st) {
