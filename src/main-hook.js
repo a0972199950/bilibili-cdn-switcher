@@ -1580,7 +1580,9 @@
   function renderOverlay() {
     if (window.top !== window) return;
     var player = getPlayerEl();
-    if (!cfg.showDebug || !player) { if (overlayEl) overlayEl.style.display = "none"; return; }
+    // 只在点播观看页（与直播间）显示：首页、影片清单的 hover 预览也有播放器，不要在那里冒出来
+    var onWatch = IS_LIVE_PAGE || WATCH_RE.test(location.pathname);
+    if (!cfg.showDebug || !player || !onWatch) { if (overlayEl) overlayEl.style.display = "none"; return; }
     if (!overlayEl) {
       if (!document.documentElement) return;
       overlayEl = document.createElement("div");
