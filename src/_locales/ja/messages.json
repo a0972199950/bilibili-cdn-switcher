@@ -453,7 +453,7 @@
     "message": "⚡ 自動検出して追加"
   },
   "countryMissingHint": {
-    "message": "お住まいの国がない場合は、最も近い国を試すか、{link}でノードを追加してください。"
+    "message": "お住まいの国がない、またはどのノードも遅い場合は、最も近い国を試すか、{link}でノードを追加してください。"
   },
   "optimizingTitle": {
     "message": "最適化中..."
