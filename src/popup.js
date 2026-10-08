@@ -769,7 +769,17 @@ els.customClearBtn.addEventListener("click", function () {
 
 // 測速工具在 popup 開著時匯入節點：同步畫面
 chrome.storage.onChanged.addListener(function (changes, area) {
-  if (area !== "local" || !changes.customHosts) return;
+  if (area !== "local") return;
+  // 背景自動測速（切換國家後那一次、或每支影片的自動測速）換了節點：popup 開著時，下拉與測速頁的打勾要跟著變
+  if (changes.cdnHost && typeof changes.cdnHost.newValue === "string") {
+    var host = changes.cdnHost.newValue;
+    if (host !== cdnSelectValue && activeHosts().indexOf(host) >= 0) {
+      selectCdnValue(host);
+      currentCdnHost = host;
+      if (lastSpeedtestState) renderSpeedtest(lastSpeedtestState);
+    }
+  }
+  if (!changes.customHosts) return;
   var next = changes.customHosts.newValue || [];
   if (next.join("|") === customHosts.join("|")) return;
   customHosts = next.slice();
