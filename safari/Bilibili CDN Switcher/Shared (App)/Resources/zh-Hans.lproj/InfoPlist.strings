@@ -1,3 +1,3 @@
 /* App 名称：要跟 App Store Connect 的简中名称、scripts/safari-ext-name.py 的 zh_CN 一致 */
-"CFBundleDisplayName" = "BIUP - B站加速";
-"CFBundleName" = "BIUP - B站加速";
+"CFBundleDisplayName" = "哔速 - 海外B站加速";
+"CFBundleName" = "哔速 - 海外B站加速";
