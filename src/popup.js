@@ -11,7 +11,7 @@ var DEFAULTS = {
   autoFallback: true,
   autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
-  autoTestPending: false, // 切換國家（或安裝後自動選國家）後：第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清
+  autoTestPending: false, // 節點是程式替使用者選的（切換國家、安裝後自動選國家、自訂切回清單）→ 第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
@@ -667,7 +667,14 @@ els.modeList.addEventListener("change", function () {
   if (!els.modeList.checked) return;
   videoOn = true;
   var patch = { videoEnabled: true, cdnMode: "list" };
-  if (cdnMode !== "list") { cdnMode = "list"; useCountryFirstNode(countrySel, patch); }
+  if (cdnMode !== "list") {
+    // 從自訂切回清單：節點是程式替使用者選的（該國第一個），跟切換國家一樣，下一支影片在背景測一次
+    cdnMode = "list";
+    useCountryFirstNode(countrySel, patch);
+    patch.autoTestPending = countrySel !== COUNTRY_ALL;
+    patch.autoSpeedHosts = countrySel === COUNTRY_ALL ? [] : countryHosts(countrySel);
+    savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
+  }
   currentCdnHost = cdnSelectValue;
   save(patch);
   rebuildCdnList();
