@@ -3,6 +3,7 @@
 // 檔名 screenshot-<語系>-<序號>-<畫面>-<寬>x<高>.png：先語系、後序號，檔案總管按檔名排序時
 // 同一語系排在一起、且依 VIEWS 的順序排列。
 // --locale=en|zhcn|zhtw|ja|ko：只跑指定語系。
+// --safari：拍 Mac App Store 用的 Safari 版截圖（檔名前綴 screenshot-safari-），見下方 SAFARI 的說明。
 //
 // 用法：npm run capture-screenshots
 //
@@ -23,10 +24,26 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 import fs from "node:fs/promises";
 import os from "node:os";
+import { execFileSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
-const EXT_DIR = path.join(ROOT, "src");
+// --safari：Safari 打包時 scripts/safari-ext-name.py 會把 popup 標題換成 App 名稱（App Store 不准名稱含 bilibili），
+// 圖示也換成 assets/icons-prod。這裡把 src 複製到暫存資料夾、做一樣的替換再載入，拍出來才跟 Safari 版一致；
+// 「給 5 星」按鈕在 Safari 上不會出現，截圖時也藏起來。檔名加 safari- 前綴，不會蓋掉 Chrome 那套。
+const SAFARI = process.argv.includes("--safari");
+let EXT_DIR = path.join(ROOT, "src");
+if (SAFARI) {
+  EXT_DIR = await fs.mkdtemp(path.join(os.tmpdir(), "cdn-switcher-safari-src-"));
+  await fs.cp(path.join(ROOT, "src"), EXT_DIR, { recursive: true });
+  for (const f of await fs.readdir(path.join(ROOT, "assets", "icons-prod"))) {
+    if (/^icon.*.png$/.test(f)) await fs.copyFile(path.join(ROOT, "assets", "icons-prod", f), path.join(EXT_DIR, "icons", f));
+  }
+  execFileSync(process.platform === "win32" ? "python" : "python3", [path.join(ROOT, "scripts", "safari-ext-name.py"), path.join(EXT_DIR, "_locales")], {
+    stdio: "inherit",
+    env: { ...process.env, PYTHONIOENCODING: "utf-8" }
+  });
+}
 const OUT_DIR = path.join(ROOT, "store");
 
 const VIDEO_URL = "https://www.bilibili.com/video/BV1p1n8zdEAk/";
@@ -142,7 +159,7 @@ const VIEWS = {
 };
 
 function outFileName(view, prefix) {
-  return `screenshot-${prefix}-${view}-${CANVAS_W}x${CANVAS_H}.png`;
+  return `screenshot-${SAFARI ? "safari-" : ""}${prefix}-${view}-${CANVAS_W}x${CANVAS_H}.png`;
 }
 
 // popup 實際高度由內容決定：主頁 / 進階設定頁比預設視窗高就把視窗撐高再截，才不會被切掉。
@@ -309,6 +326,7 @@ async function captureLocale({ chromeLang, prefix, appleLang }) {
     const tabB = await browser.newPage();
     await tabB.setViewport(POPUP_VIEWPORT);
     await tabB.goto(`chrome-extension://${extensionId}/popup.html`, { waitUntil: "load" });
+    if (SAFARI) await tabB.addStyleTag({ content: "#rateBtn { display: none !important; }" });
     await sleep(300);
     log("UI language:", await tabB.evaluate(() => chrome.i18n.getUILanguage()), "(期望對應", prefix, ")");
 
