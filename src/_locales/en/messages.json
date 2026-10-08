@@ -454,5 +454,11 @@
   },
   "countryMissingHint": {
     "message": "Your country isn't listed? Try the closest one, or add your own nodes under {link}."
+  },
+  "optimizingTitle": {
+    "message": "Optimizing..."
+  },
+  "optimizingSkip": {
+    "message": "Skip"
   }
 }

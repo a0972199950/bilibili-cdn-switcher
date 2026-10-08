@@ -454,5 +454,11 @@
   },
   "countryMissingHint": {
     "message": "お住まいの国がない場合は、最も近い国を試すか、{link}でノードを追加してください。"
+  },
+  "optimizingTitle": {
+    "message": "最適化中..."
+  },
+  "optimizingSkip": {
+    "message": "スキップ"
   }
 }

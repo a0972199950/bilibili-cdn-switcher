@@ -20,11 +20,14 @@
     liveRoute: "ov",
     autoSpeedSwitch: false,
     autoSpeedHosts: [],
+    autoTestPending: false,
     stVideoMb: 8,
     stVideoSec: 5
   };
 
   var latestDebug = null;
+
+  var latestAutoTest = null; // 切换国家后自动测速的进度（autotest-start/progress/end）
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
 
   function pushConfig(cfg) {
@@ -119,6 +122,15 @@
     var d = ev.data;
     if (!d || d.__cdnSwitcher !== 1) return;
     if (d.dir === "debug") { latestDebug = d.payload || null; return; }
+    // 切换国家后的自动测速（main-hook 的 reason "country"）：进度给 popup 显示「优化中」；
+    // 一开始就把旗标清掉，之后不论结果都不再测
+    if (d.dir === "autotest-start" && d.payload) {
+      latestAutoTest = { running: true, reason: d.payload.reason || "", total: d.payload.total || 0, done: 0 };
+      if (d.payload.reason === "country") { try { chrome.storage.local.set({ autoTestPending: false }); } catch (e) {} }
+      return;
+    }
+    if (d.dir === "autotest-progress" && d.payload) { if (latestAutoTest) latestAutoTest.done = d.payload.done || 0; return; }
+    if (d.dir === "autotest-end") { if (latestAutoTest) latestAutoTest.running = false; return; }
     if (d.dir === "speedtest-meta" && d.payload) {
       speedTest.title = d.payload.title || "";
       speedTest.qn = d.payload.qn || "";
@@ -134,12 +146,14 @@
       return;
     }
     // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
-    // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点，就不覆盖
+    // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
+    // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关
     if (d.dir === "autotest-done" && d.payload && d.payload.host) {
       var p = d.payload;
       try {
         chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost }, function (items) {
-          if (!items.autoSpeedSwitch || items.cdnHost !== p.from) return;
+          if (items.cdnHost !== p.from) return;
+          if (p.reason !== "country" && !items.autoSpeedSwitch) return;
           chrome.storage.local.set({ cdnHost: p.host, videoEnabled: true });
         });
       } catch (e) {}
@@ -163,7 +177,7 @@
       if (msg && msg.type === "CDN_SWITCHER_GET_DEBUG") {
         // 顺便通知 MAIN：popup 开着了，直播间可以开始探测各线路是否存在（懒探测，见 main-hook.js）
         try { window.postMessage({ __cdnSwitcher: 1, dir: "debug-poll" }, "*"); } catch (e) {}
-        sendResponse({ debug: latestDebug });
+        sendResponse({ debug: latestDebug, autoTest: latestAutoTest });
         return true;
       }
       if (msg && msg.type === "CDN_SWITCHER_RUN_SPEEDTEST") {
@@ -178,6 +192,11 @@
       if (msg && msg.type === "CDN_SWITCHER_RUN_LIVE_SPEEDTEST") {
         speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
         try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}
+        sendResponse({ ok: true });
+        return true;
+      }
+      if (msg && msg.type === "CDN_SWITCHER_STOP_AUTOTEST") {
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "autotest-stop" }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
       }

@@ -454,5 +454,11 @@
   },
   "countryMissingHint": {
     "message": "沒有你的國家？試試最接近的國家，或是{link}。"
+  },
+  "optimizingTitle": {
+    "message": "優化中..."
+  },
+  "optimizingSkip": {
+    "message": "略過"
   }
 }

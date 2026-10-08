@@ -11,6 +11,7 @@ var DEFAULTS = {
   autoFallback: true,
   autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
+  autoTestPending: false, // 切換國家（或安裝後自動選國家）後：第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
@@ -94,6 +95,7 @@ document.documentElement.lang = uiLanguage();
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stStopBtn", "stStopBtn"], ["stHintLeave", "stHintLeave"],
   ["liveRouteRowLabel", "liveRouteRowLabel"],
   ["sortBySpeedLabel", "sortBySpeedLabel"], ["sortBySpeedHint", "sortBySpeedHint"],
+  ["optTitle", "optimizingTitle"], ["optSkip", "optimizingSkip"],
   ["stVideoLimitTitle", "stVideoLimitTitle"], ["stVideoLimitHint", "stVideoLimitHint"], ["stVideoMbLabel", "stVideoMbLabel"],
   ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
@@ -404,6 +406,7 @@ els.countrySelect.addEventListener("change", function () {
   countryAutoPending = false; // 使用者自己選了，偵測結果晚到也不要蓋掉
   var patch = { cdnCountry: code, countryAutoDone: true };
   useCountryFirstNode(code, patch); // 國家選單只在清單模式顯示，切國家就直接換成該國第一個節點
+  patch.autoTestPending = code !== COUNTRY_ALL; // 下一支影片在背景測一次、換成最快的（「全部」300 個測不完，不測）
   save(patch);
   applyCountry(code);
 });
@@ -434,7 +437,7 @@ function autoSelectCountry(cfg) {
     var patch = { cdnCountry: target, detectedCountry: code, countryAutoDone: true };
     // 新安裝與更新後的使用者一律換成該國第一個節點：舊版選的節點多半不在新的國家清單裡，
     // 留著會變成下拉裡看不到的選項。用自訂節點列表的使用者不動
-    if (cdnMode !== "custom") useCountryFirstNode(target, patch);
+    if (cdnMode !== "custom") { useCountryFirstNode(target, patch); patch.autoTestPending = target !== COUNTRY_ALL; }
     save(patch);
     applyCountry(target);
   });
@@ -494,7 +497,7 @@ function buildCdnSelectList(options) {
       if (o.value === cdnSelectValue) return;
       selectCdnValue(o.value);
       currentCdnHost = o.value;
-      save({ videoEnabled: true, cdnHost: o.value });
+      save({ videoEnabled: true, cdnHost: o.value, autoTestPending: false }); // 使用者自己選了，切換國家後的自動測速取消
     });
     els.cdnSelectList.appendChild(row);
   });
@@ -663,7 +666,7 @@ els.modeList.addEventListener("change", function () {
 els.modeCustom.addEventListener("change", function () {
   if (!els.modeCustom.checked) return;
   videoOn = true;
-  var patch = { videoEnabled: true, cdnMode: "custom" };
+  var patch = { videoEnabled: true, cdnMode: "custom", autoTestPending: false };
   if ((cdnMode !== "custom" || customHosts.indexOf(cdnSelectValue) < 0) && customHosts.length) useHost(customHosts[0], patch);
   cdnMode = "custom";
   currentCdnHost = cdnSelectValue;
@@ -675,7 +678,7 @@ els.modeOff.addEventListener("change", function () {
   if (!els.modeOff.checked) return;
   syncModeUI();
   videoOn = false;
-  save({ videoEnabled: false });
+  save({ videoEnabled: false, autoTestPending: false });
 });
 
 // -------- 自訂節點列表：輸入網址或 host 按 Enter／加入；每列可移除、可整個清空 --------
@@ -1054,15 +1057,36 @@ function pollDebug() {
         debugMissCount++;
         setStale(onBili && tabs[0].status === "complete" && debugMissCount >= 2);
         renderDebug(null);
+        renderOptimizing(null);
         return;
       }
       debugMissCount = 0;
       setStale(false);
       renderDebug(resp && resp.debug);
+      renderOptimizing(resp && resp.autoTest);
     });
   });
 }
 pollDebug();
+
+// -------- 切換國家後的自動測速：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
+var optEl = document.getElementById("optimizing");
+var optShown = false;
+function renderOptimizing(st) {
+  var on = !!(st && st.running && st.reason === "country");
+  if (on) document.getElementById("optCount").textContent = Math.max(0, (st.total || 0) - (st.done || 0));
+  if (on === optShown) return;
+  optShown = on;
+  optEl.classList.toggle("show", on);
+}
+// 略過：中斷這一輪（旗標在開始測時就已清掉，不會再測），節點維持該國第一個
+document.getElementById("optSkip").addEventListener("click", function () {
+  renderOptimizing(null);
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    if (!tabs || !tabs[0]) return;
+    sendToTop(tabs[0].id, { type: "CDN_SWITCHER_STOP_AUTOTEST" }, function () { void chrome.runtime.lastError; });
+  });
+});
 
 // -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
 var SPEEDTEST_ERR_KEYS = {
@@ -1546,7 +1570,7 @@ function applySpeedtestHost(host) {
   (cdnMode === "custom" ? els.modeCustom : els.modeList).checked = true;
   selectCdnValue(host);
   syncModeUI();
-  save({ videoEnabled: true, cdnHost: host });
+  save({ videoEnabled: true, cdnHost: host, autoTestPending: false });
   renderSpeedtest(lastSpeedtestState); // 立即重绘打勾标示，不用等下次 poll
 }
 els.stList.addEventListener("click", function (ev) {
@@ -1624,6 +1648,7 @@ function showMainView() {
 }
 
 function startSpeedtest(tabId) {
+  save({ autoTestPending: false }); // 使用者自己測速了，切換國家後的自動測速取消（MAIN 那邊開手動測速也會讓它作廢）
   var prev = lastSpeedtestState || {};
   renderSpeedtest({ running: true, results: [], error: null, title: prev.title || "", qn: prev.qn || "", avail: prev.avail || null });
   var live = speedtestMode === "live";
