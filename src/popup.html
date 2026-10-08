@@ -1348,11 +1348,17 @@
       position: fixed;
       inset: 0;
       z-index: 105;
-      background: rgba(0, 0, 0, .45);
+      background: rgba(0, 0, 0, .5);
+      -webkit-backdrop-filter: blur(3px);
+      backdrop-filter: blur(3px); /* 深色主題下純黑遮罩看不太出來，加模糊才明顯 */
       align-items: center;
       justify-content: center;
       padding: 14px;
       box-sizing: border-box;
+    }
+
+    :root[data-theme="dark"] #optimizing {
+      background: rgba(0, 0, 0, .62);
     }
 
     #optimizing.show {
@@ -1362,73 +1368,140 @@
     .optCard {
       width: 100%;
       box-sizing: border-box;
-      padding: 18px 14px 12px;
-      border-radius: 10px;
+      padding: 14px 14px 10px;
+      border-radius: 12px;
       background: var(--raised);
       color: var(--text);
-      box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
       text-align: center;
     }
 
     .optScene {
       display: block;
-      width: 120px;
+      width: 180px;
       height: 110px;
-      margin: 0 auto 6px;
+      margin: 0 auto 4px;
       overflow: visible;
     }
 
-    .optIcon {
-      transform-box: fill-box;
-      transform-origin: 50% 100%;
-      animation: optShake .7s ease-in-out infinite;
+    .optBench {
+      fill: currentColor;
+      opacity: .25;
     }
 
-    .optHammer {
+    .optBody {
       transform-box: fill-box;
-      transform-origin: 50% 0;
-      animation: optHammer .7s ease-in-out infinite;
+      transform-origin: 50% 100%;
+      animation: optBob .8s ease-in-out infinite;
+    }
+
+    .optArmR {
+      transform-box: view-box;
+      transform-origin: 98px 60px;
+      animation: optHammer .8s ease-in-out infinite;
+    }
+
+    .optArmL {
+      transform-box: view-box;
+      transform-origin: 7.5px 72px;
+      animation: optWrench 1.6s ease-in-out infinite;
+    }
+
+    .optGear {
+      transform-box: view-box;
+      transform-origin: 143px 76px;
+      animation: optGear 3s linear infinite;
     }
 
     .optSpark {
       opacity: 0;
-      animation: optSpark .7s linear infinite;
+      animation: optSpark .8s linear infinite;
     }
 
     @keyframes optHammer {
-      0%, 100% { transform: rotate(-42deg); }
-      40%, 52% { transform: rotate(8deg); }
+      0%, 100% { transform: rotate(-65deg); }
+      42%, 54% { transform: rotate(5deg); }
     }
 
-    @keyframes optShake {
-      0%, 38%, 100% { transform: translate(0, 0) rotate(0); }
-      43% { transform: translate(-1px, 2px) rotate(-2deg); }
-      49% { transform: translate(1px, 1px) rotate(1deg); }
+    @keyframes optBob {
+      0%, 36%, 100% { transform: translateY(0) scaleY(1); }
+      44% { transform: translateY(2px) scaleY(.96); }
+      50% { transform: translateY(1px) scaleY(.98); }
+    }
+
+    @keyframes optWrench {
+      0%, 100% { transform: rotate(-14deg); }
+      50% { transform: rotate(14deg); }
+    }
+
+    @keyframes optGear {
+      to { transform: rotate(360deg); }
     }
 
     @keyframes optSpark {
-      0%, 39% { opacity: 0; }
-      42%, 54% { opacity: 1; }
-      62%, 100% { opacity: 0; }
+      0%, 41% { opacity: 0; }
+      44%, 56% { opacity: 1; }
+      64%, 100% { opacity: 0; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .optIcon, .optHammer, .optSpark { animation: none; }
-      .optHammer { transform: rotate(-20deg); }
-      .optSpark { opacity: 1; }
+      .optBody, .optArmR, .optArmL, .optGear, .optSpark { animation: none; }
+      .optArmR { transform: rotate(-25deg); }
     }
 
     .optTitle {
       font-size: 15px;
       font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .optRingWrap {
+      position: relative;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 2px;
+    }
+
+    .optRing {
+      width: 64px;
+      height: 64px;
+      transform: rotate(-90deg); /* 從 12 點鐘方向開始填 */
+    }
+
+    .optRingBg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 5;
+    }
+
+    .optRingFg {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 169.65; /* 2π × 27 */
+      stroke-dashoffset: 169.65;
+      transition: stroke-dashoffset .4s ease;
     }
 
     .optCount {
-      font-size: 30px;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
       font-weight: 700;
-      line-height: 1.2;
-      margin: 2px 0 4px;
       font-variant-numeric: tabular-nums;
+    }
+
+    .optCount.pop {
+      animation: optPop .3s ease-out;
+    }
+
+    @keyframes optPop {
+      0% { transform: scale(1.35); opacity: .4; }
+      100% { transform: scale(1); opacity: 1; }
     }
 
     .optSkipRow button.linkBtn {
@@ -1848,17 +1921,30 @@
   <!-- 切換國家後的自動測速：目前分頁回報進行中才顯示（見 popup.js renderOptimizing）；手動測速不會出現 -->
   <div id="optimizing" role="dialog" aria-modal="true" aria-labelledby="optTitle">
     <div class="optCard">
-      <svg class="optScene" viewBox="0 0 120 110" aria-hidden="true">
+      <!-- 場景：擴充圖示當小人，左手拿扳手鎖管子上的螺帽、右手拿鎚子敲工作台上的機器（齒輪一直轉），敲到會冒火花。
+           CSS 動畫的 transform 會蓋掉同一元素的 transform 屬性，所以會動的群組都直接用場景座標畫、
+           以 transform-box: view-box 指定旋轉軸；只有圖示本體用外層 g 定位縮放、內層 g 做動畫 -->
+      <svg class="optScene" viewBox="0 0 180 110" aria-hidden="true">
         <defs>
           <linearGradient id="optBg" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="rgb(255,138,176)" />
             <stop offset="100%" stop-color="rgb(235,90,140)" />
           </linearGradient>
         </defs>
-        <!-- 擴充圖示（與 scripts/gen-icons.mjs 同一份畫法），被敲時微微震動。
-             CSS 動畫的 transform 會蓋掉同一元素的 transform 屬性，所以定位／縮放放外層、動畫放內層 -->
-        <g transform="translate(12,28) scale(0.14)">
-          <g class="optIcon">
+        <!-- 工作台與左邊的管子 -->
+        <rect class="optBench" x="0" y="100" width="180" height="4" rx="2" />
+        <rect x="4" y="52" width="7" height="48" rx="2" fill="#90a4ae" />
+        <rect x="2" y="60" width="11" height="5" rx="1" fill="#78909c" />
+        <!-- 左手：扳手套在螺帽上，以螺帽為軸來回鎖緊；手臂畫長一點、壓在圖示下面 -->
+        <g class="optArmL">
+          <rect x="6" y="69" width="44" height="6" rx="3" fill="#e0558a" />
+          <rect x="8" y="69.5" width="20" height="5" rx="2" fill="#8d8d8d" />
+          <circle cx="7.5" cy="72" r="5.5" fill="none" stroke="#8d8d8d" stroke-width="3" />
+        </g>
+        <polygon points="7.5,68.5 10.5,70.3 10.5,73.7 7.5,75.5 4.5,73.7 4.5,70.3" fill="#546e7a" />
+        <!-- 擴充圖示本體（與 scripts/gen-icons.mjs 同一份畫法），敲的時候上下一蹲 -->
+        <g transform="translate(44,44) scale(0.105)">
+          <g class="optBody">
             <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#optBg)" />
             <g transform="translate(0,9)" fill="rgb(120,20,55)" fill-opacity="0.18">
               <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
@@ -1870,23 +1956,45 @@
             </g>
           </g>
         </g>
-        <!-- 鎚子：以把手頂端為軸擺動，敲在圖示右側 -->
-        <g transform="translate(98,12)">
-          <g class="optHammer">
-            <rect x="-3" y="0" width="6" height="48" rx="3" fill="#a1887f" />
-            <rect x="-15" y="42" width="30" height="14" rx="4" fill="#8d8d8d" />
-            <rect x="-15" y="42" width="30" height="5" rx="2" fill="#b5b5b5" />
-          </g>
+        <!-- 右邊的機器：底座 + 一直轉的齒輪 -->
+        <rect x="118" y="80" width="54" height="20" rx="4" fill="#78909c" />
+        <rect x="124" y="86" width="10" height="8" rx="1" fill="#cfd8dc" />
+        <circle cx="160" cy="90" r="2" fill="#cfd8dc" />
+        <circle cx="152" cy="90" r="2" fill="#cfd8dc" />
+        <g class="optGear">
+          <circle cx="143" cy="76" r="7" fill="none" stroke="#546e7a" stroke-width="5" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(45 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(90 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(135 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(180 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(225 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(270 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(315 143 76)" />
+        </g>
+        <!-- 右手：以肩膀 (98,60) 為軸，舉起鎚子敲向齒輪 -->
+        <g class="optArmR">
+          <rect x="96" y="57" width="26" height="6" rx="3" fill="#e0558a" />
+          <rect x="120" y="57.5" width="22" height="5" rx="2" fill="#a1887f" />
+          <rect x="138" y="51" width="9" height="18" rx="3" fill="#8d8d8d" />
+          <rect x="138" y="51" width="3" height="18" rx="1.5" fill="#b5b5b5" />
         </g>
         <!-- 敲到時的火花 -->
         <g class="optSpark" stroke="#ffb300" stroke-width="2.5" stroke-linecap="round">
-          <line x1="90" y1="56" x2="97" y2="50" />
-          <line x1="92" y1="66" x2="101" y2="68" />
-          <line x1="88" y1="47" x2="90" y2="40" />
+          <line x1="134" y1="62" x2="128" y2="56" />
+          <line x1="152" y1="62" x2="158" y2="56" />
+          <line x1="143" y1="58" x2="143" y2="50" />
         </g>
       </svg>
       <div class="optTitle" id="optTitle"></div>
-      <div class="optCount" id="optCount">10</div>
+      <!-- 剩餘節點數：外圈依完成比例填滿，數字每減一跳一下 -->
+      <div class="optRingWrap">
+        <svg class="optRing" viewBox="0 0 64 64" aria-hidden="true">
+          <circle class="optRingBg" cx="32" cy="32" r="27" />
+          <circle class="optRingFg" id="optRingFg" cx="32" cy="32" r="27" />
+        </svg>
+        <div class="optCount" id="optCount">10</div>
+      </div>
       <div class="optSkipRow"><button type="button" class="linkBtn" id="optSkip"></button></div>
     </div>
   </div>

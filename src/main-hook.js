@@ -1092,6 +1092,7 @@
   // 与手动测速共用 speedTestGen：popup 开始手动测速会让自动测速这一轮作废。
   var AUTO_TEST_KEY = "__CDN_SWITCHER_AUTOTEST__";
   var AUTO_TEST_DELAY_MS = 5000;
+  var COUNTRY_TEST_DELAY_MS = 300; // 切换国家后那一次不等起播顺了才测：使用者正看着「优化中」，越快开始越好
   var autoTestKey = null, autoTestTimer = null, autoTestRunning = false;
   var pendingTimer = null; // 「切换国家后测一次」的排程：与每支影片的自动测速分开记，不受「测过的影片」限制
   function postAutoTest(dir, payload) {
@@ -1119,7 +1120,7 @@
       pendingTimer = setTimeout(function () {
         pendingTimer = null;
         if (cfg.autoTestPending && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "country");
-      }, AUTO_TEST_DELAY_MS);
+      }, COUNTRY_TEST_DELAY_MS);
       return;
     }
     if (!cfg.autoSpeedSwitch) return;

@@ -406,7 +406,11 @@ els.countrySelect.addEventListener("change", function () {
   countryAutoPending = false; // 使用者自己選了，偵測結果晚到也不要蓋掉
   var patch = { cdnCountry: code, countryAutoDone: true };
   useCountryFirstNode(code, patch); // 國家選單只在清單模式顯示，切國家就直接換成該國第一個節點
-  patch.autoTestPending = code !== COUNTRY_ALL; // 下一支影片在背景測一次、換成最快的（「全部」300 個測不完，不測）
+  // 下一支影片在背景測一次、換成最快的（「全部」300 個測不完，不測）。要測的清單跟旗標一起寫，
+  // content script 收到旗標時清單已經是新國家的，不用等 saveAutoSpeedHosts 的第二次寫入
+  patch.autoTestPending = code !== COUNTRY_ALL;
+  patch.autoSpeedHosts = code === COUNTRY_ALL ? [] : countryHosts(code);
+  savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
   save(patch);
   applyCountry(code);
 });
@@ -437,7 +441,12 @@ function autoSelectCountry(cfg) {
     var patch = { cdnCountry: target, detectedCountry: code, countryAutoDone: true };
     // 新安裝與更新後的使用者一律換成該國第一個節點：舊版選的節點多半不在新的國家清單裡，
     // 留著會變成下拉裡看不到的選項。用自訂節點列表的使用者不動
-    if (cdnMode !== "custom") { useCountryFirstNode(target, patch); patch.autoTestPending = target !== COUNTRY_ALL; }
+    if (cdnMode !== "custom") {
+      useCountryFirstNode(target, patch);
+      patch.autoTestPending = target !== COUNTRY_ALL;
+      patch.autoSpeedHosts = target === COUNTRY_ALL ? [] : countryHosts(target);
+      savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
+    }
     save(patch);
     applyCountry(target);
   });
@@ -1071,10 +1080,22 @@ pollDebug();
 
 // -------- 切換國家後的自動測速：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
 var optEl = document.getElementById("optimizing");
-var optShown = false;
+var optShown = false, optLastCount = null;
+var OPT_RING_LEN = 169.65; // 外圈周長（2π × 27），與 popup.html 的 stroke-dasharray 一致
 function renderOptimizing(st) {
   var on = !!(st && st.running && st.reason === "country");
-  if (on) document.getElementById("optCount").textContent = Math.max(0, (st.total || 0) - (st.done || 0));
+  if (on) {
+    var total = st.total || 0, done = Math.min(st.done || 0, total), left = total - done;
+    document.getElementById("optRingFg").style.strokeDashoffset = total ? OPT_RING_LEN * (1 - done / total) : OPT_RING_LEN;
+    var cnt = document.getElementById("optCount");
+    if (left !== optLastCount) {
+      cnt.textContent = left;
+      if (optLastCount !== null) { cnt.classList.remove("pop"); void cnt.offsetWidth; cnt.classList.add("pop"); } // 每減一跳一下
+      optLastCount = left;
+    }
+  } else {
+    optLastCount = null;
+  }
   if (on === optShown) return;
   optShown = on;
   optEl.classList.toggle("show", on);
