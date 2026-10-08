@@ -37,7 +37,7 @@ def _windows_link():
     except Exception:
         a = {}
     desc = f"{a.get('InterfaceDescription', '')} {a.get('PhysicalMediaType', '')} {a.get('MediaType', '')}"
-    if re.search(r"Remote NDIS|Mobile Broadband|WWAN|Cellular|LTE|Android|iPhone|Apple Mobile", desc, re.I):
+    if re.search(r"Remote NDIS|Mobile Broadband|WWAN|Cellular|\bLTE\b|Android|iPhone|Apple Mobile", desc, re.I):
         kind = "行動網路（手機 USB 分享／行動網卡）"
     elif re.search(r"802\.11|Wireless|Wi-?Fi|WLAN", desc, re.I):
         kind = "Wi-Fi"
