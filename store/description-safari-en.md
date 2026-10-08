@@ -1,4 +1,4 @@
-# Overseas Video Speedup for bilibili — App Store (Safari extension) listing copy
+# BiBoost - Speedup for Bili — App Store (Safari extension) listing copy
 
 ## Short description
 
@@ -36,7 +36,7 @@ Celebrating the big 2.0.0 update!!
 ・One-click disable — turns off completely, restoring Safari's original behavior; videos and live streams can also be turned off separately
 
 ■ How to use
-After downloading the app, open it once, then go to Safari → Settings → Extensions, enable "Bilibili CDN Switcher", and allow it to access bilibili.com. From then on it activates automatically on any bilibili video page; click the extension icon next to the address bar to change the route or turn the feature off.
+After downloading the app, open it once. It walks you through turning on the extension for your device (Mac, iPhone, or iPad): turn on "BiBoost - Speedup for Bili" in Safari's Extensions and allow it to access bilibili.com. From then on it activates automatically on any bilibili video page; click the extension icon next to the address bar to change the route or turn the feature off.
 
 ■ Privacy
 This extension does not collect or transmit any user data, makes no outbound network connections, and contains no remote code. All settings are stored locally on your own device. The source code is fully open — feel free to review it.
