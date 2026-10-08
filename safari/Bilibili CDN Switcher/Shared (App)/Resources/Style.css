@@ -360,6 +360,26 @@ button.primary:active {
     text-align: center;
 }
 
+/* iPad 開權限要點兩個對話框：並排，中間一個箭頭；太窄就上下排 */
+.m-alerts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.m-alerts .m-alert {
+    flex: 1 1 200px;
+    margin: 0;
+}
+
+.m-arrow {
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 700;
+}
+
 .m-alert-title {
     display: flex;
     align-items: center;
