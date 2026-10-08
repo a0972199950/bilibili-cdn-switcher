@@ -1081,12 +1081,10 @@ pollDebug();
 // -------- 切換國家後的自動測速：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
 var optEl = document.getElementById("optimizing");
 var optShown = false, optLastCount = null;
-var OPT_RING_LEN = 169.65; // 外圈周長（2π × 27），與 popup.html 的 stroke-dasharray 一致
 function renderOptimizing(st) {
   var on = !!(st && st.running && st.reason === "country");
   if (on) {
     var total = st.total || 0, done = Math.min(st.done || 0, total), left = total - done;
-    document.getElementById("optRingFg").style.strokeDashoffset = total ? OPT_RING_LEN * (1 - done / total) : OPT_RING_LEN;
     var cnt = document.getElementById("optCount");
     if (left !== optLastCount) {
       cnt.textContent = left;
