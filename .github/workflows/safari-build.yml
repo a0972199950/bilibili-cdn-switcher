@@ -52,7 +52,7 @@ jobs:
           PRODUCTS: build/Build/Products/${{ matrix.products }}
         run: |
           set -euo pipefail
-          APP="$PRODUCTS/BIUP - Speedup for Bili.app"
+          APP="$PRODUCTS/BiBoost - Speedup for Bili.app"
           if [ "$PLATFORM" = macos ]; then
             CONTENTS="$APP/Contents"; RES="$CONTENTS/Resources"; PLUGINS="$CONTENTS/PlugIns"
           else
@@ -64,7 +64,7 @@ jobs:
 
           name=$(/usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$CONTENTS/Info.plist")
           echo "CFBundleDisplayName: $name"
-          [ "$name" = "BIUP - Speedup for Bili" ] || { echo "::error::App 顯示名稱不對：$name"; fail=1; }
+          [ "$name" = "BiBoost - Speedup for Bili" ] || { echo "::error::App 顯示名稱不對：$name"; fail=1; }
 
           for lang in zh-Hant zh-Hans; do
             f="$RES/$lang.lproj/InfoPlist.strings"
