@@ -453,6 +453,12 @@
     "message": "⚡ Auto-detect & add"
   },
   "countryMissingHint": {
-    "message": "Your country isn't listed? Try the closest one, or add your own nodes under {link}."
+    "message": "Your country isn't listed, or every node is slow? Try the closest country, or add your own nodes under {link}."
+  },
+  "optimizingTitle": {
+    "message": "Optimizing..."
+  },
+  "optimizingSkip": {
+    "message": "Skip"
   }
 }

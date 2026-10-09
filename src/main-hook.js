@@ -30,6 +30,7 @@
     liveRoute: "ov", // 直播线路偏好：ov / ovb / cn / cnb（记的是线路种类，不是具体 host，集群号随房间而变）
     autoSpeedSwitch: false, // 影片自动测速并切换到最快节点（进阶设定，预设关闭）
     autoSpeedHosts: [], // 自动测速要测的节点（popup 依目前国家写入）
+    autoTestPending: false, // 切换国家（或安装后自动选国家）后：第一支影片拿到样本就在背景测一次、换成最快节点，触发即清
     stVideoMb: 8, // 测速门槛（与 popup 进阶设定共用）
     stVideoSec: 5
   };
@@ -1091,7 +1092,12 @@
   // 与手动测速共用 speedTestGen：popup 开始手动测速会让自动测速这一轮作废。
   var AUTO_TEST_KEY = "__CDN_SWITCHER_AUTOTEST__";
   var AUTO_TEST_DELAY_MS = 5000;
+  var COUNTRY_TEST_DELAY_MS = 300; // 切换国家后那一次不等起播顺了才测：使用者正看着「优化中」，越快开始越好
   var autoTestKey = null, autoTestTimer = null, autoTestRunning = false;
+  var pendingTimer = null; // 「切换国家后测一次」的排程：与每支影片的自动测速分开记，不受「测过的影片」限制
+  function postAutoTest(dir, payload) {
+    try { window.postMessage({ __cdnSwitcher: 1, dir: dir, payload: payload || {} }, "*"); } catch (e) {}
+  }
   function videoKey() {
     try { var u = new URL(location.href); return u.pathname + "|" + (u.searchParams.get("p") || "1"); } catch (e) { return location.pathname; }
   }
@@ -1104,8 +1110,20 @@
     try { window.sessionStorage.setItem(AUTO_TEST_KEY, JSON.stringify(ks.slice(-50))); } catch (e) {}
   }
   function maybeScheduleAutoTest() {
-    if (IS_LIVE_PAGE || !ACTIVE || !cfg.autoSpeedSwitch || !isActive(cfg)) return;
+    if (IS_LIVE_PAGE || !ACTIVE || !isActive(cfg)) return;
     if (!WATCH_RE.test(location.pathname)) return;
+    // 切换国家后测一次（autoTestPending）：不管这支影片测过没有，拿到样本就测；开始测的那一刻旗标就清掉，
+    // 之后不论完成、失败、关分页或使用者略过都不会再测。timer 到时还没样本的话 runAutoSpeedTest 不会开始，
+    // 下一个分段进来会再排一次
+    if (cfg.autoTestPending && (cfg.autoSpeedHosts || []).length) {
+      if (autoTestRunning || pendingTimer) return;
+      pendingTimer = setTimeout(function () {
+        pendingTimer = null;
+        if (cfg.autoTestPending && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "country");
+      }, COUNTRY_TEST_DELAY_MS);
+      return;
+    }
+    if (!cfg.autoSpeedSwitch) return;
     var key = videoKey();
     if (key === autoTestKey) return;
     autoTestKey = key;
@@ -1113,31 +1131,53 @@
     markTested(key);
     clearTimeout(autoTestTimer);
     autoTestTimer = setTimeout(function () {
-      if (videoKey() === key && cfg.autoSpeedSwitch && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || []);
+      if (videoKey() === key && cfg.autoSpeedSwitch && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "video");
     }, AUTO_TEST_DELAY_MS);
   }
-  function runAutoSpeedTest(hosts) {
+  // reason："video" = 每支影片的自动测速（进阶设定）；"country" = 切换国家后测一次。
+  // "country" 会向 bridge 回报开始／进度／结束（popup 显示「优化中」与倒数），并以开始时的节点当 from：
+  // 中途使用者自己换了节点，bridge 比对不符就不覆盖
+  function runAutoSpeedTest(hosts, reason) {
     if (speedTestRunning || autoTestRunning || !hosts.length || !sampleUrl()) return;
+    var country = reason === "country";
+    if (country) {
+      if (!cfg.autoTestPending) return;
+      cfg.autoTestPending = false; // 触发即清（bridge 收到 autotest-start 会写回 storage）
+      autoTestKey = videoKey(); markTested(autoTestKey); // 这支影片不再另外做每支影片的自动测速
+      postAutoTest("autotest-start", { reason: reason, total: hosts.length });
+    }
     stMaxBytes = clampNum(cfg.stVideoMb, 1, 100, ST_DEFAULT_MB) * 1024 * 1024;
     stMaxMs = clampNum(cfg.stVideoSec, 1, 60, ST_DEFAULT_SEC) * 1000;
     var myGen = ++speedTestGen;
     autoTestRunning = true;
-    var best = null, i = 0;
+    var from = cfg.cdnHost, best = null, i = 0;
+    function end(clearAbort) {
+      autoTestRunning = false;
+      if (clearAbort) speedTestAbort = null; // 被手动测速取代时 speedTestAbort 已是对方的，不能动
+      if (country) postAutoTest("autotest-end", { reason: reason });
+    }
     (function next() {
-      if (myGen !== speedTestGen) { autoTestRunning = false; return; } // 被手动测速取代
+      if (myGen !== speedTestGen) { end(false); return; } // 被手动测速取代、或使用者略过
       if (i >= hosts.length) {
-        autoTestRunning = false;
-        speedTestAbort = null;
-        if (best && best.host !== cfg.cdnHost && cfg.autoSpeedSwitch) {
-          try { window.postMessage({ __cdnSwitcher: 1, dir: "autotest-done", payload: { host: best.host, from: cfg.cdnHost } }, "*"); } catch (e) {}
+        if (best && best.host !== cfg.cdnHost && (country || cfg.autoSpeedSwitch)) {
+          postAutoTest("autotest-done", { host: best.host, from: country ? from : cfg.cdnHost, reason: reason });
         }
+        end(true);
         return;
       }
       measureHost(hosts[i++]).then(function (r) {
+        if (myGen !== speedTestGen) { end(false); return; }
         if (!r.error && r.bps > 0 && (!best || r.bps > best.bps)) best = r;
+        if (country) postAutoTest("autotest-progress", { done: i, total: hosts.length });
         next();
       });
     })();
+  }
+  // popup 按「略过」：让这一轮作废并中断目前的下载；节点维持原样
+  function stopAutoTest() {
+    if (!autoTestRunning) return;
+    speedTestGen++;
+    if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
   }
 
   // ---------------- 直播测速 ----------------
@@ -1392,6 +1432,7 @@
     if (!d || d.__cdnSwitcher !== 1) return;
     if (d.dir === "speedtest-run") { runSpeedTest((d.payload && d.payload.hosts) || [], d.payload && d.payload.limits); return; }
     if (d.dir === "speedtest-stop") { stopSpeedTest(); return; }
+    if (d.dir === "autotest-stop") { stopAutoTest(); return; }
     if (d.dir === "livetest-run") { runLiveSpeedTest(d.payload && d.payload.limits); return; }
     if (d.dir === "debug-poll") { probeLiveAvail(); return; }
     if (d.dir === "messages" && d.payload) { for (var mk in DEFAULT_MSGS) if (d.payload[mk]) MSGS[mk] = d.payload[mk]; return; }
@@ -1440,7 +1481,10 @@
     if (!d || d.__cdnSwitcher !== 1 || d.dir !== "config") return;
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost(), beforeLiveSig = liveSig(cfg);
+    var beforePending = !!cfg.autoTestPending;
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
+    // 影片播放中切换国家：不等下一支影片，这支就排程测一次（有样本才会真的开始）
+    if (cfg.autoTestPending && !beforePending) maybeScheduleAutoTest();
     // 中途关掉「失败自动切换」：收掉正在显示的「皆无法播放」询问弹窗（persistent，不会自己消失）
     if (!cfg.autoFallback && askToastOn) { askToastOn = false; hideToast(); }
     renderOverlay();
@@ -1536,7 +1580,9 @@
   function renderOverlay() {
     if (window.top !== window) return;
     var player = getPlayerEl();
-    if (!cfg.showDebug || !player) { if (overlayEl) overlayEl.style.display = "none"; return; }
+    // 只在点播观看页（与直播间）显示：首页、影片清单的 hover 预览也有播放器，不要在那里冒出来
+    var onWatch = IS_LIVE_PAGE || WATCH_RE.test(location.pathname);
+    if (!cfg.showDebug || !player || !onWatch) { if (overlayEl) overlayEl.style.display = "none"; return; }
     if (!overlayEl) {
       if (!document.documentElement) return;
       overlayEl = document.createElement("div");

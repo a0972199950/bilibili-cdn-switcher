@@ -453,6 +453,12 @@
     "message": "⚡ 자동 감지 후 추가"
   },
   "countryMissingHint": {
-    "message": "내 국가가 없나요? 가장 가까운 국가를 사용해 보거나 {link}에서 노드를 추가하세요."
+    "message": "내 국가가 없거나 모든 노드가 느린가요? 가장 가까운 국가를 사용해 보거나 {link}에서 노드를 추가하세요."
+  },
+  "optimizingTitle": {
+    "message": "최적화 중..."
+  },
+  "optimizingSkip": {
+    "message": "건너뛰기"
   }
 }

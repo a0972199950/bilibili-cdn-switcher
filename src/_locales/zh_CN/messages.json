@@ -453,6 +453,12 @@
     "message": "⚡ 自动检测并加入"
   },
   "countryMissingHint": {
-    "message": "没有你的国家？试试最接近的国家，或是{link}。"
+    "message": "没有你的国家？全部节点都很慢？试试最接近的国家，或是{link}。"
+  },
+  "optimizingTitle": {
+    "message": "优化中..."
+  },
+  "optimizingSkip": {
+    "message": "跳过"
   }
 }

@@ -1342,6 +1342,185 @@
       color: inherit;
     }
 
+    /* 切換國家後的自動測速「優化中」遮罩：圖示被鎚子敲敲打打 + 剩餘節點數倒數 + 一個不強調的「略過」 */
+    #optimizing {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 105;
+      background: rgba(0, 0, 0, .5);
+      -webkit-backdrop-filter: blur(3px);
+      backdrop-filter: blur(3px); /* 深色主題下純黑遮罩看不太出來，加模糊才明顯 */
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    :root[data-theme="dark"] #optimizing {
+      background: rgba(0, 0, 0, .62);
+    }
+
+    #optimizing.show {
+      display: flex;
+    }
+
+    .optCard {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 14px 14px 10px;
+      border-radius: 12px;
+      background: var(--raised);
+      color: var(--text);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, .4);
+      text-align: center;
+    }
+
+    .optScene {
+      display: block;
+      width: 180px;
+      height: 110px;
+      margin: 0 auto 4px;
+      overflow: visible;
+    }
+
+    .optBench {
+      fill: currentColor;
+      opacity: .25;
+    }
+
+    /* 一輪 1.2 秒：0–18% 蹲下蓄力 → 35–50% 跳到最高、拉長側身 → 66% 落地壓扁（鎚子這時敲到、冒火花）→ 彈回 */
+    .optPerson {
+      transform-box: view-box;
+      transform-origin: 71px 98px;
+      animation: optHop 1.2s ease-in-out infinite;
+    }
+
+    .optArmR {
+      transform-box: view-box;
+      transform-origin: 98px 60px;
+      animation: optHammer 1.2s ease-in-out infinite;
+    }
+
+    .optArmL {
+      transform-box: view-box;
+      transform-origin: 7.5px 72px;
+      animation: optWrench 1.2s ease-in-out infinite;
+    }
+
+    .optGear {
+      transform-box: view-box;
+      transform-origin: 143px 76px;
+      animation: optGear 3s linear infinite;
+    }
+
+    .optSpark {
+      opacity: 0;
+      animation: optSpark 1.2s linear infinite;
+    }
+
+    @keyframes optHop {
+      0%, 100% { transform: translateY(0) scale(1, 1) rotate(0); }
+      18% { transform: translateY(3px) scale(1.12, .84) rotate(0); }
+      35% { transform: translateY(-12px) scale(.9, 1.14) rotate(-7deg); }
+      50% { transform: translateY(-15px) scale(.96, 1.06) rotate(5deg); }
+      66% { transform: translateY(0) scale(1.18, .78) rotate(0); }
+      80% { transform: translateY(-2px) scale(.98, 1.04) rotate(0); }
+      90% { transform: translateY(0) scale(1.02, .98) rotate(0); }
+    }
+
+    @keyframes optHammer {
+      0%, 100% { transform: rotate(-30deg); }
+      18% { transform: rotate(-40deg); }
+      40%, 52% { transform: rotate(-95deg); }
+      66%, 76% { transform: rotate(6deg); }
+    }
+
+    @keyframes optWrench {
+      0%, 100% { transform: rotate(-12deg); }
+      45% { transform: rotate(14deg); }
+      66% { transform: rotate(-2deg); }
+    }
+
+    @keyframes optGear {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes optSpark {
+      0%, 64% { opacity: 0; }
+      66%, 78% { opacity: 1; }
+      86%, 100% { opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .optPerson, .optArmR, .optArmL, .optGear, .optSpark { animation: none; }
+      .optArmR { transform: rotate(-25deg); }
+    }
+
+    .optTitle {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    /* 「10...」：數字固定寬，點用固定寬的 i 輪流顯示，整段不會左右晃 */
+    .optCountRow {
+      display: flex;
+      justify-content: center;
+      align-items: baseline;
+      margin: 0 0 4px;
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .optCount {
+      display: inline-block;
+      min-width: 1.4em;
+      text-align: right;
+    }
+
+    .optCount.pop {
+      animation: optPop .3s ease-out;
+    }
+
+    .optDots i {
+      display: inline-block;
+      width: .36em;
+      font-style: normal;
+      opacity: 0;
+      animation: optDot 1.2s steps(1, end) infinite;
+    }
+
+    .optDots i:nth-child(2) { animation-delay: .3s; }
+    .optDots i:nth-child(3) { animation-delay: .6s; }
+
+    /* 每 1.2 秒一輪：第 1 點 0.3 秒亮、第 2 點 0.6 秒亮、第 3 點 0.9 秒亮，1.2 秒全暗 → 0、1、2、3 個點循環 */
+    @keyframes optDot {
+      0%, 25% { opacity: 0; }
+      25.01%, 100% { opacity: 1; }
+    }
+
+    @keyframes optPop {
+      0% { transform: scale(1.35); opacity: .4; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .optSkipRow {
+      margin-top: 14px;
+    }
+
+    .optSkipRow button.linkBtn {
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
     /* 更新後的「更新內容」提示：蓋在整個 popup 上的一次性遮罩，關閉後才把新版本號寫進 storage */
     #whatsNew {
       display: none;
@@ -1743,6 +1922,82 @@
       <button id="stStopBtn" type="button" disabled></button>
     </div>
     <div id="stList"></div>
+  </div>
+
+  <!-- 切換國家後的自動測速：目前分頁回報進行中才顯示（見 popup.js renderOptimizing）；手動測速不會出現 -->
+  <div id="optimizing" role="dialog" aria-modal="true" aria-labelledby="optTitle">
+    <div class="optCard">
+      <!-- 場景：擴充圖示當小人，左手拿扳手鎖管子上的螺帽、右手拿鎚子敲工作台上的機器（齒輪一直轉），敲到會冒火花。
+           CSS 動畫的 transform 會蓋掉同一元素的 transform 屬性，所以會動的群組都直接用場景座標畫、
+           以 transform-box: view-box 指定旋轉軸；只有圖示本體用外層 g 定位縮放、內層 g 做動畫 -->
+      <svg class="optScene" viewBox="0 0 180 110" aria-hidden="true">
+        <defs>
+          <linearGradient id="optBg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="rgb(255,138,176)" />
+            <stop offset="100%" stop-color="rgb(235,90,140)" />
+          </linearGradient>
+        </defs>
+        <!-- 工作台與左邊的管子 -->
+        <rect class="optBench" x="0" y="100" width="180" height="4" rx="2" />
+        <rect x="4" y="52" width="7" height="48" rx="2" fill="#90a4ae" />
+        <rect x="2" y="60" width="11" height="5" rx="1" fill="#78909c" />
+        <polygon points="7.5,68.5 10.5,70.3 10.5,73.7 7.5,75.5 4.5,73.7 4.5,70.3" fill="#546e7a" />
+        <!-- 小人（圖示本體 + 兩隻手）：整個一起蹦跳，起跳前先蹲、空中拉長側身、落地壓扁；落地那一下鎚子剛好敲到 -->
+        <g class="optPerson">
+          <!-- 左手：扳手套在螺帽上來回鎖緊；手臂畫長一點、壓在圖示下面 -->
+          <g class="optArmL">
+            <rect x="6" y="69" width="44" height="6" rx="3" fill="#e0558a" />
+            <rect x="8" y="69.5" width="20" height="5" rx="2" fill="#8d8d8d" />
+            <circle cx="7.5" cy="72" r="5.5" fill="none" stroke="#8d8d8d" stroke-width="3" />
+          </g>
+          <!-- 擴充圖示本體（與 scripts/gen-icons.mjs 同一份畫法） -->
+          <g transform="translate(44,44) scale(0.105)">
+            <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#optBg)" />
+            <g transform="translate(0,9)" fill="rgb(120,20,55)" fill-opacity="0.18">
+              <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+              <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+            </g>
+            <g fill="white">
+              <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+              <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+            </g>
+          </g>
+          <!-- 右手：以肩膀 (98,60) 為軸，空中高舉鎚子、落地敲向齒輪 -->
+          <g class="optArmR">
+            <rect x="96" y="57" width="26" height="6" rx="3" fill="#e0558a" />
+            <rect x="120" y="57.5" width="22" height="5" rx="2" fill="#a1887f" />
+            <rect x="138" y="51" width="9" height="18" rx="3" fill="#8d8d8d" />
+            <rect x="138" y="51" width="3" height="18" rx="1.5" fill="#b5b5b5" />
+          </g>
+        </g>
+        <!-- 右邊的機器：底座 + 一直轉的齒輪 -->
+        <rect x="118" y="80" width="54" height="20" rx="4" fill="#78909c" />
+        <rect x="124" y="86" width="10" height="8" rx="1" fill="#cfd8dc" />
+        <circle cx="160" cy="90" r="2" fill="#cfd8dc" />
+        <circle cx="152" cy="90" r="2" fill="#cfd8dc" />
+        <g class="optGear">
+          <circle cx="143" cy="76" r="7" fill="none" stroke="#546e7a" stroke-width="5" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(45 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(90 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(135 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(180 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(225 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(270 143 76)" />
+          <rect x="141" y="64" width="4" height="5" rx="1" fill="#546e7a" transform="rotate(315 143 76)" />
+        </g>
+        <!-- 敲到時的火花 -->
+        <g class="optSpark" stroke="#ffb300" stroke-width="2.5" stroke-linecap="round">
+          <line x1="134" y1="62" x2="128" y2="56" />
+          <line x1="152" y1="62" x2="158" y2="56" />
+          <line x1="143" y1="58" x2="143" y2="50" />
+        </g>
+      </svg>
+      <div class="optTitle" id="optTitle"></div>
+      <!-- 剩餘節點數「10...」：數字每減一跳一下，後面的點 0 → 3 個循環 -->
+      <div class="optCountRow"><span class="optCount" id="optCount">10</span><span class="optDots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></div>
+      <div class="optSkipRow"><button type="button" class="linkBtn" id="optSkip"></button></div>
+    </div>
   </div>
 
   <div id="allWarn" role="alertdialog" aria-modal="true" aria-labelledby="awTitle">

@@ -453,6 +453,12 @@
     "message": "⚡ 自動偵測並加入"
   },
   "countryMissingHint": {
-    "message": "沒有你的國家？試試最接近的國家，或是{link}。"
+    "message": "沒有你的國家？全部節點都很慢？試試最接近的國家，或是{link}。"
+  },
+  "optimizingTitle": {
+    "message": "優化中..."
+  },
+  "optimizingSkip": {
+    "message": "略過"
   }
 }
