@@ -95,14 +95,17 @@ jobs:
       - name: Archive
         run: |
           set -o pipefail
-          EXTRA=()
           if [ "${{ matrix.platform }}" = macos ]; then
             SCHEME="Bilibili CDN Switcher (macOS)"; DEST="generic/platform=macOS"
+            # 自動簽章 Archive 會用「開發憑證」簽；CI 每次都是新機器、鑰匙圈裡沒有私鑰，Xcode 就向 Apple 再申請一張，
+            # 累積到帳號上限後 Archive 直接失敗。改用 ad-hoc 簽章：不需要任何憑證，但 App Sandbox 等 entitlements
+            # 一樣會寫進簽章（macOS App Store 版必須有），下一步 -exportArchive 再用雲端管理的發布憑證重簽
+            EXTRA=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER=)
           else
             SCHEME="Bilibili CDN Switcher (iOS)"; DEST="generic/platform=iOS"
             # 自動簽章 Archive 時會先要 iOS 開發用描述檔，那需要已註冊的裝置，CI 沒有。
             # 所以 iOS 先不簽章 Archive，下一步 -exportArchive 再用發布憑證簽（App Store 版只看匯出時的簽章）
-            EXTRA=(CODE_SIGNING_ALLOWED=NO)
+            EXTRA=(CODE_SIGN_STYLE=Automatic CODE_SIGNING_ALLOWED=NO)
           fi
           xcodebuild archive \
             -project "$PROJECT" \
@@ -115,9 +118,20 @@ jobs:
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
             "${EXTRA[@]}"
+
+      - name: 確認 macOS 簽章帶有 App Sandbox
+        if: matrix.platform == 'macos'
+        run: |
+          # ad-hoc 簽章的 entitlements 會原樣帶到匯出後的發布簽章；沒有 App Sandbox 的話 App Store 會拒收，在這裡先擋下
+          set -o pipefail
+          for bundle in "$RUNNER_TEMP"/app.xcarchive/Products/Applications/*.app "$RUNNER_TEMP"/app.xcarchive/Products/Applications/*.app/Contents/PlugIns/*.appex; do
+            echo "== $(basename "$bundle")"
+            ent=$(codesign -d --entitlements - --xml "$bundle" 2>/dev/null | plutil -convert xml1 -o - - )
+            echo "$ent" | grep -A1 "<key>" | grep -v -- "--"
+            echo "$ent" | grep -q "com.apple.security.app-sandbox" || { echo "::error::$(basename "$bundle") 沒有 App Sandbox entitlement"; exit 1; }
+          done
 
       - name: 匯出${{ env.UPLOAD == 'true' && '並上傳' || '' }}
         run: |
