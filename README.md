@@ -36,7 +36,7 @@ Bilibili's default CDN assignment often routes overseas users through slow, roun
 
 | Feature | Description |
 |:--|:--|
-| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (tested in Taiwan / Singapore, more countries coming soon), works out of the box |
+| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (tested in Taiwan / Singapore, more countries coming soon), works out of the box; after installing or switching country, the first video you play runs a one-time background speed test and switches to the fastest node |
 | 🌐 **Other CDN nodes** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / various overseas nodes…, freely switchable based on your region |
 | ✏️ **Custom node list** | A mode mutually exclusive with "choose from list": add as many CDN hosts as you like, with speed test and sorting; the official **CDNSpeedTest** tool (Windows) adds its recommended nodes here automatically |
 | 🛑 **Off** | Video and live each have their own "Off" option: CDN selection is left alone and bilibili's original behavior is kept |
