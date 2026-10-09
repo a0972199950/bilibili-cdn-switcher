@@ -22,6 +22,7 @@ Celebrating the big 2.0.0 update!!
 
 ■ Key features
 ・Works out of the box — no setup at all, it just works once installed
+・Picks the fastest node for you — new in 2.2! After installing or switching country, the first video you play runs a one-time background speed test and switches to the fastest node; you can skip it
 ・Worldwide support — expanded from Taiwan / Singapore to support every country! Use the "Custom node list" to cover any country not yet listed
 ・Hand-tested nodes — listed countries have their fastest nodes picked through real hands-on testing, with more countries coming soon... Use the "Custom node list" to cover any country not yet listed
 ・Live stream support — new in 2.0! Switch live rooms between the international and China routes and their backups; falls back to the international route automatically when the route is poor

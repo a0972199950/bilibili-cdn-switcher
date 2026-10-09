@@ -1,37 +1,42 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "「各節點測速」頁的說明文字，點整塊區域就能展開或收合，不用再對準右下角的小箭頭",
-        "zh_CN": "「各节点测速」页的说明文字，点整块区域就能展开或收起，不用再对准右下角的小箭头",
-        "en": "On the Node speed test page, tap anywhere on the description to expand or collapse it, instead of aiming for the small arrow",
-        "ja": "「ノード速度テスト」ページの説明文は、どこをタップしても展開・折りたたみできるようになりました。右下の小さな矢印を狙う必要はありません",
-        "ko": "「노드 속도 테스트」 페이지의 설명은 아무 곳이나 눌러 펼치거나 접을 수 있습니다. 오른쪽 아래의 작은 화살표를 누를 필요가 없습니다"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "安裝後或切換國家時，第一支影片會在背景自動測速一次、換成最快的節點。進行中設定頁會顯示「優化中」與倒數，可略過",
-        "zh_CN": "安装后或切换国家时，第一支视频会在后台自动测速一次、换成最快的节点。进行中设置页会显示「优化中」与倒计时，可跳过",
-        "en": "After installing or switching country, the first video you play runs a one-time background speed test and switches to the fastest node. The popup shows \"Optimizing...\" with a countdown while it runs; you can skip it",
-        "ja": "インストール後や国を切り替えた後、最初に再生する動画でバックグラウンドの速度テストを一度だけ行い、最速のノードに切り替えます。実行中は設定画面に「最適化中...」とカウントダウンが表示され、スキップもできます",
-        "ko": "설치 후 또는 국가를 바꾼 뒤 처음 재생하는 영상에서 백그라운드 속도 테스트를 한 번 실행해 가장 빠른 노드로 바꿉니다. 진행 중에는 설정 창에 「최적화 중...」과 카운트다운이 표시되며 건너뛸 수 있습니다"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "除錯疊層只在影片觀看頁（與直播間）顯示，首頁或影片清單的預覽播放不再出現",
-        "zh_CN": "调试叠层只在视频观看页（与直播间）显示，首页或视频列表的预览播放不再出现",
-        "en": "The debug overlay now appears only on video watch pages (and live rooms), not on home-page or list hover previews",
-        "ja": "デバッグ表示は動画視聴ページ（とライブルーム）のみに表示され、ホームや一覧のプレビュー再生には出なくなりました",
-        "ko": "디버그 오버레이는 영상 시청 페이지(및 라이브 방)에서만 표시되며, 홈이나 목록의 미리보기 재생에는 나타나지 않습니다"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.2.0",
+      "date": "2026-10-09",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "「各節點測速」頁的說明文字，點整塊區域就能展開或收合，不用再對準右下角的小箭頭",
+            "zh_CN": "「各节点测速」页的说明文字，点整块区域就能展开或收起，不用再对准右下角的小箭头",
+            "en": "On the Node speed test page, tap anywhere on the description to expand or collapse it, instead of aiming for the small arrow",
+            "ja": "「ノード速度テスト」ページの説明文は、どこをタップしても展開・折りたたみできるようになりました。右下の小さな矢印を狙う必要はありません",
+            "ko": "「노드 속도 테스트」 페이지의 설명은 아무 곳이나 눌러 펼치거나 접을 수 있습니다. 오른쪽 아래의 작은 화살표를 누를 필요가 없습니다"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "安裝後或切換國家時，第一支影片會在背景自動測速一次、換成最快的節點。進行中設定頁會顯示「優化中」與倒數，可略過",
+            "zh_CN": "安装后或切换国家时，第一支视频会在后台自动测速一次、换成最快的节点。进行中设置页会显示「优化中」与倒计时，可跳过",
+            "en": "After installing or switching country, the first video you play runs a one-time background speed test and switches to the fastest node. The popup shows \"Optimizing...\" with a countdown while it runs; you can skip it",
+            "ja": "インストール後や国を切り替えた後、最初に再生する動画でバックグラウンドの速度テストを一度だけ行い、最速のノードに切り替えます。実行中は設定画面に「最適化中...」とカウントダウンが表示され、スキップもできます",
+            "ko": "설치 후 또는 국가를 바꾼 뒤 처음 재생하는 영상에서 백그라운드 속도 테스트를 한 번 실행해 가장 빠른 노드로 바꿉니다. 진행 중에는 설정 창에 「최적화 중...」과 카운트다운이 표시되며 건너뛸 수 있습니다"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "除錯疊層只在影片觀看頁（與直播間）顯示，首頁或影片清單的預覽播放不再出現",
+            "zh_CN": "调试叠层只在视频观看页（与直播间）显示，首页或视频列表的预览播放不再出现",
+            "en": "The debug overlay now appears only on video watch pages (and live rooms), not on home-page or list hover previews",
+            "ja": "デバッグ表示は動画視聴ページ（とライブルーム）のみに表示され、ホームや一覧のプレビュー再生には出なくなりました",
+            "ko": "디버그 오버레이는 영상 시청 페이지(및 라이브 방)에서만 표시되며, 홈이나 목록의 미리보기 재생에는 나타나지 않습니다"
+          }
+        }
+      ]
+    },
     {
       "version": "2.1.0",
       "date": "2026-10-07",
