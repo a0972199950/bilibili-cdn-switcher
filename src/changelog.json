@@ -1,17 +1,22 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "新增香港、日本、澳洲、美國的節點清單",
-        "zh_CN": "新增香港、日本、澳大利亚、美国的节点列表",
-        "en": "Added node lists for Hong Kong, Japan, Australia and the United States",
-        "ja": "香港・日本・オーストラリア・アメリカのノードリストを追加しました",
-        "ko": "홍콩·일본·호주·미국의 노드 목록을 추가했습니다"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.3.0",
+      "date": "2026-10-10",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "新增香港、日本、澳洲、美國的節點清單",
+            "zh_CN": "新增香港、日本、澳大利亚、美国的节点列表",
+            "en": "Added node lists for Hong Kong, Japan, Australia and the United States",
+            "ja": "香港・日本・オーストラリア・アメリカのノードリストを追加しました",
+            "ko": "홍콩·일본·호주·미국의 노드 목록을 추가했습니다"
+          }
+        }
+      ]
+    },
     {
       "version": "2.2.0",
       "date": "2026-10-09",
