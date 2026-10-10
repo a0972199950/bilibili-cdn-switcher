@@ -1,23 +1,13 @@
 {
   "unreleased": [
     {
-      "type": "fix",
+      "type": "feature",
       "text": {
-        "zh_TW": "依實測更新台灣與新加坡的建議節點與預設節點，並新增香港、日本、澳洲、美國的節點清單；預設節點改以「各家 ISP 都能順暢播 4K」為優先",
-        "zh_CN": "依实测更新台湾与新加坡的建议节点与默认节点，并新增香港、日本、澳大利亚、美国的节点列表；默认节点改以「各家 ISP 都能顺畅播 4K」为优先",
-        "en": "Updated the recommended and default nodes for Taiwan and Singapore based on measurements, and added node lists for Hong Kong, Japan, Australia and the United States; the default node now favours smooth 4K playback across every ISP",
-        "ja": "実測に基づき台湾とシンガポールの推奨ノード・既定ノードを更新し、香港・日本・オーストラリア・アメリカのノードリストを追加しました。既定ノードはどの ISP でも 4K がスムーズに再生できることを優先します",
-        "ko": "실측에 따라 대만과 싱가포르의 추천 노드와 기본 노드를 업데이트하고, 홍콩·일본·호주·미국의 노드 목록을 추가했습니다. 기본 노드는 모든 ISP에서 4K가 원활하게 재생되는 것을 우선합니다"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "安裝後與切換國家時不再自動測速一次：各國預設節點已改為多數 ISP 都能順暢播 4K 的節點，直接用即可。進階設定的「每支影片自動測速」不受影響",
-        "zh_CN": "安装后与切换国家时不再自动测速一次：各国默认节点已改为多数 ISP 都能顺畅播 4K 的节点，直接用即可。高级设置的「每支影片自动测速」不受影响",
-        "en": "No more one-off automatic speed test after install or when switching country: each country's default node now works smoothly for 4K on most ISPs. The advanced per-video auto speed test is unaffected",
-        "ja": "インストール後や国の切り替え時の 1 回限りの自動速度テストを行わないようにしました。各国の既定ノードは多くの ISP で 4K がスムーズに再生できるものになっています。詳細設定の「動画ごとの自動速度テスト」には影響しません",
-        "ko": "설치 후와 국가 전환 시의 1회 자동 속도 테스트를 더 이상 하지 않습니다. 각 국가의 기본 노드는 대부분의 ISP에서 4K가 원활하게 재생되는 노드로 바뀌었습니다. 고급 설정의 「영상마다 자동 속도 테스트」는 영향받지 않습니다"
+        "zh_TW": "新增香港、日本、澳洲、美國的節點清單",
+        "zh_CN": "新增香港、日本、澳大利亚、美国的节点列表",
+        "en": "Added node lists for Hong Kong, Japan, Australia and the United States",
+        "ja": "香港・日本・オーストラリア・アメリカのノードリストを追加しました",
+        "ko": "홍콩·일본·호주·미국의 노드 목록을 추가했습니다"
       }
     }
   ],
