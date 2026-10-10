@@ -2,8 +2,9 @@
 #   build_pool：熱門（popular，新且高播放）、入站必刷（precious，舊且高播放）、
 #               各年份時間窗的 WBI 搜尋深頁（補中／低播放、新／舊）。只收 ≥ 120 秒的影片。
 #               （每週必看 series API 會被風控 -352，不能用。）可分段續跑：已完成的搜尋記在 pool.json。
-#   pick：快篩 3 支「當前熱門、播放量最高」影片 + 細測 10 支分層影片（播放 高/中/低 × 發布 近/中/遠 九格 + 1 支），
-#         兩組不重複；每支在 1080P 以上隨機挑一個解析度（沒有 1080P 取最高）。種子固定、記錄在 videos.json。
+#   pick：快篩 3 支「當前熱門、播放量最高」影片 + 細測 10 支分層影片（播放 高/中/低 × 發布 近/中/遠 九格 + 1 支）
+#         + 冷門探測 1 支低播放影片，三組不重複；每支在 1080P 以上隨機挑一個解析度（沒有 1080P 取最高）。
+#         種子固定、記錄在 videos.json。
 import json, os, time, random, collections
 from bili import api, wbi, view, dash_streams
 
@@ -143,9 +144,12 @@ def pick(pool_path, out_path, seed, n_test=10, n_screen=3, logged_in=True):
         # 只在 1080P（qn 80）以上隨機；影片沒有 1080P 時取最高畫質的那些串流
         hi = [x for x in ss if x["id"] >= 80] or [x for x in ss if x["id"] == max(y["id"] for y in ss)]
         s = rng.choice(hi)
+        # bandwidth = 這個串流宣告的碼率（bps）：同樣 1080P，不同影片、編碼的碼率可差好幾倍，判斷速度夠不夠播比畫質代碼直接
         return dict(bvid=v["bvid"], cid=d["cid"], title=d["title"], view=d["stat"]["view"], pub=d["pubdate"],
                     dur=d["duration"], cell="-".join(_cell(dict(view=d["stat"]["view"], pub=d["pubdate"]), now)),
-                    qn=s["id"], codecid=s["codecid"], choices=sorted({(x["id"], x["codecid"]) for x in ss}))
+                    qn=s["id"], codecid=s["codecid"], bandwidth=s.get("bandwidth"), width=s.get("width"),
+                    height=s.get("height"), fps=s.get("frameRate") or s.get("frame_rate"),
+                    choices=sorted({(x["id"], x["codecid"]) for x in ss}))
 
     def take(cands, n):
         out = []
@@ -181,12 +185,18 @@ def pick(pool_path, out_path, seed, n_test=10, n_screen=3, logged_in=True):
             test += take([v for v in pool if _cell(v, now) == (a, b)], 1)
     test += take([v for v in pool if _cell(v, now)[0] == "M"], n_test - len(test))
     test += take(list(pool), n_test - len(test))
-    out = dict(seed=seed, picked_at=time.strftime("%Y-%m-%d %H:%M"), logged_in=logged_in, screen=screen, test=test)
+    # 冷門探測：1 支低播放（沒有就中播放）影片，與快篩、細測都不重複（避免預熱細測影片的快取）。
+    # 「只能播熱門」的節點對中低播放影片幾乎都回 403，用它在細測前把這些節點挑掉
+    probe = (take([v for v in pool if _cell(v, now)[0] == "L"], 1)
+             or take([v for v in pool if _cell(v, now)[0] == "M"], 1))
+    out = dict(seed=seed, picked_at=time.strftime("%Y-%m-%d %H:%M"), logged_in=logged_in, screen=screen, test=test,
+               probe=probe)
     json.dump(out, open(out_path, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    for k in ("screen", "test"):
-        print(f"== {'快篩' if k == 'screen' else '細測'} ==")
+    for k in ("screen", "test", "probe"):
+        print(f"== {dict(screen='快篩', test='細測', probe='冷門探測')[k]} ==")
         for v in out[k]:
             print(f"  {v['bvid']} {cell_zh(v['cell'])} view={v['view']:>10} "
                   f"{time.strftime('%Y-%m-%d', time.localtime(v['pub']))} {v['dur']:>5}s "
-                  f"{QN.get(v['qn'], v['qn'])} {CODEC.get(v['codecid'], v['codecid'])}  {v['title'][:24]}")
+                  f"{QN.get(v['qn'], v['qn'])} {CODEC.get(v['codecid'], v['codecid'])} "
+                  f"{(v.get('bandwidth') or 0) / 1e6:.1f}Mbps  {v['title'][:24]}")
     return out

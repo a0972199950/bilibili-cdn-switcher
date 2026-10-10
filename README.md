@@ -212,7 +212,7 @@ src=playinfo|playurl  rw=<rewrite count>  seg=<segment swap count>  qn=<quality>
 
 - 📋 The node list lives in **`src/cdn-list.json`** and is edited by hand.
   It covers 300+ VOD nodes (de-duplicated, with live-only and confirmed-dead nodes removed);
-  each country's `nodes` is its top 10 spread across CDN pools. After testing a new country with `/cdn-speedtest`, add that country's `recommended` from `summary.json` to `countries`.
+  each country's `nodes` is its top 10 spread across CDN pools. Reports from the speed-test app (`tools/cdn-speedtest-app`) are collected and analyzed with `/analyze-cdn`; update `countries` based on that analysis.
 - 🧩 Format:
 
   ```json

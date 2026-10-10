@@ -15,7 +15,7 @@ import json, os, queue, re, shutil, sys, threading, time, traceback, urllib.requ
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.5.1"
+APP_VERSION = "1.6.0"
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
@@ -81,8 +81,10 @@ class LogWriter:
 
 
 # 進度權重（依實際耗時粗估）
-WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5), ("stage1", 45), ("stage2", 24),
-           ("report", 2)]
+# 1.6.0 起細測改成「快篩通過且冷門探測沒回 403 的全部節點」（原本只取前 80 名），真正下載的節點約多 1.6–2.2 倍，
+# 細測權重由 24 調成 45；冷門探測只抓 1MB、403 立刻回應，給 3。尚未用實測校正
+WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5), ("stage1", 45), ("probe", 3),
+           ("stage2", 45), ("report", 2)]
 
 
 def post_json(payload, timeout=90):
@@ -126,12 +128,13 @@ def estimate_minutes(down_mbps, per_conn_mbps=None):
     """預估整個測速耗時（分鐘，取 5 的倍數）。
     耗時主要取決於並行數（大部分時間花在等逾時的節點），並行數的算法與測速相同：
     頻寬 × 0.5 ÷ 單一連線速度（最多算 8K 碼率上限 PER_CONN_CAP），限制在 1–8。實測校正：耗時 ≈ 7 + 105 ÷ 並行數
-    （並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分）。量不到單一連線速度時就用上限值。"""
+    （並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分）。量不到單一連線速度時就用上限值。
+    1.6.0 起細測不再只取前 80 名，進度權重總和由 100 變成 124（見 WEIGHTS），先整體乘 1.25，等有實測再校正。"""
     import speedtest as S
     per = min(per_conn_mbps or S.PER_CONN_CAP, S.PER_CONN_CAP)
     conc = max(1, min(8, int(0.5 * (down_mbps or 50) / per)))
-    m = 7 + 105 / conc
-    return int(min(120, max(20, 5 * round(m / 5))))
+    m = 1.25 * (7 + 105 / conc)
+    return int(min(150, max(20, 5 * round(m / 5))))
 
 
 def cjk_wrap(text, font, width):
@@ -233,7 +236,8 @@ class Runner(threading.Thread):
         print(f"國家 {cc}；DNS：{'系統 DNS' if not S.DNS else 'Google DoH（ECS ' + str(S.DOH_ECS) + '）'}；{chk['dns_verdict']}")
         self.q.put(("env", dict(country=cc, city=e.get("city"), org=e.get("org"), ip=e.get("ip"), doh=bool(S.DNS))))
         for name, fn in (("env", S.cmd_env), ("pool", S.cmd_pool), ("pick", S.cmd_pick), ("ceiling", S.cmd_ceiling),
-                         ("stage1", S.cmd_stage1), ("stage2", S.cmd_stage2), ("report", S.cmd_report)):
+                         ("stage1", S.cmd_stage1), ("probe", S.cmd_probe), ("stage2", S.cmd_stage2),
+                         ("report", S.cmd_report)):
             stage(name)
             fn(cc, a)
         json.dump(S.STATE, open(os.path.join(S.OUT, "state.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)

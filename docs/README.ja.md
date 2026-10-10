@@ -206,7 +206,7 @@ src=playinfo|playurl  rw=<書き換え回数>  seg=<セグメント差し替え�
 
 - 📋 ノード一覧は **`src/cdn-list.json`** にあり、手動で編集します。
   300 以上の動画ノード（重複を除き、ライブ専用ノードと停止が確認されたノードを削除済み）を収録しています。
-  各国の `nodes` は、CDN プールが偏らないように選んだ上位 10 ノードです。`/cdn-speedtest` で新しい国をテストしたら、`summary.json` のその国の `recommended` を `countries` に追加してください。
+  各国の `nodes` は、CDN プールが偏らないように選んだ上位 10 ノードです。速度テストアプリ（`tools/cdn-speedtest-app`）のレポートを集めて `/analyze-cdn` で分析し、その結果に基づいて `countries` を更新します。
 - 🧩 フォーマット：
 
   ```json

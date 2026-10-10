@@ -1,0 +1,382 @@
+{
+  "_comment": [
+    "各國固網寬頻 ISP 市占（0–1）。預設節點用「市占加權覆蓋率」挑：節點在某 ISP 能穩定跑 4K，就拿到該 ISP 的市占；",
+    "市占要用網路上的統計（NCC／監管機關、Opensignal、業者財報），不能從收到的報告數量推。沒列的國家或 ISP：share 用 other_each。",
+    "match：報告裡的 ASN（env.exit.org 的 ASxxxx）或 ISP 名稱片段（ip-api 的 isp，不分大小寫）；同一家可以有多個。",
+    "新國家或資料過舊（asof 超過 2 年）時，Claude 先 WebSearch 補齊再分析，並把來源寫進 sources。sources 要標明哪些是估計。"
+  ],
+  "TW": {
+    "asof": "2025-03",
+    "sources": [
+      "中華電信 2025 Q1 財報：寬頻接取 443 萬戶（HiNet 375 萬）；NCC 全台寬頻用戶約 736 萬 → 約 60%",
+      "大大寬頻（7901）2025 年報：寬頻用戶 18.37 萬戶 → 約 2.5%（報告裡的 AS18419 DaDa Broadband）",
+      "Opensignal《台灣固網寬頻體驗》2024-06（連線占比，資料期間 2024-02 起 90 天）：中華電信約 55%、中嘉約 15%、凱擘約 9%、台灣寬頻通訊約 5%。NCC 不公布各業者寬頻用戶數，中嘉／凱擘／TBC／台灣大寬頻沒有更新的拆分資料，仍沿用這份比例（2026-10 查證）",
+      "凱擘 2026-09 工商時報：總用戶約 116 萬（含有線電視，寬頻拆不出）；中嘉寬頻舊估約 50 萬戶"
+    ],
+    "other_each": 0.02,
+    "isps": [
+      {
+        "name": "中華電信 HiNet",
+        "share": 0.6,
+        "match": [
+          "AS3462",
+          "Chunghwa Telecom"
+        ]
+      },
+      {
+        "name": "中嘉寬頻 bb",
+        "share": 0.13,
+        "match": [
+          "China Network Systems",
+          "CNS",
+          "bb Broadband",
+          "Homeplus"
+        ]
+      },
+      {
+        "name": "凱擘 kbro",
+        "share": 0.08,
+        "match": [
+          "AS38841",
+          "kbro"
+        ]
+      },
+      {
+        "name": "台灣寬頻通訊 TBC（和信）",
+        "share": 0.05,
+        "match": [
+          "AS9416",
+          "Hoshin Multimedia",
+          "Taiwan Broadband Communications"
+        ]
+      },
+      {
+        "name": "台灣大寬頻（台灣固網）",
+        "share": 0.04,
+        "match": [
+          "AS9924",
+          "Taiwan Fixed Network",
+          "Taiwan Mobile"
+        ]
+      },
+      {
+        "name": "遠傳 Seednet",
+        "share": 0.03,
+        "match": [
+          "AS4780",
+          "Digital United",
+          "AS9674",
+          "Far EastTone"
+        ]
+      },
+      {
+        "name": "大大寬頻",
+        "share": 0.025,
+        "match": [
+          "AS18419",
+          "DaDa Broadband",
+          "CHIEF"
+        ]
+      },
+      {
+        "name": "亞太電信",
+        "share": 0.02,
+        "match": [
+          "AS7482",
+          "Asia Pacific On-line"
+        ]
+      }
+    ]
+  },
+  "SG": {
+    "asof": "2026-08",
+    "sources": [
+      "Opensignal《Singapore Fixed Broadband Experience》2026-08：Singtel 45.6%、StarHub 35.6%、M1 13.6%、SIMBA 3.6%，其餘業者很小（Opensignal 連線占比）",
+      "IMDA 沒有公開各業者用戶數；學術網路（NTU AS9419）不是消費者 ISP，用 other_each"
+    ],
+    "other_each": 0.01,
+    "isps": [
+      {
+        "name": "Singtel",
+        "share": 0.456,
+        "match": [
+          "AS3758",
+          "AS7473",
+          "Singtel",
+          "SingNet"
+        ]
+      },
+      {
+        "name": "StarHub",
+        "share": 0.356,
+        "match": [
+          "AS55430",
+          "AS4657",
+          "Starhub"
+        ]
+      },
+      {
+        "name": "M1",
+        "share": 0.136,
+        "match": [
+          "AS4773",
+          "M1Net",
+          "MobileOne",
+          "M1 Limited"
+        ]
+      },
+      {
+        "name": "SIMBA",
+        "share": 0.036,
+        "match": [
+          "SIMBA",
+          "TPG Telecom Pte"
+        ]
+      }
+    ]
+  },
+  "HK": {
+    "asof": "2025-08",
+    "sources": [
+      "HKBN FY26 中期業績（2026-04）：住宅寬頻 91.6 萬戶；2025-08 報導市占約 30%（全港固網寬頻約 300 萬戶）",
+      "HKT／網上行：OFCA 與 HKT 年報沒有公開住宅寬頻市占；GlobalData 預測 PCCW/HKT 為用戶數第一。**估計** 約 50%",
+      "HGC、i-Cable（有線寬頻）、CMHK、SmarTone 等：沒有公開數字，**估計** 合計約 20%，各給 0.05–0.08",
+      "OFCA 2025-05：家庭寬頻滲透率 97.8%"
+    ],
+    "other_each": 0.03,
+    "isps": [
+      {
+        "name": "HKT 網上行 Netvigator（估計）",
+        "share": 0.5,
+        "match": [
+          "AS4760",
+          "HKT",
+          "Netvigator",
+          "PCCW"
+        ]
+      },
+      {
+        "name": "HKBN 香港寬頻",
+        "share": 0.3,
+        "match": [
+          "AS9269",
+          "Hong Kong Broadband"
+        ]
+      },
+      {
+        "name": "HGC 環球全域（估計）",
+        "share": 0.08,
+        "match": [
+          "AS9304",
+          "HGC Global"
+        ]
+      },
+      {
+        "name": "i-Cable 有線寬頻（估計）",
+        "share": 0.05,
+        "match": [
+          "AS9908",
+          "i-Cable",
+          "Hong Kong Cable"
+        ]
+      },
+      {
+        "name": "China Mobile HK（估計）",
+        "share": 0.04,
+        "match": [
+          "AS9231",
+          "China Mobile Hong Kong",
+          "CMHK"
+        ]
+      }
+    ]
+  },
+  "JP": {
+    "asof": "2025-09",
+    "sources": [
+      "MM総研 FTTH 契約数（2025-09 末，全體 4131.6 萬）：NTT 東西（フレッツ光 + 光コラボ）57.8%、ソニーネットワーク（NURO）4.0%、アルテリア 2.4%；KDDI、オプテージ 依序第 2、3 名但未公開百分比，**估計** KDDI 約 12%、オプテージ約 4%",
+      "光コラボ（ドコモ光、BIGLOBE 光、So-net 光 等）走 NTT 線路，歸入 NTT 群；報告裡的 BIGLOBE AS2518 屬此群"
+    ],
+    "other_each": 0.02,
+    "isps": [
+      {
+        "name": "NTT 東西 フレッツ光／光コラボ（含 ドコモ光、BIGLOBE、OCN、So-net 光、ぷらら）",
+        "share": 0.578,
+        "match": [
+          "AS2518",
+          "BIGLOBE",
+          "AS4713",
+          "OCN",
+          "NTT Communications",
+          "AS2514",
+          "Plala",
+          "AS9605",
+          "NTT DOCOMO"
+        ]
+      },
+      {
+        "name": "KDDI auひかり／コミュファ（估計）",
+        "share": 0.12,
+        "match": [
+          "AS2516",
+          "KDDI",
+          "AS7679",
+          "Chubu Telecommunications",
+          "Commufa"
+        ]
+      },
+      {
+        "name": "オプテージ eo光（估計）",
+        "share": 0.04,
+        "match": [
+          "AS17511",
+          "OPTAGE",
+          "K-Opticom"
+        ]
+      },
+      {
+        "name": "ソニーネットワーク NURO光",
+        "share": 0.04,
+        "match": [
+          "AS2527",
+          "Sony Network",
+          "NURO"
+        ]
+      },
+      {
+        "name": "アルテリア UCOM光",
+        "share": 0.024,
+        "match": [
+          "AS2519",
+          "AS2522",
+          "ARTERIA",
+          "VECTANT",
+          "UCOM"
+        ]
+      }
+    ]
+  },
+  "AU": {
+    "asof": "2022-03",
+    "sources": [
+      "ACCC NBN Wholesale Market Indicators Report 2022-03（最後一次能公開取得各 RSP 百分比）：Telstra 43.7%、TPG 23.3%、Optus 13.9%、Vocus 7.3%、Aussie Broadband 6.1%。2025-12 與 2026-03 季報存在但網頁無法抓取，趨勢是 Telstra 緩降、小型 RSP 上升",
+      "Telstra 自家 HFC／固網也歸 Telstra；AS1221 Telstra"
+    ],
+    "other_each": 0.02,
+    "isps": [
+      {
+        "name": "Telstra",
+        "share": 0.42,
+        "match": [
+          "AS1221",
+          "Telstra",
+          "Belong"
+        ]
+      },
+      {
+        "name": "TPG（含 iiNet、Internode、Vodafone）",
+        "share": 0.23,
+        "match": [
+          "AS7545",
+          "TPG",
+          "AS4739",
+          "iiNet",
+          "Internode",
+          "AS133612",
+          "Vodafone Australia"
+        ]
+      },
+      {
+        "name": "Optus",
+        "share": 0.14,
+        "match": [
+          "AS4804",
+          "Optus"
+        ]
+      },
+      {
+        "name": "Vocus（Dodo、iPrimus）",
+        "share": 0.07,
+        "match": [
+          "AS4826",
+          "Vocus",
+          "Dodo",
+          "iPrimus"
+        ]
+      },
+      {
+        "name": "Aussie Broadband",
+        "share": 0.07,
+        "match": [
+          "AS4764",
+          "Aussie Broadband"
+        ]
+      }
+    ]
+  },
+  "US": {
+    "asof": "2025-09",
+    "sources": [
+      "Leichtman Research 2025 Q3：有線電視業者合計約 62.5%（Comcast 約 3,200 萬、Charter 約 3,000 萬，2023 年表；美國寬頻約 1.15 億戶）",
+      "New Street Research 2025：固定無線 T-Mobile 近 800 萬、Verizon 540 萬、AT&T 150 萬；AT&T Fiber 650 萬（Leichtman）",
+      "各家百分比由上述用戶數 ÷ 約 1.15 億 **估算**：Comcast 28%、Charter 26%、AT&T（光纖 + DSL + FWA）13%、Verizon（Fios + FWA）11%、T-Mobile FWA 7%、Cox 5%、其餘 Altice／Frontier／Lumen 等 other_each"
+    ],
+    "other_each": 0.02,
+    "isps": [
+      {
+        "name": "Comcast Xfinity",
+        "share": 0.28,
+        "match": [
+          "AS7922",
+          "Comcast"
+        ]
+      },
+      {
+        "name": "Charter Spectrum",
+        "share": 0.26,
+        "match": [
+          "AS20115",
+          "AS11427",
+          "AS10796",
+          "AS33363",
+          "Charter",
+          "Spectrum"
+        ]
+      },
+      {
+        "name": "AT&T",
+        "share": 0.13,
+        "match": [
+          "AS7018",
+          "AS7132",
+          "AT&T"
+        ]
+      },
+      {
+        "name": "Verizon（Fios + 5G Home）",
+        "share": 0.11,
+        "match": [
+          "AS701",
+          "AS6167",
+          "Verizon"
+        ]
+      },
+      {
+        "name": "T-Mobile Home Internet",
+        "share": 0.07,
+        "match": [
+          "AS21928",
+          "T-Mobile"
+        ]
+      },
+      {
+        "name": "Cox",
+        "share": 0.05,
+        "match": [
+          "AS22773",
+          "Cox Communications"
+        ]
+      }
+    ]
+  }
+}

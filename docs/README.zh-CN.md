@@ -197,7 +197,7 @@ src=playinfo|playurl  rw=<改写次数>  seg=<分段差替数>  qn=<画质>
 
 - 📋 节点清单放在 **`src/cdn-list.json`**，直接手动编辑：
   收录 300 多个点播节点（已去重，并排除直播节点与确定失效的节点），
-  各国的 `nodes` 是依 CDN 池分散的建议前 10 名。之后用 `/cdn-speedtest` 测了新国家，把该国 `summary.json` 的 `recommended` 加进 `countries` 即可。
+  各国的 `nodes` 是依 CDN 池分散的建议前 10 名。测速程序（`tools/cdn-speedtest-app`）的报告收集后用 `/analyze-cdn` 分析，再依分析结果更新 `countries`。
 - 🧩 格式：
 
   ```json
