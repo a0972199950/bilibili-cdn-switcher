@@ -175,6 +175,8 @@ S = {
                    "ko": "최대 대역폭 측정"},
     "st_stage1": {"zh-TW": "快篩所有節點", "zh-CN": "快速筛选所有节点", "en": "Screening all servers", "ja": "全サーバーを予備測定",
                   "ko": "전체 서버 1차 측정"},
+    "st_probe": {"zh-TW": "檢查冷門影片能否播放", "zh-CN": "检查冷门视频能否播放", "en": "Checking less popular videos",
+                 "ja": "人気の低い動画の再生を確認", "ko": "비인기 영상 재생 확인"},
     "st_stage2": {"zh-TW": "細測候選節點", "zh-CN": "精测候选节点", "en": "Testing candidate servers", "ja": "候補サーバーを詳細測定",
                   "ko": "후보 서버 정밀 측정"},
     "st_report": {"zh-TW": "產生報告", "zh-CN": "生成报告", "en": "Writing report", "ja": "レポート作成", "ko": "보고서 작성"},

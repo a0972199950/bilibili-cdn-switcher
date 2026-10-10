@@ -206,7 +206,7 @@ src=playinfo|playurl  rw=<재작성 횟수>  seg=<세그먼트 교체 횟수>  q
 
 - 📋 노드 목록은 **`src/cdn-list.json`**에 있으며 직접 편집합니다.
   300개 이상의 영상 노드(중복 제거, 라이브 전용 노드와 작동하지 않는 것으로 확인된 노드 삭제)를 담고 있습니다.
-  각 국가의 `nodes`는 CDN 풀이 한쪽에 몰리지 않도록 고른 상위 10개 노드입니다. `/cdn-speedtest`로 새 국가를 테스트했다면 `summary.json`의 해당 국가 `recommended`를 `countries`에 추가하세요.
+  각 국가의 `nodes`는 CDN 풀이 한쪽에 몰리지 않도록 고른 상위 10개 노드입니다. 속도 측정 앱(`tools/cdn-speedtest-app`)의 보고서를 모아 `/analyze-cdn`으로 분석한 뒤, 그 결과에 따라 `countries`를 업데이트합니다.
 - 🧩 형식:
 
   ```json

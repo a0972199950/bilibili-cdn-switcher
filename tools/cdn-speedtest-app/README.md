@@ -9,12 +9,12 @@
    - 「參加抽獎」：選了才出現禮物卡說明（依國家，`config.json` 的 `gift_cards`）、email 與**必中獎邀請碼**（選填）。按「驗證」或直接按「下一步」時，透過 Apps Script 到 Neon 檢查「邀請碼 + email」是否相符且未被作廢；成功顯示綠框（按下一步直接前進），失敗顯示原因並留在本頁，再按一次「下一步」就**當作沒填邀請碼**繼續。改了 email 或邀請碼，先前的驗證結果就作廢。
 3. **網路檢查**（約 40 秒）：測總頻寬並偵測 VPN／代理。**參加抽獎時，下載速度 ≥ `min_down_mbps`（預設 50 Mbps）且沒有 VPN 才能下一步**，否則顯示原因、「重新檢查」，並提示「只是想建立自訂節點列表的話，按上一步改選單純測試就不受限制」。單純測試時只顯示警告，仍可繼續。測試模式下結果僅供參考、仍可繼續。從下一頁返回時沿用上次的結果，不重測。
    - 量得到頻寬就顯示「預計本次測試約需 N 分鐘，結束之前請不要關閉視窗」，測速頁的說明也用同一個數字。
-   - N 的算法（`estimate_minutes`）：耗時主要取決於並行數（大部分時間花在等逾時的節點），所以先預測並行數，算法與測速相同：`下載頻寬 × 0.5 ÷ B 站單一連線速度`，限制在 1–8。B 站單一連線速度由 `probe_per_conn` 對 08ct／08c／hw 各下載 8MB 取中位數（約 5–20 秒），**最多算 60 Mbps**（`speedtest.PER_CONN_CAP`＝B 站 8K 串流碼率上限，正式測速決定並行數時也套用；量不到時直接用上限）。再用實測校正的 `7 + 105 ÷ 並行數` 換成分鐘（並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分），取 5 的倍數、限制在 20–120 分。
+   - N 的算法（`estimate_minutes`）：耗時主要取決於並行數（大部分時間花在等逾時的節點），所以先預測並行數，算法與測速相同：`下載頻寬 × 0.5 ÷ B 站單一連線速度`，限制在 1–8。B 站單一連線速度由 `probe_per_conn` 對 08ct／08c／hw 各下載 8MB 取中位數（約 5–20 秒），**最多算 60 Mbps**（`speedtest.PER_CONN_CAP`＝B 站 8K 串流碼率上限，正式測速決定並行數時也套用；量不到時直接用上限）。再用實測校正的 `7 + 105 ÷ 並行數` 換成分鐘（並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分），1.6.0 起再乘 1.25（細測改成快篩通過且冷門探測沒回 403 的全部節點，不再只取前 80 名；尚未用實測校正），取 5 的倍數、限制在 20–150 分。
    - 頻寬：Cloudflare 測速；被限流（429）或連不上時改用回應最快的 Linode 公開測速檔。50 Mbps 的理由：最快的 B 站節點單連線約 50–80 Mbps，總頻寬低於此值時好節點都會撞到同一個天花板，排名失去意義（台灣 VPN 測試即為此情況）。
    - VPN：任一訊號成立即擋下 —— ip-api（VPN／代理、非行動網路的機房 IP）、proxycheck.io（VPN／代理）、本機預設路由走 VPN 網卡（WireGuard、OpenVPN、TAP/Wintun、Windows 內建 PPTP/L2TP/IKEv2、常見 VPN 客戶端）、電腦時區與 IP 所在地時區差 ≥ 2 小時。
    - 限制：路由器層級、且從家用／公司線路出口的 VPN（例如回家的 PPTP），若時區相同，任何方法都偵測不到。
 4. **B 站 App 掃 QR code 登入**（必要，沒有略過選項：付費測試要以 1080P 以上測準；登入狀態在測速時失效會直接中止，不會降級成 480P）。cookie 只留在記憶體，不寫檔、不上傳。
-5. **測速**（約 30–110 分鐘，有進度條、「停止並關閉」）。國家依出口 IP 自動偵測；系統 DNS 不代表當地時自動改用 Google DoH 並帶使用者出口 IP 的 /24 當 ECS。
+5. **測速**（約 35–140 分鐘，有進度條、「停止並關閉」）。國家依出口 IP 自動偵測；系統 DNS 不代表當地時自動改用 Google DoH 並帶使用者出口 IP 的 /24 當 ECS。
    - **測試模式**：不實際測速，5 秒假進度，產生標示 TEST 的假報告；後續發送、寄信、試算表都會照常跑（主旨與試算表會標 TEST），用來驗證整條流程。
 6. **確認發送**：顯示摘要（含 email、參加方式、要加入自訂節點列表的 10 個節點）。下方勾選「將建議節點加入擴充的自訂節點列表」（預設勾）與要加入的瀏覽器 Chrome／Firefox／Edge（預設只勾 Chrome；取消上層選項時瀏覽器停用、按鈕改成「發送」）。按「**發送並建立自訂列表**」才會傳；有勾上層卻沒選任何瀏覽器時，先問「你沒有選擇瀏覽器，此次結果不會更新自訂列表。確定發送嗎？」。上傳成功後把節點寫進勾選的瀏覽器裡的擴充（見下方）。
 7. **感謝頁**：參加抽獎時顯示「接下來」（確認信已寄到 xxx…，依抽獎／必中獎不同）；單純測試不顯示這個框。
@@ -185,7 +185,7 @@ gh release upload v<目前版本> release/CDNSpeedTest.exe --clobber
 - Windows 可能跳出「Windows 已保護您的電腦」（沒有程式碼簽章）→ **其他資訊 → 仍要執行**。少數防毒軟體會誤判 PyInstaller 打包的程式。
 - 一定要有 B 站帳號（用手機 App 掃碼登入），沒有帳號無法參加。
 - 請關閉 VPN／代理，用當地網路（手機漫遊通常從母國出口，不準）。
-- 約 30–110 分鐘（網路檢查通過後會顯示預估），期間盡量不要看影片或下載；視窗不要關。
+- 約 35–140 分鐘（網路檢查通過後會顯示預估），期間盡量不要看影片或下載；視窗不要關。
 - 報告存在朋友電腦的 `文件\CDN-SpeedTest\<國家>-<時間>\`，上傳成功並關閉視窗後會自動刪除；傳送失敗時可請朋友手動傳資料夾。
 - 想把測出來的節點用在擴充裡：先裝好擴充（1.7.0 以上）再按發送；沒裝的話感謝頁不要關，裝好後按「建立自訂列表」。
 
@@ -195,3 +195,31 @@ gh release upload v<目前版本> release/CDNSpeedTest.exe --clobber
 tools/cdn-speedtest-app/.venv/Scripts/python.exe tools/cdn-speedtest-app/app.py
 CDNST_SMOKE=1 tools/cdn-speedtest-app/.venv/Scripts/python.exe tools/cdn-speedtest-app/app.py   # 實測但只用 8 個節點、2 支影片
 ```
+
+
+## 命令列版（除錯、特殊網路環境）
+
+`core/speedtest.py` 就是 exe 用的測速程式，也能直接在命令列跑：只用 Python 標準函式庫，Windows、macOS、Linux 都可以。適合 exe 不方便的情況，例如用 Mac、要手動指定 DNS 或並行數、把流量導進 VPN 測試。原本的 `/cdn-speedtest` 技能已移除，改用這個。
+
+```bash
+python tools/cdn-speedtest-app/core/speedtest.py detect               # 出口國家、DNS 解析器是否在當地、登入狀態
+python tools/cdn-speedtest-app/core/speedtest.py all <國家> [選項]     # 全流程；中斷後原指令再跑一次會續跑
+python tools/cdn-speedtest-app/core/speedtest.py <步驟> <國家>         # env、pool、pick、ceiling、stage1、probe、stage2、report 單獨執行
+```
+
+- 結果寫到 `<目前目錄>/cdn-speedtest-results/<國家>-<YYYYMMDD-HHMM>/`（`--out` 可改），格式與 exe 相同。
+- **命令列版不會寄信**，報告不會經過 `/collect-speedtest-mail`。要納入 `/analyze-cdn`，請改用 exe 發送；或手動把 `REPORT.md`、`summary.json` 改名成 `<國家>-<yyyyMMdd-HHmm>-<8 碼編號>-REPORT.md`／`-summary.json`，放進 `cdn-speedtest-results/<國家>/<同名資料夾>/`。
+- 登入：讀環境變數 `BILI_COOKIE`，否則讀目前目錄的 `.env.local`（`BILI_COOKIE=...` 一行）。cookie 不要印出或貼到任何地方。
+- 常用選項：`--dns doh`（Google DoH，帶自己出口 IP 的 ECS）、`--dns <IP>`（改用指定 DNS 解析節點）、`--conc N`（並行數）、`--budget 秒數`（跑到時間就停，exit 3，再跑一次續跑）、`--ignore-country-mismatch`、`--ignore-dns-mismatch`；試跑用 `--quick --limit-nodes N --limit-videos N`。
+- Exit code：0 完成、3 未完成（再跑一次續跑）、4 未登入、5 出口國家與指定不符（疑似 VPN／漫遊）、6 DNS 解析器與所在地不一致、2 參數或前置步驟錯誤。
+
+### DNS 陷阱（實際踩過）
+
+2026-10-02 在新加坡經 VPN 模擬台灣時發現：開 VPN 後系統 DNS 變成 Cloudflare 公共解析器，而且不帶 ECS（EDNS Client Subnet）。B 站部分節點網域是 GeoDNS，會依查詢者所在地回傳不同 IP，例如 `upos-sz-mirrorali`、`upos-hz-mirrorakam`。解析器不在當地又不帶 ECS 時，會被分到解析器所在地的機器，而不是使用者所在地的機器，測速結果就不代表當地。當時同一個網域，系統 DNS 與中華電信 DNS（168.95.1.1）解析出的 IP 不同。
+
+程式的處理：
+
+- 查 `o-o.myaddr.l.google.com` 的 TXT，得到替你向 Google 權威 DNS 查詢的解析器出口 IP 與 ECS 子網，再和出口國家比對。帶 ECS 且子網在當地，或解析器本身在當地，才算正常。
+- **exe**：不正常時自動改用 Google DoH，並帶使用者出口 IP 的 /24 當 ECS。
+- **命令列版**：`all` 會以 exit 6 停下來，要自己選 `--dns doh`、`--dns <當地 ISP DNS>`，或確認當地本來就用公共 DNS 後加 `--ignore-dns-mismatch`。
+- 另外，手機漫遊的數據通常從母國出口；要測當地，請用當地 Wi-Fi 或當地 SIM。

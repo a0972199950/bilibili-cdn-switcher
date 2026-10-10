@@ -20,6 +20,10 @@
   window.__CDN_SWITCHER_INSTALLED__ = true;
 
   var CFG_KEY = "__CDN_SWITCHER_CFG__";
+  // 功能开关：切换国家／安装后自动选国家后，第一支影片在背景自动测速一次并换成最快节点（autoTestPending）。
+  // 各国预设节点已改为「各家 ISP 都能顺畅播 4K」的普世节点，暂时不需要；代码保留，之后要应急再改回 true。
+  // popup.js 有同名开关，两边要一起改。这里也挡掉旧版留在 storage 里的 autoTestPending=true
+  var FEATURE_AUTO_TEST_ON_COUNTRY = false;
   var DEFAULTS = {
     enabled: true, // 预设开启
     cdnHost: "upos-sz-mirror08ct.bilivideo.com", // 默认：TW/SG 实测都是第一梯队；'base'=不覆写
@@ -1115,7 +1119,7 @@
     // 切换国家后测一次（autoTestPending）：不管这支影片测过没有，拿到样本就测；开始测的那一刻旗标就清掉，
     // 之后不论完成、失败、关分页或使用者略过都不会再测。timer 到时还没样本的话 runAutoSpeedTest 不会开始，
     // 下一个分段进来会再排一次
-    if (cfg.autoTestPending && (cfg.autoSpeedHosts || []).length) {
+    if (FEATURE_AUTO_TEST_ON_COUNTRY && cfg.autoTestPending && (cfg.autoSpeedHosts || []).length) {
       if (autoTestRunning || pendingTimer) return;
       pendingTimer = setTimeout(function () {
         pendingTimer = null;

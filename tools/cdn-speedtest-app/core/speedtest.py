@@ -6,10 +6,12 @@
 #   python3 speedtest.py all      <國家> [選項]    全流程（可續跑：每次跑到 BUDGET 秒就停，exit 3，再執行一次續跑）
 #   python3 speedtest.py env      <國家>           出口 IP / DNS / 基準 RTT / 登入狀態
 #   python3 speedtest.py pool     <國家>           收集影片池（可續跑）
-#   python3 speedtest.py pick     <國家>           挑 3 支快篩 + 10 支細測影片（固定種子）
+#   python3 speedtest.py pick     <國家>           挑 3 支快篩 + 10 支細測 + 1 支冷門探測影片（固定種子）
 #   python3 speedtest.py ceiling  <國家>           頻寬上限 + 自動決定並行數
 #   python3 speedtest.py stage1   <國家>           快篩：全部節點 × 3 支熱門 × 2MB（可續跑）
-#   python3 speedtest.py stage2   <國家>           細測：保留節點 × 10 支 × 4MB（可續跑）
+#   python3 speedtest.py probe    <國家>           冷門探測：快篩通過的節點 × 1 支低播放 × 1MB，回 403 的不進細測（可續跑）
+#   python3 speedtest.py stage2   <國家>           細測：快篩通過且冷門探測沒回 403 的全部節點 × 10 支 × 4MB，
+#                                                  每筆最多 8 秒（可續跑）
 #   python3 speedtest.py report   <國家>           排名 + 分級 + 依 CDN 池分散的建議清單 → REPORT.md / summary.json
 #
 # 環境變數：BUDGET=<秒>（分段執行）、DNS=<伺服器 IP>（節點網域改用指定 DNS 解析）、BILI_COOKIE=<cookie>
@@ -245,16 +247,26 @@ def pre_resolve(hosts):
 
 def canonical(host):
     """CNAME 解析後的正式名稱（判斷 CDN 池用）；失敗回 None"""
+    return resolve(host)[0]
+
+
+def resolve(host):
+    """(CNAME 正式名稱, 解析到的 IP 清單)；失敗回 (None, [])。分池用，與測速時的解析方式相同"""
     if DNS:
-        return nslookup(host, DNS)[1]
+        ips, cn = nslookup(host, DNS)
+        return cn, ips
     try:
-        return socket.gethostbyname_ex(host)[0].lower()
+        name, _, ips = socket.gethostbyname_ex(host)
+        return name.lower(), sorted(ips)
     except Exception:
-        return None
+        return None, []
 
 
 def pool_of(host, canon):
-    """(池 key, 池中文標籤)。bcache cn-* 以 cn-{地點}-{電信}-{叢集} 分家族；其餘以 CNAME 正式名稱分組。"""
+    """(池 key, 池中文標籤)。bcache cn-* 以 cn-{地點}-{電信}-{叢集} 分家族；其餘以 CNAME 正式名稱分組。
+    同池的用途是清單分散備援（同池最多 2 個），看的是「會不會一起失敗」，不是速度接不接近：
+    33 份報告中，bcache 同家族一起失敗 99%（不同家族 64%）、upos 同 CNAME 82%（不同 CNAME 37%）。
+    解析到完全相同 IP 組合的池再由 assign_pools() 合併"""
     short = host.split(".")[0]
     if short.startswith("cn-"):
         fam = "-".join(short.split("-")[:4])
@@ -280,8 +292,39 @@ def pool_of(host, canon):
     return key, f"{lab}（{key}）"
 
 
+def assign_pools(res):
+    """res = {host: (CNAME, IP 清單)} → {host: (池 key, 標籤)}。先依 pool_of 分（bcache 家族／CNAME），
+    再把解析到「完全相同」IP 組合的池合併：同一批機器，CNAME 不同也該算同池（例如 08c、08ct、hw 解析到相同的 IP）。
+    只有部分 IP 重疊不合併：33 份報告中，華為一般／冷資料池（共用 1 個 IP）一起失敗 60–70%，
+    騰訊 cos／tf-all-tx（也共用 1 個 IP）只有 30%，與不相關的節點（34%）差不多，部分重疊分不出這兩種情況"""
+    base = {h: pool_of(h, cn) for h, (cn, _) in res.items()}
+    parent = {}
+
+    def find(k):
+        while parent.get(k, k) != k: k = parent[k]
+        return k
+
+    owner = {}
+    for h, (_, ips) in sorted(res.items()):
+        if not ips: continue
+        s = frozenset(ips)
+        if s not in owner:
+            owner[s] = h
+            continue
+        a, b = find(base[h][0]), find(base[owner[s]][0])
+        if a != b: parent[max(a, b)] = min(a, b)
+    labels = {}
+    for h in res: labels.setdefault(find(base[h][0]), set()).add(base[h][1])
+    out = {}
+    for h in res:
+        k = find(base[h][0])
+        labs = sorted(labels[k])
+        out[h] = (k, labs[0] if len(labs) == 1 else labs[0] + "＋同 IP：" + "、".join(labs[1:]))
+    return out
+
+
 # ── 並行測試矩陣（可續跑） ─────────────────────────────────────
-def run_matrix(tasks, conc, nbytes, logname, timeout):
+def run_matrix(tasks, conc, nbytes, logname, timeout, cap=30):
     """tasks = [(host, video_key, url)]；隨機順序並行跑，每筆結果即時追加到 <logname>.jsonl。
     已在記錄檔裡的 (host, key) 會跳過，所以中斷後重跑即可續跑。全部完成才回傳 [(host, key, result)]。"""
     log = path(logname + ".jsonl")
@@ -303,7 +346,7 @@ def run_matrix(tasks, conc, nbytes, logname, timeout):
         if stop[0] or (DEADLINE and time.time() > DEADLINE - margin):
             stop[0] = True
             return
-        r = fetch(t[2], nbytes, timeout=timeout)
+        r = fetch(t[2], nbytes, timeout=timeout, cap=cap)
         with lock:
             f.write(json.dumps(dict(host=t[0], video=t[1], **r), ensure_ascii=False) + "\n"); f.flush()
             seen.add((t[0], t[1]))
@@ -474,8 +517,11 @@ def cmd_stage1(country, args):
     conc = get_conc(args)
     timeout = setting(args, "timeout", 10)
     lim = setting(args, "limit_nodes", None)
-    keep_top = setting(args, "keep_top", 80)
-    keep_ratio = setting(args, "keep_ratio", 0.3)
+    # 預設不淘汰：三支都成功的節點全部往下走（冷門探測 → 細測）。舊版只留前 80 名，但前段有一半以上是
+    # 「只能播熱門」的節點（細測回 403），真正能比較的節點被擠出去；現在改由冷門探測挑掉這些節點。
+    # 兩個門檻只在手動指定時才用（例如想縮短測試時間）
+    keep_top = setting(args, "keep_top", None)
+    keep_ratio = setting(args, "keep_ratio", None)
     allnodes = nodes()
     if lim: allnodes = allnodes[:lim]
     meta = {n["host"]: n for n in allnodes}
@@ -494,8 +540,12 @@ def cmd_stage1(country, args):
                          mbps=statistics.median([r["mbps"] for r in ok]) if len(ok) == len(urls) else None,
                          ttfb=statistics.median([r["ttfb"] for r in ok]) if ok else None, errs=errs))
     good = sorted([r for r in rows if r["mbps"] is not None], key=lambda r: -r["mbps"])
-    # 淘汰從寬：保留前 keep_top 名，或速度 ≥ 第一名 keep_ratio 的全部（取兩者較多者）
-    keep_n = max(keep_top, sum(1 for r in good if r["mbps"] >= keep_ratio * good[0]["mbps"])) if good else 0
+    keep_n = len(good)
+    if good and keep_top is not None:
+        # 手動指定時：保留前 keep_top 名，或速度 ≥ 第一名 keep_ratio 的全部（取兩者較多者）
+        keep_n = max(keep_top, sum(1 for r in good if r["mbps"] >= (keep_ratio or 1) * good[0]["mbps"]))
+    elif good and keep_ratio is not None:
+        keep_n = sum(1 for r in good if r["mbps"] >= keep_ratio * good[0]["mbps"])
     keep = [r["host"] for r in good[:keep_n]]
     data = dict(time=time.strftime("%Y-%m-%d %H:%M"), conc=conc, timeout=timeout, keep_top=keep_top,
                 keep_ratio=keep_ratio, n_nodes=len(hosts), rows=rows, keep=keep,
@@ -506,18 +556,50 @@ def cmd_stage1(country, args):
     for r in good[:15]: print(f"  {r['host']:45} {r['mbps']:7.2f} Mbps  ttfb {r['ttfb']} ms")
 
 
+PROBE_BYTES = 1 << 20  # 冷門探測每個節點下載 1MB：403 會立刻回應；其他節點順便留下冷門片的 TTFB 與速度
+# 細測每筆最多下載幾秒（從送出請求起算）就截斷，速度用已收到的部分計算。細測不再只取前 80 名後，
+# 很慢的節點（< 5 Mbps，連 1080P 都不順）佔了細測大半時間（實測台灣 VPN 78%、新加坡 43%），原本的 30 秒太長
+STAGE2_CAP = 8
+
+
+def cmd_probe(country, args):
+    """冷門探測：快篩通過的節點各抓 1 支低播放影片。回 403 的是「只能播熱門」的節點，不進細測；
+    其他結果（成功、逾時…）一律照常進細測，由細測判斷好壞。舊的 videos.json 沒有探測片時直接沿用快篩的保留清單"""
+    conc = get_conc(args)
+    timeout = setting(args, "timeout", 10)
+    s1 = load("stage1.json")
+    pv = (load("videos.json").get("probe") or [None])[0]
+    if not pv:
+        save("probe.json", dict(time=time.strftime("%Y-%m-%d %H:%M"), video=None, keep=s1["keep"], blocked=[], rows=[]))
+        print("沒有冷門探測影片（影片池缺中低播放影片），快篩通過的節點全部進細測")
+        return
+    url = stream_url(pv)
+    print(f"冷門探測：{len(s1['keep'])} 節點 × 1 支（{pv['bvid']}，{V.cell_zh(pv['cell'])}）× "
+          f"{PROBE_BYTES >> 20}MB，並行 {conc}")
+    rs = run_matrix([(h, "probe", swap(url, h)) for h in s1["keep"]], conc, PROBE_BYTES, "probe", timeout)
+    res = {h: r for h, _, r in rs}
+    blocked = [h for h in s1["keep"] if res[h].get("err") == "HTTP 403"]
+    keep = [h for h in s1["keep"] if h not in set(blocked)]
+    rows = [dict(host=h, **{k: res[h].get(k) for k in ("st", "err", "ttfb", "mbps", "bytes", "cache")}) for h in s1["keep"]]
+    save("probe.json", dict(time=time.strftime("%Y-%m-%d %H:%M"), video=pv["bvid"], cell=pv["cell"],
+                            bytes=PROBE_BYTES, keep=keep, blocked=blocked, rows=rows))
+    print(f"完成；回 403（只能播熱門）{len(blocked)} 個，進細測 {len(keep)} 個")
+    print("其他結果：", Counter(r["err"] or "成功" for r in rows if r["err"] != "HTTP 403").most_common(6))
+
+
 def cmd_stage2(country, args):
     conc = get_conc(args)
     timeout = setting(args, "timeout", 10)
     mb = setting(args, "mb", 4)
-    keep = load("stage1.json")["keep"]
+    keep = (load("probe.json") if has("probe.json") else load("stage1.json"))["keep"]
     lim = setting(args, "limit_nodes", None)
     if lim: keep = keep[:lim]
     vs = load("videos.json")["test"]
     urls = {v["bvid"]: stream_url(v) for v in vs}
     print(f"細測：{len(keep)} 節點 × {len(urls)} 支 × {mb}MB，並行 {conc}")
-    rs = run_matrix([(h, k, swap(u, h)) for h in keep for k, u in urls.items()], conc, mb << 20, "stage2", timeout)
-    data = dict(time=time.strftime("%Y-%m-%d %H:%M"), conc=conc, mb=mb, timeout=timeout, keep=keep,
+    rs = run_matrix([(h, k, swap(u, h)) for h in keep for k, u in urls.items()], conc, mb << 20, "stage2", timeout,
+                    cap=STAGE2_CAP)
+    data = dict(time=time.strftime("%Y-%m-%d %H:%M"), conc=conc, mb=mb, timeout=timeout, cap=STAGE2_CAP, keep=keep,
                 raw=[dict(host=h, video=k, **r) for h, k, r in rs])
     save("stage2.json", data)
     print("細測完成")
@@ -619,16 +701,24 @@ def fmt(x, d=1):
 def cmd_report(country, args):
     env, ceil_d, vids = load("env.json"), load("ceiling.json"), load("videos.json")
     s1, s2 = load("stage1.json"), load("stage2.json")
+    pr = load("probe.json") if has("probe.json") else dict(video=None, keep=s1["keep"], blocked=[], rows=[])
     ceil = ceil_d["ceiling"]
     rows, top, hot_only, failed = rank_rows(s2, vids["test"], ceil)
+    probe_403 = set(pr["blocked"])
+    hot_only = sorted(set(hot_only) | probe_403)  # 冷門探測 403 與細測 403 都是「只能播熱門」
     meta = {n["host"]: n for n in nodes()}
-    # CDN 池：執行時用 CNAME 判斷
-    need = sorted({r["host"] for r in rows} | {h for h, m in meta.items() if "project" in m.get("source", "")})
+    # CDN 池：執行時用 CNAME 與解析到的 IP 判斷。快篩測過的節點全部解析（失敗的也要），
+    # 這樣 summary.json 每個節點都有 CNAME／IP，之後才驗證得了「同池會不會一起失敗」
+    need = sorted({r["host"] for r in rows} | {r["host"] for r in s1["rows"]} |
+                  {h for h, m in meta.items() if "project" in m.get("source", "")})
     with ThreadPoolExecutor(16) as ex:
-        canon = dict(zip(need, ex.map(canonical, need)))
+        res = dict(zip(need, ex.map(resolve, need)))
+    canon = {h: cn for h, (cn, _) in res.items()}
+    pools = assign_pools(res)
     for r in rows:
         r["canonical"] = canon.get(r["host"])
-        r["pool"], r["pool_label"] = pool_of(r["host"], r["canonical"])
+        r["ips"] = res[r["host"]][1]
+        r["pool"], r["pool_label"] = pools[r["host"]]
         r["source"] = meta.get(r["host"], {}).get("source", "?")
     rec, default, _ = recommend(rows)
     unstable = [r for r in rows if r["tier"] == "不穩定"]
@@ -640,6 +730,7 @@ def cmd_report(country, args):
         if h in rank:
             r = rank[h]
             return f"#{r['rank']} {r['tier']}（{r['mean']:.1f} Mbps，TTFB {r['ttfb']:.0f} ms）"
+        if h in probe_403: return "只能播熱門影片（冷門探測 403）"
         if h in hot_only_set: return "只能播熱門影片（細測 403）"
         if h in failed: return "細測有失敗：" + "、".join(f"{k}×{v}" for k, v in failed[h].items())
         s = s1rows.get(h)
@@ -648,9 +739,38 @@ def cmd_report(country, args):
             return "快篩失敗：" + "、".join(f"{k}×{v}" for k, v in Counter(s["errs"]).items())
         return f"快篩淘汰（{s['mbps']:.1f} Mbps）"
 
-    proj = [dict(host=h, name=m.get("name"), status=status(h), pool=pool_of(h, canon.get(h))[1])
+    proj = [dict(host=h, name=m.get("name"), status=status(h), pool=pools[h][1])
             for h, m in meta.items() if "project" in m.get("source", "")]
     contention = bool(rows) and rows[0]["mean"] >= 0.8 * ceil / s2["conc"]
+    # 每個節點的快篩與冷門探測結果（跨報告分析用：區分「快篩逾時」與「快篩通過但被淘汰」，
+    # 也讓沒進細測的節點至少有熱門片速度與冷門片能不能播的紀錄）
+    pr_rows = {r["host"]: r for r in pr.get("rows") or []}
+    s1_nodes = []
+    for r in s1["rows"]:
+        cn, ips = res.get(r["host"], (None, []))
+        d = dict(host=r["host"], mbps=r["mbps"], ttfb=r["ttfb"], n_ok=r["n_ok"], errs=dict(Counter(r["errs"])),
+                 canonical=cn, ips=ips, pool=pools[r["host"]][0])
+        p = pr_rows.get(r["host"])
+        if p: d["probe"] = {k: p.get(k) for k in ("err", "ttfb", "mbps")}
+        s1_nodes.append(d)
+
+    def vinfo(v):
+        """影片性質：分層（播放量 H/M/L × 發布 new/mid/old）、畫質 qn、編碼、播放數、發布時間（unix 秒）、長度（秒）、
+        測試用串流宣告的碼率（bps）與寬高、幀率。舊版 videos.json 沒有碼率等欄位時為 None"""
+        return dict(bvid=v["bvid"], cell=v["cell"], qn=v["qn"], codecid=v["codecid"], view=v["view"],
+                    pub=v.get("pub"), dur=v.get("dur"), bandwidth=v.get("bandwidth"), width=v.get("width"),
+                    height=v.get("height"), fps=v.get("fps"))
+
+    def per_request(raw):
+        """逐筆結果（每個節點 × 每支影片一筆），給跨報告分析用：細測有任一支失敗的節點不列入排名，
+        但成功那幾支（例如只有低播放影片逾時）仍是有用的冷門片數據。成功的記 TTFB／速度／位元組／快取，失敗的只記錯誤"""
+        out = []
+        for r in raw:
+            d = dict(host=r["host"], video=r["video"])
+            if r.get("err"): d["err"] = r["err"]
+            else: d.update(ttfb=r.get("ttfb"), mbps=r.get("mbps"), bytes=r.get("bytes"), cache=r.get("cache"))
+            out.append(d)
+        return out
 
     e = env["exit"]
     summary = dict(country=country, time=s2["time"], env=dict(exit=e, system_dns=env.get("system_dns"),
@@ -659,10 +779,13 @@ def cmd_report(country, args):
                    network=env.get("network"), bandwidth=env.get("bandwidth"), vpn_check=env.get("vpn_check")),
                    ceiling=ceil, conc=s2["conc"], conc_auto=ceil_d.get("conc_auto"), seed=vids["seed"],
                    stage1=dict(n_nodes=s1["n_nodes"], passed=sum(1 for r in s1["rows"] if r["mbps"] is not None),
-                               kept=len(s1["keep"]), keep_top=s1.get("keep_top"), keep_ratio=s1.get("keep_ratio")),
-                   stage2=dict(n_nodes=len(s2["keep"]), full_success=len(rows), mb=s2["mb"]),
-                   videos=dict(screen=[{k: v[k] for k in ("bvid", "cell", "qn", "codecid", "view")} for v in vids["screen"]],
-                               test=[{k: v[k] for k in ("bvid", "cell", "qn", "codecid", "view")} for v in vids["test"]]),
+                               kept=len(s1["keep"]), keep_top=s1.get("keep_top"), keep_ratio=s1.get("keep_ratio"),
+                               probe=dict(video=pr.get("video"), bytes=pr.get("bytes"), tested=len(pr.get("rows") or []),
+                                          blocked=len(probe_403), kept=len(pr["keep"])),
+                               nodes=s1_nodes, raw=per_request(s1.get("raw") or [])),
+                   stage2=dict(n_nodes=len(s2["keep"]), full_success=len(rows), mb=s2["mb"], cap=s2.get("cap", 30),
+                               raw=per_request(s2.get("raw") or [])),
+                   videos={k: [vinfo(v) for v in vids.get(k) or []] for k in ("screen", "test", "probe")},
                    default=default and default["host"], recommended=[r["host"] for r in rec],
                    custom_list=custom_list(rows, default),
                    rows=rows, hot_only=hot_only, unstable=[r["host"] for r in unstable],
@@ -715,18 +838,29 @@ def cmd_report(country, args):
     w(f"| 登入 | {'是（高畫質）' if env['login']['login'] else '否（≤480P）'} |")
     w(f"| 頻寬上限 | ≈ {ceil} Mbps（典型單連線 ≈ {ceil_d.get('typical_per_conn')} Mbps） |")
     w(f"| 並行數 | {s2['conc']}（自動 {ceil_d.get('conc_auto')}；規則：並行總量 ≤ 上限 50%，1–8） |")
+    if s1.get("keep_top") is None and s1.get("keep_ratio") is None:
+        keep_txt = "全部往下測（不淘汰）"
+    else:
+        keep_txt = (f"保留 {len(s1['keep'])}（前 {s1.get('keep_top') or '-'} 名或 ≥ 第一名 "
+                    f"{int((s1.get('keep_ratio') or 0) * 100)}%，手動指定）")
     w(f"| 快篩 | {s1['n_nodes']} 節點 × {len(vids['screen'])} 支熱門 × 2MB；三支都成功 "
-      f"{summary['stage1']['passed']}，保留 {len(s1['keep'])}（前 {s1.get('keep_top')} 名或 ≥ 第一名 "
-      f"{int((s1.get('keep_ratio') or 0) * 100)}%） |")
-    w(f"| 細測 | {len(s2['keep'])} 節點 × {len(vids['test'])} 支 × {s2['mb']}MB；全成功 {len(rows)} 個 |")
+      f"{summary['stage1']['passed']}，{keep_txt} |")
+    if pr.get("video"):
+        w(f"| 冷門探測 | {len(pr['rows'])} 節點 × 1 支低播放 × {(pr.get('bytes') or PROBE_BYTES) >> 20}MB；"
+          f"回 403（只能播熱門，不進細測）{len(probe_403)} 個 |")
+    else:
+        w("| 冷門探測 | 未執行（沒有中低播放的探測影片） |")
+    w(f"| 細測 | {len(s2['keep'])} 節點 × {len(vids['test'])} 支 × {s2['mb']}MB（每筆最多 {s2.get('cap', 30)} 秒）；"
+      f"全成功 {len(rows)} 個 |")
     w(f"| 挑片種子 | {vids['seed']} |\n")
     w("### 測試影片\n")
-    w("| 用途 | BV | 分層 | 播放 | 發布 | 畫質 | 編碼 |\n|---|---|---|---|---|---|---|")
-    for k, lab in (("screen", "快篩"), ("test", "細測")):
-        for v in vids[k]:
+    w("| 用途 | BV | 分層 | 播放 | 發布 | 長度 | 畫質 | 編碼 | 碼率 Mbps |\n|---|---|---|---|---|---|---|---|---|")
+    for k, lab in (("screen", "快篩"), ("test", "細測"), ("probe", "冷門探測")):
+        for v in vids.get(k) or []:
+            br = f"{v['bandwidth'] / 1e6:.1f}" if v.get("bandwidth") else "-"
             w(f"| {lab} | {v['bvid']} | {V.cell_zh(v['cell'])} | {v['view']:,} | "
-              f"{time.strftime('%Y-%m-%d', time.localtime(v['pub']))} | {V.QN.get(v['qn'], v['qn'])} | "
-              f"{V.CODEC.get(v['codecid'], v['codecid'])} |")
+              f"{time.strftime('%Y-%m-%d', time.localtime(v['pub']))} | {v['dur'] // 60}:{v['dur'] % 60:02d} | "
+              f"{V.QN.get(v['qn'], v['qn'])} | {V.CODEC.get(v['codecid'], v['codecid'])} | {br} |")
     w("")
     w("## 前 10 名（排名 + 分級）\n")
     w("分級：與最快「穩定」節點的差距在兩者波動範圍內（≈2 倍標準誤）或接近「上限 ÷ 並行數」→ 第一梯隊；"
@@ -740,7 +874,7 @@ def cmd_report(country, args):
     w("")
     w("## 建議前 10 名與預設節點（依 CDN 池分散）\n")
     w("規則：只列「第一梯隊」與「可用」（不穩定、差不列，不足 10 個就少列）；第一梯隊優先，其餘依平均速度；"
-      "同一 CDN 池（CNAME 相同，或 bcache 同 `cn-地點-電信-叢集` 家族）最多 2 個。"
+      "同一 CDN 池（CNAME 相同，或 bcache 同 `cn-地點-電信-叢集` 家族；解析到完全相同 IP 組合的也合併）最多 2 個。"
       "預設 = 穩定、TTFB 低的第一梯隊中最快者。\n")
     if len(rec) < 10: w(f"> 符合條件的只有 {len(rec)} 個。\n")
     w("| # | 節點 | 平均 Mbps | TTFB ms | 原名次 | 分級 | CDN 池 |\n|---|---|---|---|---|---|---|")
@@ -749,7 +883,8 @@ def cmd_report(country, args):
         w(f"| {i} | `{r['host']}`{mark} | {r['mean']:.1f} | {r['ttfb']:.0f} | #{r['rank']} | {r['tier']} | {r['pool_label']} |")
     w("")
     w(f"## 只能播熱門影片的節點（{len(hot_only)} 個）\n")
-    w("快篩（熱門片）成功、細測（一般／冷門片）回 403。只用熱門片測速會誤判這些節點。\n")
+    w(f"快篩（熱門片）成功，但一般／冷門片回 403：冷門探測擋下 {len(probe_403)} 個（不進細測），"
+      f"細測才發現 {len(set(hot_only) - probe_403)} 個。只用熱門片測速會誤判這些節點。\n")
     w(("、".join(f"`{short(h)}`" for h in hot_only) or "（無）") + "\n")
     w(f"## 不穩定節點（{len(unstable)} 個）\n")
     if unstable:
@@ -770,9 +905,13 @@ def cmd_report(country, args):
     nf = Counter(e for r in s1["rows"] for e in r["errs"])
     w("## 其他\n")
     w(f"- 快篩失敗原因：" + ("、".join(f"{k} ×{v}" for k, v in nf.most_common(6)) or "無"))
+    pf = Counter(r["err"] or "成功" for r in pr.get("rows") or [] if r["err"] != "HTTP 403")
+    if pf: w("- 冷門探測（403 以外）：" + "、".join(f"{k} ×{v}" for k, v in pf.most_common(6)) + "；這些節點照常進細測")
     w(f"- 細測有失敗（不列入排名）：{len(failed)} 個")
     w("- 快取標頭多數看不出命中與否且不可靠；「疑似未命中」= 標頭 MISS 或 TTFB > 該節點中位數 2 倍。")
-    w("- 完整資料：`summary.json`（可跨國比較）、`stage1.jsonl`／`stage2.jsonl`（逐筆）。")
+    w("- 完整資料：`summary.json`（可跨國比較；`stage1.nodes` 是每個節點的快篩與冷門探測結果，"
+      "`stage1.raw`／`stage2.raw` 是快篩與細測每個節點 × 每支影片的逐筆結果，細測沒進排名的節點也有）、"
+      "`stage1.jsonl`／`probe.jsonl`／`stage2.jsonl`（逐筆）。")
     open(path("REPORT.md"), "w", encoding="utf-8").write("\n".join(L) + "\n")
 
     print(f"{country}：上限 {ceil} Mbps，並行 {s2['conc']}，完整成功 {len(rows)} 個；只能播熱門 {len(hot_only)} 個")
@@ -793,6 +932,8 @@ def cmd_all(country, args):
         check_budget("ceiling", 330); print("== 頻寬上限 =="); cmd_ceiling(country, args)
     if not has("stage1.json"):
         check_budget("stage1", 90); print("== 快篩 =="); cmd_stage1(country, args)
+    if not has("probe.json"):
+        check_budget("probe", 60); print("== 冷門探測 =="); cmd_probe(country, args)
     if not has("stage2.json"):
         check_budget("stage2", 90); print("== 細測 =="); cmd_stage2(country, args)
     print("== 報告 =="); cmd_report(country, args)
@@ -852,7 +993,7 @@ def cmd_detect(args):
 
 
 CMDS = dict(all=cmd_all, env=cmd_env, pool=cmd_pool, pick=cmd_pick, ceiling=cmd_ceiling,
-            stage1=cmd_stage1, stage2=cmd_stage2, report=cmd_report)
+            stage1=cmd_stage1, probe=cmd_probe, stage2=cmd_stage2, report=cmd_report)
 
 
 def main():
@@ -871,8 +1012,8 @@ def main():
     ap.add_argument("--seed", type=int, help="挑片種子（預設為當下時間 YYYYMMDDHHMM）")
     ap.add_argument("--mb", type=int, help="細測每筆下載 MB（預設 4）")
     ap.add_argument("--timeout", type=int, help="每筆連線逾時秒數（預設 10）")
-    ap.add_argument("--keep-top", type=int, help="快篩保留前 N 名（預設 80）")
-    ap.add_argument("--keep-ratio", type=float, help="快篩保留 ≥ 第一名此比例的全部節點（預設 0.3）")
+    ap.add_argument("--keep-top", type=int, help="快篩只保留前 N 名（預設不淘汰，通過的全部往下測）")
+    ap.add_argument("--keep-ratio", type=float, help="快篩只保留 ≥ 第一名此比例的節點（預設不淘汰）")
     ap.add_argument("--isp-dns", help="當地 ISP 的 DNS（env 會比較系統 DNS 與它的解析結果）")
     ap.add_argument("--dns", help="節點網域改用此 DNS 解析（同環境變數 DNS；當地網路通常不需要）；"
                                   "doh = Google DNS-over-HTTPS 帶自己出口 IP 的 ECS")

@@ -1,5 +1,4 @@
-# 跨報告分析某國家的 CDN 測速結果：國家特徵、離群報告／極端值（個案還是通案）、樣本是否足夠，
-# 以及依 CDN 池分散的建議前 10 名與預設節點。只用 Python 標準函式庫，不改任何專案檔案。
+# 跨報告分析某國家的 CDN 測速結果，產生「預設節點候選 + 剩餘節點清單」的分析報告給使用者讀。只用 Python 標準函式庫，不改任何專案檔案。
 #
 # 用法（在 repo 根目錄執行）：
 #   python -I analyze.py <國家代碼> [--root cdn-speedtest-results] [--cdn-list src/cdn-list.json]
@@ -8,23 +7,55 @@
 # 輸出 <out>/<國家>-<yyyymmdd-HHMM>.md（分析報告）與同名 .json（建議清單，給之後更新 cdn-list.json 用），
 # 最後一行印 OUTPUT <md 路徑>。--out 預設 <root>/_analysis（gitignored）。報告不含出口 IP。
 #
-# --exclude：人工判斷後要排除的報告編號（rid）；--include：強制納入被自動排除的報告。
+# 目標（依序）：
+#   1. 預設節點：在「還沒有依 ISP 選節點」的功能前，最大化使用者剛安裝時預設就能順暢播 4K 的機率
+#      → 每個節點算「市占加權覆蓋率」= Σ(ISP 市占 × 該 ISP 線路中能跑 4K 的比例) ÷ Σ(有報告的 ISP 市占)。
+#        全部 ISP 的全部線路都達標（覆蓋 100%）的節點是第一順位；沒有就依覆蓋率退而求其次。
+#        覆蓋率同級者再要求穩定（無不穩定／失敗紀錄、速度波動小），最後依平均速度排序，列多個候選並說明原因。
+#      市占來自 isp-share.json（網路統計），不是從報告數量推。
+#   2. 剩餘 9 個節點：讓同國任何 ISP 的使用者都能在清單裡找到適合自己的節點
+#      → 依市占輪流從每個 ISP 的第一梯隊取最好的；同一 ISP 內「冗餘」的不重複取；重複的節點跳過。
+#        冗餘 = 在該 ISP 的報告裡達標結論一致率 ≥ REDUN_AGREE（兩者都有結論的報告 ≥ REDUN_MIN_N 份）；
+#        資料不足時退回「同機房」（cn-*／ec-* 去末碼的前綴）當先驗。
+#        全國層面不用前綴分池：跨報告真正一起好一起壞的是 ISP 陣營，由「每個 ISP 都取到」處理。
 import argparse, glob, json, math, os, random, re, statistics, sys
 from collections import Counter, defaultdict
 from datetime import datetime
 
 sys.stdout.reconfigure(encoding="utf-8")
 
+TOP_N = 10          # 清單總數（預設 1 + 剩餘 9）
+FOURK_MBPS = 25     # B 站 4K 串流約 15–25 Mbps，單連線 25 Mbps 當「跑得動 4K」的門檻
+PASS_Q = 0.9        # 4K 達成度 ≥ 0.9（≈ 22.5 Mbps）就算達標，容忍量測誤差
+UNKNOWN_CREDIT = 0.5  # 沒進細測、也沒有快篩紀錄的報告：不知道好壞，算一半（舊版 GUI 只細測快篩前 80 名，沒進不代表慢，但也不能證明行）。
+                      # 只在該 ISP 至少有一條線路量到時才給；整個 ISP 都沒量到 = 0
+CV_MAX = 0.3        # 預設的穩定條件：各報告 sd/平均 的中位數 ≤ 0.3
+TTFB_MAX = 1000     # 預設的穩定條件：中位 TTFB ≤ 1000 ms
+BOOT = 500
+T1_MIN = 0.8        # ISP 內第一梯隊：分數至少要有該 ISP 基準節點的 80%
+REDUN_MIN_N = 3     # 同 ISP 內判斷兩節點是否冗餘：至少要有幾份報告兩者都有結論
+REDUN_AGREE = 0.9   # 達標結論一致率 ≥ 90% → 對這家 ISP 是冗餘的，只取一個
+PARTIAL_OK_MIN = 0.8  # 新版報告 stage2.raw：細測 10 支裡成功 ≥ 80%、失敗都是逾時類（沒有 403）→「部分失敗」，
+                      # 速度用成功那幾支算、分級最多到「可用」（×0.5，比照不穩定）；達標一律算 0（預設要最不會出錯）。
+                      # 成功率更低或有 403 → 照舊算失敗
+PEAK = range(19, 24)
 GOOD = ("第一梯隊", "可用")
-TOP_N, PER_POOL, BOOT = 10, 2, 1000
-T1_MIN = 0.8  # 跨報告第一梯隊：分數至少要有基準節點的 80%
-MAJOR_LINES = 3  # 幾條線路以上的 ISP 單獨成群
-OTHER = "其他"
-PEAK = range(19, 24)  # 當地晚間尖峰
-# 重新判斷網路類型：GUI 舊版用「LTE」比對網卡名稱，會把「Realtek」有線網卡誤判成行動網路
 MOBILE_AD = re.compile(r"Remote NDIS|Mobile Broadband|WWAN|Cellular|\bLTE\b|Android|iPhone|Apple Mobile", re.I)
 WIFI_AD = re.compile(r"802\.11|Wireless|Wi-?Fi|WLAN", re.I)
 WIRED_AD = re.compile(r"802\.3|Ethernet|乙太|GbE|Gigabit|\bI2\d\d", re.I)
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+
+def short(h): return h.replace(".bilivideo.com", "")
+
+
+def cluster(h):
+    """機房前綴：cn-*／ec-* 去掉最後的編號（cn-hbwh-fx-01-xx → cn-hbwh-fx-01），其餘每個節點自成一個。
+    同機房 = 同一條路徑，對同一家 ISP 表現幾乎相同（單份報告內速度離散度 0.02–0.1、達標結論 80–100% 一致），
+    所以在資料不足時當「冗餘」的先驗；也是故障單位（機房離線）的分散依據。
+    注意它對「跨 ISP 一起好一起壞」沒有預測力（不同機房的 cn-hbwh／cn-sdjn／cn-bj-se 跨報告 100% 同好同壞），全國層面不拿它分池"""
+    s = short(h)
+    return re.sub(r"-\d+$", "", s) if re.match(r"^(cn|ec)-", s) else s
 
 
 # ── 讀取 ─────────────────────────────────────────────────────
@@ -34,7 +65,7 @@ def net_kind(n):
     fixed = ("行動網路" if MOBILE_AD.search(ad) else "Wi-Fi" if WIFI_AD.search(ad) else
              "有線" if WIRED_AD.search(ad) else kind)
     if fixed.startswith("行動") and kind.startswith("行動"): fixed = kind
-    return fixed, fixed != kind and not (fixed.startswith("行動") and kind.startswith("行動"))
+    return fixed, fixed != kind
 
 
 def top_stable(rows):
@@ -62,20 +93,58 @@ def load_reports(root, cc):
         kind, kind_fixed = net_kind(env.get("network") or {})
         rows = sorted(d["rows"], key=lambda r: -r["mean"])
         t = d.get("time") or ""
+        # 沒進細測的節點是「快篩失敗」（確定不行）還是「快篩通過但被淘汰」（不知道）：
+        # 新版 GUI 的 stage1.nodes 每個節點都有；舊版只有 project_nodes（擴充內建節點）的狀態文字
+        s1_fail, s1_mbps, probe_err = set(), {}, set()
+        for x in (d.get("stage1") or {}).get("nodes") or []:
+            if x.get("mbps") is None: s1_fail.add(x["host"])
+            else: s1_mbps[x["host"]] = x["mbps"]
+            if (x.get("probe") or {}).get("err"): probe_err.add(x["host"])  # 冷門片探測失敗（403／逾時）
+        for p in d.get("project_nodes") or []:
+            st_ = p.get("status") or ""
+            if st_.startswith("快篩失敗"): s1_fail.add(p["host"])
+            m = re.match(r"快篩淘汰（([\d.]+) Mbps）", st_)
+            if m: s1_mbps.setdefault(p["host"], float(m.group(1)))
+        # 新版報告的細測逐筆（stage2.raw）：有任一支失敗的節點不在 rows，但成功那幾支仍有用。
+        # 成功率 ≥ PARTIAL_OK_MIN 且失敗都不是 403 → 部分失敗（記速度）；否則照舊是「細測失敗」。
+        # 也順便算每個節點冷門片（cache miss）的平均速度，報告裡顯示用
+        raw2 = (d.get("stage2") or {}).get("raw") or []
+        partial, miss_mbps = {}, {}
+        if raw2:
+            by = defaultdict(list)
+            for x in raw2: by[x["host"]].append(x)
+            row_hosts = {r["host"] for r in rows}
+            for h, xs in by.items():
+                ok = [x for x in xs if not x.get("err") and x.get("mbps") is not None]
+                miss = [x["mbps"] for x in ok if "miss" in str(x.get("cache") or "").lower()]
+                if miss: miss_mbps[h] = statistics.mean(miss)
+                if h in row_hosts or not ok or len(ok) == len(xs): continue
+                errs = Counter(x["err"] for x in xs if x.get("err"))
+                if any("403" in e for e in errs): continue
+                if len(ok) / len(xs) < PARTIAL_OK_MIN: continue
+                ms = [x["mbps"] for x in ok]
+                partial[h] = dict(n_ok=len(ok), n=len(xs), mean=statistics.mean(ms),
+                                  sd=statistics.pstdev(ms) if len(ms) > 1 else 0.0,
+                                  ttfb=statistics.median(x["ttfb"] for x in ok if x.get("ttfb") is not None) if any(x.get("ttfb") is not None for x in ok) else None,
+                                  errs=dict(errs))
         reps.append(dict(
-            rid=base.rsplit("-", 1)[1], base=base, time=t,
+            rid=base.rsplit("-", 1)[1], base=base, dir=os.path.dirname(f), time=t,
+            ts=datetime.strptime(t, "%Y-%m-%d %H:%M") if re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d$", t) else None,
             hour=int(t[11:13]) if re.match(r"\d{4}-\d\d-\d\d \d\d", t) else None,
             city=ex.get("city") or ipapi.get("city") or "?", asn=asn,
-            isp=ipapi.get("isp") or org.partition(" ")[2] or org, as_name=org.partition(" ")[2] if org.startswith("AS") else "",
-            kind=kind, kind_fixed=kind_fixed, ipapi_mobile=ipapi.get("mobile"),
+            isp=ipapi.get("isp") or org.partition(" ")[2] or org,
+            as_name=org.partition(" ")[2] if org.startswith("AS") else "",
+            kind=kind, kind_fixed=kind_fixed,
             down=(env.get("bandwidth") or {}).get("down_mbps"), ceiling=d.get("ceiling") or 0,
             conc=d.get("conc"), conc_auto=d.get("conc_auto"), contention=d.get("contention_warning"),
             dns=env.get("dns_override"), login=env.get("login"),
             s1_n=(d.get("stage1") or {}).get("n_nodes"), s1_passed=(d.get("stage1") or {}).get("passed"),
-            s2_n=(d.get("stage2") or {}).get("n_nodes"), full=(d.get("stage2") or {}).get("full_success") or 0,
+            full=(d.get("stage2") or {}).get("full_success") or 0,
             rows={r["host"]: r for r in rows}, ref=top_stable(rows),
-            failed=d.get("failed") or {}, hot_only=set(d.get("hot_only") or []),
-            default=d.get("default"), _ip=ex.get("ip") or "", _adapter=(env.get("network") or {}).get("adapter") or ""))
+            failed=d.get("failed") or {}, hot_only=set(d.get("hot_only") or []), s1_fail=s1_fail, s1_mbps=s1_mbps, probe_err=probe_err,
+            partial=partial, miss_mbps=miss_mbps,
+            new_fmt=bool((d.get("stage1") or {}).get("nodes")) or bool(raw2),
+            _ip=ex.get("ip") or "", _adapter=(env.get("network") or {}).get("adapter") or ""))
     assign_lines(reps)
     return reps
 
@@ -95,24 +164,60 @@ def assign_lines(reps):
     for r in reps: del r["_ip"], r["_adapter"]
 
 
-# ── 單份報告中的節點狀態 → 分數 ─────────────────────────────────
+# ── 市占 ─────────────────────────────────────────────────────
+def load_share(cc):
+    try:
+        all_ = json.load(open(os.path.join(HERE, "isp-share.json"), encoding="utf-8"))
+    except Exception:
+        return None
+    return all_.get(cc)
+
+
+def share_lookup(share_cfg, asn, isp_name):
+    """(市占, 對應到的市占名稱或 None)。對不到的 ISP 用 other_each"""
+    if not share_cfg: return None, None
+    for x in share_cfg.get("isps", []):
+        for m in x.get("match", []):
+            if m.upper() == asn.upper() or (not m.upper().startswith("AS") and m.lower() in (isp_name or "").lower()):
+                return x["share"], x["name"]
+    return share_cfg.get("other_each", 0.03), None
+
+
+# ── 單份報告中的節點狀態 ─────────────────────────────────────
 def state(rep, host):
-    """(狀態, 分數 0–1)。第一梯隊 = 1（梯隊內名次不可信，不再細分）；可用／差 = 平均 ÷ 該報告基準；
-    不穩定 = 一半（快取命中才快，冷門片會卡）；細測失敗／只能播熱門／沒通過快篩 = 0"""
+    """(狀態, 分數 0–1)。第一梯隊 = 1；可用／差 = 平均 ÷ 該報告基準；不穩定 = 一半；失敗／只能播熱門／快篩失敗 = 0；未進細測 = 0"""
     r = rep["rows"].get(host)
     if r:
         if r["tier"] == "第一梯隊": return r["tier"], 1.0
         rel = min(r["mean"] / rep["ref"], 1.0)
         return r["tier"], rel * (0.5 if r["tier"] == "不穩定" else 1)
     if host in rep["hot_only"]: return "只能播熱門", 0.0
+    p = rep["partial"].get(host)
+    if p:  # 新版報告：細測部分失敗（成功 ≥ 80%、非 403）。速度用成功那幾支，比照不穩定打五折，再乘成功率
+        rel = min(p["mean"] / rep["ref"], 1.0)
+        return f"部分失敗 {p['n_ok']}/{p['n']}", rel * 0.5 * p["n_ok"] / p["n"]
     if host in rep["failed"]: return "細測失敗", 0.0
+    if host in rep["s1_fail"]: return "快篩失敗", 0.0
+    if host in rep["probe_err"]: return "冷門片探測失敗", 0.0
+    if host in rep["s1_mbps"]: return f"快篩淘汰 {rep['s1_mbps'][host]:.0f} Mbps", 0.0
     return "未進細測", 0.0
 
 
-def wilson_lb(k, n, z=1.96):
-    if not n: return 0.0
-    p = k / n
-    return (p + z * z / (2 * n) - z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))) / (1 + z * z / n)
+def q_of(rep, h):
+    """4K 達成度 0–1；None = 不知道（沒進細測、也沒有快篩失敗紀錄：舊版 GUI 只細測快篩前 80 名，沒進不代表慢）。
+    = 單連線平均速度 ÷ min(25 Mbps, 該報告最快穩定節點)，最多 1（整條線路都慢時以它做得到的最快速度為目標）。
+    被「上限 ÷ 並行數」卡住的視為至少這麼快。不穩定（sd > 平均一半）、細測失敗、部分失敗、快篩失敗、只能播熱門、冷門片探測失敗 = 0
+    （部分失敗有速度紀錄，但預設要最不會出錯，所以達標仍算 0；分級那邊會給它「可用」級的分數）。
+    沒進細測但有快篩速度（新版 GUI 的 stage1.nodes、或 project_nodes 的「快篩淘汰（x Mbps）」）→ 用快篩速度算（弱證據，熱門片 2MB，偏樂觀）"""
+    r = rep["rows"].get(h)
+    if r:
+        if r["sd"] > 0.5 * r["mean"]: return 0.0
+        v, cap = r["mean"], rep["ceiling"] / max(rep["conc"] or 1, 1)
+        if v >= 0.9 * cap: v = max(v, cap)
+        return min(v / (min(FOURK_MBPS, rep["ref"]) or FOURK_MBPS), 1.0)
+    if h in rep["hot_only"] or h in rep["failed"] or h in rep["partial"] or h in rep["s1_fail"] or h in rep["probe_err"]: return 0.0
+    if h in rep["s1_mbps"]: return min(rep["s1_mbps"][h] / (min(FOURK_MBPS, rep["ref"]) or FOURK_MBPS), 1.0)
+    return None
 
 
 def ranks(xs):
@@ -135,288 +240,281 @@ def spearman(a, b):
     return num / den if den else 0.0
 
 
-# ── 依分數取前 10（每池最多 2 個；一致性檢查用） ─────────────────
-def pick(order, pool, banned):
-    cnt, out = Counter(), []
-    for h in order:
-        if len(out) >= TOP_N: break
-        if h in banned or cnt[pool(h)] >= PER_POOL: continue
-        cnt[pool(h)] += 1
-        out.append(h)
-    return out
-
-
 # ── 分析 ─────────────────────────────────────────────────────
-def analyze(reps, cdn, cc, primary=None):
+def analyze(reps, cdn, cc, share_cfg):
     opts = {o["value"]: o for o in cdn.get("options", []) if o.get("value") != "backup"}
     pools_lab = cdn.get("pools", {})
     row_pool = {}
     for rep in reps:
-        for h, r in rep["rows"].items(): row_pool.setdefault(h, (r.get("pool"), r.get("pool_label")))
-
-    def pool(h):
-        return (opts.get(h) or {}).get("pool") or row_pool.get(h, (h,))[0] or h
+        for h, r in rep["rows"].items(): row_pool.setdefault(h, r.get("pool_label"))
 
     def pool_label(h):
         k = (opts.get(h) or {}).get("pool")
         if k: return (pools_lab.get(k) or {}).get("zh_TW", k)
-        return row_pool.get(h, (None, h))[1] or h
+        return row_pool.get(h) or "?"
 
-    hosts = sorted({h for rep in reps for h in rep["rows"]})
+    hosts = sorted({h for rep in reps for h in rep["rows"]} | {h for rep in reps for h in rep["failed"]})
     n = len(reps)
-    S = {h: [state(rep, h) for rep in reps] for h in hosts}  # 每節點 × 每份報告
+    S = {h: [state(rep, h) for rep in reps] for h in hosts}
     vec = {h: [x for _, x in S[h]] for h in hosts}
-    # 權重：同一條線路的多份報告合起來算 1 份（先平均再參與計算）
+    Q = {h: [q_of(rep, h) for rep in reps] for h in hosts}
+
+    # 線路
     lines = defaultdict(list)
     for i, rep in enumerate(reps): lines[rep["line"]].append(i)
+    line_ids = list(lines)
+    L = len(line_ids)
+    asn_of_line = {l: reps[ix[0]]["asn"] for l, ix in lines.items()}
     wt = [1 / len(lines[rep["line"]]) for rep in reps]
-    L = len(lines)
 
     def wmean(xs, idx=None):
         idx = range(n) if idx is None else idx
         tw = sum(wt[i] for i in idx)
         return sum(xs[i] * wt[i] for i in idx) / tw if tw else 0.0
 
+    # ISP 與市占
+    isps = sorted({r["asn"] for r in reps})
+    isp_name = {r["asn"]: r["isp"] for r in reps}
+    as_name = {r["asn"]: r["as_name"] for r in reps}
+    isp_lines = {a: [l for l in line_ids if asn_of_line[l] == a] for a in isps}
+    isp_reps = {a: [i for i, r in enumerate(reps) if r["asn"] == a] for a in isps}
+    share, share_name = {}, {}
+    for a in isps:
+        share[a], share_name[a] = share_lookup(share_cfg, a, isp_name[a])
+        if share[a] is None: share[a] = 1.0 / len(isps)  # 沒有市占資料：一人一票
+    for nm, cnt in Counter(v for v in share_name.values() if v).items():
+        if cnt > 1:  # 同一家 ISP 對到多個 ASN（例如遠傳 + Seednet）：市占平分
+            for a in isps:
+                if share_name[a] == nm: share[a] /= cnt
+    isp_order = sorted(isps, key=lambda a: (-share[a], -len(isp_lines[a]), a))
+    total_share = sum(share.values())
+
+    # 每節點 × 每線路：達標比例（該線路已知報告中 q ≥ PASS_Q 的比例）、達成度中位、速度中位；None = 該線路不知道
+    def line_vals(h, l):
+        """該線路對這個節點：達標比例（已知報告中 q ≥ PASS_Q 算 1、沒量到算 UNKNOWN_CREDIT）、已知／未知份數、速度、未達標的報告"""
+        ks = [Q[h][i] for i in lines[l] if Q[h][i] is not None]
+        n_all = len(lines[l])
+        mb = [reps[i]["rows"][h]["mean"] if h in reps[i]["rows"] else reps[i]["partial"][h]["mean"]
+              for i in lines[l] if h in reps[i]["rows"] or h in reps[i]["partial"]]  # 部分失敗：成功那幾支的平均
+        return dict(pass_rate=(sum(q >= PASS_Q for q in ks) + UNKNOWN_CREDIT * (n_all - len(ks))) / n_all,
+                    pass_min=sum(q >= PASS_Q for q in ks) / n_all,  # 未知算 0 的保守值
+                    n_known=len(ks), n_unknown=n_all - len(ks),
+                    mbps=statistics.median(mb) if mb else None,
+                    fails=[reps[i]["rid"] for i in lines[l] if Q[h][i] is not None and Q[h][i] < PASS_Q])
+
+    LV = {h: {l: line_vals(h, l) for l in line_ids} for h in hosts}
+
+    def coverage(h, li):
+        """li = 線路清單（重抽樣時可重複）→ (覆蓋率, 已知市占比例, 各 ISP {pass_rate, n_known, n_lines, n_unknown, fails})。
+        覆蓋率 = Σ 市占 × 該 ISP 各線路達標比例的平均 ÷ Σ 有報告的 ISP 市占。
+        該 ISP 有量到的線路中，沒量到的報告算 UNKNOWN_CREDIT（不知道好壞）；整個 ISP 都沒量到 → 0（不能證明它在那家 ISP 行）"""
+        per, cov, cov_min, known = {}, 0.0, 0.0, 0.0
+        tot = sum(share[a] for a in isps if any(asn_of_line[l] == a for l in li)) or 1
+        for a in isps:
+            ls = [l for l in li if asn_of_line[l] == a]
+            if not ls: continue
+            vals = [LV[h][l] for l in ls]
+            nk = sum(v["n_known"] > 0 for v in vals)
+            pr = statistics.mean(v["pass_rate"] for v in vals) if nk else 0.0
+            pm = statistics.mean(v["pass_min"] for v in vals)
+            per[a] = dict(pass_rate=pr, pass_min=pm, n_known=nk, n_lines=len(ls), n_unknown=sum(v["n_unknown"] for v in vals),
+                          fails=[(l, LV[h][l]["fails"]) for l in ls if LV[h][l]["fails"]])
+            cov += share[a] * pr
+            cov_min += share[a] * pm
+            if nk: known += share[a]
+        per["_min"] = cov_min / tot
+        return cov / tot, known / tot, per
+
+    # 節點統計
     st = {}
     for h in hosts:
         tiers = [s for s, _ in S[h]]
-        present = [rep["rows"][h] for rep in reps if h in rep["rows"]]
-        good_rate = wmean([t in GOOD for t in tiers])
-        st[h] = dict(score=wmean(vec[h]), good_rate=good_rate, good_lb=wilson_lb(good_rate * L, L),
-                     t1_rate=wmean([t == "第一梯隊" for t in tiers]), n_unstable=tiers.count("不穩定"),
-                     n_hot=tiers.count("只能播熱門"), n_fail=tiers.count("細測失敗"), n_absent=tiers.count("未進細測"),
-                     mbps=statistics.median(r["mean"] for r in present) if present else None,
+        present = [rep["rows"][h] for rep in reps if h in rep["rows"]] + [rep["partial"][h] for rep in reps if h in rep["partial"]]
+        lm = [LV[h][l]["mbps"] for l in line_ids if LV[h][l]["mbps"]]
+        cov, known, per = coverage(h, line_ids)
+        st[h] = dict(score=wmean(vec[h]), good_rate=wmean([t in GOOD for t in tiers]), cov_min=per.pop("_min"),
+                     t1_rate=wmean([t == "第一梯隊" for t in tiers]),
+                     n_unstable=tiers.count("不穩定"), n_hot=tiers.count("只能播熱門"),
+                     n_fail=tiers.count("細測失敗") + tiers.count("快篩失敗"), n_absent=tiers.count("未進細測"),
+                     n_partial=sum(t.startswith("部分失敗") for t in tiers),
+                     miss_mbps=statistics.median([rep["miss_mbps"][h] for rep in reps if h in rep["miss_mbps"]]) if any(h in rep["miss_mbps"] for rep in reps) else None,
+                     n_present=len(present),
+                     mbps=statistics.mean(lm) if lm else None, mbps_min=min(lm) if lm else None,
                      ttfb=statistics.median(r["ttfb"] for r in present) if present else None,
                      cv=statistics.median(r["sd"] / r["mean"] for r in present if r["mean"]) if present else None,
-                     pool=pool(h), pool_label=pool_label(h), in_opts=h in opts)
-    banned = {h for h in hosts if st[h]["n_hot"]}  # 403 只能播熱門：冷門片會直接播不了，不列入
-    order = sorted(hosts, key=lambda h: (-st[h]["score"], -st[h]["good_lb"], st[h]["ttfb"] or 1e9))
+                     cov=cov, known=known, per=per, cluster=cluster(h), pool_label=pool_label(h), in_opts=h in opts)
+    banned = {h for h in hosts if st[h]["n_hot"]}  # 403 只能播熱門：冷門片直接播不了，一律不列
 
-    # ── 線路層級的資料（分級、重抽樣都以線路為單位）
-    line_ids = list(lines)
-    lv = {h: [statistics.mean(vec[h][i] for i in lines[l]) for l in line_ids] for h in hosts}
-    unst_l = {h: {k for k, l in enumerate(line_ids) if any(S[h][i][0] == "不穩定" for i in lines[l])} for h in hosts}
-    pres_l = {h: {k for k, l in enumerate(line_ids) if any(h in reps[i]["rows"] for i in lines[l])} for h in hosts}
-    # 跨報告「不穩定」：進了細測的線路中，一半以上是不穩定（快取命中才快）
-    agg_unstable = {h for h in hosts if len(pres_l[h]) >= 2 and len(unst_l[h]) >= 0.5 * len(pres_l[h])}
+    def stable_issues(h):
+        s, out = st[h], []
+        if s["n_unstable"]: out.append(f"不穩定 {s['n_unstable']} 份")
+        if s["n_fail"]: out.append(f"失敗 {s['n_fail']} 份")
+        if s["n_partial"]: out.append(f"部分失敗 {s['n_partial']} 份")
+        if s["cv"] is not None and s["cv"] > CV_MAX: out.append(f"速度波動大（sd/平均 {s['cv']:.2f}）")
+        if s["ttfb"] is not None and s["ttfb"] > TTFB_MAX: out.append(f"TTFB {s['ttfb']:.0f} ms")
+        return out
+
+    for h in hosts: st[h]["issues"] = stable_issues(h)
+
+    # ── 預設候選：覆蓋率 → 穩定 → 平均速度
+    def rank_default(li):
+        """→ (階段, [(host, cov, known, per)])。階段 'full' = 有節點在所有 ISP 的所有已知線路都達標；否則 'weighted'"""
+        rows = []
+        for h in hosts:
+            if h in banned: continue
+            cov, known, per = coverage(h, li)
+            per.pop("_min", None)
+            if known == 0: continue
+            rows.append((h, cov, known, per))
+        full = [r for r in rows if r[1] >= 0.999 and all(p["n_unknown"] == 0 for p in r[3].values())]
+        stage = "full" if full else "weighted"
+        cand = full if full else rows
+        cand.sort(key=lambda r: (-round(r[1], 2), bool(st[r[0]]["issues"]), -(st[r[0]]["mbps"] or 0)))
+        return stage, cand
+
+    stage, cand = rank_default(line_ids)
+    default = cand[0][0] if cand else None
+
+    # ── ISP 內分級（比照單份報告：以該 ISP 分數最高的節點為基準，逐線路配對比較）
+    lv = {h: {l: statistics.mean(vec[h][i] for i in lines[l]) for l in line_ids} for h in hosts}
 
     def tiers_for(li):
-        """li = 線路索引（重抽樣時可重複）→ (跨報告分級, 分數)。比照單份報告的分級：
-        以分數最高的節點為基準（排除只能播熱門、跨報告不穩定），逐線路配對比較：
-        平均差距在 2 倍標準誤內、且分數 ≥ 基準 T1_MIN 倍 → 第一梯隊（後者避免「某 ISP 極好、其他 ISP 為 0」
-        這種變異大的節點只因標準誤大就混進第一梯隊）；分數 ≥ 基準一半 → 可用；其餘 → 差"""
         m = len(li)
-        sc = {h: sum(lv[h][k] for k in li) / m for h in hosts}
-        ok = [h for h in hosts if h not in banned and h not in agg_unstable and sc[h] > 0]
-        tier = {}
+        sc = {h: sum(lv[h][l] for l in li) / m for h in hosts}
+        ok = [h for h in hosts if h not in banned and sc[h] > 0]
         if not ok: return {h: "差" for h in hosts}, sc
         b = max(ok, key=lambda h: sc[h])
+        tier = {}
         for h in hosts:
             if h in banned: tier[h] = "只能播熱門"; continue
-            if h in agg_unstable: tier[h] = "不穩定"; continue
-            d = [lv[b][k] - lv[h][k] for k in li]
+            unst = sum(any(S[h][i][0] == "不穩定" for i in lines[l]) for l in li)
+            pres = sum(any(h in reps[i]["rows"] for i in lines[l]) for l in li)
+            if pres >= 2 and unst >= 0.5 * pres: tier[h] = "不穩定"; continue
+            d = [lv[b][l] - lv[h][l] for l in li]
             se = statistics.stdev(d) / math.sqrt(m) if m > 1 else 0.0
             if sc[h] >= T1_MIN * sc[b] and sum(d) / m <= 2 * se + 1e-9: tier[h] = "第一梯隊"
             elif sc[h] >= 0.5 * sc[b]: tier[h] = "可用"
             else: tier[h] = "差"
         return tier, sc
 
-    # ── 分群：每家主要 ISP（≥ MAJOR_LINES 條線路）一群，其餘線路合併成「其他」。各群自己分級，再取聯集：
-    #    在任一群是第一梯隊 → 第一梯隊；否則任一群可用 → 可用。這樣「對某群使用者是第一梯隊」的節點不會被別群的 0 分拉下來
-    asn_of = [reps[lines[l][0]]["asn"] for l in line_ids]
-    line_cnt = Counter(asn_of)
-    major = [a for a, c in line_cnt.most_common() if c >= MAJOR_LINES]
-    if primary and primary not in major and line_cnt.get(primary, 0) >= 2:
-        major.insert(0, primary)  # 指定的主要 ISP 只要有 2 條線路就單獨成群
-    if primary and primary not in line_cnt: primary = None
+    isp_tier, isp_sc = {}, {}
+    for a in isps: isp_tier[a], isp_sc[a] = tiers_for(isp_lines[a])
 
-    def group_of(k):
-        return asn_of[k] if asn_of[k] in major else OTHER
+    # ── 剩餘 9 個：依市占輪流從每個 ISP 的第一梯隊取最好的；同 ISP 內「冗餘」的不重複取；已選過的跳過
+    def redundant(h, b, rep_ix):
+        """對某家 ISP（rep_ix = 該 ISP 的報告索引），h 與已選的 b 是否冗餘 → (是否, 依據)。
+        兩者都有結論的報告 ≥ REDUN_MIN_N 份：達標結論一致率 ≥ REDUN_AGREE 就是冗餘；
+        不足：退回同機房前綴當先驗（同機房對同一 ISP 幾乎同表現，且不去重的代價大於去重錯的代價）"""
+        both = [(Q[h][i] >= PASS_Q, Q[b][i] >= PASS_Q) for i in rep_ix if Q[h][i] is not None and Q[b][i] is not None]
+        if len(both) >= REDUN_MIN_N:
+            k = sum(x == y for x, y in both)
+            pp = sum(x and y for x, y in both)
+            if pp == 0:  # 兩者在這家 ISP 從沒同時達標過：「都不行」不算同一個東西，退回機房前綴
+                same = cluster(h) == cluster(b)
+                return same, f"{len(both)} 份都沒同時達標，用機房前綴" + ("（同機房）" if same else "")
+            return k / len(both) >= REDUN_AGREE, f"達標結論一致 {k}/{len(both)}、同時達標 {pp} 份"
+        same = cluster(h) == cluster(b)
+        return same, f"共同量到只有 {len(both)} 份，用機房前綴" + ("（同機房）" if same else "")
 
-    def grouped_tiers(li):
-        """li → (各群分級 {群: {host: tier}}, 各群分數, 聯集分級, 整體分數)"""
-        gt, gs = {}, {}
-        for g in major + [OTHER]:
-            gl = [k for k in li if group_of(k) == g]
-            if gl: gt[g], gs[g] = tiers_for(gl)
-        m = len(li)
-        sc = {h: sum(lv[h][k] for k in li) / m for h in hosts}
-        tier = {}
-        for h in hosts:
-            ts = [gt[g][h] for g in gt]
-            tier[h] = ("只能播熱門" if h in banned else "不穩定" if h in agg_unstable else
-                       "第一梯隊" if "第一梯隊" in ts else "可用" if "可用" in ts else "差")
-        return gt, gs, tier, sc
-
-    def select(gt, gs, tier, sc):
-        """建議清單（與 /cdn-speedtest 單份報告的規則相同，但分群）：先取第一梯隊、再取可用；
-        主要 ISP（primary）那一群的先排（依該群分數），其餘依整體分數；同一個 CDN 池（叢集）最多 PER_POOL 個，
-        剩下的名額讓給其他池；不穩定、差不列（不足 TOP_N 就少列）"""
-        out, cnt = [], Counter()
+    def pick_rest(dflt, order, tiers, scs, rep_ix, log=None):
+        """冗餘比對的對象是清單裡所有已選節點（含預設、含別家 ISP 選的），判準用這家 ISP 自己的數據：
+        對這家 ISP 來說，清單裡已經有一個等價的節點，再放一個就是浪費名額"""
+        out, logged = [], set()
+        chosen = [dflt] if dflt else []
         for t in ("第一梯隊", "可用"):
-            pri = [h for h in hosts if primary in gt and gt[primary][h] == t and tier[h] == t]
-            pri.sort(key=lambda h: (-gs[primary][h], -sc[h]))
-            rest = [h for h in hosts if tier[h] == t and h not in pri]
-            rest.sort(key=lambda h: (-sc[h], -(st[h]["mbps"] or 0)))
-            for h in pri + rest:
-                if len(out) >= TOP_N: break
-                if cnt[pool(h)] >= PER_POOL: continue
-                cnt[pool(h)] += 1
-                out.append(h)
+            rnd = 0
+            while len(out) < TOP_N - 1:
+                rnd += 1
+                got = False
+                for a in order:
+                    if len(out) >= TOP_N - 1: break
+                    ranked = sorted((h for h in hosts if tiers[a][h] == t), key=lambda h: (-scs[a][h], -(st[h]["mbps"] or 0)))
+                    for h in ranked:
+                        if h in chosen or h in banned: continue
+                        dup = next(((b, why) for b in chosen for ok, why in [redundant(h, b, rep_ix[a])] if ok), None)
+                        if dup:
+                            if log is not None and (a, h) not in logged:
+                                logged.add((a, h))
+                                log.append((rnd, t, a, h, f"跳過：對 {a} 與清單已有的 `{short(dup[0])}` 冗餘（{dup[1]}）"))
+                            continue
+                        out.append(h); chosen.append(h); got = True
+                        if log is not None: log.append((rnd, t, a, h, f"選入（{a} 第 {rnd} 輪，{t}，分數 {scs[a][h]:.2f}）"))
+                        break
+                if not got: break
         return out
 
-    def default_for(lst, gt, gs, tier, sc, li):
-        """預設（比照單份報告）：清單中的第一梯隊（有 primary 時限 primary 那一群的第一梯隊），
-        沒有不穩定紀錄、速度穩定（各報告 sd/平均 的中位數 ≤ 0.3）、TTFB 不高（≤ 最低×1.5 或 +150ms）的分數最高者；條件逐步放寬"""
-        if primary in gt:
-            t1 = [h for h in lst if gt[primary][h] == "第一梯隊"] or [h for h in lst if gt[primary][h] == "可用"]
-            sc = gs[primary]
-            li = [k for k in li if group_of(k) == primary]
-        else:
-            t1 = [h for h in lst if tier[h] == "第一梯隊"]
-        t1 = t1 or lst
-        if not t1: return None
-        tt = {h: st[h]["ttfb"] for h in t1 if st[h]["ttfb"] is not None}
-        lim = max(1.5 * min(tt.values()), min(tt.values()) + 150) if tt else float("inf")
-        stable = [h for h in t1 if not any(k in unst_l[h] for k in li)]
-        for c in ([h for h in stable if tt.get(h, 1e9) <= lim and (st[h]["cv"] or 0) <= 0.3],
-                  [h for h in stable if tt.get(h, 1e9) <= lim], [h for h in t1 if tt.get(h, 1e9) <= lim], t1):
-            if c: return max(c, key=lambda h: (sc[h], st[h]["mbps"] or 0))  # 同分（單份報告都是 1）看速度
+    pick_log = []
+    rest = pick_rest(default, isp_order, isp_tier, isp_sc, isp_reps, pick_log)
+    nodes = ([default] if default else []) + rest
 
-    all_li = list(range(L))
-    gt0, gs0, tier, sc0 = grouped_tiers(all_li)
-    for h in hosts:
-        st[h]["tier"] = tier[h]
-        st[h]["t1_groups"] = [g for g in gt0 if gt0[g][h] == "第一梯隊"]
-        st[h]["ok_groups"] = [g for g in gt0 if gt0[g][h] == "可用"]
-    top = select(gt0, gs0, tier, sc0)
-    default = default_for(top, gt0, gs0, tier, sc0, all_li)
-    group_lines = {g: sum(group_of(k) == g for k in all_li) for g in gt0}
-
-    # bootstrap：以線路為單位重抽，看每個節點進清單、當預設的機率（樣本少時會明顯不穩）
+    # ── bootstrap：以線路重抽，看預設與清單的穩定度
     rng = random.Random(0)
-    sel, dflt = Counter(), Counter()
+    dflt_cnt, sel_cnt = Counter(), Counter()
     if L >= 2:
         for _ in range(BOOT):
-            li = [rng.randrange(L) for _ in range(L)]
-            gt, gs, t, sc = grouped_tiers(li)
-            lst = select(gt, gs, t, sc)
-            sel.update(lst)
-            dflt[default_for(lst, gt, gs, t, sc, li)] += 1
-    boot = {h: sel[h] / BOOT for h in hosts} if L >= 2 else {h: float(h in top) for h in hosts}
+            li = [line_ids[rng.randrange(L)] for _ in range(L)]
+            _, c = rank_default(li)
+            d = c[0][0] if c else None
+            dflt_cnt[d] += 1
+            present = {asn_of_line[l] for l in li}
+            tiers, scs, rix = {}, {}, {}
+            for a in present:
+                al = [l for l in li if asn_of_line[l] == a]
+                tiers[a], scs[a] = tiers_for(al)
+                rix[a] = [i for l in al for i in lines[l]]
+            sel_cnt.update(pick_rest(d, [a for a in isp_order if a in present], tiers, scs, rix))
+            if d: sel_cnt[d] += 1
+    boot = {h: sel_cnt[h] / BOOT for h in hosts} if L >= 2 else {h: float(h in nodes) for h in hosts}
+    dflt_rate = {h: dflt_cnt[h] / BOOT for h in hosts} if L >= 2 else {h: float(h == default) for h in hosts}
 
-    # 各 ISP：同樣規則只用該 ISP 的線路算分級與預設（給之後「依 ISP 選預設」用），並標樣本是否足夠
-    by_isp = defaultdict(list)
-    for i, rep in enumerate(reps): by_isp[rep["asn"]].append(i)
-    isp_lines = {a: len({reps[i]["line"] for i in ix}) for a, ix in by_isp.items()}
-
-    def single(li):
-        t, sc = tiers_for(li)
-        out, cnt = [], Counter()
-        for tt_ in ("第一梯隊", "可用"):
-            for h in sorted((h for h in hosts if t[h] == tt_), key=lambda h: (-sc[h], -(st[h]["mbps"] or 0))):
-                if len(out) >= TOP_N: break
-                if cnt[pool(h)] >= PER_POOL: continue
-                cnt[pool(h)] += 1
-                out.append(h)
-        g = {"_": t}
-        return t, sc, out, default_for(out, g, {"_": sc}, t, sc, li)
-
-    isp = {}
-    for a in sorted(by_isp, key=lambda a: -isp_lines[a]):
-        li = [k for k in all_li if asn_of[k] == a]
-        t, sc, lst, d = single(li)
-        agree = None
-        if len(li) >= 2:
-            c = Counter()
-            for _ in range(BOOT // 4):
-                lb = [li[rng.randrange(len(li))] for _ in li]
-                c[single(lb)[3]] += 1
-            agree = c[d] / (BOOT // 4)
-        isp[a] = dict(lines=len(li), reports=len(by_isp[a]), tier=t, sc=sc, top=lst, default=d, agree=agree)
-    isp_sc = {a: isp[a]["sc"] for a in major}
-
-    def list_quality(lst, idx=None):
-        """清單對各報告的「最佳、次佳」分數平均（診斷用：這份清單對各 ISP 的使用者有沒有好選擇）"""
-        idx = range(n) if idx is None else idx
-        b = [sorted((vec[h][i] for h in lst), reverse=True) + [0, 0] for i in range(n)]
-        return wmean([x[0] for x in b], idx), wmean([x[1] for x in b], idx)
-
-    # 報告一致性：各報告 vs 「其他線路」的共識（同線路的其他報告也拿掉，不然會互相背書），以及拿掉這條線路後清單變多少
+    # ── 報告一致性（離群檢查）：各報告 vs「其他線路」的共識
     cons = []
     for i, rep in enumerate(reps):
-        others_ix = [j for j in range(n) if reps[j]["line"] != rep["line"]]
-        if len({reps[j]["line"] for j in others_ix}) < 2:
-            cons.append(dict(rho=None, overlap=None, loo_change=None)); continue
-        others = {h: wmean(vec[h], others_ix) for h in hosts}
-        rho = spearman([vec[h][i] for h in hosts], [others[h] for h in hosts])
-        gt, gs, t, sc = grouped_tiers([k for k, l in enumerate(line_ids) if l != rep["line"]])
-        loo_top = select(gt, gs, t, sc)
-        own = pick(sorted(hosts, key=lambda h: -vec[h][i]), pool, banned)
-        cons.append(dict(rho=rho, overlap=len(set(own) & set(pick(sorted(hosts, key=lambda h: -others[h]), pool, banned))),
-                         loo_change=len(set(top) - set(loo_top)), loo_top=loo_top))
-    return dict(hosts=hosts, S=S, st=st, order=order, top=top, default=default, boot=boot, dflt=dflt,
-                cons=cons, banned=banned, pool=pool, pool_label=pool_label, opts=opts, vec=vec, wmean=wmean,
-                lines=lines, L=L, by_isp=by_isp, isp_lines=isp_lines, major=major, isp_sc=isp_sc, isp=isp,
-                list_quality=list_quality, tier=tier, primary=primary, groups=gt0, group_lines=group_lines, gs=gs0)
+        others = [j for j in range(n) if reps[j]["line"] != rep["line"]]
+        if len({reps[j]["line"] for j in others}) < 2:
+            cons.append(dict(rho=None, overlap=None)); continue
+        oth = {h: wmean(vec[h], others) for h in hosts}
+        rho = spearman([vec[h][i] for h in hosts], [oth[h] for h in hosts])
+        own = [h for h in sorted(hosts, key=lambda h: -vec[h][i]) if h not in banned][:10]
+        oth_top = [h for h in sorted(hosts, key=lambda h: -oth[h]) if h not in banned][:10]
+        cons.append(dict(rho=rho, overlap=len(set(own) & set(oth_top))))
+
+    return dict(hosts=hosts, S=S, vec=vec, Q=Q, st=st, LV=LV, lines=lines, line_ids=line_ids, L=L, asn_of_line=asn_of_line,
+                isps=isps, isp_order=isp_order, isp_name=isp_name, as_name=as_name, isp_lines=isp_lines, isp_reps=isp_reps,
+                share=share, share_name=share_name, total_share=total_share,
+                stage=stage, cand=cand, default=default, isp_tier=isp_tier, isp_sc=isp_sc,
+                rest=rest, nodes=nodes, pick_log=pick_log, boot=boot, dflt_rate=dflt_rate, banned=banned, cons=cons, wmean=wmean)
 
 
+# ── 報告品質 ─────────────────────────────────────────────────
 def quality_flags(rep):
-    """(嚴重, 提示) 兩組。嚴重 = 這份報告的量測本身有問題，自動排除"""
+    """(嚴重, 提示)。嚴重 = 量測本身有問題，自動排除"""
     hard, soft = [], []
     if rep["s1_passed"] is not None and rep["s1_passed"] < 30:
         hard.append(f"快篩只有 {rep['s1_passed']}/{rep['s1_n']} 個節點通過（多半是 DNS 或網路異常，不是節點本身慢）")
-    if rep["full"] < 15: hard.append(f"細測只有 {rep['full']} 個節點全部成功，排名基礎太薄")
     if rep["ceiling"] and rep["ceiling"] < 30: hard.append(f"頻寬上限只有 {rep['ceiling']:.0f} Mbps")
+    # 細測成功少但快篩正常：多半是這家網路對多數節點就是 403／逾時（例如台灣 TBC），是真實體驗，不排除，只提示排名基礎薄
+    if rep["full"] < 15 and not hard: soft.append(f"細測只有 {rep['full']} 個節點全部成功，排名基礎薄（分級名次不可信，達標與否仍可用）")
     if rep["login"] is False: soft.append("未登入（只測到 ≤480P）")
     if rep["dns"]: soft.append(f"節點網域改用 {rep['dns']} 解析")
     if rep["conc"] and rep["conc_auto"] and rep["conc"] != rep["conc_auto"]:
         soft.append(f"並行數手動設為 {rep['conc']}（自動為 {rep['conc_auto']}）")
-    if rep["contention"]: soft.append("第一名接近「上限 ÷ 並行數」，可能互搶頻寬（頂端節點會被抹平成同一級）")
+    if rep["contention"]: soft.append("第一名接近「上限 ÷ 並行數」，可能互搶頻寬")
     if rep["kind_fixed"]: soft.append(f"網路類型更正為「{rep['kind']}」（GUI 誤判）")
     return hard, soft
 
 
-def classify_outlier(i, reps, A):
-    """離群報告是個案還是通案：看同 ISP「其他線路」的報告是否也有同樣的排名特徵"""
-    me = reps[i]
-    peers = [j for j, r in enumerate(reps) if r["asn"] == me["asn"] and r["line"] != me["line"]]
-    same = [j for j, r in enumerate(reps) if j != i and r["line"] == me["line"]]
-    hosts, vec = A["hosts"], A["vec"]
-    c = A["cons"][i]["rho"]
-    tail = ""
-    if same:
-        sr = statistics.mean(spearman([vec[h][i] for h in hosts], [vec[h][j] for h in hosts]) for j in same)
-        tail = f"；同線路另外 {len(same)} 份與它相關 {sr:.2f}（{'可重現' if sr >= 0.5 else '同一條線路自己也不穩定'}）"
-    if not peers: return f"無法判斷（這個 ISP 只有這一條線路）{tail}"
-    pl = len({reps[j]["line"] for j in peers})
-    pr = statistics.mean(spearman([vec[h][i] for h in hosts], [vec[h][j] for h in hosts]) for j in peers)
-    if pr >= c + 0.1:
-        return f"**ISP 通案**：與同 ISP 其他 {pl} 條線路的相關（{pr:.2f}）明顯高於與整體共識（{c:.2f}）{tail}"
-    return f"**個案**：同 ISP 其他 {pl} 條線路沒有同樣的排名（相關 {pr:.2f}，與整體共識 {c:.2f}）{tail}"
-
-
-def concentration(ix, reps, A):
-    """一組事件（ix = 發生的報告）是個案、ISP 通案、尖峰通案、普遍現象還是零星。全部以線路數計"""
-    n = len(reps)
-    ev = {reps[i]["line"] for i in ix}
-    k = len(ev)
-    if k == 1:
-        return "個案" + (f"（同一條線路 {len(ix)} 份）" if len(ix) > 1 else "")
-    all_lines = {r["line"] for r in reps}
-    groups = [(f"ISP 通案：{a} {reps[all_ix[0]]['isp']}", {reps[j]["line"] for j in all_ix}) for a, all_ix in A["by_isp"].items()]
-    groups.append(("尖峰通案：晚間 19–24 時", {reps[j]["line"] for j in range(n) if reps[j]["hour"] in PEAK}))
-    best = None
-    for lab, g in groups:
-        inn = len(ev & g)
-        if inn < 2 or len(g) == len(all_lines): continue
-        r_in, r_out = inn / len(g), (k - inn) / (len(all_lines) - len(g))
-        if r_in >= 0.4 and r_in - r_out >= 0.3 and (not best or r_in - r_out > best[0]):
-            best = (r_in - r_out, f"**{lab}**（{inn}/{len(g)} 條線路；其他 {k - inn}/{len(all_lines) - len(g)} 條）")
-    if best: return best[1]
-    isps = Counter(reps[i]["asn"] for i in ix)
-    if k >= 3 and len(isps) >= 2: return f"**普遍現象**（{k} 條線路、{len(isps)} 家 ISP）"
-    return "零星（" + "、".join(f"{a}×{c}" for a, c in isps.most_common()) + "）"
+def test_hints(rep, reps_all):
+    """量測設定的客觀事實（只列出，不判斷是不是測試；由 Claude 判讀後問使用者要不要刪）。
+    只看量測設定本身：同一條線路短時間內重複多次、並行數手動改過、未登入。
+    不同出口網段／網卡／城市 = 不同使用者，不是測試；細測成功少、403 多是網路的真實體驗，也不是測試"""
+    out = []
+    same = [r for r in reps_all if r["line"] == rep["line"] and r["rid"] != rep["rid"] and r["ts"] and rep["ts"]
+            and abs((r["ts"] - rep["ts"]).total_seconds()) <= 86400]
+    if len(same) >= 2: out.append(f"同線路 24 小時內另有 {len(same)} 份")
+    if rep["conc"] and rep["conc_auto"] and rep["conc"] != rep["conc_auto"]: out.append("並行數手動設定")
+    if rep["login"] is False: out.append("未登入")
+    return out
 
 
 # ── 報告 ─────────────────────────────────────────────────────
@@ -427,304 +525,252 @@ def fmt(x, d=0, suf=""):
 def pct(x): return "-" if x is None else f"{x * 100:.0f}%"
 
 
-def short(h): return h.replace(".bilivideo.com", "")
-
-
-def write(cc, reps_all, excluded, reps, A, cdn, out_dir):
-    st, top, boot, n = A["st"], A["top"], A["boot"], len(reps)
+def write(cc, reps_all, excluded, reps, A, cdn, share_cfg, out_dir):
+    st, n, NL = A["st"], len(reps), A["L"]
+    isp_name, as_name, share = A["isp_name"], A["as_name"], A["share"]
     cname = next((c for c in cdn.get("countries", []) if c["code"] == cc), None)
     current = cname["nodes"] if cname else []
     out = []
     w = out.append
-    wmean, NL = A["wmean"], A["L"]
     now = datetime.now()
+
+    def isp_lab(a, n_=28):
+        nm = A["share_name"].get(a)
+        return f"{a} {(nm or isp_name[a])[:n_]}"
+
     w(f"# {cc} CDN 節點跨報告分析（{now:%Y-%m-%d %H:%M}）\n")
-    w(f"> 自動產生：`.claude/skills/analyze-cdn/analyze.py`。納入 {n} 份（{NL} 條線路）、排除 {len(excluded)} 份。"
-      "「判讀」一節由 Claude 讀完數據後補寫。**本報告不改任何專案檔案**；要不要更新 `src/cdn-list.json` 由你決定。\n")
-    w("「線路」= 同 ISP 且同出口 IP（或同網段、同網卡）的報告視為同一條線路重複測試，合起來只算 1 個樣本；"
-      "下面的分數、比例、重抽樣都以線路為單位。\n")
+    w(f"> 自動產生：`.claude/skills/analyze-cdn/analyze.py`。納入 {n} 份（{NL} 條線路、{len(A['isps'])} 家 ISP）、排除 {len(excluded)} 份。"
+      "「判讀」一節由 Claude 讀完數據後補寫。**本報告不改任何專案檔案**；要不要更新 `src/cdn-list.json`、要不要刪除異常報告，都由你決定。\n")
+    w("「線路」= 同 ISP 且同出口 IP（或同網段、同網卡）的報告視為同一條線路的重複測試，合起來算 1 個樣本。"
+      f"「達標」= 單連線平均速度 ≥ {PASS_Q:.0%} × min({FOURK_MBPS} Mbps, 該報告最快穩定節點)，也就是跑得動 4K；"
+      "不穩定（sd > 平均一半）、細測失敗、快篩失敗、只能播熱門（403）都算不達標；沒進細測又沒有快篩失敗紀錄 = 不知道（不算好也不算壞）。\n")
 
-    # 樣本
-    isp_l = {a: A["isp_lines"][a] for a in A["by_isp"]}
-    isp_name = {r["asn"]: r["isp"] for r in reps}
-    as_name = {r["asn"]: r["as_name"] for r in reps}
-    kinds = Counter(r["kind"] for r in reps)
+    # 1. 樣本與市占
+    w("## 1. 樣本與 ISP 市占\n")
+    lvl = ("**樣本不足**（< 3 條線路）：結論幾乎等於單次量測，仍給建議，但要當參考" if NL < 3 else
+           "**樣本偏少**（3–5 條線路）：前段大致可信，後段名次容易變動" if NL < 6 else
+           "**樣本尚可**（≥ 6 條線路）")
+    w(f"- {lvl}。")
+    if n > NL: w(f"- {n - NL} 份是同一條線路的重複測試（已合併）。")
+    nf = sum(r["new_fmt"] for r in reps)
+    if nf: w(f"- {nf} 份是新版報告（有 `stage1.nodes`／`stage2.raw`）：快篩通過的節點全部細測、有失敗的節點也有逐筆紀錄，"
+             f"所以沒有「未知」、可以區分「部分失敗」；其餘 {n - nf} 份是舊版，退回原本的判讀方式。")
     peak = sum(r["hour"] in PEAK for r in reps if r["hour"] is not None)
-    big = max(isp_l.values()) / NL if NL else 0
-    w("## 1. 樣本是否足夠\n")
-    if n == 0:
-        w("**沒有可用的報告。**\n")
+    w(f"- 測試時段：晚間尖峰（19–24 時）{peak} 份、其他 {n - peak} 份。" + ("**沒有尖峰樣本**。" if peak == 0 else ""))
+    kinds = Counter(r["kind"] for r in reps)
+    w("- 網路類型：" + "、".join(f"{k}（{v}）" for k, v in kinds.most_common()) + "；城市：" +
+      "、".join(f"{k}（{v}）" for k, v in Counter(r["city"] for r in reps).most_common()))
+    if share_cfg:
+        w(f"- 市占資料：`isp-share.json` {cc}（{share_cfg.get('asof', '?')}）。來源：" + "；".join(share_cfg.get("sources", [])))
+        if share_cfg.get("asof") and share_cfg["asof"][:4].isdigit() and now.year - int(share_cfg["asof"][:4]) >= 2:
+            w("  - ⚠ 市占資料超過 2 年，建議先 WebSearch 更新。")
     else:
-        lvl = ("**樣本不足**：少於 3 條線路，排名幾乎等於單次量測，只能當參考，不建議據此更新節點庫" if NL < 3 else
-               "**樣本偏少**：3–5 條線路，前段大致可信，後段名次容易變動" if NL < 6 else
-               "**樣本尚可**：6 條線路以上")
-        w(f"- {lvl}。")
-        notes = []
-        if len(isp_l) < 3: notes.append(f"只涵蓋 {len(isp_l)} 家 ISP")
-        if big > 0.5 and NL >= 3: notes.append(f"最大 ISP 佔 {big:.0%} 的線路，結果偏向該 ISP")
-        if n > NL: notes.append(f"{n - NL} 份是同一條線路的重複測試（已合併計算）")
-        if peak == 0: notes.append("沒有晚間尖峰（19–24 時）的樣本")
-        elif peak == n: notes.append("全部都是晚間尖峰的樣本")
-        if notes: w("- 偏差：" + "；".join(notes) + "。")
-        if NL >= 2:
-            stab = [boot[h] for h in top]
-            w(f"- 以線路重抽樣（bootstrap {BOOT} 次）時，建議的 {len(top)} 個節點進前 10 的機率中位數 **{statistics.median(stab):.0%}**"
-              f"（≥ 80% 很穩、50–80% 尚可、< 50% 代表再多幾條線路名單就可能換人）。")
-        w("")
-        w(f"- ISP（{len(isp_l)} 家）：" + "、".join(
-            f"{a} {isp_name[a]}" + (f"〔AS 名稱：{as_name[a]}〕" if as_name[a] and as_name[a].lower() != isp_name[a].lower() else "") +
-            f"（{len(A['by_isp'][a])} 份／{isp_l[a]} 條線路）" for a in sorted(isp_l, key=lambda a: -isp_l[a])))
-        w("  - ISP 名稱取自 ip-api 的 `isp`（IP 註冊的公司名）；AS 名稱是 ipinfo 的 `org`（GUI 信件標題用這個），兩者對同一個 ASN。")
-        w(f"- 城市：" + "、".join(f"{k}（{v}）" for k, v in Counter(r["city"] for r in reps).most_common()))
-        w(f"- 網路類型：" + "、".join(f"{k}（{v}）" for k, v in kinds.most_common()) +
-          ("（已依網卡名稱更正 GUI 的誤判）" if any(r["kind_fixed"] for r in reps) else ""))
-        w(f"- 測試時段：晚間尖峰 {peak} 份、其他 {n - peak} 份")
-        dn = [r["down"] for r in reps if r["down"]]
-        if dn: w(f"- 總頻寬（Cloudflare 下載）：中位數 {statistics.median(dn):.0f} Mbps（{min(dn):.0f}–{max(dn):.0f}）")
-        w("")
-
-    # 報告清單
-    w("## 2. 報告清單與離群檢查\n")
-    w("「相關」= 這份報告的節點分數與「其他線路」共識的 Spearman 相關；「重疊」= 這份自己的前 10 名與共識前 10 名重疊幾個；"
-      "「影響」= 拿掉這條線路後，整體前 10 名換掉幾個。\n")
-    w("| 報告 | 線路 | 時間 | 城市 | ISP | 網路 | 上限 Mbps | 並行 | 細測成功 | 相關 | 重疊 | 影響 | 狀態 |")
-    w("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
-    idx = {r["rid"]: i for i, r in enumerate(reps)}
-    for r in sorted(reps_all, key=lambda r: r["time"]):
-        c = A["cons"][idx[r["rid"]]] if r["rid"] in idx else {}
-        stt = "納入" if r["rid"] in idx else "**排除**"
-        w(f"| {r['rid']} | {r['line']} | {r['time']} | {r['city']} | {r['asn']} {r['isp'][:24]} | {r['kind'][:4]} | {r['ceiling']:.0f} | "
-          f"{r['conc']} | {r['full']} | {fmt(c.get('rho'), 2)} | {fmt(c.get('overlap'))} | {fmt(c.get('loo_change'))} | {stt} |")
+        w(f"- ⚠ `isp-share.json` 沒有 {cc} 的市占資料，各 ISP 暫以相同權重計算。**請先 WebSearch 補齊再重跑**，覆蓋率才有意義。")
     w("")
+    w("| ISP（ASN） | 市占 | 市占對應 | 報告／線路 | 樣本 | 城市 |")
+    w("|---|---|---|---|---|---|")
+    for a in A["isp_order"]:
+        nl = len(A["isp_lines"][a])
+        lv_ = "不足" if nl < 3 else "偏少" if nl < 6 else "尚可"
+        nm = A["share_name"].get(a)
+        w(f"| {a} {isp_name[a][:30]}" + (f"〔{as_name[a][:24]}〕" if as_name[a] and as_name[a].lower() not in isp_name[a].lower() else "") +
+          f" | {pct(share[a])} | {nm or ('⚠ 未對應，用 other_each' if share_cfg else '無市占資料，等權重')} | {len(A['isp_reps'][a])}／{nl} | {lv_} | " +
+          "、".join(k for k, _ in Counter(reps[i]["city"] for i in A["isp_reps"][a]).most_common(3)) + " |")
+    w(f"\n有報告的 ISP 市占合計 {pct(A['total_share'])}（覆蓋率的分母）。")
+    if share_cfg:
+        missing = [x["name"] for x in share_cfg.get("isps", []) if x["name"] not in A["share_name"].values()]
+        if missing: w("沒有報告的主要 ISP：" + "、".join(missing) + "（這些使用者的體驗完全未知，是最值得補的樣本）。")
+    w("")
+
+    # 2. 報告清單
+    w("## 2. 報告清單、異常與量測設定\n")
+    w("「相關」= 這份報告的節點分數與其他線路共識的 Spearman 相關；「重疊」= 自己的前 10 與共識前 10 重疊幾個（ISP 偏好不同時重疊本來就低，只供參考）。"
+      "⛔ = 量測本身壞掉，已自動排除；「量測設定提示」只是客觀事實（並行數手動、未登入、同線路短時間重複），腳本不下「是不是測試」的結論，**由 Claude 對照 REPORT.md 判讀後問使用者要不要刪除資料夾**。\n")
+    idx = {r["rid"]: i for i, r in enumerate(reps)}
     rhos = [c["rho"] for c in A["cons"] if c["rho"] is not None]
-    flagged = []
+    cut = 0.2
     if rhos:
         med = statistics.median(rhos)
         mad = statistics.median(abs(x - med) for x in rhos) * 1.4826
-        # 比中位數低 2 個 MAD（標準差的穩健估計）以上，或低於 0.2（幾乎不相關）就算離群；MAD 很小時至少低 0.15
-        cut = max(min(med - 2 * mad, med - 0.15), 0.2)
-        w(f"報告間一致性：相關中位數 {med:.2f}（≥ 0.6 代表各份報告大致同意哪些節點好）。"
-          f"離群 = 相關 < {cut:.2f}，或自己的前 10 名與共識只重疊 ≤ 3 個。\n")
-        for i, c in enumerate(A["cons"]):
-            if c["rho"] is not None and (c["rho"] < cut or (c["overlap"] is not None and c["overlap"] <= 3)):
-                flagged.append(i)
-    if NL == 2:
-        a_, b_ = list(A["lines"].values())
-        r2 = spearman([wmean(A["vec"][h], a_) for h in A["hosts"]], [wmean(A["vec"][h], b_) for h in A["hosts"]])
-        w(f"只有 2 條線路，無法判斷誰是離群；兩條線路的排名相關 {r2:.2f}"
-          "（≥ 0.6 大致一致，< 0.3 代表兩邊結論不同，更需要第 3 條線路）。\n")
-    w("### 離群報告\n")
-    any_note = False
+        cut = max(min(med - 2 * mad, med - 0.15), 0.2)  # 比中位數低 2 個 MAD 以上、或低於 0.2 就算離群
+    w(f"報告間一致性：相關中位數 {fmt(statistics.median(rhos) if rhos else None, 2)}；離群 = 相關 < {cut:.2f}。\n")
+    w("| 報告 | 線路 | 時間 | ISP | 城市 | 網路 | 上限 | 並行 | 細測成功 | 相關 | 重疊 | 狀態 | 量測設定提示 |")
+    w("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+
+    def outlier_kind(i):
+        r, c = reps[i], A["cons"][i]
+        peers = [j for j, x in enumerate(reps) if x["asn"] == r["asn"] and x["line"] != r["line"]]
+        if not peers: return "unknown", "無法判斷（這個 ISP 只有這一條線路）"
+        pr = statistics.mean(spearman([A["vec"][h][i] for h in A["hosts"]], [A["vec"][h][j] for h in A["hosts"]]) for j in peers)
+        if pr >= c["rho"] + 0.1: return "isp", f"**ISP 通案**（與同 ISP 其他線路的相關 {pr:.2f} 明顯高於與整體 {c['rho']:.2f}；代表該 ISP 的真實體驗，不要排除）"
+        return "single", f"**個案**（同 ISP 其他線路不這樣，相關 {pr:.2f}）"
+
+    ask_delete = []
     for r in sorted(reps_all, key=lambda r: r["time"]):
         hard, soft = quality_flags(r)
-        i = idx.get(r["rid"])
-        is_out = i is not None and i in flagged
-        if not (hard or is_out or r["rid"] in excluded): continue
-        any_note = True
-        w(f"- **{r['rid']}**（{r['line']}，{r['time']}，{r['city']}，{r['asn']} {r['isp']}）")
-        for x in hard: w(f"  - ⛔ {x}")
-        for x in soft: w(f"  - {x}")
-        if is_out:
-            c = A["cons"][i]
-            w(f"  - 排名與其他線路不一致（相關 {c['rho']:.2f}、前 10 重疊 {c['overlap']}）→ {classify_outlier(i, reps, A)}")
-            w(f"  - 這份自己的前 3 名：" + "、".join(
-                f"`{short(h)}`" for h in sorted(A["hosts"], key=lambda h: -A["vec"][h][i])[:3]))
-            w(f"  - 拿掉這條線路，整體前 10 名會換掉 {c['loo_change']} 個" + (
-                "：" + "、".join(f"`{short(h)}`" for h in sorted(set(top) - set(c['loo_top']))) if c["loo_change"] else ""))
-        if r["rid"] in excluded: w(f"  - 處置：**排除**（{excluded[r['rid']]}）")
-        else: w("  - 處置：納入")
-    if not any_note: w("沒有離群或量測有問題的報告。")
+        hints = test_hints(r, reps_all)
+        c = A["cons"][idx[r["rid"]]] if r["rid"] in idx else {}
+        rho = c.get("rho")
+        outl = rho is not None and rho < cut
+        okind = outlier_kind(idx[r["rid"]])[0] if outl else None
+        stt = "**排除**" if r["rid"] in excluded else ("離群" if outl else "納入")
+        if r["rid"] in excluded or hints or (outl and okind != "isp"): ask_delete.append((r, hard, hints, outl))
+        notes = [f"⛔ {x}" for x in hard] + [f"設定：{x}" for x in hints] + soft
+        w(f"| {r['rid']} | {r['line']} | {r['time'][5:]} | {r['asn']} {r['isp'][:18]} | {r['city']} | {r['kind'][:4]} | {r['ceiling']:.0f} | "
+          f"{r['conc']}{'' if r['conc'] == r['conc_auto'] or not r['conc_auto'] else '手'} | {r['full']}{'（+' + str(len(r['partial'])) + ' 部分）' if r['partial'] else ''} | {fmt(rho, 2)} | {fmt(c.get('overlap'))} | {stt} | "
+          + "；".join(notes) + " |")
     w("")
-    w("其他提示（不影響納入）：")
-    for r in sorted(reps_all, key=lambda r: r["time"]):
-        _, soft = quality_flags(r)
-        if soft and r["rid"] not in excluded and not (r["rid"] in idx and idx[r["rid"]] in flagged):
-            w(f"- {r['rid']}：" + "；".join(soft))
-    w("")
-
-    # 特徵
-    w("## 3. 國家特徵\n")
-    pools = defaultdict(list)
-    for h in A["hosts"]: pools[st[h]["pool"]].append(h)
-    prow = []
-    for p, hs in pools.items():
-        best = [max(A["vec"][h][i] for h in hs) for i in range(n)]
-        prow.append((wmean(best), wmean([b >= 0.5 for b in best]), p, hs))
-    prow.sort(key=lambda x: -x[0])
-    w("### CDN 池表現（每份報告取該池最好的節點）\n")
-    w("| CDN 池 | 平均分數 | 有可用節點的線路比例 | 測過的節點數 |" + "".join(f" {a} |" for a in A["major"]))
-    w("|---|---|---|---|" + "---|" * len(A["major"]))
-    for s, g, p, hs in prow[:15]:
-        per = "".join(f" {wmean([max(A['vec'][h][i] for h in hs) for i in range(n)], A['by_isp'][a]):.2f} |" for a in A["major"])
-        w(f"| {st[hs[0]]['pool_label']} | {s:.2f} | {g:.0%} | {len(hs)} |{per}")
-    w("")
-    # 各 ISP 偏好
-    multi = [a for a in A["by_isp"] if len(A["by_isp"][a]) >= 2]
-    if multi:
-        w("### 各 ISP 的最佳節點（2 份以上的 ISP）\n")
-        for a in sorted(multi, key=lambda a: -isp_l[a]):
-            ix = A["by_isp"][a]
-            sc = {h: wmean(A["vec"][h], ix) for h in A["hosts"]}
-            best = [h for h in sorted(A["hosts"], key=lambda h: -sc[h]) if h not in A["banned"]][:5]
-            note = "（同一條線路，只能代表那一戶）" if isp_l[a] == 1 else ""
-            w(f"- {a} {isp_name[a]}（{len(ix)} 份／{isp_l[a]} 條線路）{note}：" +
-              "、".join(f"`{short(h)}` {sc[h]:.2f}" for h in best))
-        w("")
-    # 常見失效
-    w("### 常見失效\n")
-    hot = sorted(h for h in A["hosts"] if st[h]["n_hot"])
-    fam = Counter(st[h]["pool_label"] for h in hot)
-    if hot: w(f"- 只能播熱門（403，冷門片播不了，一律不建議）：{len(hot)} 個節點，" +
-              "、".join(f"{k}（{v}）" for k, v in fam.most_common(6)))
-    errs = Counter()
-    for r in reps:
-        for h, e in r["failed"].items():
-            if h not in r["hot_only"]:
-                for k in e: errs[re.sub(r"\[Errno \d+\] ", "", k)[:30]] += 1
-    if errs: w("- 細測失敗原因（不含 403）：" + "、".join(f"{k}×{v}" for k, v in errs.most_common(5)))
+    w("### 要問使用者的報告（已排除、量測設定特殊、個案離群）\n")
+    w("「ISP 通案」的離群不列在這裡：那是該 ISP 使用者的真實體驗，要保留。\n")
+    if not ask_delete: w("沒有異常或量測設定特殊的報告。")
+    for r, hard, hints, outl in ask_delete:
+        why = []
+        if r["rid"] in excluded: why.append(f"已排除：{excluded[r['rid']]}")
+        if hints: why.append("量測設定：" + "、".join(hints))
+        if outl:
+            c = A["cons"][idx[r["rid"]]]
+            why.append(f"離群（相關 {c['rho']:.2f}、前 10 重疊 {c['overlap']}）→ {outlier_kind(idx[r['rid']])[1]}")
+        w(f"- **{r['rid']}**（{r['line']}，{r['time']}，{r['asn']} {r['isp']}，{r['city']}）：" + "；".join(why))
+        w(f"  - 資料夾：`{r['dir'].replace(os.sep, '/')}`")
     w("")
 
-    # 極端值
-    w("## 4. 節點極端值\n")
-    w("「爆發」= 少數報告拿第一梯隊、其他報告大多不行（只列目前清單裡的、或爆發 2 份以上的）；"
-      "「崩潰」= 建議清單裡的節點在某些報告失效或分數 < 0.3。歸類（以線路計）：只有 1 條線路 → **個案**；"
-      "集中在某 ISP（該 ISP ≥ 40% 的線路、且比其他 ISP 高 30 個百分點以上）→ **ISP 通案**；集中在晚間尖峰 → **尖峰通案**；"
-      "3 條線路以上且橫跨多家 ISP → **普遍現象**（節點本身時好時壞）；其餘 → **零星**。\n")
-    ext = 0
-    for h in A["order"][:80]:
+    # 3. 預設候選
+    w("## 3. 預設節點候選\n")
+    w("**目標**：在還沒有「依 ISP 選節點」之前，讓使用者剛安裝時預設就能順暢播 4K 的機率最大。"
+      "**覆蓋率** = Σ（ISP 市占 × 該 ISP 各線路達標比例的平均）÷ Σ（有報告的 ISP 市占）。每份報告達標算 1、不達標算 0、"
+      f"沒進細測但有快篩速度的用快篩速度判斷（弱證據）、完全沒量到的算 {UNKNOWN_CREDIT}（不知道好壞，且只在該 ISP 至少有一條線路量到時才給；整個 ISP 都沒量到算 0）。"
+      "同一線路多份報告取平均，所以單筆極端值只佔該線路的一部分，不會直接否決。"
+      "「已知」欄 = 至少量到一條線路的 ISP 市占合計。注意第 4 節的分級分數把沒進細測算 0（與單份報告一致），所以同一節點可能「覆蓋率高、該 ISP 分級卻是差」，"
+      "代表它在該 ISP 常常沒進細測，要靠補樣本（新版 GUI 的快篩會記錄所有節點）釐清。\n")
+    if A["stage"] == "full":
+        w(f"**第一步成立**：有節點在所有 ISP 的所有報告都達標、沒有未知（覆蓋 100%）。以下候選先排沒有穩定疑慮的，再依平均速度排序。\n")
+    else:
+        w("**第一步不成立**：沒有節點在所有 ISP 都達標。改依覆蓋率排序（市占高的 ISP 權重大），同覆蓋率者先排沒有穩定疑慮的、再依平均速度。"
+          "預設對覆蓋不到的 ISP 使用者會慢或連不上，要靠擴充第一支影片的自動測速換掉。\n")
+    w(f"穩定條件：無「不穩定」與「失敗」紀錄、速度波動（sd/平均中位）≤ {CV_MAX}、TTFB ≤ {TTFB_MAX} ms。「當預設比例」= 以線路重抽樣 {BOOT} 次時它被選為第 1 的比例。\n")
+    ord_ = A["isp_order"]
+    w("| # | 節點 | 機房 | 覆蓋率 | 保守覆蓋 | 已知 | " + "".join(f"{a} | " for a in ord_) + "平均 Mbps | 最低線路 Mbps | 冷門片 Mbps | TTFB | 穩定疑慮 | 當預設比例 | 目前清單 |")
+    w("|---|---|---|---|---|---|" + "---|" * len(ord_) + "---|---|---|---|---|---|---|")
+    for i, (h, cov, known, per) in enumerate(A["cand"][:10], 1):
         s = st[h]
-        if NL < 4: break
-        hi = [i for i in range(n) if A["S"][h][i][0] == "第一梯隊"]
-        lo = [i for i in range(n) if A["vec"][h][i] < 0.3]
-        if s["good_rate"] <= 0.3 and hi and (h in current or len(hi) >= 2):
-            kind, ix = "爆發", hi
-        elif h in top and lo and len(lo) <= n / 2:
-            kind, ix = "崩潰", lo
-        else:
-            continue
-        detail = "、".join(f"{reps[i]['rid']}（{reps[i]['asn']}）{A['S'][h][i][0]}" for i in ix[:6]) + ("…" if len(ix) > 6 else "")
-        w(f"- `{short(h)}` {kind} {len(ix)}/{n} 份：{detail} → {concentration(ix, reps, A)}")
-        ext += 1
-    if not ext: w("沒有明顯的極端值。" if NL >= 4 else "少於 4 條線路，無法區分極端值與一般波動。")
-    over = [(r["rid"], h, x["mean"]) for r in reps for h, x in r["rows"].items() if r["ceiling"] and x["mean"] > r["ceiling"] * 1.05]
-    if over:
-        w("\n超過該報告頻寬上限的量測值（量測異常，已照常計分但請留意）：" +
-          "、".join(f"{rid} `{short(h)}` {m:.0f} Mbps" for rid, h, m in over[:8]))
+        cells = ""
+        for a in ord_:
+            p = per.get(a)
+            cells += ("- | " if not p else f"{pct(p['pass_rate'])}（{p['n_known']}/{p['n_lines']}" + (f"，未知 {p['n_unknown']}" if p["n_unknown"] else "") + "） | ")
+        cur = f"#{current.index(h) + 1}" if h in current else "—"
+        w(f"| {i} | `{short(h)}`{' ⭐' if h == A['default'] else ''} | {s['cluster']} | **{pct(cov)}** | {pct(s['cov_min'])} | {pct(known)} | {cells}"
+          f"{fmt(s['mbps'])} | {fmt(s['mbps_min'])} | {fmt(s['miss_mbps'])} | {fmt(s['ttfb'])} | {'、'.join(s['issues']) or '無'} | {pct(A['dflt_rate'][h])} | {cur} |")
+    w("\n「保守覆蓋」= 沒量到的報告一律算 0 時的覆蓋率，只計有實證達標的部分；覆蓋率與保守覆蓋差距大，代表這個節點靠「未知」撐場。"
+      "「冷門片 Mbps」= 新版報告逐筆紀錄中 cache miss 那幾支的平均（舊版沒有，顯示 -），比整體平均更接近看冷門影片的體驗。"
+      "各 ISP 欄：達標比例（有量到的線路數／該 ISP 線路數，未知 = 沒量到的報告份數）。\n")
+    w("### 入選原因與未達標明細\n")
+    for i, (h, cov, known, per) in enumerate(A["cand"][:5], 1):
+        s = st[h]
+        okisp = [a for a in ord_ if per.get(a) and per[a]["pass_rate"] >= 0.999]
+        w(f"{i}. **`{short(h)}`**（{s['pool_label']}）：覆蓋 {pct(cov)}；全部達標的 ISP：" +
+          ("、".join(isp_lab(a, 14) for a in okisp) or "無") +
+          f"；平均 {fmt(s['mbps'])} Mbps（最慢線路 {fmt(s['mbps_min'])}）、TTFB {fmt(s['ttfb'])} ms" +
+          ("；穩定疑慮：" + "、".join(s["issues"]) if s["issues"] else "；無不穩定／失敗紀錄"))
+        for a in ord_:
+            p = per.get(a)
+            if not p: continue
+            if p["n_known"] == 0:
+                w(f"   - {isp_lab(a, 14)}：{p['n_lines']} 條線路都沒量到 → 算 0"); continue
+            if p["fails"] or p["n_unknown"]:
+                det = []
+                for l, rids in p["fails"]:
+                    lvv = A["LV"][h][l]
+                    tag = ("單筆波動（同線路其他報告達標）" if lvv["n_known"] > len(rids) else
+                           "線路個案（同 ISP 其他線路達標）" if len(p["fails"]) == 1 and p["n_known"] >= 2 else "")
+                    det.append(f"{l}：" + "、".join(f"{rid}（{A['S'][h][idx[rid]][0]}）" for rid in rids) + (f" → {tag}" if tag else ""))
+                if p["n_unknown"]: det.append(f"沒量到 {p['n_unknown']} 份（算 {UNKNOWN_CREDIT}）")
+                w(f"   - {isp_lab(a, 14)} 達標 {pct(p['pass_rate'])}：" + "；".join(det))
     w("")
 
-    # 建議
-    w(f"## 5. 建議前 {TOP_N} 名\n")
-    w("**單一節點分數** = 各線路的平均（每份報告中第一梯隊 = 1、可用／差 = 平均速度 ÷ 該報告最快穩定節點、"
-      "不穩定再打五折、失效或沒進細測 = 0）。\n")
-    gl = A["group_lines"]
-    w("**分群**：" + "、".join(f"{g}（{c} 條線路）" for g, c in gl.items()) +
-      f"。每家 ≥ {MAJOR_LINES} 條線路的 ISP 單獨成群，其餘線路合併成「{OTHER}」；各群自己分級，再取聯集"
-      "（在任一群是第一梯隊 → 第一梯隊；否則任一群可用 → 可用），所以「對某群使用者是第一梯隊」的節點不會被別群的 0 分拉下來。\n")
-    w("**跨報告分級**（每群內，比照單份報告）：以分數最高的節點為基準，逐線路配對比較，平均差距在 2 倍標準誤內 → 第一梯隊；"
-      f"但分數要 ≥ 基準的 {T1_MIN:.0%}（避免只在某家 ISP 極好、其他 ISP 為 0 的節點因變異大而混進來）；"
-      "分數 ≥ 基準一半 → 可用；其餘 → 差。進了細測的線路有一半以上是「不穩定」→ 不穩定；任一份 403「只能播熱門」→ 不列。"
-      "同分（例如只有 1 份報告時都是 1）依中位速度排。\n")
-    pr = A["primary"]
-    w(f"**挑法**：先取第一梯隊" + (f"（主要 ISP {pr} 那一群的第一梯隊排最前、依該群分數；其餘依整體分數）" if pr else "、依分數排序") +
-      f"，同一個 CDN 池（叢集）最多 {PER_POOL} 個，剩下的名額讓給其他池；"
-      "第一梯隊不足 10 個才補「可用」；不穩定、差不列（不足 10 個就少列）。"
-      "可用率括號內是 95% Wilson 下界（樣本越少越低）；入選率 = 以線路重抽樣時仍進清單的比例；不穩定、失效 = 報告份數。\n")
-    mj = A["major"]
-    w("| # | 節點 | CDN 池 | 分級（哪一群） | 分數 | " + "".join(f"{a} | " for a in mj) +
-      "第一梯隊比例 | 可用率（下界） | 不穩定 | 失效／未進細測 | 中位 Mbps | 中位 TTFB | 入選率 | 目前清單 |")
-    w("|---|---|---|---|---|" + "---|" * len(mj) + "---|---|---|---|---|---|---|---|")
-    lst = ([A["default"]] if A["default"] else []) + [h for h in top if h != A["default"]]
-    for i, h in enumerate(lst, 1):
+    # 4. 各 ISP 第一梯隊與輪取
+    w("## 4. 剩餘 9 個節點：各 ISP 輪取\n")
+    w("每家 ISP 只用自己的線路分級（以該 ISP 分數最高的節點為基準，差距在 2 倍標準誤內且分數 ≥ 基準 80% → 第一梯隊；≥ 一半 → 可用）。"
+      "依市占順序輪流取每家第一梯隊中最好的一個，再取第二好的，直到 9 個；已被選過的跳過；第一梯隊取完才用「可用」補。\n")
+    w(f"**同一 ISP 內冗餘的不重複取**：兩個節點在該 ISP 的報告裡達標結論一致率 ≥ {REDUN_AGREE:.0%}（兩者都有結論的報告 ≥ {REDUN_MIN_N} 份）就視為冗餘，只取一個；"
+      "比對對象是清單裡所有已選節點（含預設與別家 ISP 選的），判準用這家 ISP 自己的數據。共同量到的報告不足時，退回「同機房」（cn-*／ec-* 去末碼的前綴）當先驗：同機房對同一家 ISP 走同一條路徑，表現幾乎相同；"
+      "不去重會把名額花在等價節點上，去重錯了只是改取同梯隊的另一個，代價不對稱。"
+      "全國層面**不用**機房分池：跨報告真正一起好一起壞的是 ISP 陣營（不同機房的 cn-hbwh／cn-sdjn／cn-bj-se 在台灣 100% 同好同壞），由每個 ISP 都取到來保證多樣性。\n")
+    w("### 各 ISP 第一梯隊（前 6）\n")
+    for a in ord_:
+        t, sc = A["isp_tier"][a], A["isp_sc"][a]
+        t1 = sorted((h for h in A["hosts"] if t[h] == "第一梯隊"), key=lambda h: -sc[h])
+        nl = len(A["isp_lines"][a])
+        w(f"- {isp_lab(a)}（{nl} 條線路，市占 {pct(share[a])}）：" +
+          ("、".join(f"`{short(h)}` {sc[h]:.2f}" for h in t1[:6]) or "無") + (f"（共 {len(t1)} 個）" if len(t1) > 6 else ""))
+    w("\n### 輪取過程\n")
+    for rnd, t, a, h, why in A["pick_log"]:
+        w(f"- {isp_lab(a, 14)} → `{short(h)}`：{why}")
+    if len(A["rest"]) < TOP_N - 1:
+        w(f"\n⚠ 第一梯隊與可用都取完仍只有 {len(A['rest'])} 個，清單不足 {TOP_N} 個。")
+    w("")
+
+    # 5. 清單
+    w(f"## 5. 建議清單（{len(A['nodes'])} 個，第 1 個是預設）\n")
+    w("| # | 節點 | 機房 | CDN 池 | 來自 | 覆蓋率 | " + "".join(f"{a} 分級 | " for a in ord_) + "平均 Mbps | TTFB | 入選率 | 目前清單 |")
+    w("|---|---|---|---|---|---|" + "---|" * len(ord_) + "---|---|---|---|")
+    src = {h: f"{a} 第 {rnd} 輪" for rnd, t, a, h, why in A["pick_log"] if why.startswith("選入")}
+    for i, h in enumerate(A["nodes"], 1):
         s = st[h]
-        mark = " ⭐" if h == A["default"] else ""
         cur = f"#{current.index(h) + 1}" if h in current else "新增"
-        src = s["t1_groups"] if s["tier"] == "第一梯隊" else s["ok_groups"] if s["tier"] == "可用" else []
-        w(f"| {i} | `{h}`{mark} | {s['pool_label']} | {s['tier']}{'（' + '、'.join(src) + '）' if src else ''} | {s['score']:.2f} | " +
-          "".join(f"{A['isp_sc'][a][h]:.2f} | " for a in mj) +
-          f"{pct(s['t1_rate'])} | {pct(s['good_rate'])}（{pct(s['good_lb'])}） | "
-          f"{s['n_unstable']} | {s['n_fail'] + s['n_absent']} | {fmt(s['mbps'])} | {fmt(s['ttfb'])} | {pct(A['boot'][h])} | {cur} |")
+        cells = "".join(f"{A['isp_tier'][a][h][:2]} | " for a in ord_)
+        w(f"| {i} | `{h}`{' ⭐' if h == A['default'] else ''} | {s['cluster']} | {s['pool_label']} | {'預設' if h == A['default'] else src.get(h, '')} | "
+          f"{pct(s['cov'])} | {cells}{fmt(s['mbps'])} | {fmt(s['ttfb'])} | {pct(A['boot'][h])} | {cur} |")
+    w("\n入選率 = 以線路重抽樣時仍進清單的比例（< 50% 代表再多幾條線路就可能換人）。\n")
+    # 覆蓋：每家 ISP 在清單裡最好的節點
+    w("### 清單對各 ISP 的照顧\n")
+    w("| ISP | 清單中第一梯隊數 | 清單中最佳節點（該 ISP 分數） | 目前清單最佳 |")
+    w("|---|---|---|---|")
+    for a in ord_:
+        t, sc = A["isp_tier"][a], A["isp_sc"][a]
+        inl = [h for h in A["nodes"] if h in sc]
+        best = max(inl, key=lambda h: sc[h]) if inl else None
+        curb = [h for h in current if h in sc]
+        cb = max(curb, key=lambda h: sc[h]) if curb else None
+        w(f"| {isp_lab(a)} | {sum(t[h] == '第一梯隊' for h in inl)} | " +
+          (f"`{short(best)}` {sc[best]:.2f}（{t[best]}）" if best else "-") + " | " +
+          (f"`{short(cb)}` {sc[cb]:.2f}（{t[cb]}）" if cb else "-") + " |")
     w("")
-    nt = Counter(st[h]["tier"] for h in A["hosts"])
-    w(f"跨報告分級統計：第一梯隊 {nt['第一梯隊']} 個、可用 {nt['可用']} 個、不穩定 {nt['不穩定']} 個、差 {nt['差']} 個、"
-      f"只能播熱門 {nt['只能播熱門']} 個。" + ("清單有用到「可用」補位。" if any(st[h]["tier"] == "可用" for h in top) else "") + "\n")
-    if A["default"]:
-        d = A["default"]
-        dd = ""
-        if A["dflt"]:
-            tot = sum(A["dflt"].values())
-            dd = "；重抽樣時被選為預設的比例：" + "、".join(f"`{short(h)}` {c / tot:.0%}" for h, c in A["dflt"].most_common(3) if h)
-        w(f"**建議預設：`{d}`**（第一梯隊比例 {pct(st[d]['t1_rate'])}、中位 TTFB {fmt(st[d]['ttfb'])} ms、不穩定 {st[d]['n_unstable']} 次{dd}）\n")
-        if pr:
-            bad = [g for g in A["groups"] if g != pr and A["groups"][g][d] in ("差", "不穩定")]
-            if bad:
-                w(f"⚠ 預設是依主要 ISP {pr} 選的；對 {'、'.join(bad)} 這些群它是「{'／'.join(sorted({A['groups'][g][d] for g in bad}))}」。"
-                  "這些 ISP 的使用者剛安裝時會拿到慢或連不上的節點，擴充的自動備援只會換到 B 站自己的備援網址，"
-                  "要靠使用者手動測速（或擴充日後的安裝後自動測速）才會改選。\n")
-    t1_out = [h for h in A["order"] if st[h]["tier"] == "第一梯隊" and h not in top]
-    if t1_out:
-        w("第一梯隊但被同池名額擋下：" + "、".join(f"`{short(h)}` {st[h]['score']:.2f}（{st[h]['pool_label']}）" for h in t1_out[:8]) + "\n")
-    un = sorted((h for h in A["hosts"] if st[h]["tier"] == "不穩定"), key=lambda h: -st[h]["score"])
-    if un:
-        w("跨報告不穩定（不列）：" + "、".join(f"`{short(h)}` {st[h]['score']:.2f}" for h in un[:8]) + "\n")
-    miss = [h for h in top if not st[h]["in_opts"]]
+    miss = [h for h in A["nodes"] if not st[h]["in_opts"]]
     if miss: w("⚠ 不在 `cdn-list.json` 的 `options` 裡，更新時要一併新增：" + "、".join(f"`{h}`" for h in miss) + "\n")
 
-    # 清單對各 ISP 的覆蓋（診斷）
-    lq = A["list_quality"]
-    groups = [("全部", None)] + [(f"{a}", A["by_isp"][a]) for a in mj]
-    w("清單對各 ISP 的覆蓋（每份報告在清單裡找得到的最佳／次佳節點分數的平均，1 = 都有第一梯隊可選）：\n")
-    w("| 清單 | " + " | ".join(g for g, _ in groups) + " |")
-    w("|---|" + "---|" * len(groups))
-    rows = [("建議清單", lst)] + ([("目前清單", current)] if current else [])
-    for lab, l in rows:
-        w(f"| {lab} | " + " | ".join("{:.2f}／{:.2f}".format(*lq([h for h in l if h in A['vec']], ix)) for _, ix in groups) + " |")
-    w("")
-
-    # 各 ISP 的預設（之後依 ISP 選預設用）
-    w("### 各 ISP 的建議預設（依 ISP 選預設用）\n")
-    w("同樣的分級與挑法，只用該 ISP 的線路計算。樣本以該 ISP 的線路數判斷（< 3 不足、3–5 偏少、≥ 6 尚可）；"
-      "「預設穩定度」= 以該 ISP 的線路重抽樣時，選出同一個預設的比例。\n")
-    w("| ISP | 報告／線路 | 樣本 | 建議預設 | 預設穩定度 | 清單前 3 | 與全國預設相同 |")
-    w("|---|---|---|---|---|---|---|")
-    for a, x in A["isp"].items():
-        lvl = "不足" if x["lines"] < 3 else "偏少" if x["lines"] < 6 else "尚可"
-        top3 = [h for h in x["top"] if h != x["default"]][:3]
-        w(f"| {a} {isp_name[a][:28]} | {x['reports']}／{x['lines']} | {lvl} | `{short(x['default']) if x['default'] else '-'}` | "
-          f"{pct(x['agree'])} | {'、'.join(f'`{short(h)}`' for h in top3)} | {'是' if x['default'] == A['default'] else '否'} |")
-    w("")
-
-    # 與目前清單比較
+    # 6. 與目前清單比較
     w("## 6. 與目前 `src/cdn-list.json` 比較\n")
     if not cname:
         w(f"`cdn-list.json` 還沒有 {cc} 這個國家。新增時要補 `dial`（國際電話區碼）與五語 `name`。\n")
     else:
-        w("| 目前 # | 節點 | 分數 | 第一梯隊 | 可用率 | 建議 |")
-        w("|---|---|---|---|---|---|")
+        w("| 目前 # | 節點 | 覆蓋率 | 平均 Mbps | 建議 |")
+        w("|---|---|---|---|---|")
         for i, h in enumerate(current, 1):
             s = st.get(h)
             if not s:
-                w(f"| {i} | `{h}` | - | - | - | 移除？（沒有任何報告進細測） |"); continue
-            v = "保留" if h in top else ("移除（只能播熱門）" if h in A["banned"] else "移除")
+                w(f"| {i} | `{h}` | - | - | 移除？（沒有任何報告量到） |"); continue
+            v = "保留" if h in A["nodes"] else ("移除（只能播熱門）" if h in A["banned"] else "移除")
             if h == A["default"]: v += "（建議預設）"
             elif i == 1 and A["default"]: v += "，不再當預設"
-            w(f"| {i} | `{h}` | {s['score']:.2f} | {pct(s['t1_rate'])} | {pct(s['good_rate'])} | {v} |")
-        add = [h for h in top if h not in current]
-        w("")
-        w(f"新增：" + ("、".join(f"`{h}`" for h in add) if add else "無") + "\n")
+            w(f"| {i} | `{h}` | {pct(s['cov'])} | {fmt(s['mbps'])} | {v} |")
+        add = [h for h in A["nodes"] if h not in current]
+        w("\n新增：" + ("、".join(f"`{h}`" for h in add) if add else "無") + "\n")
 
     w("## 7. 判讀\n")
-    w("<!-- CLAUDE: 依第 1–6 節寫結論（離群報告的處置理由、極端值是個案還是通案、樣本是否足以更新、建議的清單與預設）。 -->\n")
+    w("<!-- CLAUDE: 依第 1–6 節寫結論：預設與理由、要問使用者刪不刪的報告、極端值的處置、各 ISP 是否都有照顧到、樣本缺口。 -->\n")
 
     os.makedirs(out_dir, exist_ok=True)
     stem = os.path.join(out_dir, f"{cc}-{now:%Y%m%d-%H%M}")
     open(stem + ".md", "w", encoding="utf-8").write("\n".join(out))
     json.dump(dict(country=cc, generated=f"{now:%Y-%m-%d %H:%M}", n_reports=n, n_lines=NL,
                    included=[r["rid"] for r in reps], excluded=excluded,
-                   default=A["default"], nodes=([A["default"]] if A["default"] else []) + [h for h in top if h != A["default"]],
-                   current=current, not_in_options=miss, primary_isp=A["primary"], groups=A["group_lines"],
-                   isp_defaults={k: dict(default=x["default"], lines=x["lines"], agree=x["agree"]) for k, x in A["isp"].items()},
-                   stats={h: dict(score=round(st[h]["score"], 3), good_rate=round(st[h]["good_rate"], 3),
-                                  t1_rate=round(st[h]["t1_rate"], 3), boot=round(A["boot"][h], 3)) for h in top}),
+                   ask_delete=[dict(rid=r["rid"], dir=r["dir"].replace(os.sep, "/"), excluded=r["rid"] in excluded, hints=hints, outlier=outl)
+                               for r, hard, hints, outl in ask_delete],
+                   stage=A["stage"], default=A["default"],
+                   default_candidates=[dict(host=h, coverage=round(cov, 3), coverage_min=round(st[h]["cov_min"], 3), known=round(known, 3), mbps=st[h]["mbps"],
+                                            issues=st[h]["issues"], boot=round(A["dflt_rate"][h], 3)) for h, cov, known, per in A["cand"][:10]],
+                   nodes=A["nodes"], current=current, not_in_options=miss,
+                   isp_share={a: dict(share=share[a], name=A["share_name"].get(a), lines=len(A["isp_lines"][a])) for a in A["isps"]}),
               open(stem + ".json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     return stem + ".md"
 
@@ -737,7 +783,6 @@ def main():
     ap.add_argument("--exclude", default="")
     ap.add_argument("--include", default="")
     ap.add_argument("--out")
-    ap.add_argument("--primary-isp", help="主要 ISP 的 ASN（如 AS3462）；省略時讀 primary-isp.json 的該國設定")
     a = ap.parse_args()
     cc = a.country.upper()
     reps_all = load_reports(a.root, cc)
@@ -751,22 +796,16 @@ def main():
         if r["rid"] in man_ex: excluded[r["rid"]] = "人工排除"
         elif hard and r["rid"] not in man_in: excluded[r["rid"]] = "量測本身有問題：" + "；".join(hard)
     reps = [r for r in reps_all if r["rid"] not in excluded]
-    primary = a.primary_isp
-    if primary is None:
-        try:
-            primary = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "primary-isp.json"),
-                                     encoding="utf-8")).get(cc)
-        except Exception:
-            primary = None
-    A = analyze(reps, cdn, cc, primary)
-    md = write(cc, reps_all, excluded, reps, A, cdn, a.out or os.path.join(a.root, "_analysis"))
-    print(f"{cc}：納入 {len(reps)} 份、排除 {len(excluded)} 份")
+    if not reps: sys.exit("全部報告都被排除")
+    share_cfg = load_share(cc)
+    A = analyze(reps, cdn, cc, share_cfg)
+    md = write(cc, reps_all, excluded, reps, A, cdn, share_cfg, a.out or os.path.join(a.root, "_analysis"))
+    print(f"{cc}：納入 {len(reps)} 份（{A['L']} 條線路）、排除 {len(excluded)} 份；市占資料：{'有' if share_cfg else '無（等權重）'}")
     for rid, why in excluded.items(): print(f"  排除 {rid}：{why}")
-    print("主要 ISP：", A["primary"] or "（未指定）", " 分群：", A["group_lines"])
-    print("建議預設：", A["default"])
-    for i, h in enumerate(A["top"], 1):
+    print(f"預設階段：{'第一步（全 ISP 達標）' if A['stage'] == 'full' else '退路（市占加權覆蓋率）'}  預設：{A['default']}")
+    for i, h in enumerate(A["nodes"], 1):
         s = A["st"][h]
-        print(f"  {i:2} {h:42} 分數 {s['score']:.2f} 可用率 {s['good_rate']:.0%} 入選率 {A['boot'][h]:.0%}")
+        print(f"  {i:2} {h:42} 覆蓋 {s['cov']:.0%} 平均 {fmt(s['mbps'])} Mbps 入選率 {A['boot'][h]:.0%}")
     print("OUTPUT", md)
 
 

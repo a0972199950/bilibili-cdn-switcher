@@ -29,7 +29,9 @@ def invalid_reason(d, report):
         if not d.get(k): return f"summary 缺 {k}"
     if not (d.get("stage2") or {}).get("full_success"): return "細測沒有任何節點全成功"
     vpn = (d.get("env") or {}).get("vpn_check") or {}
-    if vpn.get("vpn"): return "偵測到 VPN／代理：" + "、".join(vpn.get("signals") or [])
+    # 只有「本機 VPN 網卡」訊號不算：Radmin、TAP-Windows 之類的虛擬網卡常帶一條高 metric 的預設路由，實際流量沒走它
+    sig = [s for s in vpn.get("signals") or [] if not s.startswith("本機 VPN 網卡")]
+    if vpn.get("vpn") and sig: return "偵測到 VPN／代理：" + "、".join(sig)
     if not report.strip() or not re.search(r"^# ", report, re.M): return "REPORT.md 空白或格式不對"
     return None
 

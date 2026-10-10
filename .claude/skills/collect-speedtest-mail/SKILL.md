@@ -73,7 +73,7 @@ python -I $SK/collect.py import $A $R
 | rid 本機已存在 | 略過 | 刪 |
 | 缺 REPORT 或 summary、或無法解析 | 略過 | **保留**（可能是 app／Apps Script 的 bug，留著查） |
 | summary 缺 `country`／`time`／`default`／`rows`，或 `stage2.full_success` 為 0 | 無效，略過 | 刪 |
-| `env.vpn_check.vpn` 為 true（任一 VPN／代理訊號，含只有 proxycheck 判定） | 略過，**一律不收**（只要準確的當地網路資料） | 刪 |
+| `env.vpn_check.vpn` 為 true（任一 VPN／代理訊號，含只有 proxycheck 判定；但**只有「本機 VPN 網卡」訊號的不算**，Radmin／TAP 之類虛擬網卡常帶預設路由卻沒實際走它） | 略過，**一律不收**（只要準確的當地網路資料） | 刪 |
 | 內容指紋（國家＋測試時間＋出口 IP＋seed＋`rows` 雜湊）與已有或同批較早的相同 | 重複送出，略過 | 刪 |
 | 其餘 | 複製到 `$R/<summary.country>/<base>/<base>-REPORT.md`、`-summary.json` | 刪 |
 

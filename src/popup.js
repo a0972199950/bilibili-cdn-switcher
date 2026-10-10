@@ -11,7 +11,7 @@ var DEFAULTS = {
   autoFallback: true,
   autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
-  autoTestPending: false, // 節點是程式替使用者選的（切換國家、安裝後自動選國家、自訂切回清單）→ 第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清
+  autoTestPending: false, // 節點是程式替使用者選的（切換國家、安裝後自動選國家、自訂切回清單）→ 第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清。受 FEATURE_AUTO_TEST_ON_COUNTRY 控制
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
@@ -25,6 +25,11 @@ var DEFAULTS = {
   stLiveRuns: 3,
   stLiveSec: 8
 };
+
+// 功能開關：安裝後／切換國家／自訂切回清單時，第一支影片在背景自動測速一次並換成最快節點（popup 顯示「優化中」）。
+// 2.2.0 上線後各國預設節點已改為「各家 ISP 都能順暢播 4K」的普世節點，暫時不需要；程式碼保留，之後要應急再改回 true。
+// main-hook.js 有同名開關，兩邊要一起改。
+var FEATURE_AUTO_TEST_ON_COUNTRY = false;
 
 var els = {
   enabled: document.getElementById("enabled"),
@@ -408,7 +413,7 @@ els.countrySelect.addEventListener("change", function () {
   useCountryFirstNode(code, patch); // 國家選單只在清單模式顯示，切國家就直接換成該國第一個節點
   // 下一支影片在背景測一次、換成最快的（「全部」300 個測不完，不測）。要測的清單跟旗標一起寫，
   // content script 收到旗標時清單已經是新國家的，不用等 saveAutoSpeedHosts 的第二次寫入
-  patch.autoTestPending = code !== COUNTRY_ALL;
+  patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && code !== COUNTRY_ALL;
   patch.autoSpeedHosts = code === COUNTRY_ALL ? [] : countryHosts(code);
   savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
   save(patch);
@@ -443,7 +448,7 @@ function autoSelectCountry(cfg) {
     // 留著會變成下拉裡看不到的選項。用自訂節點列表的使用者不動
     if (cdnMode !== "custom") {
       useCountryFirstNode(target, patch);
-      patch.autoTestPending = target !== COUNTRY_ALL;
+      patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && target !== COUNTRY_ALL;
       patch.autoSpeedHosts = target === COUNTRY_ALL ? [] : countryHosts(target);
       savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
     }
@@ -671,7 +676,7 @@ els.modeList.addEventListener("change", function () {
     // 從自訂切回清單：節點是程式替使用者選的（該國第一個），跟切換國家一樣，下一支影片在背景測一次
     cdnMode = "list";
     useCountryFirstNode(countrySel, patch);
-    patch.autoTestPending = countrySel !== COUNTRY_ALL;
+    patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && countrySel !== COUNTRY_ALL;
     patch.autoSpeedHosts = countrySel === COUNTRY_ALL ? [] : countryHosts(countrySel);
     savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
   }
