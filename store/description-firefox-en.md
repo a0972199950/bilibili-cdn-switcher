@@ -40,7 +40,7 @@ Celebrating the big 2.0.0 update!!
 It activates automatically as soon as you open any bilibili video page after installing. Click the toolbar icon to change the route or turn the feature off.
 
 ■ Privacy
-This extension does not collect or transmit any user data, makes no outbound network connections, and contains no remote code. All settings are stored locally in your own browser. The source code is fully open — feel free to review it.
+In normal use this extension does not collect or transmit any user data, and it contains no remote code. Only when you press "Send" in "Report a problem" are the details you entered and diagnostics (including IP, ISP and the video IDs you were watching, all shown for review before sending) sent to the author, solely to investigate the issue. All settings are stored locally in your own browser. The source code is fully open — feel free to review it.
 https://github.com/a0972199950/bilibili-cdn-switcher
 
 ■ Requirements

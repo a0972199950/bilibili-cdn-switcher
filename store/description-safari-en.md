@@ -40,7 +40,7 @@ Celebrating the big 2.0.0 update!!
 After downloading the app, open it once. It walks you through turning on the extension for your device (Mac, iPhone, or iPad): turn on "BiBoost - Speedup for Bili" in Safari's Extensions and allow it to access bilibili.com. From then on it activates automatically on any bilibili video page; click the extension icon next to the address bar to change the route or turn the feature off.
 
 ■ Privacy
-This extension does not collect or transmit any user data, makes no outbound network connections, and contains no remote code. All settings are stored locally on your own device. The source code is fully open — feel free to review it.
+In normal use this extension does not collect or transmit any user data, and it contains no remote code. Only when you press "Send" in "Report a problem" are the details you entered and diagnostics (including IP, ISP and the video IDs you were watching, all shown for review before sending) sent to the author, solely to investigate the issue. All settings are stored locally on your own device. The source code is fully open — feel free to review it.
 https://github.com/a0972199950/bilibili-cdn-switcher
 
 ■ Requirements
