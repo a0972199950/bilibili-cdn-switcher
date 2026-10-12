@@ -460,5 +460,101 @@
   },
   "optimizingSkip": {
     "message": "跳过"
+  },
+  "reportTitle": {
+    "message": "问题反馈／功能许愿"
+  },
+  "reportTypeLabel": {
+    "message": "类型"
+  },
+  "reportTypeBug": {
+    "message": "反馈问题"
+  },
+  "reportTypeFeature": {
+    "message": "功能许愿"
+  },
+  "reportDescLabel": {
+    "message": "描述"
+  },
+  "reportDescNote": {
+    "message": "发生了什么？预期应该怎样？大约什么时候开始的？"
+  },
+  "reportContactLabel": {
+    "message": "Email（选填）"
+  },
+  "reportContactNote": {
+    "message": "若希望收到开发者回复，可填 Email；只有开发者看得到"
+  },
+  "reportDiagTitle": {
+    "message": "将附上诊断数据（约 {kb} KB）"
+  },
+  "reportDiagView": {
+    "message": "查看内容"
+  },
+  "reportDiagHide": {
+    "message": "收起"
+  },
+  "reportDiagNote": {
+    "message": "诊断数据包含你的 IP、ISP、最近 10 分钟的操作记录与观看的视频 ID，仅开发者可见，排查完即删除。"
+  },
+  "reportPrivacyLink": {
+    "message": "隐私政策"
+  },
+  "reportSubmit": {
+    "message": "提交"
+  },
+  "reportSending": {
+    "message": "提交中…"
+  },
+  "reportHistoryLabel": {
+    "message": "已提交的反馈："
+  },
+  "reportHistoryRemove": {
+    "message": "移除这条记录"
+  },
+  "reportDoneEmailed": {
+    "message": "确认邮件已发到 {email}，直接回复那封邮件可补充更多信息。"
+  },
+  "reportDoneTitle": {
+    "message": "已提交，谢谢！"
+  },
+  "reportDoneIssue": {
+    "message": "可以在 GitHub 跟踪处理进度：#{n}"
+  },
+  "reportDoneNoIssue": {
+    "message": "已收到你的反馈。"
+  },
+  "reportFailTitle": {
+    "message": "提交失败"
+  },
+  "reportFailHint": {
+    "message": "请稍后再试，或复制诊断数据后到 GitHub 开 issue。"
+  },
+  "reportCopy": {
+    "message": "复制诊断数据"
+  },
+  "reportCopied": {
+    "message": "已复制"
+  },
+  "reportClose": {
+    "message": "关闭"
+  },
+  "reportDiscardConfirm": {
+    "message": "放弃这份反馈？"
+  },
+  "reportContactInvalid": {
+    "message": "Email 格式不正确"
+  },
+  "reportDescRequired": {
+    "message": "请先描述问题"
+  },
+  "reportErrRateLimited": {
+    "message": "短时间内反馈太多次，请 10 分钟后再试"
+  },
+  "reportErrNetwork": {
+    "message": "连不上反馈服务器"
+  },
+  "reportErrPermission": {
+    "message": "需要你允许附上诊断数据才能提交问题反馈；若不想附上，请改用“复制诊断数据”自行到 GitHub 开 issue。"
   }
 }

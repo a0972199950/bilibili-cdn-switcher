@@ -5,40 +5,41 @@
       "code": "TW", "dial": 886, "name": {"zh_TW":"台灣","zh_CN":"台湾","en":"Taiwan","ja":"台湾","ko":"대만"},
       "nodes": [
         "cn-jssz-cm-02-18.bilivideo.com",
-        "upos-sz-estgcos.bilivideo.com",
-        "cn-sdjn-fx-01-02.bilivideo.com",
-        "cn-gddg-cu-01-07.bilivideo.com",
-        "cn-hbwh-fx-01-12.bilivideo.com",
-        "cn-bj-se-01-05.bilivideo.com",
-        "cn-hk-eq-01-09.bilivideo.com",
         "upos-sz-mirrorhw.bilivideo.com",
-        "upos-sz-mirror08c.bilivideo.com",
-        "cn-hk-eq-01-12.bilivideo.com"
+        "cn-sdjn-fx-01-02.bilivideo.com",
+        "cn-hbwh-fx-01-01.bilivideo.com",
+        "cn-gddg-cu-01-07.bilivideo.com",
+        "cn-bj-se-01-05.bilivideo.com",
+        "cn-hk-eq-01-14.bilivideo.com",
+        "cn-hncs-fx-01-01.bilivideo.com",
+        "upos-sz-mirror08ct.bilivideo.com",
+        "upos-sz-mirror08c.bilivideo.com"
       ]
     },
     {
       "code": "SG", "dial": 65, "name": {"zh_TW":"新加坡","zh_CN":"新加坡","en":"Singapore","ja":"シンガポール","ko":"싱가포르"},
       "nodes": [
         "cn-hbwh-fx-01-12.bilivideo.com",
-        "upos-sz-mirror08c.bilivideo.com",
-        "cn-hk-eq-01-14.bilivideo.com",
+        "upos-sz-mirrorhwo1.bilivideo.com",
+        "upos-sz-mirrorhw.bilivideo.com",
+        "upos-sz-mirrorali.bilivideo.com",
         "cn-jssz-cm-02-08.bilivideo.com",
         "upos-sz-mirror08ct.bilivideo.com",
-        "upos-sz-mirrorali.bilivideo.com",
-        "upos-sz-mirrorhwo1.bilivideo.com",
-        "upos-sz-mirror08h.bilivideo.com",
-        "upos-sz-mirrorhw.bilivideo.com",
-        "cn-jxnc-cm-01-04.bilivideo.com"
+        "cn-hk-eq-01-14.bilivideo.com",
+        "cn-jxnc-cm-01-04.bilivideo.com",
+        "cn-bj-se-01-05.bilivideo.com",
+        "upos-sz-mirror08h.bilivideo.com"
       ]
     },
     {
       "code": "HK", "dial": 852, "name": {"zh_TW":"香港","zh_CN":"香港","en":"Hong Kong","ja":"香港","ko":"홍콩"},
       "nodes": [
-        "cn-hbwh-fx-01-01.bilivideo.com",
-        "cn-hk-eq-01-14.bilivideo.com",
         "cn-sdjn-fx-01-01.bilivideo.com",
-        "upos-sz-mirror08ct.bilivideo.com",
+        "upos-sz-estghw.bilivideo.com",
+        "cn-hbwh-fx-01-01.bilivideo.com",
+        "upos-sz-mirrorhw.bilivideo.com",
         "cn-bj-se-01-05.bilivideo.com",
+        "upos-sz-mirror08ct.bilivideo.com",
         "cn-hncs-fx-01-01.bilivideo.com",
         "cn-fjfz-fx-01-06.bilivideo.com"
       ]
@@ -61,10 +62,10 @@
     {
       "code": "AU", "dial": 61, "name": {"zh_TW":"澳洲","zh_CN":"澳大利亚","en":"Australia","ja":"オーストラリア","ko":"호주"},
       "nodes": [
+        "cn-hk-eq-01-09.bilivideo.com",
         "cn-hk-eq-01-14.bilivideo.com",
         "cn-hk-eq-01-01.bilivideo.com",
         "cn-hk-eq-01-12.bilivideo.com",
-        "cn-hk-eq-01-09.bilivideo.com",
         "cn-hk-eq-01-13.bilivideo.com",
         "upos-sz-mirrorcosov.bilivideo.com",
         "upos-sz-estghw.bilivideo.com",

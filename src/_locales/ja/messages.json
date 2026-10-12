@@ -460,5 +460,101 @@
   },
   "optimizingSkip": {
     "message": "スキップ"
+  },
+  "reportTitle": {
+    "message": "問題の報告／機能リクエスト"
+  },
+  "reportTypeLabel": {
+    "message": "種類"
+  },
+  "reportTypeBug": {
+    "message": "問題を報告"
+  },
+  "reportTypeFeature": {
+    "message": "機能リクエスト"
+  },
+  "reportDescLabel": {
+    "message": "内容"
+  },
+  "reportDescNote": {
+    "message": "何が起きましたか？本来はどうなるはずでしたか？いつ頃から始まりましたか？"
+  },
+  "reportContactLabel": {
+    "message": "メールアドレス（任意）"
+  },
+  "reportContactNote": {
+    "message": "開発者からの返信を希望する場合は記入してください。開発者のみ閲覧できます"
+  },
+  "reportDiagTitle": {
+    "message": "診断データを添付します（約 {kb} KB）"
+  },
+  "reportDiagView": {
+    "message": "内容を見る"
+  },
+  "reportDiagHide": {
+    "message": "閉じる"
+  },
+  "reportDiagNote": {
+    "message": "診断データには IP アドレス、ISP、直近 10 分間の操作記録、視聴した動画 ID が含まれます。開発者のみ閲覧でき、調査後に削除します。"
+  },
+  "reportPrivacyLink": {
+    "message": "プライバシーポリシー"
+  },
+  "reportSubmit": {
+    "message": "送信"
+  },
+  "reportSending": {
+    "message": "送信中…"
+  },
+  "reportHistoryLabel": {
+    "message": "送信済みの報告："
+  },
+  "reportHistoryRemove": {
+    "message": "この記録を削除"
+  },
+  "reportDoneEmailed": {
+    "message": "{email} に確認メールを送りました。追加情報はそのメールに返信してください。"
+  },
+  "reportDoneTitle": {
+    "message": "送信しました。ありがとうございます！"
+  },
+  "reportDoneIssue": {
+    "message": "GitHub で進捗を確認できます：#{n}"
+  },
+  "reportDoneNoIssue": {
+    "message": "報告を受け付けました。"
+  },
+  "reportFailTitle": {
+    "message": "送信に失敗しました"
+  },
+  "reportFailHint": {
+    "message": "しばらくしてから再試行するか、診断データをコピーして GitHub で issue を作成してください。"
+  },
+  "reportCopy": {
+    "message": "診断データをコピー"
+  },
+  "reportCopied": {
+    "message": "コピーしました"
+  },
+  "reportClose": {
+    "message": "閉じる"
+  },
+  "reportDiscardConfirm": {
+    "message": "この報告を破棄しますか？"
+  },
+  "reportContactInvalid": {
+    "message": "メールアドレスの形式が正しくありません"
+  },
+  "reportDescRequired": {
+    "message": "先に内容を入力してください"
+  },
+  "reportErrRateLimited": {
+    "message": "短時間に送信が多すぎます。10 分後にお試しください"
+  },
+  "reportErrNetwork": {
+    "message": "報告サーバーに接続できません"
+  },
+  "reportErrPermission": {
+    "message": "問題を報告するには診断データの添付を許可する必要があります。添付したくない場合は「診断データをコピー」して GitHub で issue を作成してください。"
   }
 }

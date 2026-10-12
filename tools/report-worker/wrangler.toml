@@ -1,0 +1,18 @@
+# 問題回報收件端（Cloudflare Worker）。部署：npm run worker:deploy（需先 npx wrangler login）
+# secrets（npx wrangler secret put <NAME> --config tools/report-worker/wrangler.toml）：
+#   GITHUB_TOKEN  fine-grained PAT：LOGS_REPO 的 Contents 讀寫 + ISSUES_REPO 的 Issues 讀寫
+#   REPORT_TOKEN  與 src/report.js 的 REPORT_TOKEN 相同的固定字串（弱驗證，擋無差別掃描）
+#   MAIL_URL      Apps Script「回報表單同步 issue」專案 Mailer.gs web app 的 /exec 網址（由作者 Gmail 寄確認信）
+#   MAIL_SECRET   與該 Apps Script 內 SECRET 相同的字串
+name = "bcs-report"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+
+[vars]
+LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
+ISSUES_REPO = "a0972199950/bilibili-cdn-switcher"
+
+[[kv_namespaces]]
+binding = "RATE_KV"
+id = "e6adf184d971421581d54c062d13a55a"

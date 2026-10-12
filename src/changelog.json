@@ -1,5 +1,36 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "「問題回報」改成在擴充自己的回報視窗填寫、一鍵送出，並自動附上最近 10 分鐘的診斷資料（節點、速度、卡頓與自動切換紀錄），送出後可在 GitHub 追蹤處理進度",
+        "zh_CN": "「问题反馈」改为在扩展自己的反馈窗口填写、一键提交，并自动附上最近 10 分钟的诊断数据（节点、速度、卡顿与自动切换记录），提交后可在 GitHub 跟踪处理进度",
+        "en": "Problem reports are now filled in and sent from the extension's own report window, with the last 10 minutes of diagnostics (node, speed, stalls and auto-switch history) attached automatically; track progress on GitHub after sending",
+        "ja": "「問題の報告」は拡張機能専用の報告ウィンドウで入力してワンクリックで送信できるようになり、直近 10 分間の診断データ（ノード・速度・途切れ・自動切替の記録）を自動で添付します。送信後は GitHub で進捗を確認できます",
+        "ko": "「문제 신고」를 확장 프로그램의 전용 신고 창에서 작성해 한 번에 보낼 수 있으며, 최근 10분간의 진단 데이터(노드·속도·끊김·자동 전환 기록)가 자동으로 첨부됩니다. 보낸 후 GitHub에서 진행 상황을 확인할 수 있습니다"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "除錯疊層新增緩衝秒數、卡頓計時、自動切換次數、最後錯誤與最近 3 筆事件",
+        "zh_CN": "调试叠层新增缓冲秒数、卡顿计时、自动切换次数、最后错误与最近 3 条事件",
+        "en": "The debug overlay now shows buffer length, stall timer, auto-switch count, the last error and the 3 most recent events",
+        "ja": "デバッグ表示にバッファ秒数・停止タイマー・自動切替回数・最後のエラー・直近 3 件のイベントを追加しました",
+        "ko": "디버그 오버레이에 버퍼 길이, 끊김 타이머, 자동 전환 횟수, 마지막 오류, 최근 3개 이벤트를 추가했습니다"
+      }
+    },
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "依最新實測更新台灣、香港、新加坡、澳洲的建議節點清單，香港與澳洲的預設節點也換成更穩定的節點",
+        "zh_CN": "根据最新实测更新台湾、香港、新加坡、澳大利亚的推荐节点列表，香港与澳大利亚的默认节点也换成更稳定的节点",
+        "en": "Updated the recommended node lists for Taiwan, Hong Kong, Singapore and Australia based on the latest speed tests, and switched Hong Kong and Australia to more reliable default nodes",
+        "ja": "最新の実測結果をもとに台湾・香港・シンガポール・オーストラリアのおすすめノードリストを更新し、香港とオーストラリアの既定ノードもより安定したノードに変更しました",
+        "ko": "최신 실측 결과를 바탕으로 대만·홍콩·싱가포르·호주의 추천 노드 목록을 업데이트하고, 홍콩과 호주의 기본 노드도 더 안정적인 노드로 바꿨습니다"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.3.0",

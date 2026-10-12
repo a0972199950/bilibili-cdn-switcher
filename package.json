@@ -19,11 +19,14 @@
     "lottery:add": "node scripts/lottery.mjs add",
     "lottery:end": "node scripts/lottery.mjs end",
     "lottery:show": "node scripts/lottery.mjs show",
-    "prepare": "git config core.hooksPath .githooks || exit 0"
+    "prepare": "git config core.hooksPath .githooks || exit 0",
+    "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
+    "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml"
   },
   "devDependencies": {
     "jszip": "^3.10.1",
     "puppeteer": "^25.5.0",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.3",
+    "wrangler": "^4.149.0"
   }
 }

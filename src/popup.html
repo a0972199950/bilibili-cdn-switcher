@@ -528,6 +528,20 @@
       display: none;
     }
 
+    /* 已送出的回報：一列小標籤「#123 ×」，橫向排列自動換行；點編號開 issue，× 移除該筆（不會自動清） */
+    .reportHistory {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; color: var(--muted);
+    }
+    .reportHistory .rhChip {
+      display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; padding: 1px 4px 1px 8px; background: var(--control-bg);
+    }
+    .reportHistory .rhChip a { color: var(--link); text-decoration: none; }
+    .reportHistory .rhChip a:hover { text-decoration: underline; }
+    .reportHistory .rhChip button {
+      border: 0; background: none; color: var(--muted); font-size: 13px; line-height: 1; padding: 2px 4px; margin-left: 2px; cursor: pointer; border-radius: 50%;
+    }
+    .reportHistory .rhChip button:hover { color: var(--danger); background: var(--danger-soft); }
+
     /* 主頁左下角的版本號：點了進「版本更新紀錄」頁 */
     .versionRow {
       margin-top: 10px;
@@ -1816,6 +1830,7 @@
       <button id="rateBtn" type="button" style="display:none"></button>
       <button id="feedbackBtn" type="button" style="display:none"></button>
     </div>
+    <div id="reportHistory" class="reportHistory" style="display:none"></div>
 
     <div class="versionRow"><button id="versionLink" type="button" class="linkBtn"></button></div>
   </div>

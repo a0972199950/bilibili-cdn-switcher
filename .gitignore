@@ -35,3 +35,10 @@ spec/
 
 # 發版產物（npm run package；/release 會上傳到 GitHub Release）
 release/
+
+# Cloudflare Worker 本機密鑰 / 暫存
+tools/report-worker/.dev.vars
+tools/report-worker/.wrangler/
+
+# 推廣文章、論壇帳號（含密碼）與經營紀錄，只留本機
+promotions/

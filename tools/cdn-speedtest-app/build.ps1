@@ -1,4 +1,5 @@
 ﻿# 打包 Bilibili CDN 測速 GUI 成單一 exe：<repo>\release\CDNSpeedTest.exe（發版產物都放 release/，npm run package 會一起打包擴充）
+# 另外產生 release\CDNSpeedTest.json（version / sha256 / size），跟 exe 一起上傳 GitHub Release，已安裝的 exe 靠它自我更新
 # 用法（PowerShell）：powershell -ExecutionPolicy Bypass -File tools\cdn-speedtest-app\build.ps1
 # 需要：Python 3（含 tkinter）、config.json（複製 config.example.json，填入 Apps Script 網址與 token）
 $ErrorActionPreference = "Stop"
@@ -22,10 +23,17 @@ if ($LASTEXITCODE -ne 0) { throw "pip install 失敗" }
 & $vpy -m PyInstaller --noconfirm --clean --onefile --windowed --name CDNSpeedTest `
     --paths "$core" --paths "$here" `
     --hidden-import speedtest --hidden-import bili --hidden-import videos --hidden-import netinfo `
-    --hidden-import qrlogin --hidden-import i18n --hidden-import extdetect `
+    --hidden-import qrlogin --hidden-import i18n --hidden-import extdetect --hidden-import updater `
     --collect-all tkinterweb --collect-all tkinterweb_tkhtml `
     --add-data "$core\nodes.json;." --add-data "$here\config.json;." --add-data "$icon;." `
     --icon "$iconExe" `
     --distpath "$root\release" --workpath "$here\build" --specpath "$here\build" "$here\app.py"
 if ($LASTEXITCODE -ne 0) { throw "PyInstaller 失敗" }
-Write-Host "完成：$root\release\CDNSpeedTest.exe"
+
+# 自我更新用的版本資訊（updater.py 讀 Latest Release 的這個檔）；不帶 BOM，Python json.load 讀到 BOM 會失敗
+$exe = "$root\release\CDNSpeedTest.exe"
+$ver = [regex]::Match((Get-Content "$here\app.py" -Raw -Encoding UTF8), 'APP_VERSION = "([^"]+)"').Groups[1].Value
+if (-not $ver) { throw "app.py 找不到 APP_VERSION" }
+$manifest = [ordered]@{ version = $ver; sha256 = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLower(); size = (Get-Item $exe).Length }
+[IO.File]::WriteAllText("$root\release\CDNSpeedTest.json", ($manifest | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
+Write-Host "完成：$exe（v$ver）＋ CDNSpeedTest.json"

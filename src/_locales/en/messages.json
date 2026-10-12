@@ -460,5 +460,101 @@
   },
   "optimizingSkip": {
     "message": "Skip"
+  },
+  "reportTitle": {
+    "message": "Report a problem / Request a feature"
+  },
+  "reportTypeLabel": {
+    "message": "Type"
+  },
+  "reportTypeBug": {
+    "message": "Report a problem"
+  },
+  "reportTypeFeature": {
+    "message": "Feature request"
+  },
+  "reportDescLabel": {
+    "message": "Description"
+  },
+  "reportDescNote": {
+    "message": "What happened? What did you expect? Roughly when did it start?"
+  },
+  "reportContactLabel": {
+    "message": "Email (optional)"
+  },
+  "reportContactNote": {
+    "message": "Leave your email if you'd like a reply from the developer; visible to the developer only"
+  },
+  "reportDiagTitle": {
+    "message": "Diagnostics will be attached (about {kb} KB)"
+  },
+  "reportDiagView": {
+    "message": "View"
+  },
+  "reportDiagHide": {
+    "message": "Hide"
+  },
+  "reportDiagNote": {
+    "message": "Diagnostics include your IP address, ISP, the last 10 minutes of extension activity and the IDs of videos watched. Only the developer can see them; they are deleted once the issue is resolved."
+  },
+  "reportPrivacyLink": {
+    "message": "Privacy policy"
+  },
+  "reportSubmit": {
+    "message": "Send"
+  },
+  "reportSending": {
+    "message": "Sending…"
+  },
+  "reportHistoryLabel": {
+    "message": "Sent reports:"
+  },
+  "reportHistoryRemove": {
+    "message": "Remove this entry"
+  },
+  "reportDoneEmailed": {
+    "message": "A confirmation email was sent to {email}; reply to it to add more details."
+  },
+  "reportDoneTitle": {
+    "message": "Sent. Thank you!"
+  },
+  "reportDoneIssue": {
+    "message": "Track progress on GitHub: #{n}"
+  },
+  "reportDoneNoIssue": {
+    "message": "Your report has been received."
+  },
+  "reportFailTitle": {
+    "message": "Sending failed"
+  },
+  "reportFailHint": {
+    "message": "Please try again later, or copy the diagnostics and open an issue on GitHub."
+  },
+  "reportCopy": {
+    "message": "Copy diagnostics"
+  },
+  "reportCopied": {
+    "message": "Copied"
+  },
+  "reportClose": {
+    "message": "Close"
+  },
+  "reportDiscardConfirm": {
+    "message": "Discard this report?"
+  },
+  "reportContactInvalid": {
+    "message": "Please enter a valid email address"
+  },
+  "reportDescRequired": {
+    "message": "Please describe the problem first"
+  },
+  "reportErrRateLimited": {
+    "message": "Too many reports in a short time. Please try again in 10 minutes"
+  },
+  "reportErrNetwork": {
+    "message": "Could not reach the report server"
+  },
+  "reportErrPermission": {
+    "message": "Sending a problem report requires permission to attach diagnostics. If you prefer not to, use \"Copy diagnostics\" and open a GitHub issue yourself."
   }
 }

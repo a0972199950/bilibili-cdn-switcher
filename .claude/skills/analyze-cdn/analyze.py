@@ -38,6 +38,10 @@ REDUN_AGREE = 0.9   # 達標結論一致率 ≥ 90% → 對這家 ISP 是冗餘�
 PARTIAL_OK_MIN = 0.8  # 新版報告 stage2.raw：細測 10 支裡成功 ≥ 80%、失敗都是逾時類（沒有 403）→「部分失敗」，
                       # 速度用成功那幾支算、分級最多到「可用」（×0.5，比照不穩定）；達標一律算 0（預設要最不會出錯）。
                       # 成功率更低或有 403 → 照舊算失敗
+LINE_JACCARD = 0.7  # 同出口的兩份報告要合併成同一條線路：兩者「達標節點集合」的 Jaccard ≥ 0.7
+LINE_MIN_PASS = 5   # 達標節點聯集至少這麼多個才用 Jaccard；太少時改看速度排名
+LINE_RHO = 0.8      # 改看速度排名時：共同細測節點的 Spearman ≥ 0.8
+LINE_MIN_COMMON = 8 # 共同細測節點少於這個數 → 無法證明一致，不合併
 PEAK = range(19, 24)
 GOOD = ("第一梯隊", "可用")
 MOBILE_AD = re.compile(r"Remote NDIS|Mobile Broadband|WWAN|Cellular|\bLTE\b|Android|iPhone|Apple Mobile", re.I)
@@ -149,18 +153,54 @@ def load_reports(root, cc):
     return reps
 
 
+def consistent(a, b):
+    """兩份報告的結果是否一致到可以當同一個樣本 → (是否一致, 說明)。
+    只比「達標的節點集合」（Jaccard）：兩份都不達標的節點占多數，算進去會把一致率灌水。
+    達標節點太少（聯集 < LINE_MIN_PASS）時改看兩份都有細測速度的節點排名（Spearman），共同節點也太少就不合併"""
+    hs = (set(a["rows"]) | set(a["failed"]) | set(a["s1_mbps"]) |
+          set(b["rows"]) | set(b["failed"]) | set(b["s1_mbps"]))
+    pairs = [(x, y) for x, y in ((q_of(a, h), q_of(b, h)) for h in hs) if x is not None and y is not None]
+    both = sum(x >= PASS_Q and y >= PASS_Q for x, y in pairs)
+    anyp = sum(x >= PASS_Q or y >= PASS_Q for x, y in pairs)
+    if anyp >= LINE_MIN_PASS:
+        j = both / anyp
+        return j >= LINE_JACCARD, f"達標節點重疊 {both}/{anyp}（{j:.2f}）"
+    common = [h for h in a["rows"] if h in b["rows"]]
+    if len(common) < LINE_MIN_COMMON:
+        return False, f"達標節點只有 {anyp} 個、共同細測節點只有 {len(common)} 個，無法證明一致"
+    rho = spearman([a["rows"][h]["mean"] for h in common], [b["rows"][h]["mean"] for h in common])
+    return rho >= LINE_RHO, f"共同細測 {len(common)} 個節點的速度排名相關 {rho:.2f}"
+
+
 def assign_lines(reps):
-    """同一條線路（同 ISP 且同出口 IP，或同 /24 且同網卡）的重複測試標成同一個 L 編號。
-    線路才是獨立樣本：同一戶測 3 次不等於 3 個使用者。IP 只在記憶體裡比對，不寫進報告。"""
-    keys = []
+    """同一條線路的重複測試標成同一個 L 編號。線路才是獨立樣本：同一戶測 3 次不等於 3 個使用者。
+    合併要同時滿足：① 同 ISP 且同出口 IP（或同 /24 且同網卡）② 與該線路已有的**每一份**報告結果都一致（consistent()）。
+    只有 ① 不夠：同一戶換了時段、網路狀況或設備，結果可能完全不同，那是不同的樣本。
+    IP 只在記憶體裡比對，不寫進報告。r["exit"] = 只看 ① 的分組（給「同出口短時間重複」提示用），
+    r["split_note"] = 與同出口的線路不一致、沒合併的原因"""
+    keys, exits = [], []
     for r in sorted(reps, key=lambda r: r["time"]):
         p24 = r["_ip"].rsplit(".", 1)[0] if r["_ip"].count(".") == 3 else r["_ip"]
-        hit = next((k for k in keys if k[0] == r["asn"] and r["_ip"] and
-                    (k[1] == r["_ip"] or (k[2] == p24 and k[3] == r["_adapter"]))), None)
+        same = lambda k: k["asn"] == r["asn"] and r["_ip"] and (k["ip"] == r["_ip"] or (k["p24"] == p24 and k["ad"] == r["_adapter"]))
+        ex = next((k for k in exits if same(k)), None)
+        if not ex:
+            ex = dict(asn=r["asn"], ip=r["_ip"], p24=p24, ad=r["_adapter"], id=f"E{len(exits) + 1}")
+            exits.append(ex)
+        r["exit"], r["split_note"] = ex["id"], None
+        hit, notes = None, []
+        for k in keys:
+            if not same(k): continue
+            checks = [consistent(m, r) for m in k["members"]]
+            if all(ok for ok, _ in checks):
+                hit = k; break
+            notes.append(f"與 {k['id']}（{'、'.join(m['rid'] for m in k['members'])}）不一致："
+                         + "；".join(s for ok, s in checks if not ok))
         if not hit:
-            hit = (r["asn"], r["_ip"], p24, r["_adapter"], f"L{len(keys) + 1}")
+            hit = dict(asn=r["asn"], ip=r["_ip"], p24=p24, ad=r["_adapter"], id=f"L{len(keys) + 1}", members=[])
             keys.append(hit)
-        r["line"] = hit[4]
+            if notes: r["split_note"] = "；".join(notes)
+        hit["members"].append(r)
+        r["line"] = hit["id"]
     for r in reps: del r["_ip"], r["_adapter"]
 
 
@@ -509,9 +549,9 @@ def test_hints(rep, reps_all):
     只看量測設定本身：同一條線路短時間內重複多次、並行數手動改過、未登入。
     不同出口網段／網卡／城市 = 不同使用者，不是測試；細測成功少、403 多是網路的真實體驗，也不是測試"""
     out = []
-    same = [r for r in reps_all if r["line"] == rep["line"] and r["rid"] != rep["rid"] and r["ts"] and rep["ts"]
+    same = [r for r in reps_all if r["exit"] == rep["exit"] and r["rid"] != rep["rid"] and r["ts"] and rep["ts"]
             and abs((r["ts"] - rep["ts"]).total_seconds()) <= 86400]
-    if len(same) >= 2: out.append(f"同線路 24 小時內另有 {len(same)} 份")
+    if len(same) >= 2: out.append(f"同出口 24 小時內另有 {len(same)} 份")
     if rep["conc"] and rep["conc_auto"] and rep["conc"] != rep["conc_auto"]: out.append("並行數手動設定")
     if rep["login"] is False: out.append("未登入")
     return out
@@ -541,7 +581,9 @@ def write(cc, reps_all, excluded, reps, A, cdn, share_cfg, out_dir):
     w(f"# {cc} CDN 節點跨報告分析（{now:%Y-%m-%d %H:%M}）\n")
     w(f"> 自動產生：`.claude/skills/analyze-cdn/analyze.py`。納入 {n} 份（{NL} 條線路、{len(A['isps'])} 家 ISP）、排除 {len(excluded)} 份。"
       "「判讀」一節由 Claude 讀完數據後補寫。**本報告不改任何專案檔案**；要不要更新 `src/cdn-list.json`、要不要刪除異常報告，都由你決定。\n")
-    w("「線路」= 同 ISP 且同出口 IP（或同網段、同網卡）的報告視為同一條線路的重複測試，合起來算 1 個樣本。"
+    w("「線路」= 同 ISP 且同出口 IP（或同網段、同網卡），**而且結果一致**的報告視為同一條線路的重複測試，合起來算 1 個樣本；"
+      f"一致 = 兩份「達標節點」的重疊（Jaccard）≥ {LINE_JACCARD}，達標節點少於 {LINE_MIN_PASS} 個時改看共同細測節點的速度排名相關 ≥ {LINE_RHO}"
+      f"（共同節點少於 {LINE_MIN_COMMON} 個 = 無法證明一致，不合併）。同出口但結果不一致的，當作不同樣本。"
       f"「達標」= 單連線平均速度 ≥ {PASS_Q:.0%} × min({FOURK_MBPS} Mbps, 該報告最快穩定節點)，也就是跑得動 4K；"
       "不穩定（sd > 平均一半）、細測失敗、快篩失敗、只能播熱門（403）都算不達標；沒進細測又沒有快篩失敗紀錄 = 不知道（不算好也不算壞）。\n")
 
@@ -551,7 +593,11 @@ def write(cc, reps_all, excluded, reps, A, cdn, share_cfg, out_dir):
            "**樣本偏少**（3–5 條線路）：前段大致可信，後段名次容易變動" if NL < 6 else
            "**樣本尚可**（≥ 6 條線路）")
     w(f"- {lvl}。")
-    if n > NL: w(f"- {n - NL} 份是同一條線路的重複測試（已合併）。")
+    if n > NL: w(f"- {n - NL} 份是同一條線路的重複測試（結果一致，已合併）。")
+    splits = [r for r in reps if r["split_note"]]
+    if splits:
+        w(f"- {len(splits)} 份與同出口的其他報告結果不一致，**沒有合併**、各算 1 個樣本：")
+        for r in splits: w(f"  - {r['rid']}（{r['line']}）：{r['split_note']}")
     nf = sum(r["new_fmt"] for r in reps)
     if nf: w(f"- {nf} 份是新版報告（有 `stage1.nodes`／`stage2.raw`）：快篩通過的節點全部細測、有失敗的節點也有逐筆紀錄，"
              f"所以沒有「未知」、可以區分「部分失敗」；其餘 {n - nf} 份是舊版，退回原本的判讀方式。")

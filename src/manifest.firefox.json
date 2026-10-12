@@ -9,7 +9,12 @@
       "id": "bilibili-cdn-switcher@a0972199950.github.io",
       "strict_min_version": "140.0",
       "data_collection_permissions": {
-        "required": ["none"]
+        "required": ["none"],
+        "optional": [
+          "personallyIdentifyingInfo",
+          "locationInfo",
+          "websiteActivity"
+        ]
       }
     },
     "gecko_android": {
@@ -29,7 +34,9 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "background.js"
+    ]
   },
   "action": {
     "default_popup": "popup.html",

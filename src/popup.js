@@ -197,11 +197,6 @@ function uiLangCode() {
 }
 // uiLangCode() → cdn-list.json / changelog.json 多語字串的語系鍵
 var LOCALIZED_KEYS = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en", ja: "ja", ko: "ko" };
-// 意見回饋表單：三語共用同一份 Google 表單（題目都是「繁中 | 簡中 | English」）。
-// 用完整的 viewform 網址（短網址 forms.gle 不吃預填參數），環境資訊題的 entry ID 見 FEEDBACK_ENV_ENTRY。
-var FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScYPTvslktKd1AUK7SsdG-j505oMjHxdfLv1wKQlduGBAemDg/viewform";
-var FEEDBACK_ENV_ENTRY = "entry.603662239"; // 表單「環境資訊」題的預填參數名
-function pickFeedbackFormUrl() { return FEEDBACK_FORM_URL; }
 // 一律用不含 slug 的短網址：商店改名後 slug 會失效，靠 ID／slug 本身跳轉才不會壞。
 // Edge Add-ons 沒有 /reviews 這層（會 404），只能導到商品頁，讓使用者自己往下捲到評論區。
 var STORE_REVIEW_URLS = {
@@ -253,45 +248,45 @@ if (reviewUrl) {
   els.rateBtn.style.display = "";
   els.rateBtn.addEventListener("click", function () { openTab(withUtm(reviewUrl, "rate")); });
 }
-var feedbackUrl = pickFeedbackFormUrl();
-if (feedbackUrl) {
-  els.feedbackBtn.style.display = "";
-  els.feedbackBtn.addEventListener("click", function () {
-    buildFeedbackEnv(function (env) {
-      openTab(feedbackUrl + "?usp=pp_url&" + FEEDBACK_ENV_ENTRY + "=" + encodeURIComponent(env));
-    });
+// 問題回報：一律由 background 開成獨立視窗（report.html），帶上目前分頁 id 讓回報頁能向 B 站頁面要此刻的快照；popup 隨即關閉
+els.feedbackBtn.style.display = "";
+els.feedbackBtn.addEventListener("click", function () {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    var tab = tabs && tabs[0];
+    var tabId = tab && BILI_TAB_RE.test(tab.url || "") ? tab.id : null;
+    chrome.runtime.sendMessage({ type: "CDN_SWITCHER_OPEN_REPORT_WINDOW", tab: tabId }, function () { void chrome.runtime.lastError; window.close(); });
   });
-}
+});
 
-// 「問題回報」預填的環境資訊：版本、瀏覽器、目前設定、目前分頁與 debug 快照。
-// 使用者在表單上看得到、可以刪改，送不送出由使用者決定；擴充本身不會傳出這些資料。
-function browserVersion() {
-  var m = navigator.userAgent.match(/(Firefox|Edg|Chrome|Version)\/([\d.]+)/);
-  return detectBrowser() + (m ? " " + m[2] : "");
-}
-function osName() {
-  var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
-  return p || "-";
-}
-function buildFeedbackEnv(done) {
-  chrome.storage.local.get(DEFAULTS, function (cfg) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      var url = (tabs && tabs[0] && tabs[0].url) || "";
-      var tab = BILI_TAB_RE.test(url) ? url.split(/[?#]/)[0] : "(not bilibili)";
-      var lines = [
-        "version=" + chrome.runtime.getManifest().version + "  browser=" + browserVersion() + "  os=" + osName() + "  lang=" + chrome.i18n.getUILanguage(),
-        "enabled=" + cfg.enabled + "  autoFallback=" + cfg.autoFallback + "  sortBySpeed=" + cfg.sortBySpeed,
-        "country=" + disp(cfg.cdnCountry) + "  detected=" + disp(cfg.detectedCountry),
-        "video=" + (cfg.videoEnabled === false ? "off" : cfg.cdnHost) + "  list=" + disp(cfg.cdnMode) +
-          (cfg.cdnMode === "custom" ? "(" + (cfg.customHosts || []).length + ")" : ""),
-        "live=" + (cfg.liveEnabled === false ? "off" : cfg.liveRoute),
-        "tab=" + tab
-      ];
-      if (lastDebugText) lines.push("-- debug --", lastDebugText);
-      done(lines.join("\n"));
+// 回報紀錄列：storage.local.reportHistory = [{ n, url, t, type }]，由 report.js 送出成功時寫入。
+// 永久保留，只有使用者按 × 才移除；擴充更新不會清掉。
+function renderReportHistory() {
+  chrome.storage.local.get({ reportHistory: [] }, function (items) {
+    var list = Array.isArray(items.reportHistory) ? items.reportHistory : [];
+    var box = document.getElementById("reportHistory");
+    box.textContent = "";
+    if (!list.length) { box.style.display = "none"; return; }
+    box.style.display = "";
+    var lbl = document.createElement("span"); lbl.textContent = t("reportHistoryLabel"); box.appendChild(lbl);
+    list.slice().reverse().forEach(function (rec) {
+      if (!rec || !rec.url) return;
+      var chip = document.createElement("span"); chip.className = "rhChip";
+      var a = document.createElement("a"); a.href = rec.url; a.textContent = "#" + rec.n;
+      a.title = (rec.t ? new Date(rec.t).toLocaleString() : "") + "\n" + rec.url;
+      a.addEventListener("click", function (e) { e.preventDefault(); openTab(rec.url); });
+      var x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = t("reportHistoryRemove"); x.setAttribute("aria-label", t("reportHistoryRemove"));
+      x.addEventListener("click", function () {
+        chrome.storage.local.get({ reportHistory: [] }, function (it) {
+          var cur = Array.isArray(it.reportHistory) ? it.reportHistory : [];
+          chrome.storage.local.set({ reportHistory: cur.filter(function (r) { return !r || r.url !== rec.url; }) }, renderReportHistory);
+        });
+      });
+      chip.appendChild(a); chip.appendChild(x); box.appendChild(chip);
     });
   });
 }
+renderReportHistory();
+try { chrome.storage.onChanged.addListener(function (ch, area) { if (area === "local" && ch.reportHistory) renderReportHistory(); }); } catch (e) {}
 
 var knownValues = {}; // 清单中所有 value（1.6 以前用来判断储存值是否为自行输入，见载入时的迁移）
 var cdnMode = "list"; // 目前用哪份节点（"list" / "custom"）；选「关闭」时保留关闭前的那份
@@ -424,16 +419,37 @@ els.countrySelect.addEventListener("change", function () {
 // 回傳清單內的國家 code；不在清單內回 ""；查詢失敗回 null（下次開啟再試）
 var ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
 var countryAutoPending = false;
-function detectCountry() {
+// 回傳 zone API 的 data（失敗回 null），並把 IP／ISP／省份存進 storage：節點好壞幾乎取決於 ISP，問題回報要附上
+function fetchZone() {
   return fetch(ZONE_API, { credentials: "omit", cache: "no-store" })
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j || j.code !== 0 || !j.data) return null;
-      var dial = Number(j.data.country_code);
-      for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) return cdnCountries[i].code;
-      return "";
+      var d = j.data;
+      chrome.storage.local.set({ detectedIp: d.addr || "", detectedIsp: d.isp || "", detectedProvince: d.province || "", detectedCountryName: d.country || "", detectedDial: Number(d.country_code) || null, zoneCheckedAt: Date.now() });
+      return d;
     })
     .catch(function () { return null; });
+}
+function detectCountry() {
+  return fetchZone().then(function (d) {
+    if (!d) return null;
+    var dial = Number(d.country_code);
+    for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) return cdnCountries[i].code;
+    return "";
+  });
+}
+var ZONE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+function refreshZoneIfStale(items) {
+  if (items && items.countryAutoDone === false) return; // 第一次：autoSelectCountry 自己會查
+  if (items && items.zoneCheckedAt && Date.now() - items.zoneCheckedAt < ZONE_MAX_AGE_MS) return;
+  fetchZone().then(function (d) {
+    // 使用者換了網路、IP 國家變了：只更新「你在這裡」標記，不動使用者選的國家
+    if (!d) return;
+    var dial = Number(d.country_code), code = "";
+    for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) code = cdnCountries[i].code;
+    if (code !== detectedCountry) { detectedCountry = code; save({ detectedCountry: code }); renderCountrySelect(); }
+  });
 }
 function autoSelectCountry(cfg) {
   if (cfg.countryAutoDone) return;
@@ -585,7 +601,25 @@ function useHost(host, patch) {
   if (videoOn) currentCdnHost = host;
 }
 
-function save(patch) { chrome.storage.local.set(patch); }
+// 問題回報用的事件日誌：使用者在 popup 的動作（換節點、換國家、開關…）統一在 save() 這裡比對前後值記下，
+// 不用在每個事件處理器各記一次。載入時的遷移寫入（journalReady 之前）不算使用者動作
+var journalReady = false, lastCfg = {};
+var JOURNAL_TOGGLE_KEYS = ["enabled", "autoFallback", "videoEnabled", "liveEnabled", "sortBySpeed", "autoSpeedSwitch", "showDebug"];
+function journalUi(k, d) {
+  try { chrome.runtime.sendMessage({ type: "CDN_SWITCHER_JOURNAL", entry: { t: Date.now(), k: k, d: d } }, function () { void chrome.runtime.lastError; }); } catch (e) {}
+}
+function shortHostJ(h) { return typeof h === "string" ? h.replace(/\.bilivideo\.(com|cn)$/i, "") : h; }
+function save(patch) {
+  chrome.storage.local.set(patch);
+  if (journalReady) {
+    if ("cdnHost" in patch && patch.cdnHost !== lastCfg.cdnHost) journalUi("ui.node", { from: shortHostJ(lastCfg.cdnHost), to: shortHostJ(patch.cdnHost), mode: patch.cdnMode || lastCfg.cdnMode, auto: "autoTestPending" in patch && patch.autoTestPending ? 1 : 0 });
+    if ("cdnCountry" in patch && patch.cdnCountry !== lastCfg.cdnCountry) journalUi("ui.country", { from: lastCfg.cdnCountry, to: patch.cdnCountry, auto: "detectedCountry" in patch ? 1 : 0 });
+    if ("liveRoute" in patch && patch.liveRoute !== lastCfg.liveRoute) journalUi("ui.liveRoute", { from: lastCfg.liveRoute, to: patch.liveRoute });
+    if ("cdnMode" in patch && patch.cdnMode !== lastCfg.cdnMode) journalUi("ui.mode", { from: lastCfg.cdnMode, to: patch.cdnMode });
+    JOURNAL_TOGGLE_KEYS.forEach(function (k) { if (k in patch && !!patch[k] !== !!lastCfg[k]) journalUi("ui.toggle", { key: k, value: patch[k] ? 1 : 0 }); });
+  }
+  for (var k2 in patch) lastCfg[k2] = patch[k2];
+}
 
 // 读清单 + 目前设定 → 建立下拉
 Promise.all([
@@ -644,7 +678,10 @@ Promise.all([
   if (sortOn && cfg.speedOrder) speedOrder = { video: cfg.speedOrder.video || [], live: cfg.speedOrder.live || [] };
   applyDropdownOrder();
   LIMIT_FIELDS.forEach(function (f) { limits[f.key] = clampLimit(f, cfg[f.key]); document.getElementById(f.key).value = limits[f.key]; });
+  for (var jk in cfg) lastCfg[jk] = cfg[jk];
+  journalReady = true;
   autoSelectCountry(cfg);
+  refreshZoneIfStale(arr[1]);
 });
 
 els.enabled.addEventListener("change", function () { save({ enabled: els.enabled.checked }); });
@@ -998,11 +1035,10 @@ function spdText(bps, idle) {
   var s = bps >= 1048576 ? (bps / 1048576).toFixed(1) + " MB/s" : Math.round(bps / 1024) + " kB/s";
   return idle ? s + " (idle)" : s;
 }
-var lastDebugText = ""; // 最近一次 debug 文字，問題回報時預填進表單
 function renderDebug(d) {
   liveSnap = (d && d.live) || null;
   renderLiveRows();
-  if (!d) { lastDebugText = ""; els.debug.textContent = t("debugNoDataAfterOpen"); return; }
+  if (!d) { els.debug.textContent = t("debugNoDataAfterOpen"); return; }
   var lines, cdnLineIdx;
   if (d.live) {
     // 直播间：顯示直播線路資料（影片那組 v / a / qn / spd 在直播間沒有意義）
@@ -1027,7 +1063,6 @@ function renderDebug(d) {
     );
   }
   if (d.lastError) lines.push("err=" + disp(d.lastError));
-  lastDebugText = lines.join("\n");
   els.debug.textContent = "";
   var frag = document.createDocumentFragment();
   lines.forEach(function (l, i) {
