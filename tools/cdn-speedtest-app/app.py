@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Bilibili CDN 測速（GUI 版）：給海外朋友雙擊執行。流程：
-#   1 入口：選語言（繁中／簡中／英／日／韓）、閱讀英文隱私聲明並勾選同意、（作者用）開發者測試模式
+#   1 入口：選語言（繁中／簡中／英／日／韓）、閱讀英文隱私聲明並勾選同意、（作者用）開發者測試模式藏在底部「進階設定 → 開發者選項」
 #   2 測速目的：單純測試／建立擴充「自訂節點列表」，或參加抽獎（填 email、必中獎邀請碼；依國家顯示禮物卡）
 #   3 網路檢查：頻寬與 VPN；只有參加抽獎才當門禁，單純測試只做參考
 #   4 B 站 App 掃 QR code 登入（必要，1080P 以上才準）
@@ -9,19 +9,21 @@
 #   6 結果摘要，確認後把 REPORT.md / summary.json / email 傳到作者的 Google Apps Script，
 #     並把建議的 10 個節點寫進瀏覽器擴充的「自訂節點列表」（extdetect.py）
 #   7 感謝頁（沒裝擴充時提示安裝後再按「建立自訂列表」）；關閉時刪掉已上傳的本機結果
+# 啟動時在背景檢查 GitHub Latest Release 有沒有新版 exe（updater.py）：還在入口頁就直接換新版重開，否則關閉時才換檔。
 # 同意隱私聲明後，安裝／執行／測速／發送等事件會送一筆使用紀錄（Apps Script action=log → Neon）。
 # 測速核心在 core/（speedtest.py / bili.py / videos.py / netinfo.py / nodes.json），從 /cdn-speedtest skill 複製出來、各自維護，不互相依賴。
 import json, os, queue, re, shutil, sys, threading, time, traceback, urllib.request, uuid, webbrowser
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.6.0"
+APP_VERSION = "1.7.0"
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
 sys.path.insert(0, HERE)
 from i18n import LANGS, PRIVACY_EN, EXT_NAME, ext_name, t, default_lang  # noqa: E402
 import extdetect  # noqa: E402
+import updater  # noqa: E402
 
 EXT_URL_DEFAULT = ("https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch"
                    "?utm_source=cdn_speedtest_app&utm_medium=referral&utm_campaign=speedtest")
@@ -329,10 +331,38 @@ class App(tk.Tk):
         self.add_ext = tk.BooleanVar(value=True)             # 發送後把建議節點加入擴充的自訂節點列表
         self.ext_vars = {b: tk.BooleanVar(value=(b == "Chrome")) for b in extdetect.BROWSERS}
         self.ext_results = {}       # 各瀏覽器建立自訂節點列表的結果：ok / missing / outdated（感謝頁用）
+        self.left_entry = False     # 按過入口頁的「下一步」：之後下載好的新版留到關閉程式時才換
+        self.update_file = None     # 已下載、驗證過的新版 exe
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
         self.bind_all("<MouseWheel>", self.on_wheel)
         self.after(100, self.pump)
         self.show_entry()
+        threading.Thread(target=self.update_worker, daemon=True).start()
+
+    # ── 自我更新（updater.py） ─────────────────────────────
+    def update_worker(self):
+        updater.cleanup()
+        r = updater.check_and_download(APP_VERSION)
+        if r: self.q.put(("update_ready", *r))
+
+    def on_update_ready(self, ver, path):
+        self.update_file = path
+        if self.left_entry: return   # 已經在流程中：不打斷，關閉時再換
+        body, _ = self.page()
+        self.text(body, self.T("updating", v=ver), style="H2.TLabel").pack(pady=(self.px(80), 0))
+        self.after(800, self.restart_updated)
+
+    def restart_updated(self):
+        if updater.apply(self.update_file, restart=True):
+            self.destroy()
+            os._exit(0)
+        self.update_file = None
+        self.show_entry()
+
+    def apply_update_on_exit(self):
+        if self.update_file:
+            updater.apply(self.update_file, restart=False)
+            self.update_file = None
 
     # ── 外觀 ──────────────────────────────────────────────
     def px(self, n):
@@ -375,6 +405,8 @@ class App(tk.Tk):
         s.configure("Small.TButton", padding=(self.px(12), self.px(2)))
         s.configure("Link.TButton", background=C["card"], foreground=C["link"], borderwidth=0, padding=0)
         s.map("Link.TButton", background=[("active", C["card"])], foreground=[("active", C["accent"])])
+        s.configure("Adv.TButton", background=C["bg"], foreground="#9499A0", borderwidth=0, padding=0)
+        s.map("Adv.TButton", background=[("active", C["bg"])], foreground=[("active", C["muted"])])
         # 勾選框：clam 主題勾選時畫 ✕，改成自己畫的圖：未勾＝白底灰框，勾選＝綠底白勾，停用時變淡
         imgs = self.check_images()
         s.element_create("Green.Checkbutton.indicator", "image", imgs["off"],
@@ -431,6 +463,7 @@ class App(tk.Tk):
             s.configure(st, font=f["body"])
         s.configure("Accent.TButton", font=f["h2"])
         s.configure("Link.TButton", font=f["body"])
+        s.configure("Adv.TButton", font=f["tiny"])
         s.configure("H1.TLabel", font=f["h1"], background=C["card"], foreground=C["text"])
         s.configure("H2.TLabel", font=f["h2"], background=C["card"], foreground=C["text"])
         s.configure("Hero.TLabel", font=f["hero"], background=C["card"], foreground=C["accent"])
@@ -625,10 +658,21 @@ class App(tk.Tk):
         nxt = ttk.Button(foot, text=self.T("next") + "  →", style="Accent.TButton", command=self.entry_next)
         upd = lambda: nxt.state(["!disabled"] if self.agree.get() else ["disabled"])
         ttk.Checkbutton(body, text=self.T("agree"), variable=self.agree, command=upd).pack(anchor="w")
-        ttk.Checkbutton(body, text=self.T("test_mode"), variable=self.test_mode,
-                        command=self.on_test_mode).pack(anchor="w", pady=(self.px(4), 0))
         nxt.pack(side="right")
+        # 開發者測試模式藏在「進階設定 → 開發者選項」第二層選單，免得一般使用者誤點
+        adv = ttk.Button(foot, text=self.T("advanced"), style="Adv.TButton", cursor="hand2", width=0)
+        adv.config(command=lambda: self.advanced_menu(adv))
+        adv.pack(side="left", anchor="s")
         upd()
+
+    def advanced_menu(self, anchor):
+        if getattr(self, "_adv_menu", None): self._adv_menu.destroy()
+        m = self._adv_menu = tk.Menu(self, tearoff=0, font=self.fonts["small"])
+        dev = tk.Menu(m, tearoff=0, font=self.fonts["small"])
+        dev.add_checkbutton(label=self.T("test_mode"), variable=self.test_mode, command=self.on_test_mode)
+        m.add_cascade(label=self.T("developer"), menu=dev)
+        m.update_idletasks()   # 按鈕貼著視窗底部，選單往上彈才不會跑出視窗
+        m.tk_popup(anchor.winfo_rootx(), anchor.winfo_rooty() - m.winfo_reqheight())
 
     def on_test_mode(self):
         self.set_title()
@@ -640,6 +684,7 @@ class App(tk.Tk):
             self.run_logged = True
             if self.first_run: self.log_event("install")
             self.log_event("run")
+        self.left_entry = True
         self.show_email()
 
     # ── 頁 3：網路檢查（頻寬門檻 + VPN；只有參加抽獎才擋） ─────────────
@@ -1096,6 +1141,7 @@ class App(tk.Tk):
         """測速中途停止：確認後直接結束程式（背景測速執行緒會一起結束，不發送任何資料）"""
         if self.testing and not messagebox.askyesno(self.T("stop_q_title"), self.T("stop_q"), parent=self):
             return
+        self.apply_update_on_exit()
         self.destroy()
         os._exit(0)
 
@@ -1249,6 +1295,7 @@ class App(tk.Tk):
         """關閉程式（感謝頁的「關閉」、視窗的 ✕）：報告已上傳的話先刪掉本機的結果"""
         if getattr(self, "sent", False):
             self.cleanup_local()
+        self.apply_update_on_exit()
         self.destroy()
 
     def cleanup_local(self):

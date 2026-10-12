@@ -37,7 +37,7 @@ HOW IT IS USED
 • Data is sent to the developer's Google account (Google Apps Script, Gmail, Google Drive / Sheets). It is not sold or shared with third parties.
 
 SERVICES THIS APP CONTACTS DURING THE TEST
-Bilibili, ipinfo.io, ip-api.com and proxycheck.io (VPN check), Cloudflare (speed.cloudflare.com) or Linode speed-test servers, Google Public DNS (dns.google), and Google Apps Script (usage log, invite code check, and the report when you click "Send").
+Bilibili, ipinfo.io and ip-api.com (VPN check), Cloudflare (speed.cloudflare.com) or Linode speed-test servers, Google Public DNS (dns.google), and Google Apps Script (usage log, invite code check, and the report when you click "Send").
 
 You can stop the test at any time; no test results are sent unless you click "Send". After a successful upload, the local copy of the results is deleted when you close the app. To have your data deleted, contact the developer via the extension's support page:
 {support}
@@ -60,6 +60,13 @@ S = {
                   "en": "Developer test mode (no real test, 5-second fake progress)",
                   "ja": "開発者テストモード（実測せず、5 秒の疑似進行のみ）",
                   "ko": "개발자 테스트 모드 (실제 측정 없음, 5초 가짜 진행)"},
+    "advanced": {"zh-TW": "進階設定", "zh-CN": "高级设置", "en": "Advanced settings", "ja": "詳細設定", "ko": "고급 설정"},
+    "developer": {"zh-TW": "開發者選項", "zh-CN": "开发者选项", "en": "Developer options", "ja": "開発者オプション",
+                  "ko": "개발자 옵션"},
+    "updating": {"zh-TW": "正在更新到 v{v}，完成後會自動重新開啟…", "zh-CN": "正在更新到 v{v}，完成后会自动重新打开…",
+                 "en": "Updating to v{v}. The app will reopen automatically…",
+                 "ja": "v{v} に更新しています。完了すると自動で再起動します…",
+                 "ko": "v{v}(으)로 업데이트하는 중입니다. 완료되면 자동으로 다시 열립니다…"},
     "next": {"zh-TW": "下一步", "zh-CN": "下一步", "en": "Next", "ja": "次へ", "ko": "다음"},
     "back": {"zh-TW": "上一步", "zh-CN": "上一步", "en": "Back", "ja": "戻る", "ko": "이전"},
     "close": {"zh-TW": "關閉", "zh-CN": "关闭", "en": "Close", "ja": "閉じる", "ko": "닫기"},

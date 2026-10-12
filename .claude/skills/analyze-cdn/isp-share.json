@@ -11,7 +11,8 @@
       "中華電信 2025 Q1 財報：寬頻接取 443 萬戶（HiNet 375 萬）；NCC 全台寬頻用戶約 736 萬 → 約 60%",
       "大大寬頻（7901）2025 年報：寬頻用戶 18.37 萬戶 → 約 2.5%（報告裡的 AS18419 DaDa Broadband）",
       "Opensignal《台灣固網寬頻體驗》2024-06（連線占比，資料期間 2024-02 起 90 天）：中華電信約 55%、中嘉約 15%、凱擘約 9%、台灣寬頻通訊約 5%。NCC 不公布各業者寬頻用戶數，中嘉／凱擘／TBC／台灣大寬頻沒有更新的拆分資料，仍沿用這份比例（2026-10 查證）",
-      "凱擘 2026-09 工商時報：總用戶約 116 萬（含有線電視，寬頻拆不出）；中嘉寬頻舊估約 50 萬戶"
+      "凱擘 2026-09 工商時報：總用戶約 116 萬（含有線電視，寬頻拆不出）；中嘉寬頻舊估約 50 萬戶",
+      "ASN 歸屬（2026-10 查 APNIC／bgp.he.net）：AS131596 TBCNET = 台灣寬頻通訊；AS24165 UBBNET 聯合寬頻 登記為 TFN Media（台灣大寬頻）；AS18049 TINP 部分網段登記為 New Century InfoComm（新世紀資通，遠傳集團）→ **推測** 歸遠傳。So-net（AS18182）、Extra-Lan（AS18429）是小 ISP，用 other_each"
     ],
     "other_each": 0.02,
     "isps": [
@@ -47,7 +48,9 @@
         "match": [
           "AS9416",
           "Hoshin Multimedia",
-          "Taiwan Broadband Communications"
+          "Taiwan Broadband Communications",
+          "AS131596",
+          "TBCNET"
         ]
       },
       {
@@ -56,7 +59,9 @@
         "match": [
           "AS9924",
           "Taiwan Fixed Network",
-          "Taiwan Mobile"
+          "Taiwan Mobile",
+          "AS24165",
+          "Union Broadband"
         ]
       },
       {
@@ -66,7 +71,10 @@
           "AS4780",
           "Digital United",
           "AS9674",
-          "Far EastTone"
+          "Far EastTone",
+          "AS18049",
+          "Taiwan Infrastructure Network",
+          "New Century InfoComm"
         ]
       },
       {
@@ -103,7 +111,9 @@
           "AS3758",
           "AS7473",
           "Singtel",
-          "SingNet"
+          "SingNet",
+          "AS9506",
+          "Singapore Telecommunications"
         ]
       },
       {
@@ -257,16 +267,16 @@
     ]
   },
   "AU": {
-    "asof": "2022-03",
+    "asof": "2025-12",
     "sources": [
-      "ACCC NBN Wholesale Market Indicators Report 2022-03（最後一次能公開取得各 RSP 百分比）：Telstra 43.7%、TPG 23.3%、Optus 13.9%、Vocus 7.3%、Aussie Broadband 6.1%。2025-12 與 2026-03 季報存在但網頁無法抓取，趨勢是 Telstra 緩降、小型 RSP 上升",
+      "ACCC NBN Wholesale Market Indicators（2026-03 發布，資料至 2025-12-31，住宅 NBN 882 萬）：Telstra 36.0%（含 Belong）、TPG 17.9%、Optus 12.3%、Vocus 10.0%、Aussie Broadband 8.8%。ACCC 網頁擋爬蟲，數字取自轉引的 ozbroadbandreview.com（2026）；ACCC《Communications market report 2024–25》（2025-06）：Telstra 34%、TPG 18%、Optus 12%，量級一致",
       "Telstra 自家 HFC／固網也歸 Telstra；AS1221 Telstra"
     ],
     "other_each": 0.02,
     "isps": [
       {
         "name": "Telstra",
-        "share": 0.42,
+        "share": 0.36,
         "match": [
           "AS1221",
           "Telstra",
@@ -275,7 +285,7 @@
       },
       {
         "name": "TPG（含 iiNet、Internode、Vodafone）",
-        "share": 0.23,
+        "share": 0.179,
         "match": [
           "AS7545",
           "TPG",
@@ -288,7 +298,7 @@
       },
       {
         "name": "Optus",
-        "share": 0.14,
+        "share": 0.123,
         "match": [
           "AS4804",
           "Optus"
@@ -296,7 +306,7 @@
       },
       {
         "name": "Vocus（Dodo、iPrimus）",
-        "share": 0.07,
+        "share": 0.1,
         "match": [
           "AS4826",
           "Vocus",
@@ -306,7 +316,7 @@
       },
       {
         "name": "Aussie Broadband",
-        "share": 0.07,
+        "share": 0.088,
         "match": [
           "AS4764",
           "Aussie Broadband"
@@ -375,6 +385,62 @@
         "match": [
           "AS22773",
           "Cox Communications"
+        ]
+      }
+    ]
+  },
+  "GB": {
+    "asof": "2025-03",
+    "sources": [
+      "Point Topic UK 零售固網寬頻 2025 Q1（估計，總計 2,890 萬）：BT 集團（含 EE、Plusnet）約 31%、Sky 約 20%（580 萬）、Virgin Media O2 約 20%（570 萬）、TalkTalk 約 11%（310 萬）、Vodafone 約 5.5%（160 萬）、altnet 合計約 10%；Point Topic 2025 Q4：總數持平 2,896 萬",
+      "Uswitch 2025-03：BT 集團 880 萬以上、Sky 577 萬、Virgin Media 574 萬，量級一致；Ofcom 沒有公開各業者百分比",
+      "altnet（Hyperoptic、Community Fibre、Gigaclear 等）與學生宿舍網路（ASK4 AS41230）用 other_each"
+    ],
+    "other_each": 0.02,
+    "isps": [
+      {
+        "name": "BT 集團（BT、EE、Plusnet）",
+        "share": 0.31,
+        "match": [
+          "AS2856",
+          "British Telecommunications",
+          "BT Public Internet",
+          "Plusnet",
+          "AS5378",
+          "EE Limited"
+        ]
+      },
+      {
+        "name": "Sky Broadband",
+        "share": 0.2,
+        "match": [
+          "AS5607",
+          "Sky UK",
+          "Sky Broadband"
+        ]
+      },
+      {
+        "name": "Virgin Media O2",
+        "share": 0.2,
+        "match": [
+          "AS5089",
+          "Virgin Media"
+        ]
+      },
+      {
+        "name": "TalkTalk",
+        "share": 0.11,
+        "match": [
+          "AS13285",
+          "TalkTalk"
+        ]
+      },
+      {
+        "name": "Vodafone UK",
+        "share": 0.055,
+        "match": [
+          "AS25135",
+          "Vodafone Limited"
         ]
       }
     ]

@@ -831,7 +831,7 @@ def cmd_report(country, args):
     vc = env.get("vpn_check") or {}
     if vc:
         w("| VPN 檢查 | " + ("⚠ " + "；".join(vc.get("signals") or []) if vc.get("vpn") else "未偵測到 VPN／代理")
-          + "（ip-api、proxycheck、本機網卡、時區） |")
+          + "（ip-api、本機網卡、時區） |")
     if bw:
         w(f"| 總頻寬（{bw.get('source') or 'cloudflare'}） | 下載 {bw.get('down_mbps')} Mbps、上傳 {bw.get('up_mbps')} Mbps、HTTPS 請求延遲 "
           f"{bw.get('latency_ms')} ms" + (f"（{bw['err']}）" if bw.get("err") else "") + " |")

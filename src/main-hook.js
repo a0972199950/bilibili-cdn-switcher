@@ -102,9 +102,58 @@
 
   var debug = {
     currentCdn: null, pickVideoHost: null, pickAudioHost: null,
-    lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null,
-    speedBps: 0, speedIdle: false, playInfoPinned: 0
+    lastSource: null, rewriteCount: 0, segRewriteCount: 0, lastQn: null, lastError: null, lastErrorAt: 0,
+    speedBps: 0, speedIdle: false, playInfoPinned: 0,
+    playurlGiven: null, // playurl 原本給的第一個 video host（還沒被我們換掉的）：回報時跟「設定」「生效」三方比對
+    lastSegMs: 0, // 最近一個分段的下載耗時（粗略延遲）
+    hookAt: 0, playurlBeforeHook: false, // hook 裝好的時間點；裝好前頁面是否已經打過 playurl（競態）
+    spaNav: 0
   };
+
+  // ---------------- 問題回報用的事件日誌 / 採樣 ----------------
+  // 送給 bridge（ISOLATED world）→ background 寫進 storage.session，只留 10 分鐘。這裡只負責「發生了什麼」，
+  // 不存任何東西。疊層也留最近 3 筆給使用者看。分段 URL 只記 host 與檔名，簽名參數一律不帶。
+  var recentEvents = [];
+  function jlog(k, d) {
+    if (window.top !== window) return; // iframe 裡的播放器（嵌入/預覽）不記，免得淹掉主頁的紀錄
+    d = d || {};
+    try { window.postMessage({ __cdnSwitcher: 1, dir: "journal", payload: { t: Date.now(), k: k, d: d } }, "*"); } catch (e) {}
+    var parts = [];
+    for (var key in d) if (d[key] != null && d[key] !== "") parts.push(key + "=" + (Array.isArray(d[key]) ? d[key].join("|") : d[key]));
+    recentEvents.push({ t: Date.now(), s: k + " " + parts.join(" ") });
+    if (recentEvents.length > 3) recentEvents.shift();
+  }
+  function shortHost(h) { return (h || "").replace(/\.bilivideo\.(com|cn)$/i, "").replace(/\.akamaized\.net$/i, "@akam"); }
+  function segName(url) { try { var u = new URL(url, location.href); return u.hostname + u.pathname.replace(/^.*\//, "/"); } catch (e) { return ""; } }
+  function pageTypeOf() {
+    var p = location.pathname;
+    if (location.hostname === "live.bilibili.com") return "live";
+    if (/^\/bangumi\//.test(p)) return "bangumi";
+    if (/^\/cheese\//.test(p)) return "cheese";
+    if (/^\/video\//.test(p)) return "video";
+    if (/^\/(list|medialist|festival|blackboard)\//.test(p)) return "list";
+    return "other";
+  }
+  function pageInfo() {
+    var p = location.pathname, m, info = { type: pageTypeOf(), path: p, top: window.top === window ? 1 : 0 };
+    if ((m = /\/video\/(BV[0-9A-Za-z]+|av\d+)/.exec(p))) info.bvid = m[1];
+    if ((m = /\/(?:bangumi|cheese)\/play\/(ep\d+|ss\d+)/.exec(p))) info.epid = m[1];
+    if (info.type === "live" && (m = /^\/(\d+)/.exec(p))) info.room = m[1];
+    try {
+      var st = window.__INITIAL_STATE__;
+      var cid = st && ((st.videoData && st.videoData.cid) || (st.epInfo && st.epInfo.cid));
+      if (cid) info.cid = cid;
+    } catch (e) {}
+    try { var pv = window.player && typeof window.player.getVersion === "function" && window.player.getVersion(); if (pv) info.player = String(pv); } catch (e) {}
+    return info;
+  }
+  function forwardBufferSec(v) {
+    try {
+      var bf = v.buffered, t = v.currentTime;
+      for (var i = 0; i < bf.length; i++) if (t >= bf.start(i) - 0.1 && t <= bf.end(i)) return Math.max(0, bf.end(i) - t);
+    } catch (e) {}
+    return 0;
+  }
   // DASH 会把所有画质塞在同一次 playurl 回应，之后使用者切画质是「同一份清单里换 representation」、
   // 不再打 playurl —— 所以不能只信 d.quality（那是预设画质，切了不会变）。
   // 改成：记下每个 video representation 的路径→画质代码，再看「实际正在下载的分段」是哪一档，得出当前画质。
@@ -158,7 +207,7 @@
   function addSample(bytes, ms, direct) {
     if (!(bytes > 0) || !(ms > 0)) return;
     var now = Date.now();
-    if (direct) lastDirectAt = now;
+    if (direct) { lastDirectAt = now; debug.lastSegMs = ms; }
     else if (now - lastDirectAt < 30000) return;
     speedSamples.push({ at: now, bytes: bytes, ms: ms });
     lastSampleAt = now;
@@ -271,6 +320,7 @@
   var askToastOn = false; // 「皆无法播放」询问弹窗显示中：播放一旦恢复就自动收掉
   var backupHosts = []; // 最近一次 playurl 解析到的候选 host（base + backupUrl），依出现顺序
   var pendingBackupHosts = null; // rewriteRoot 期间收集用；有解析到才整批取代 backupHosts
+  var pcdnSeen = {}; // 日誌：同一個 PCDN host 只記一次
 
   // 测试用开关（无任何 UI 入口，不影响一般用户）：在 DevTools console（页面 context）执行
   //   __cdnSwitcherSimulateStall()       → 接下来 60 秒把影片当成卡住（连播放器状态检查都略过，
@@ -312,6 +362,7 @@
   }
 
   function resetFallbackState() {
+    if (FALLBACK.attempts) jlog("fb.reset", { reason: "newPlayurl" });
     FALLBACK.attempts = 0; FALLBACK.tried = {};
     stallState.lastTime = -1; stallState.stuckSince = null;
   }
@@ -321,6 +372,7 @@
   function noteBackupHost(url) {
     if (pendingBackupHosts == null || !url) return;
     var h = hostOf(url);
+    if (h && h.indexOf(".mcdn.") >= 0 && !pcdnSeen[h]) { pcdnSeen[h] = 1; jlog("cdn.pcdn", { host: h }); }
     if (!h || !CDN_HOST_RE.test(h) || h.indexOf(".mcdn.") >= 0) return;
     if (pendingBackupHosts.indexOf(h) < 0) pendingBackupHosts.push(h);
   }
@@ -360,6 +412,7 @@
     var next = FALLBACK.attempts === 1 ? pickFallbackHost() : null;
     if (next) {
       debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> " + next;
+      jlog("fb.switch", { n: FALLBACK.attempts, reason: reason, from: shortHost(effHost()), to: shortHost(next) });
       showToast(MSGS.mhToastAutoSwitched.replace("{host}", next));
       applyAutoHost(next);
       return;
@@ -372,12 +425,14 @@
 
   function askBackupSwitch(reason) {
     debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> ask-user";
+    jlog("fb.switch", { n: FALLBACK.attempts, reason: reason, from: shortHost(effHost()), to: "ask-user", backups: backupHosts.length });
     askToastOn = true;
     showToast(MSGS.mhToastAllFailed, {
       persistent: true, // 不自动消失，让用户自己按「重載」或「關閉」
       actionText: MSGS.mhToastReloadBackup,
-      onAction: function () { applyAutoHost("backup"); },
-      cancelText: MSGS.mhToastClose
+      onAction: function () { jlog("ui.askToast", { choice: "switch" }); applyAutoHost("backup"); },
+      cancelText: MSGS.mhToastClose,
+      onCancel: function () { jlog("ui.askToast", { choice: "close" }); }
     });
   }
 
@@ -426,9 +481,9 @@
           if (!v.paused) {
             // 播放恢复走针：收掉「皆无法播放」的询问弹窗（它是 persistent 的，不会自己消失）；
             // 连续顺播 30 秒代表线路已恢复，重置回退额度，之后再卡还能再自动回退
-            if (askToastOn) { askToastOn = false; hideToast(); }
+            if (askToastOn) { askToastOn = false; hideToast(); jlog("ui.askToast", { choice: "resumed" }); }
             if (progressSince == null) progressSince = Date.now();
-            else if (now - progressSince > 30000 && FALLBACK.attempts) { FALLBACK.attempts = 0; FALLBACK.tried = {}; }
+            else if (now - progressSince > 30000 && FALLBACK.attempts) { FALLBACK.attempts = 0; FALLBACK.tried = {}; jlog("fb.reset", { reason: "progress30s" }); }
           }
           return;
         }
@@ -442,9 +497,13 @@
         }
       }
     }
+    stallState.limit = limit;
     if (stallState.stuckSince == null) stallState.stuckSince = Date.now();
     else if (Date.now() - stallState.stuckSince > limit) {
       stallState.stuckSince = null;
+      stallState.hit = true;
+      var sv = getMainVideo();
+      jlog("fb.stall", { phase: "hit", limit: limit / 1000, rs: sv ? sv.readyState : -1, paused: sv ? sv.paused : "", buf: sv ? forwardBufferSec(sv).toFixed(1) : "" });
       triggerFallback(simulating ? "simulated" : "stalled");
     }
   }
@@ -456,6 +515,9 @@
     return !!h && CDN_HOST_RE.test(h) && h !== effHost();
   }
   function swapSegHost(url) { return replaceHost(url, effHost()); }
+  var swapLogged = false; // 每份 playurl 之後第一個被改寫的分段記一筆，證明分段層改寫真的生效
+  function noteSwap(url) { if (!swapLogged) { swapLogged = true; jlog("cdn.segFirst", { host: shortHost(effHost()), seg: segName(url).replace(/^[^/]*/, "") }); } }
+  function trackOf(url) { return typeof videoQnByPath[pathOf(url)] === "number" ? "v" : "a"; }
 
   // ---------------- 直播（live.bilibili.com）----------------
   // 实测结论：
@@ -573,6 +635,7 @@
     if (live.autoRoute === "ov" || liveRouteOf(cfg) === "ov") return;
     live.autoRoute = "ov";
     liveFb.lastAt = Date.now();
+    jlog("fb.switch", { live: 1, from: failedRoute, to: "ov" });
     showToast(MSGS.mhToastLiveFallback);
     renderOverlay(); postDebug();
   }
@@ -737,6 +800,7 @@
     if (!Array.isArray(backups)) backups = [];
     backups = backups.map(asStr).filter(Boolean);
     if (!base && !backups.length) return null;
+    if (pendingBackupHosts && !pendingBackupHosts.length && base) debug.playurlGiven = hostOf(base); // 第一個 track（video）原本的 host
     noteBackupHost(base);
     for (var bi = 0; bi < backups.length; bi++) noteBackupHost(backups[bi]);
     var ordered;
@@ -793,6 +857,8 @@
       if (changed) {
         if (pendingBackupHosts.length) backupHosts = pendingBackupHosts;
         debug.lastSource = source; debug.rewriteCount++; resetFallbackState(); renderOverlay(); postDebug();
+        swapLogged = false;
+        jlog("cdn.rewrite", { src: source, orig: shortHost(debug.playurlGiven), to: effHost() === "backup" ? "backup" : shortHost(effHost()), backups: backupHosts.map(shortHost), dash: d && d.dash ? 1 : 0 });
       }
       pendingBackupHosts = null;
       return changed;
@@ -846,7 +912,7 @@
           if (isSwappableSeg(url)) {
             var nu = swapSegHost(url);
             if (nu !== url) {
-              debug.segRewriteCount++;
+              debug.segRewriteCount++; noteSwap(nu);
               if (typeof input === "string") input = nu;
               else { try { input = new Request(nu, input); } catch (e) {} }
             }
@@ -867,11 +933,17 @@
           var reqUrl = typeof input === "string" ? input : (input && input.url) || url;
           return _fetch.call(this, input, init).then(function (resp) {
             resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
-            if (!resp.ok && shouldFallbackOnStatus(resp.status, reqUrl)) maybeFallback("http-" + resp.status);
+            if (!resp.ok) {
+              jlog("net.http", { status: resp.status, host: shortHost(hostOf(reqUrl)), track: trackOf(reqUrl), expired: isExpiredUrl(reqUrl) ? 1 : 0 });
+              if (shouldFallbackOnStatus(resp.status, reqUrl)) maybeFallback("http-" + resp.status);
+            }
             return resp;
           }, function (err) {
             // 播放器 seek / 切画质会主动 abort 在飞的分段请求，不是线路问题
-            if (!(err && err.name === "AbortError") && isCurrentSegHost(hostOf(reqUrl))) maybeFallback("network-error");
+            if (!(err && err.name === "AbortError")) {
+              jlog("net.error", { host: shortHost(hostOf(reqUrl)), track: trackOf(reqUrl), msg: String(err && err.message || err).slice(0, 60) });
+              if (isCurrentSegHost(hostOf(reqUrl))) maybeFallback("network-error");
+            }
             throw err;
           });
         }
@@ -897,7 +969,7 @@
               if (xt) { url = replaceHost(xli.u.href, xt); debug.segRewriteCount++; }
             }
           }
-          if (ACTIVE && typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; }
+          if (ACTIVE && typeof url === "string" && isSwappableSeg(url)) { url = swapSegHost(url); debug.segRewriteCount++; noteSwap(url); }
           this.__cdnSwitcherUrl = url;
           this.__cdnSwitcherIsSeg = typeof url === "string" && isSegUrl(url);
         } catch (e) {}
@@ -914,10 +986,12 @@
               if (self.response instanceof ArrayBuffer) bytes = self.response.byteLength;
               else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
               addSample(bytes, Date.now() - t0, true);
+              if (self.status >= 400) jlog("net.http", { status: self.status, host: shortHost(hostOf(url)), track: trackOf(url), expired: isExpiredUrl(url) ? 1 : 0 });
               if (shouldFallbackOnStatus(self.status, self.__cdnSwitcherUrl || "")) maybeFallback("http-" + self.status);
             } catch (e) {}
           });
           self.addEventListener("error", function () {
+            jlog("net.error", { host: shortHost(hostOf(url)), track: trackOf(url), xhr: 1 });
             if (isCurrentSegHost(hostOf(self.__cdnSwitcherUrl || ""))) maybeFallback("network-error");
           });
         }
@@ -955,13 +1029,22 @@
   }
 
   installHooks(); // 速度量测永远启用；CDN 改写只在 ACTIVE 时生效
+  debug.hookAt = Math.round(performance.now());
+  try {
+    // hook 裝好前頁面已經打過 playurl → 那份 playurl 沒被改寫（document_start 通常趕得上，趕不上就是競態 bug）
+    debug.playurlBeforeHook = performance.getEntriesByType("resource").some(function (e) { return PLAYURL_RE.test(e.name || ""); });
+  } catch (e) {}
+  jlog("page.hook", { active: ACTIVE ? 1 : 0, playinfo: window.__playinfo__ ? 1 : 0, ms: debug.hookAt, playurlBefore: debug.playurlBeforeHook ? 1 : 0 });
 
   // 主播放器 video 的播放错误（如解码/来源错误）也视为目前 CDN 播不动的讯号；
   // 页面上 hover 预览等其他 video 的错误与线路无关，不理会
   window.addEventListener("error", function (e) {
     try {
       var t = e && e.target;
-      if (t && t.tagName === "VIDEO" && t === getMainVideo()) triggerFallback("video-error");
+      if (t && t.tagName === "VIDEO" && t === getMainVideo()) {
+        jlog("play.error", { code: t.error && t.error.code, msg: (t.error && t.error.message || "").slice(0, 80) });
+        triggerFallback("video-error");
+      }
     } catch (err) {}
   }, true);
 
@@ -975,9 +1058,13 @@
     lastSegUrl = url;
     maybeScheduleAutoTest();
     var q = videoQnByPath[pathOf(url)]; // 是 video 分段才会命中；audio 分段不动画质
-    if (typeof q === "number") lastVideoQn = q;
+    if (typeof q === "number" && q !== lastVideoQn) { if (lastVideoQn != null) jlog("play.qn", { from: lastVideoQn, to: q }); lastVideoQn = q; }
     var h = hostOf(url);
-    if (h && h !== debug.currentCdn) { debug.currentCdn = h; renderOverlay(); postDebug(); }
+    if (h && h !== debug.currentCdn) {
+      // 換到的 host 不是我們要的 → 是播放器自己換的（例如走了 backupUrl），不是擴充換的
+      jlog("cdn.hostChange", { from: shortHost(debug.currentCdn), to: shortHost(h), by: (ACTIVE && isHostMode() && h !== effHost()) ? "player" : "ext" });
+      debug.currentCdn = h; renderOverlay(); postDebug();
+    }
   }
   try {
     var po = new PerformanceObserver(function (list) {
@@ -1155,6 +1242,7 @@
     var myGen = ++speedTestGen;
     autoTestRunning = true;
     var from = cfg.cdnHost, best = null, i = 0;
+    jlog("ui.speedtest", { phase: "start", kind: "auto-" + reason, hosts: hosts.length });
     function end(clearAbort) {
       autoTestRunning = false;
       if (clearAbort) speedTestAbort = null; // 被手动测速取代时 speedTestAbort 已是对方的，不能动
@@ -1163,6 +1251,7 @@
     (function next() {
       if (myGen !== speedTestGen) { end(false); return; } // 被手动测速取代、或使用者略过
       if (i >= hosts.length) {
+        jlog("ui.speedtest", { phase: "done", kind: "auto-" + reason, best: best ? shortHost(best.host) : "", kbps: best ? Math.round(best.bps / 1024) : "" });
         if (best && best.host !== cfg.cdnHost && (country || cfg.autoSpeedSwitch)) {
           postAutoTest("autotest-done", { host: best.host, from: country ? from : cfg.cdnHost, reason: reason });
         }
@@ -1439,6 +1528,7 @@
     if (d.dir === "autotest-stop") { stopAutoTest(); return; }
     if (d.dir === "livetest-run") { runLiveSpeedTest(d.payload && d.payload.limits); return; }
     if (d.dir === "debug-poll") { probeLiveAvail(); return; }
+    if (d.dir === "debug-flush") { updateSpeed(); postDebug(); postSample(); return; } // 回報頁開啟：立刻給一份最新快照與採樣
     if (d.dir === "messages" && d.payload) { for (var mk in DEFAULT_MSGS) if (d.payload[mk]) MSGS[mk] = d.payload[mk]; return; }
   });
 
@@ -1451,6 +1541,7 @@
     try {
       var p = window.player;
       if (!p || typeof p.reload !== "function") return false;
+      jlog("play.state", { ev: "reload", by: "player" });
       var t = 0;
       try { t = (typeof p.getCurrentTime === "function" ? p.getCurrentTime() : (document.querySelector("video") || {}).currentTime) || 0; } catch (e) {}
       p.reload();
@@ -1472,6 +1563,7 @@
   function fullReload() {
     try {
       if (!WATCH_RE.test(location.pathname) && !document.querySelector("video")) return;
+      jlog("play.state", { ev: "reload", by: "page" });
       var url = new URL(location.href);
       var v = getMainVideo();
       if (v && isFinite(v.currentTime) && v.currentTime > 1) url.searchParams.set("t", String(Math.floor(v.currentTime)));
@@ -1487,6 +1579,7 @@
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost(), beforeLiveSig = liveSig(cfg);
     var beforePending = !!cfg.autoTestPending;
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
+    if (beforeSig !== effSig(cfg) || beforeLiveSig !== liveSig(cfg)) jlog("page.cfg", { sig: effSig(cfg), live: liveSig(cfg) });
     // 影片播放中切换国家：不等下一支影片，这支就排程测一次（有样本才会真的开始）
     if (cfg.autoTestPending && !beforePending) maybeScheduleAutoTest();
     // 中途关掉「失败自动切换」：收掉正在显示的「皆无法播放」询问弹窗（persistent，不会自己消失）
@@ -1566,6 +1659,7 @@
       "cdn=" + (live.activeHost || "-"),
       "proto=" + (live.protocol || "-") + "  cluster=" + (live.cluster || "-") + "  orig=" + (live.origRoute || "-") + "  seg=" + debug.segRewriteCount + "  pin=" + debug.playInfoPinned
     );
+    appendCommonDebugLines(lines);
     return lines.join("\n");
   }
   function buildDebugText() {
@@ -1579,7 +1673,19 @@
       "v=" + (debug.pickVideoHost || "-") + "  a=" + (debug.pickAudioHost || "-"),
       "src=" + (debug.lastSource || "-") + "  rw=" + debug.rewriteCount + "  seg=" + debug.segRewriteCount + "  qn=" + qnText() + "  spd=" + speedText()
     );
+    appendCommonDebugLines(lines);
     return lines.join("\n");
+  }
+  // 疊層兩種頁面共用的尾段：緩衝／卡住計時／回退額度、最後錯誤（距今秒數）、最近 3 筆事件
+  function appendCommonDebugLines(lines) {
+    var v = getMainVideo(), now = Date.now();
+    var st = stallState.stuckSince != null ? Math.round((now - stallState.stuckSince) / 1000) + "s/" + Math.round((stallState.limit || 8000) / 1000) + "s" : "-";
+    var cd = Math.max(0, FALLBACK_COOLDOWN_MS - (now - FALLBACK.lastSwitchAt));
+    lines.push("buf=" + (v ? forwardBufferSec(v).toFixed(1) + "s" : "-") + "  rs=" + (v ? v.readyState : "-") + (v && v.paused ? " paused" : "") +
+      "  stall=" + st + "  fb=" + FALLBACK.attempts + "/" + FALLBACK_MAX_ATTEMPTS + (FALLBACK.lastSwitchAt && cd > 0 ? " cd=" + Math.round(cd / 1000) + "s" : "") +
+      "  lat=" + (debug.lastSegMs ? debug.lastSegMs + "ms" : "-"));
+    if (debug.lastError) lines.push("err=" + debug.lastError + (debug.lastErrorAt ? " (" + Math.round((now - debug.lastErrorAt) / 1000) + "s ago)" : ""));
+    for (var i = 0; i < recentEvents.length; i++) lines.push("-" + Math.round((now - recentEvents[i].t) / 1000) + "s  " + recentEvents[i].s);
   }
   function renderOverlay() {
     if (window.top !== window) return;
@@ -1610,12 +1716,61 @@
         currentCdn: debug.currentCdn, pickVideoHost: debug.pickVideoHost, pickAudioHost: debug.pickAudioHost,
         lastSource: debug.lastSource, rewriteCount: debug.rewriteCount, segRewriteCount: debug.segRewriteCount,
         lastQn: currentQn(), enabled: cfg.enabled, cdnHost: cfg.cdnHost, cdnTarget: cdnTargetLabel(), autoHost: autoHost, lastError: debug.lastError,
-        speedBps: debug.speedBps, speedIdle: debug.speedIdle, live: liveSnapshot()
+        speedBps: debug.speedBps, speedIdle: debug.speedIdle, live: liveSnapshot(),
+        diag: diagSnapshot()
       } }, "*");
     } catch (e) {}
   }
+  // 問題回報用的補充狀態（popup 的 debug 區不顯示，回報頁組快照用）
+  function diagSnapshot() {
+    var v = getMainVideo(), now = Date.now();
+    return {
+      page: pageInfo(), spaNav: debug.spaNav,
+      effective: effHost(), playurlGiven: debug.playurlGiven, backups: backupHosts.slice(0, 8),
+      buf: v ? Math.round(forwardBufferSec(v) * 10) / 10 : null, rs: v ? v.readyState : null, paused: v ? v.paused : null, ct: v ? Math.round(v.currentTime) : null,
+      stallSince: stallState.stuckSince, stallLimit: stallState.limit || null,
+      fb: { attempts: FALLBACK.attempts, max: FALLBACK_MAX_ATTEMPTS, cooldownLeft: Math.max(0, FALLBACK_COOLDOWN_MS - (now - FALLBACK.lastSwitchAt)), tried: Object.keys(FALLBACK.tried) },
+      lastErrorAt: debug.lastErrorAt || null, lastSegMs: debug.lastSegMs || null, lastSegReqAgo: lastSegReqAt ? now - lastSegReqAt : null, lastSampleAgo: lastSampleAt ? now - lastSampleAt : null,
+      hookAt: debug.hookAt, playurlBeforeHook: debug.playurlBeforeHook, autoFallback: cfg.autoFallback, active: ACTIVE, dash: Object.keys(videoQnByPath).length > 0
+    };
+  }
+  // 每 10 秒一列的採樣（只在有媒體資料時）：回報頁用它看「慢是漸變還是突變」
+  function postSample() {
+    var v = getMainVideo();
+    if (!v || v.readyState === 0 || window.top !== window) return;
+    try {
+      window.postMessage({ __cdnSwitcher: 1, dir: "sample", payload: {
+        t: Date.now(), spd: Math.round(debug.speedBps), idle: debug.speedIdle ? 1 : 0, buf: Math.round(forwardBufferSec(v) * 10) / 10, qn: currentQn(),
+        rs: v.readyState, paused: v.paused ? 1 : 0, host: shortHost(debug.currentCdn), lat: debug.lastSegMs || 0
+      } }, "*");
+    } catch (e) {}
+  }
+  // 主 video 元素的播放事件（play / pause / seeking / ended / waiting）：player.reload() 會換元素，每個新元素掛一次
+  var trackedVideo = null;
+  function trackVideoEvents() {
+    var v = getMainVideo();
+    if (!v || v === trackedVideo) return;
+    trackedVideo = v;
+    ["play", "pause", "seeking", "ended", "waiting"].forEach(function (ev) {
+      v.addEventListener(ev, function () { if (getMainVideo() === v) jlog("play.state", { ev: ev, ct: Math.round(v.currentTime) }); });
+    });
+  }
+  var lastHref = location.href, tick = 0, prevErr = null, prevStuck = null;
+  function diagTick() {
+    tick++;
+    if (location.href !== lastHref) { lastHref = location.href; debug.spaNav++; swapLogged = false; jlog("page.nav", pageInfo()); }
+    if (debug.lastError !== prevErr) { prevErr = debug.lastError; debug.lastErrorAt = Date.now(); }
+    var stuck = stallState.stuckSince;
+    if (stuck != null && prevStuck == null) { var sv = getMainVideo(); jlog("fb.stall", { phase: "start", rs: sv ? sv.readyState : -1, paused: sv ? sv.paused : "", buf: sv ? forwardBufferSec(sv).toFixed(1) : "" }); }
+    else if (stuck == null && prevStuck != null && !stallState.hit) jlog("fb.stall", { phase: "clear", after: Math.round((Date.now() - prevStuck) / 1000) + "s" });
+    stallState.hit = false;
+    prevStuck = stuck;
+    trackVideoEvents();
+    if (tick % 10 === 0) postSample();
+  }
+  jlog("page.nav", pageInfo());
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderOverlay);
   else renderOverlay();
-  setInterval(function () { updateSpeed(); checkStall(); renderOverlay(); postDebug(); }, 1000);
+  setInterval(function () { updateSpeed(); checkStall(); diagTick(); renderOverlay(); postDebug(); }, 1000);
 })();

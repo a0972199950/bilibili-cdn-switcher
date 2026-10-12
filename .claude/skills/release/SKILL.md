@@ -1,6 +1,6 @@
 ---
 name: release
-description: 發版流程：選 major/minor/patch、建立 release/x.y.z 分支、把 src/changelog.json 的 unreleased 搬進新版本、更新各商店介紹、打包並用 API 金鑰上傳 Chrome/Edge/Firefox（發布鈕由使用者人工按）、push 分支並打 tag、把 release/ 的產物（離線安裝檔＋CDNSpeedTest.exe）上傳到 GitHub Release、合併回 master。使用者說「發版」「release」「上架新版本」或輸入 /release 時使用。
+description: 發版流程：選 major/minor/patch、建立 release/x.y.z 分支、把 src/changelog.json 的 unreleased 搬進新版本、更新各商店介紹、打包並用 API 金鑰上傳 Chrome/Edge/Firefox（發布鈕由使用者人工按）、push 分支並打 tag、把 release/ 的產物（離線安裝檔＋CDNSpeedTest.exe／.json）上傳到 GitHub Release、合併回 master。使用者說「發版」「release」「上架新版本」或輸入 /release 時使用。
 disable-model-invocation: true
 ---
 
@@ -56,7 +56,8 @@ npm run test:whats-new
 
 - `npm run package` 會先跑 `npm run build`（`dist/` 帶版本號的商店上傳 zip），再清空並重建 `release/`。
 - `dist/` 有追蹤 zip（商店上傳用），慣例是只保留最新兩個版本：刪掉比「上一版」更舊的 `dist/bilibili-cdn-switcher-*-<舊版>.zip`。
-- `release/`（不進版控）：`bilibili-cdn-switcher-<chrome|edge|firefox>.zip`（離線安裝）＋ `CDNSpeedTest.exe`，檔名不帶版本。exe 執行中會打包失敗，請使用者先關掉。四個檔案都要在，少了就停下來。
+- `release/`（不進版控）：`bilibili-cdn-switcher-<chrome|edge|firefox>.zip`（離線安裝）＋ `CDNSpeedTest.exe` ＋ `CDNSpeedTest.json`（exe 的版本與 sha256，已安裝的 exe 靠它自我更新），檔名不帶版本。exe 執行中會打包失敗，請使用者先關掉。五個檔案都要在，少了就停下來。
+- exe 這版有改（`git diff v<上一版> -- tools/cdn-speedtest-app`）卻沒調 `app.py` 的 `APP_VERSION`：已安裝的 exe 不會更新，先問使用者要不要調版號再重新打包。
 - `test:whats-new` 會用真的 Chrome 測更新提示 popup，必須全過。
 - `git add -A` 只加與發版有關的檔案（changelog、manifest、Safari 工程、store/、README、dist/），然後 commit：`release: v<x.y.z>`（本文可簡述這版的功能，不要加 AI 共同作者）。
 
@@ -86,12 +87,12 @@ node scripts/release.mjs notes <x.y.z> > release/NOTES.md
 先把 `release/` 的檔案清單（不含 NOTES.md）與 `release/NOTES.md` 的內容給使用者看，**確認後**才建立（公開動作）：
 
 ```sh
-gh release create v<x.y.z> release/CDNSpeedTest.exe release/bilibili-cdn-switcher-chrome.zip \
+gh release create v<x.y.z> release/CDNSpeedTest.exe release/CDNSpeedTest.json release/bilibili-cdn-switcher-chrome.zip \
   release/bilibili-cdn-switcher-edge.zip release/bilibili-cdn-switcher-firefox.zip \
   --title "v<x.y.z>" --notes-file release/NOTES.md --latest
 ```
 
-- 每個 Release 都附 exe，所以一律設成 Latest：教學文件的 `releases/latest/download/CDNSpeedTest.exe` 才會一直有效。
+- 每個 Release 都附 exe，所以一律設成 Latest：教學文件的 `releases/latest/download/CDNSpeedTest.exe`、exe 自我更新讀的 `releases/latest/download/CDNSpeedTest.json` 才會一直有效。
 - 建立失敗（例如 tag 已存在）就停下來回報；只想補檔案用 `gh release upload v<x.y.z> <檔案> --clobber`。
 
 ## 7. 合併回 master

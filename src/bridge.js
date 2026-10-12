@@ -6,6 +6,8 @@
  *     并用 postMessage 推给 MAIN world。
  *  2) 监听 chrome.storage 变更 → 即时同步给 MAIN。
  *  3) 收集 MAIN 回报的 debug 快照，回应 popup 的查询。
+ *  4) 問題回報：把 MAIN 的事件日誌／採樣轉給 background 存起來、每 5 秒存一份快照；
+ *     回報頁（獨立視窗）開啟時回應「此刻」的快照（CDN_SWITCHER_GET_DEBUG_FRESH）。
  */
 (function () {
   "use strict";
@@ -26,6 +28,18 @@
   };
 
   var latestDebug = null;
+  var isTopFrame = window.top === window;
+
+  // ---- 問題回報：日誌／採樣／快照 → background（單一寫入者，寫進 storage.session）----
+  function toBackground(msg) { try { chrome.runtime.sendMessage(msg, function () { void chrome.runtime.lastError; }); } catch (e) {} }
+  function journal(k, d) { toBackground({ type: "CDN_SWITCHER_JOURNAL", entry: { t: Date.now(), k: k, d: d || {} } }); }
+  var lastSnapAt = 0;
+  function maybeStoreSnapshot(payload) {
+    var now = Date.now();
+    if (now - lastSnapAt < 5000) return;
+    lastSnapAt = now;
+    toBackground({ type: "CDN_SWITCHER_SNAPSHOT", payload: payload, url: location.href.split(/[?#]/)[0] });
+  }
 
   var latestAutoTest = null; // 切换国家后自动测速的进度（autotest-start/progress/end）
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
@@ -121,7 +135,9 @@
     if (ev.source !== window) return;
     var d = ev.data;
     if (!d || d.__cdnSwitcher !== 1) return;
-    if (d.dir === "debug") { latestDebug = d.payload || null; return; }
+    if (d.dir === "debug") { latestDebug = d.payload || null; if (isTopFrame && latestDebug) maybeStoreSnapshot(latestDebug); return; }
+    if (d.dir === "journal" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_JOURNAL", entry: d.payload }); return; }
+    if (d.dir === "sample" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_SAMPLE", row: d.payload }); return; }
     // 切换国家后的自动测速（main-hook 的 reason "country"）：进度给 popup 显示「优化中」；
     // 一开始就把旗标清掉，之后不论结果都不再测
     if (d.dir === "autotest-start" && d.payload) {
@@ -150,6 +166,7 @@
     // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关
     if (d.dir === "autotest-done" && d.payload && d.payload.host) {
       var p = d.payload;
+      journal("ui.speedtest", { phase: "apply", kind: "auto-" + (p.reason || ""), host: p.host, from: p.from });
       try {
         chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost }, function (items) {
           if (items.cdnHost !== p.from) return;
@@ -162,13 +179,17 @@
     if (d.dir === "speedtest-done") {
       speedTest.running = false;
       speedTest.error = (d.payload && d.payload.error) || null;
+      // 手動測速結束：記前三名（影片：bps；直播：起播毫秒）與錯誤，回報頁用來判斷「節點是測速選錯的」還是「選對了但現在壞了」
+      var rs = speedTest.results.slice().filter(function (r) { return r && !r.error; });
+      rs.sort(function (a, b) { return (b.bps || 0) - (a.bps || 0) || ((a.startup && a.startup.avg) || 9e9) - ((b.startup && b.startup.avg) || 9e9); });
+      journal("ui.speedtest", { phase: "done", kind: speedTest.total === 4 && rs.length && rs[0].route ? "live" : "video", tested: speedTest.results.length, total: speedTest.total, error: speedTest.error || "",
+        top: rs.slice(0, 3).map(function (r) { return (r.route || (r.host || "").replace(/\.bilivideo\.(com|cn)$/i, "")) + ":" + (r.bps != null ? Math.round(r.bps / 1024) + "k" : Math.round((r.startup && r.startup.avg) || 0) + "ms"); }) });
       return;
     }
   });
 
   // popup 的查询 / 测速指令只由最上层 frame 回应：iPad Safari 送讯息时不能指定 frameId: 0（见 popup.js 的 sendToTop），
-  // 会送到所有 frame，iframe 里的 bridge 不能抢着回应
-  var isTopFrame = window.top === window;
+  // 会送到所有 frame，iframe 里的 bridge 不能抢着回应（isTopFrame 在上面）
 
   // 回应 popup 查询 / 测速指令
   try {
@@ -185,12 +206,14 @@
         // （用 generation 计数器隔开新旧两轮的 continuation，见 main-hook.js）
         var hosts = Array.isArray(msg.hosts) ? msg.hosts : [];
         speedTest = { running: true, results: [], total: hosts.length, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
+        journal("ui.speedtest", { phase: "start", kind: "video", hosts: hosts.length });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-run", payload: { hosts: hosts, limits: msg.limits || null } }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
       }
       if (msg && msg.type === "CDN_SWITCHER_RUN_LIVE_SPEEDTEST") {
         speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
+        journal("ui.speedtest", { phase: "start", kind: "live" });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
@@ -201,6 +224,7 @@
         return true;
       }
       if (msg && msg.type === "CDN_SWITCHER_STOP_SPEEDTEST") {
+        if (speedTest.running) journal("ui.speedtest", { phase: "stop" });
         speedTest.running = false;
         try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-stop" }, "*"); } catch (e) {}
         sendResponse({ ok: true });
@@ -208,6 +232,12 @@
       }
       if (msg && msg.type === "CDN_SWITCHER_GET_SPEEDTEST") {
         sendResponse({ speedTest: speedTest });
+        return true;
+      }
+      if (msg && msg.type === "CDN_SWITCHER_GET_DEBUG_FRESH") {
+        // 回報頁要「此刻」的快照：先叫 MAIN flush，再把最新的一份回去（flush 經 postMessage 要下一個 tick 才到，稍等）
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "debug-flush" }, "*"); } catch (e) {}
+        setTimeout(function () { sendResponse({ debug: latestDebug, url: location.href.split(/[?#]/)[0] }); }, 150);
         return true;
       }
     });

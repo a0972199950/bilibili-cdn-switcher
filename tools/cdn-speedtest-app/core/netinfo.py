@@ -119,8 +119,10 @@ def _local_vpn_adapters():
 
 def vpn_check():
     """綜合判斷是否在用 VPN／代理。任一訊號成立即 vpn=True。
-    訊號：ip-api（proxy、非行動網路的機房 IP）、proxycheck.io（VPN/proxy）、本機預設路由走 VPN 網卡、
+    訊號：ip-api（proxy、非行動網路的機房 IP）、本機預設路由走 VPN 網卡、
     電腦時區與 IP 所在地時區差 ≥ 2 小時。
+    不用 proxycheck.io：它把「家用線路上開著 VPN／代理服務」的 IP 標成 Compromised Server，自己在家架 VPN server、
+    或浮動 IP 被前一個使用者連累的人都會被誤判。
     限制：路由器層級、且從家用／公司線路出口的 VPN（例如回家的 PPTP）若時區相同，任何方法都偵測不到。"""
     sig, d = [], {}
     try:
@@ -140,17 +142,6 @@ def vpn_check():
                 sig.append(f"時區不符：電腦 UTC{local / 3600:+g}、IP 所在地 UTC{a['offset'] / 3600:+g}")
     except Exception as e:
         d["ipapi_err"] = str(e)[:80]
-    try:
-        ip = d.get("ip") or json.load(urllib.request.urlopen("https://ipinfo.io/json", timeout=8)).get("ip")
-        req = urllib.request.Request(f"https://proxycheck.io/v2/{ip}?vpn=1&asn=1",
-                                     headers={"User-Agent": "Mozilla/5.0 cdn-speedtest"})  # 預設 Python UA 會被擋 403
-        p = json.load(urllib.request.urlopen(req, timeout=10)).get(ip) or {}
-        op = (p.get("operator") or {}).get("name") if isinstance(p.get("operator"), dict) else None
-        d["proxycheck"] = dict(proxy=p.get("proxy"), type=p.get("type"), operator=op)
-        if p.get("proxy") == "yes":
-            sig.append(f"proxycheck：{p.get('type') or 'proxy'}" + (f"（{op}）" if op else ""))
-    except Exception as e:
-        d["proxycheck_err"] = str(e)[:80]
     ad = _local_vpn_adapters()
     d["local_vpn_adapters"] = ad
     if ad:

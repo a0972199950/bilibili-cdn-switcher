@@ -4,6 +4,7 @@
 //   bilibili-cdn-switcher-edge.zip      Edge 離線安裝（同上，edge://extensions）
 //   bilibili-cdn-switcher-firefox.zip   Firefox（未經 Mozilla 簽署：只能在 about:debugging「載入暫時附加元件」，重開瀏覽器就消失）
 //   CDNSpeedTest.exe                    CDN 測速工具（Windows）
+//   CDNSpeedTest.json                   exe 的版本與 sha256（已安裝的 exe 讀 Latest 的這個檔自我更新）
 // 檔名不帶版本號，只分瀏覽器：教學文件用 releases/latest/download/<檔名> 下載，換版也不會失效。
 //
 // 用法：

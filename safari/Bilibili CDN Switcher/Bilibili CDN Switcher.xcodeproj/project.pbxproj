@@ -51,6 +51,10 @@
 		2B5DF63A3066315B00949CE2 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6383066315B00949CE2 /* background.js */; };
 		2B5DF63C3066315B00949CE2 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63B3066315B00949CE2 /* i18n.js */; };
 		2B5DF63D3066315B00949CE2 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63B3066315B00949CE2 /* i18n.js */; };
+		2B5DF7053066315B00949CE2 /* report.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7043066315B00949CE2 /* report.js */; };
+		2B5DF7063066315B00949CE2 /* report.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7043066315B00949CE2 /* report.js */; };
+		2B5DF7023066315B00949CE2 /* report.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7013066315B00949CE2 /* report.html */; };
+		2B5DF7033066315B00949CE2 /* report.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7013066315B00949CE2 /* report.html */; };
 		2B5DF63F3066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
 		2B5DF6403066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
 		2B5DF6423066315B00949CE2 /* changelog.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6413066315B00949CE2 /* changelog.json */; };
@@ -136,6 +140,8 @@
 		2B5DF6253066315B00949CE2 /* main-hook.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = "main-hook.js"; path = "../../../src/main-hook.js"; sourceTree = "<group>"; };
 		2B5DF6383066315B00949CE2 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../../src/background.js; sourceTree = "<group>"; };
 		2B5DF63B3066315B00949CE2 /* i18n.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = i18n.js; path = ../../../src/i18n.js; sourceTree = "<group>"; };
+		2B5DF7043066315B00949CE2 /* report.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = report.js; path = ../../../src/report.js; sourceTree = "<group>"; };
+		2B5DF7013066315B00949CE2 /* report.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = report.html; path = ../../../src/report.html; sourceTree = "<group>"; };
 		2B5DF63E3066315B00949CE2 /* theme.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = theme.js; path = ../../../src/theme.js; sourceTree = "<group>"; };
 		2B5DF6413066315B00949CE2 /* changelog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = changelog.json; path = ../../../src/changelog.json; sourceTree = "<group>"; };
 		2B5DF6453066315B00949CE2 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -281,6 +287,8 @@
 				2B5DF6253066315B00949CE2 /* main-hook.js */,
 				2B5DF6383066315B00949CE2 /* background.js */,
 				2B5DF63B3066315B00949CE2 /* i18n.js */,
+				2B5DF7043066315B00949CE2 /* report.js */,
+				2B5DF7013066315B00949CE2 /* report.html */,
 				2B5DF63E3066315B00949CE2 /* theme.js */,
 				2B5DF6413066315B00949CE2 /* changelog.json */,
 			);
@@ -468,6 +476,8 @@
 				2B5DF6303066315B00949CE2 /* bridge.js in Resources */,
 				2B5DF63A3066315B00949CE2 /* background.js in Resources */,
 				2B5DF63D3066315B00949CE2 /* i18n.js in Resources */,
+				2B5DF7063066315B00949CE2 /* report.js in Resources */,
+				2B5DF7033066315B00949CE2 /* report.html in Resources */,
 				2B5DF6403066315B00949CE2 /* theme.js in Resources */,
 				2B5DF6433066315B00949CE2 /* changelog.json in Resources */,
 			);
@@ -488,6 +498,8 @@
 				2B5DF6273066315B00949CE2 /* bridge.js in Resources */,
 				2B5DF6393066315B00949CE2 /* background.js in Resources */,
 				2B5DF63C3066315B00949CE2 /* i18n.js in Resources */,
+				2B5DF7053066315B00949CE2 /* report.js in Resources */,
+				2B5DF7023066315B00949CE2 /* report.html in Resources */,
 				2B5DF63F3066315B00949CE2 /* theme.js in Resources */,
 				2B5DF6423066315B00949CE2 /* changelog.json in Resources */,
 			);

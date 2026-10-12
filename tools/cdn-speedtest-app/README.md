@@ -2,7 +2,7 @@
 
 雙擊 `CDNSpeedTest.exe`，流程：
 
-1. **入口**：選語言（繁中／簡中／英文／日文／韓文，預設依 Windows 介面語言）；閱讀英文隱私聲明；下方是「擴充功能【名稱】線上應用程式商店」與 Chrome ∙ Firefox ∙ Edge 三個商店連結（名稱用該語言的商店名稱，擴充沒有的語言用英文）；**勾選同意才能下一步**；「開發者測試模式」給作者自己用。按下一步時送出使用紀錄（見下方「使用紀錄」）。
+1. **入口**：選語言（繁中／簡中／英文／日文／韓文，預設依 Windows 介面語言）；閱讀英文隱私聲明；下方是「擴充功能【名稱】線上應用程式商店」與 Chrome ∙ Firefox ∙ Edge 三個商店連結（名稱用該語言的商店名稱，擴充沒有的語言用英文）；**勾選同意才能下一步**；「開發者測試模式」給作者自己用，藏在左下角「進階設定 → 開發者選項」第二層選單裡，免得一般使用者誤點。按下一步時送出使用紀錄（見下方「使用紀錄」）。
 2. **測速目的**（兩個選項）：
    - 「單純測試／建立擴充『自訂節點列表』」（預設）：網路檢查只做參考，不限網速與 VPN（想建立自己列表的人網路環境往往比較複雜，常常過不了門禁）。
    - **進行中的抽獎**（見下方「抽獎公告」）：有的話在「參加抽獎」選項下方用 HTML 顯示，不管選哪個都看得到；有抽獎時就不再顯示 `gift_cards` 的禮物卡說明。
@@ -11,7 +11,7 @@
    - 量得到頻寬就顯示「預計本次測試約需 N 分鐘，結束之前請不要關閉視窗」，測速頁的說明也用同一個數字。
    - N 的算法（`estimate_minutes`）：耗時主要取決於並行數（大部分時間花在等逾時的節點），所以先預測並行數，算法與測速相同：`下載頻寬 × 0.5 ÷ B 站單一連線速度`，限制在 1–8。B 站單一連線速度由 `probe_per_conn` 對 08ct／08c／hw 各下載 8MB 取中位數（約 5–20 秒），**最多算 60 Mbps**（`speedtest.PER_CONN_CAP`＝B 站 8K 串流碼率上限，正式測速決定並行數時也套用；量不到時直接用上限）。再用實測校正的 `7 + 105 ÷ 並行數` 換成分鐘（並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分），1.6.0 起再乘 1.25（細測改成快篩通過且冷門探測沒回 403 的全部節點，不再只取前 80 名；尚未用實測校正），取 5 的倍數、限制在 20–150 分。
    - 頻寬：Cloudflare 測速；被限流（429）或連不上時改用回應最快的 Linode 公開測速檔。50 Mbps 的理由：最快的 B 站節點單連線約 50–80 Mbps，總頻寬低於此值時好節點都會撞到同一個天花板，排名失去意義（台灣 VPN 測試即為此情況）。
-   - VPN：任一訊號成立即擋下 —— ip-api（VPN／代理、非行動網路的機房 IP）、proxycheck.io（VPN／代理）、本機預設路由走 VPN 網卡（WireGuard、OpenVPN、TAP/Wintun、Windows 內建 PPTP/L2TP/IKEv2、常見 VPN 客戶端）、電腦時區與 IP 所在地時區差 ≥ 2 小時。
+   - VPN：任一訊號成立即擋下 —— ip-api（VPN／代理、非行動網路的機房 IP）、本機預設路由走 VPN 網卡（WireGuard、OpenVPN、TAP/Wintun、Windows 內建 PPTP/L2TP/IKEv2、常見 VPN 客戶端）、電腦時區與 IP 所在地時區差 ≥ 2 小時。
    - 限制：路由器層級、且從家用／公司線路出口的 VPN（例如回家的 PPTP），若時區相同，任何方法都偵測不到。
 4. **B 站 App 掃 QR code 登入**（必要，沒有略過選項：付費測試要以 1080P 以上測準；登入狀態在測速時失效會直接中止，不會降級成 480P）。cookie 只留在記憶體，不寫檔、不上傳。
 5. **測速**（約 35–140 分鐘，有進度條、「停止並關閉」）。國家依出口 IP 自動偵測；系統 DNS 不代表當地時自動改用 Google DoH 並帶使用者出口 IP 的 /24 當 ECS。
@@ -86,6 +86,7 @@ Apps Script 端限流：同一個 install_id 每 10 分鐘 30 筆、全部合計
 | `app.py` | GUI（tkinter）七個頁面 |
 | `i18n.py` | 五種語言的介面文字；隱私聲明（英文） |
 | `qrlogin.py` | B 站網頁版 QR code 登入 |
+| `updater.py` | 自我更新（見下方「自我更新」） |
 | `extdetect.py` | 找出裝了擴充的瀏覽器／設定檔，開匯入網址建立「自訂節點列表」；各瀏覽器的商店網址 |
 | `apps-script/Code.gs` | 報告接收端：寄信給你（附件）、存雲端硬碟、寫試算表、寄確認信給測試者 |
 | `config.example.json` | 設定範本；實際的 `config.json` 不進版控 |
@@ -162,7 +163,7 @@ npm run package        # 擴充三個瀏覽器的離線安裝 zip ＋ CDNSpeedTe
 powershell -ExecutionPolicy Bypass -File tools\cdn-speedtest-app\build.ps1   # 只打包 exe（同樣輸出到 release\）
 ```
 
-產出 `release\CDNSpeedTest.exe`（約 20 MB）。`release/` 不進版控，`npm run package` 每次會先清空它。exe 執行中無法覆寫，要先關掉。
+產出 `release\CDNSpeedTest.exe`（約 20 MB）與 `release\CDNSpeedTest.json`（版本、sha256、大小）。`release/` 不進版控，`npm run package` 每次會先清空它。exe 執行中無法覆寫，要先關掉。
 
 ## 發布到 GitHub Release
 
@@ -174,11 +175,21 @@ powershell -ExecutionPolicy Bypass -File tools\cdn-speedtest-app\build.ps1   # �
 只改了 exe、想在擴充沒發版時更新：重新 `npm run package`（或只跑 `build.ps1`）後，覆蓋到目前的 Latest：
 
 ```bash
-gh release upload v<目前版本> release/CDNSpeedTest.exe --clobber
+gh release upload v<目前版本> release/CDNSpeedTest.exe release/CDNSpeedTest.json --clobber
 ```
 
 - 公開 Release 任何人都下載得到；exe 內含 `upload_url` 與 `token`，可被拆出（最壞是被亂送報告、受每日確認信上限保護）。不想公開可只把 exe 私下傳給朋友。
-- 發布新版時同步更新 `app.py` 的 `APP_VERSION`。
+- 發布新版時同步更新 `app.py` 的 `APP_VERSION`：已安裝的 exe 只在 Latest 的 `CDNSpeedTest.json` 版本比自己新時才更新。
+
+## 自我更新（1.7.0 起）
+
+`updater.py`：啟動時在背景讀 `releases/latest/download/CDNSpeedTest.json`，版本比自己新就把 exe 下載到旁邊（`<名稱>.exe.download`）、驗 sha256 與大小，然後：
+
+- 還在入口頁 → 顯示「正在更新到 vX…」，自己改名成 `<名稱>.old.exe`、新版換上原檔名、開新版、結束自己（不問使用者）。
+- 已經按過「下一步」→ 不打斷，關閉程式時才換檔，下次開就是新版。
+- 新版啟動時刪掉 `.old.exe` 與沒下載完的 `.download`。任何一步失敗（沒網路、資料夾不能寫、被防毒擋）都略過、照用目前版本，原因寫在 run.log 的 `[更新]`。
+- 只在打包後的 exe 生效（`python app.py` 不會更新）。1.6.0 以前的 exe 沒有這個功能，不會更新。
+- 測試：環境變數 `CDNSPEEDTEST_UPDATE_URL` 指到別的 `CDNSpeedTest.json`（同目錄要有 `CDNSpeedTest.exe`，或在 json 加 `url`）。
 
 ## 發給朋友前要說明
 
