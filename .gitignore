@@ -42,3 +42,17 @@ tools/report-worker/.wrangler/
 
 # 推廣文章、論壇帳號（含密碼）與經營紀錄，只留本機
 promotions/
+
+# /growth-report 的成長報告與各商店後台匯出的原始數據（含評論者名稱），只留本機
+/growth-report/
+
+# 自己用的 Claude Code skill（發版、測速分析、論壇經營、成長報告…）與本機設定，只進私人 repo
+.claude/skills/
+.claude/settings.local.json
+
+# 商店上架文案、截圖與宣傳圖，只進私人 repo
+/store/
+
+# 私人 repo（scripts/private-repo.mjs）：資料庫本身，與 setup 時被覆蓋前的本機檔案備份
+/.git-private/
+/.private-restore-backup/

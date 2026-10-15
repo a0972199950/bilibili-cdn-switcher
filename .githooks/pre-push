@@ -16,6 +16,11 @@ fi
 # stdin 是 git 給的「<local_ref> <local_sha> <remote_ref> <remote_sha>」清單，先讀完，之後才能從終端機問問題
 refs=$(cat)
 
+# 這台電腦有私人 repo（.git-private）時順便推上去；失敗只印警告，不影響這次 push
+if [ -d "$ROOT/.git-private" ]; then
+  node "$ROOT/scripts/private-repo.mjs" push </dev/null || true
+fi
+
 needs_prompt=0
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -z "$local_ref" ] && continue

@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "台灣的建議節點清單新增 2 個節點，改善中嘉寬頻用戶的播放速度",
+        "zh_CN": "台湾的推荐节点列表新增 2 个节点，改善中嘉宽带用户的播放速度",
+        "en": "Added 2 nodes to Taiwan's recommended node list to improve playback speed for CNS (China Network Systems) broadband users",
+        "ja": "台湾のおすすめノードリストに 2 つのノードを追加し、中嘉（CNS）ブロードバンド利用者の再生速度を改善しました",
+        "ko": "대만 추천 노드 목록에 노드 2개를 추가해 중자(CNS) 광대역 사용자의 재생 속도를 개선했습니다"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.4.0",

@@ -65,7 +65,7 @@ bilibili-cdn-switcher/
 ├── dist/                 ← 패키징 결과물(Chrome/Firefox/Edge는 .zip, Safari는 .app)
 ├── docs/                 ← README용 이미지 + 각 언어 README
 ├── assets/               ← 512px 아이콘 원본(icons-prod는 gen-icons.mjs가 생성)
-├── store/                ← 스토어 등록용 스크린샷 / 홍보 이미지 + 5개 언어 플랫폼별 소개문
+├── store/                ← 스토어 등록용 스크린샷 / 홍보 이미지 + 플랫폼별 소개문 (비공개 저장소에서 관리, 여기에는 없음)
 ├── safari/               ← Safari 확장 프로그램 Xcode 프로젝트(safari-web-extension-converter로 생성, 상대 경로로 ../../../src/ 참조)
 ├── scripts/              ← 개발/빌드 스크립트. 모두 순수 Node로 Windows / Mac / Linux에서 동작
 │   ├── build.mjs                 ← 스토어 제출용 zip 패키징(Chrome + Firefox + Edge)

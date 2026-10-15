@@ -19,7 +19,10 @@
     "lottery:add": "node scripts/lottery.mjs add",
     "lottery:end": "node scripts/lottery.mjs end",
     "lottery:show": "node scripts/lottery.mjs show",
-    "prepare": "git config core.hooksPath .githooks || exit 0",
+    "private:setup": "node scripts/private-repo.mjs setup",
+    "private:push": "node scripts/private-repo.mjs push",
+    "private:pull": "node scripts/private-repo.mjs pull",
+    "prepare":"git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
     "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml"
   },

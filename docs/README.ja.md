@@ -65,7 +65,7 @@ bilibili-cdn-switcher/
 ├── dist/                 ← パッケージ化の出力（Chrome/Firefox/Edge は .zip、Safari は .app）
 ├── docs/                 ← README 用の画像 + 各言語の README
 ├── assets/               ← 512px アイコンの原本（icons-prod は gen-icons.mjs が生成）
-├── store/                ← ストア掲載用スクリーンショット／プロモ画像 + 5 言語のプラットフォーム別紹介文
+├── store/                ← ストア掲載用スクリーンショット／プロモ画像 + プラットフォーム別紹介文（非公開リポジトリで管理、ここには含まれない）
 ├── safari/               ← Safari 拡張機能の Xcode プロジェクト（safari-web-extension-converter で生成。相対パスで ../../../src/ を参照）
 ├── scripts/              ← 開発／ビルド用スクリプト。すべて純粋な Node で、Windows / Mac / Linux で動作
 │   ├── build.mjs                 ← ストア提出用 zip をパッケージ化（Chrome + Firefox + Edge）

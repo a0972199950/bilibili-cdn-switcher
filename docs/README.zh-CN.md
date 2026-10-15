@@ -65,7 +65,7 @@ bilibili-cdn-switcher/
 ├── dist/                 ← 打包产物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
 ├── docs/                 ← README 用的截图 + 繁體中文／简体中文／日本語／한국어 README
 ├── assets/               ← 图示母档 512px（icons-prod 由 gen-icons.mjs 产生）
-├── store/                ← 各商店上架用截图 / 宣传图 + 各平台五语系介绍文字
+├── store/                ← 各商店上架用截图 / 宣传图 + 各平台介绍文字（放在私人仓库，不在这里公开）
 ├── safari/               ← Safari 扩充的 Xcode 工程（safari-web-extension-converter 产生，内含扩充资源用相对路径直接引用 ../../../src/）
 ├── scripts/              ← 所有开发／打包脚本，纯 Node，Windows／Mac／Linux 都能跑
 │   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）

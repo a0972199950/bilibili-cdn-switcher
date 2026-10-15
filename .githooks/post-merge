@@ -1,0 +1,8 @@
+#!/bin/sh
+# post-merge（git pull 之後）：這台電腦有私人 repo（.git-private）時，順便把私人 repo 也 pull 下來。
+# 沒有私人 repo 就什麼都不做；有衝突只印警告，不影響公開 repo 的 pull。
+ROOT=$(git rev-parse --show-toplevel)
+[ -d "$ROOT/.git-private" ] || exit 0
+command -v node >/dev/null 2>&1 || exit 0
+node "$ROOT/scripts/private-repo.mjs" pull </dev/null || true
+exit 0

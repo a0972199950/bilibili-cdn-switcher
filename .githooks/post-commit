@@ -1,0 +1,8 @@
+#!/bin/sh
+# post-commit：這台電腦有私人 repo（.git-private）時，順便把私人檔案的變動 commit 起來（不 push）。
+# 沒有私人 repo（別人 clone、雲端 session）就什麼都不做；私人 repo 出錯也只印警告，不影響這次 commit。
+ROOT=$(git rev-parse --show-toplevel)
+[ -d "$ROOT/.git-private" ] || exit 0
+command -v node >/dev/null 2>&1 || exit 0
+node "$ROOT/scripts/private-repo.mjs" backup </dev/null || true
+exit 0

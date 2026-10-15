@@ -1,5 +1,5 @@
 {
-  "_comment": "options 為全部節點（「全部」選項的順序），value 為要換成的 host；'backup'=B 站原生備援 URL，固定放最後。name 為技術代號，pool 對應 pools 的池類型三語標籤，顯示成「代號 (池類型)」。countries 為國家選項：nodes 是該國依 CDN 池分散的建議前 10 名，第一項為該國預設；dial 為國際電話區碼，對應 B 站 zone API 回傳的 country_code，用來依使用者 IP 自動選國家。",
+  "_comment": "options 為全部節點（「全部」選項的順序），value 為要換成的 host；'backup'=B 站原生備援 URL，固定放最後。name 為技術代號，pool 對應 pools 的池類型三語標籤，顯示成「代號 (池類型)」。countries 為國家選項：nodes 是該國依 CDN 池分散的建議節點（通常 10 個；為了照顧特定 ISP 可以多放，加在最後面，不影響卡頓時依序換節點的順序），第一項為該國預設；dial 為國際電話區碼，對應 B 站 zone API 回傳的 country_code，用來依使用者 IP 自動選國家。",
   "countries": [
     {
       "code": "TW", "dial": 886, "name": {"zh_TW":"台灣","zh_CN":"台湾","en":"Taiwan","ja":"台湾","ko":"대만"},
@@ -13,7 +13,9 @@
         "cn-hk-eq-01-14.bilivideo.com",
         "cn-hncs-fx-01-01.bilivideo.com",
         "upos-sz-mirror08ct.bilivideo.com",
-        "upos-sz-mirror08c.bilivideo.com"
+        "upos-sz-mirror08c.bilivideo.com",
+        "cn-hk-eq-01-09.bilivideo.com",
+        "cn-sccd-fx-01-01.bilivideo.com"
       ]
     },
     {

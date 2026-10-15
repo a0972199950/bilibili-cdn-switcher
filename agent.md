@@ -35,6 +35,17 @@
 - 不要手動改 `releases`、`manifest*.json` 的版本號；那是 `/release` 的工作。
 - 改完用 `npm run changelog:validate` 驗證格式。
 
+## 私人 repo（.git-private）
+
+skill、商店文案（`store/`）、推廣、研究、測速結果、成長報告、本機憑證等不公開的檔案，由第二個 git repo
+`.git-private` 管理：跟公開 repo 共用同一個工作目錄，推到 GitHub 的 private repo（`<公開 repo 名>-private`）。
+路徑清單與用法見 `scripts/private-repo.mjs` 開頭。
+
+- 新電腦（或發現 `.claude/skills/`、`store/` 不見）：`npm run private:setup`。
+- 平常不用管：`.githooks` 的 post-commit / pre-push / post-merge 與 Claude Code 的 SessionEnd hook 會自動 commit、push、pull。
+- 直接操作用 `git priv <指令>`（例如 `git priv log --stat`）。**不要**跑 `git priv clean`，會刪掉公開 repo 的檔案。
+- 新增私人路徑時，`scripts/private-repo.mjs` 的 `PRIVATE_PATHS` 與 `.gitignore` 要一起改。
+
 ## 發版
 
 用 `/release` skill（`.claude/skills/release/SKILL.md`）。商店「發布」按鈕一律由使用者人工按，agent 不得代按。
