@@ -11,10 +11,10 @@ import json
 import os
 import sys
 
-EN = "BiBoost - Speedup for Bili"
+EN = "BiBoost - Overseas Video Speedup"
 NAMES = {
-    "zh_TW": "嗶速 - 海外B站加速",
-    "zh_CN": "哔速 - 海外B站加速",
+    "zh_TW": "嗶速 - 海外影片加速",
+    "zh_CN": "哔速 - 海外视频加速",
     "en": EN,
     "ja": EN,
     "ko": EN,

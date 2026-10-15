@@ -14,7 +14,7 @@ const RES = path.join(ROOT, "safari", "Bilibili CDN Switcher", "Shared (App)", "
 const STRINGS = {
   Base: {
     lang: "en",
-    name: "BiBoost - Speedup for Bili",
+    name: "BiBoost - Overseas Video Speedup",
     shortName: "BiBoost",
     tagline: "Smoother 4K playback on web bilibili for overseas users",
     iconAlt: "BiBoost icon",
@@ -27,7 +27,7 @@ const STRINGS = {
     cancel: "Cancel",
     everySite: "Always Allow on Every Website",
     allowOneDay: "Allow for One Day",
-    askAccess: "“BiBoost - Speedup for Bili” would like to access bilibili.com.",
+    askAccess: "“BiBoost - Overseas Video Speedup” would like to access bilibili.com.",
     settings: "Settings",
     apps: "Apps",
     safari: "Safari",
@@ -46,7 +46,7 @@ const STRINGS = {
       steps: [
         "Tap the button below to open bilibili.com in Safari.",
         "Tap the Extensions icon on the right of the address bar, then tap <b>Manage Extensions</b>.",
-        "Turn on <b>BiBoost - Speedup for Bili</b>, then tap ✓ to finish.",
+        "Turn on <b>BiBoost - Overseas Video Speedup</b>, then tap ✓ to finish.",
         "Tap the Extensions icon again, tap <b>BiBoost</b>, choose <b>Always Allow…</b>, then <b>Always Allow on This Website</b>. Reload the page and you're done.",
       ],
       alt: "You can also turn it on in <b>Settings › Apps › Safari › Extensions</b>.",
@@ -55,7 +55,7 @@ const STRINGS = {
       title: "Turn on the extension on iPhone",
       steps: [
         "Open the <b>Settings</b> app and go to <b>Apps › Safari › Extensions</b>.",
-        "Tap <b>BiBoost - Speedup for Bili</b> and turn on <b>Allow Extension</b>.",
+        "Tap <b>BiBoost - Overseas Video Speedup</b> and turn on <b>Allow Extension</b>.",
         "Under website permissions, set <b>bilibili.com</b> to <b>Allow</b>.",
         "Tap the button below to open bilibili.com in Safari. Reload the page and you're done.",
       ],
@@ -68,7 +68,7 @@ const STRINGS = {
       stateOff: "BiBoost is off. Follow the steps below to turn it on.",
       steps: [
         "Click the button below. This app quits and Safari Settings opens to <b>Extensions</b>.",
-        "Select the checkbox next to <b>BiBoost - Speedup for Bili</b>.",
+        "Select the checkbox next to <b>BiBoost - Overseas Video Speedup</b>.",
         "Open bilibili.com in Safari, click the BiBoost icon in the toolbar, and choose <b>Always Allow on This Website</b>.",
       ],
     },
@@ -76,7 +76,7 @@ const STRINGS = {
   },
   "zh-Hant": {
     lang: "zh-Hant",
-    name: "嗶速 - 海外B站加速",
+    name: "嗶速 - 海外影片加速",
     shortName: "嗶速",
     tagline: "讓海外使用者在網頁版 B站更順暢觀看 4K 影片",
     iconAlt: "嗶速圖示",
@@ -89,7 +89,7 @@ const STRINGS = {
     cancel: "取消",
     everySite: "一律在每個網站允許",
     allowOneDay: "允許一天",
-    askAccess: "「嗶速 - 海外B站加速」想要取用 bilibili.com。",
+    askAccess: "「嗶速 - 海外影片加速」想要取用 bilibili.com。",
     settings: "設定",
     apps: "App",
     safari: "Safari",
@@ -108,7 +108,7 @@ const STRINGS = {
       steps: [
         "點下方按鈕，用 Safari 打開 bilibili.com。",
         "點網址列右側的延伸功能圖示，再點<b>「管理延伸功能」</b>。",
-        "打開<b>「嗶速 - 海外B站加速」</b>的開關，點右上角的 ✓ 完成。",
+        "打開<b>「嗶速 - 海外影片加速」</b>的開關，點右上角的 ✓ 完成。",
         "再點一次延伸功能圖示，點<b>「嗶速」</b>，選擇<b>「永遠允許⋯」</b>，再選<b>「一律在此網站允許」</b>。重新整理頁面就完成了。",
       ],
       alt: "也可以到<b>「設定」›「App」›「Safari」›「延伸功能」</b>開啟。",
@@ -117,7 +117,7 @@ const STRINGS = {
       title: "在 iPhone 上開啟擴充功能",
       steps: [
         "打開<b>「設定」</b>App，前往<b>「App」›「Safari」›「延伸功能」</b>。",
-        "點<b>「嗶速 - 海外B站加速」</b>，打開<b>「允許延伸功能」</b>。",
+        "點<b>「嗶速 - 海外影片加速」</b>，打開<b>「允許延伸功能」</b>。",
         "在下方的網站權限中，把<b>「bilibili.com」</b>設為<b>「允許」</b>。",
         "點下方按鈕，用 Safari 打開 bilibili.com，重新整理頁面就完成了。",
       ],
@@ -130,7 +130,7 @@ const STRINGS = {
       stateOff: "「嗶速」目前已關閉，照下面的步驟開啟。",
       steps: [
         "點下方按鈕，這個 App 會結束，並打開 Safari 設定的<b>「延伸功能」</b>。",
-        "勾選<b>「嗶速 - 海外B站加速」</b>。",
+        "勾選<b>「嗶速 - 海外影片加速」</b>。",
         "用 Safari 打開 bilibili.com，點工具列上的嗶速圖示，選擇<b>「一律在此網站允許」</b>。",
       ],
     },
@@ -138,7 +138,7 @@ const STRINGS = {
   },
   "zh-Hans": {
     lang: "zh-Hans",
-    name: "哔速 - 海外B站加速",
+    name: "哔速 - 海外视频加速",
     shortName: "哔速",
     tagline: "让海外用户在网页版 B站更流畅地观看 4K 视频",
     iconAlt: "哔速图标",
@@ -151,7 +151,7 @@ const STRINGS = {
     cancel: "取消",
     everySite: "在所有网站上始终允许",
     allowOneDay: "允许一天",
-    askAccess: "“哔速 - 海外B站加速”想要访问 bilibili.com。",
+    askAccess: "“哔速 - 海外视频加速”想要访问 bilibili.com。",
     settings: "设置",
     apps: "App",
     safari: "Safari浏览器",
@@ -170,7 +170,7 @@ const STRINGS = {
       steps: [
         "点下方按钮，用 Safari 打开 bilibili.com。",
         "点地址栏右侧的扩展图标，再点<b>“管理扩展”</b>。",
-        "打开<b>“哔速 - 海外B站加速”</b>的开关，点右上角的 ✓ 完成。",
+        "打开<b>“哔速 - 海外视频加速”</b>的开关，点右上角的 ✓ 完成。",
         "再点一次扩展图标，点<b>“哔速”</b>，选择<b>“始终允许…”</b>，再选<b>“在此网站上始终允许”</b>。刷新页面就完成了。",
       ],
       alt: "也可以到<b>“设置”›“App”›“Safari浏览器”›“扩展”</b>开启。",
@@ -179,7 +179,7 @@ const STRINGS = {
       title: "在 iPhone 上开启扩展",
       steps: [
         "打开<b>“设置”</b>App，前往<b>“App”›“Safari浏览器”›“扩展”</b>。",
-        "点<b>“哔速 - 海外B站加速”</b>，打开<b>“允许扩展”</b>。",
+        "点<b>“哔速 - 海外视频加速”</b>，打开<b>“允许扩展”</b>。",
         "在下方的网站权限中，把<b>“bilibili.com”</b>设为<b>“允许”</b>。",
         "点下方按钮，用 Safari 打开 bilibili.com，刷新页面就完成了。",
       ],
@@ -192,7 +192,7 @@ const STRINGS = {
       stateOff: "“哔速”目前已关闭，按照下面的步骤开启。",
       steps: [
         "点下方按钮，这个 App 会退出，并打开 Safari 设置的<b>“扩展”</b>。",
-        "勾选<b>“哔速 - 海外B站加速”</b>。",
+        "勾选<b>“哔速 - 海外视频加速”</b>。",
         "用 Safari 打开 bilibili.com，点工具栏上的哔速图标，选择<b>“在此网站上始终允许”</b>。",
       ],
     },
