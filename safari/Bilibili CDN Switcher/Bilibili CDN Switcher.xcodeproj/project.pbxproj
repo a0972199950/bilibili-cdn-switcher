@@ -115,13 +115,13 @@
 		2B5DF5C83066315600949CE2 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		2B5DF5C93066315800949CE2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2B5DF5CB3066315800949CE2 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
-		2B5DF5D03066315800949CE2 /* BiBoost - Overseas Video Speedup.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BiBoost - Overseas Video Speedup.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B5DF5D03066315800949CE2 /* BiBoost - Video Speedup.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BiBoost - Video Speedup.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B5DF5D33066315800949CE2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2B5DF5D53066315800949CE2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		2B5DF5D83066315800949CE2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		2B5DF5DB3066315800949CE2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		2B5DF5DD3066315800949CE2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		2B5DF5E23066315800949CE2 /* BiBoost - Overseas Video Speedup.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BiBoost - Overseas Video Speedup.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B5DF5E23066315800949CE2 /* BiBoost - Video Speedup.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "BiBoost - Video Speedup.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B5DF5E43066315800949CE2 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2B5DF5E73066315800949CE2 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		2B5DF5E93066315800949CE2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -227,8 +227,8 @@
 		2B5DF5D13066315800949CE2 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2B5DF5D03066315800949CE2 /* BiBoost - Overseas Video Speedup.app */,
-				2B5DF5E23066315800949CE2 /* BiBoost - Overseas Video Speedup.app */,
+				2B5DF5D03066315800949CE2 /* BiBoost - Video Speedup.app */,
+				2B5DF5E23066315800949CE2 /* BiBoost - Video Speedup.app */,
 				2B5DF5EE3066315800949CE2 /* Bilibili CDN Switcher Extension.appex */,
 				2B5DF5F83066315800949CE2 /* Bilibili CDN Switcher Extension.appex */,
 			);
@@ -317,7 +317,7 @@
 			packageProductDependencies = (
 			);
 			productName = "Bilibili CDN Switcher (iOS)";
-			productReference = 2B5DF5D03066315800949CE2 /* BiBoost - Overseas Video Speedup.app */;
+			productReference = 2B5DF5D03066315800949CE2 /* BiBoost - Video Speedup.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2B5DF5E13066315800949CE2 /* Bilibili CDN Switcher (macOS) */ = {
@@ -338,7 +338,7 @@
 			packageProductDependencies = (
 			);
 			productName = "Bilibili CDN Switcher (macOS)";
-			productReference = 2B5DF5E23066315800949CE2 /* BiBoost - Overseas Video Speedup.app */;
+			productReference = 2B5DF5E23066315800949CE2 /* BiBoost - Video Speedup.app */;
 			productType = "com.apple.product-type.application";
 		};
 		2B5DF5ED3066315800949CE2 /* Bilibili CDN Switcher Extension (iOS) */ = {
@@ -807,7 +807,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -842,7 +842,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (Extension)/Info.plist";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -880,7 +880,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -899,7 +899,7 @@
 					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.johnh.bilibili-cdn-switcher";
-				PRODUCT_NAME = "BiBoost - Overseas Video Speedup";
+				PRODUCT_NAME = "BiBoost - Video Speedup";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -922,7 +922,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "iOS (App)/Info.plist";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -941,7 +941,7 @@
 					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.johnh.bilibili-cdn-switcher";
-				PRODUCT_NAME = "BiBoost - Overseas Video Speedup";
+				PRODUCT_NAME = "BiBoost - Video Speedup";
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -966,7 +966,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1003,7 +1003,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "macOS (Extension)/Info.plist";
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1044,7 +1044,7 @@
 				INFOPLIST_FILE = "macOS (App)/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1060,7 +1060,7 @@
 					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.johnh.bilibili-cdn-switcher";
-				PRODUCT_NAME = "BiBoost - Overseas Video Speedup";
+				PRODUCT_NAME = "BiBoost - Video Speedup";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -1088,7 +1088,7 @@
 				INFOPLIST_FILE = "macOS (App)/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Overseas Video Speedup";
+				INFOPLIST_KEY_CFBundleDisplayName = "BiBoost - Video Speedup";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1104,7 +1104,7 @@
 					WebKit,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "com.johnh.bilibili-cdn-switcher";
-				PRODUCT_NAME = "BiBoost - Overseas Video Speedup";
+				PRODUCT_NAME = "BiBoost - Video Speedup";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

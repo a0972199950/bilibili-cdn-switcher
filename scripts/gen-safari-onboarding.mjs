@@ -14,7 +14,7 @@ const RES = path.join(ROOT, "safari", "Bilibili CDN Switcher", "Shared (App)", "
 const STRINGS = {
   Base: {
     lang: "en",
-    name: "BiBoost - Overseas Video Speedup",
+    name: "BiBoost - Video Speedup",
     shortName: "BiBoost",
     tagline: "Smoother 4K playback on web bilibili for overseas users",
     iconAlt: "BiBoost icon",
@@ -27,7 +27,7 @@ const STRINGS = {
     cancel: "Cancel",
     everySite: "Always Allow on Every Website",
     allowOneDay: "Allow for One Day",
-    askAccess: "“BiBoost - Overseas Video Speedup” would like to access bilibili.com.",
+    askAccess: "“BiBoost - Video Speedup” would like to access bilibili.com.",
     settings: "Settings",
     apps: "Apps",
     safari: "Safari",
@@ -46,7 +46,7 @@ const STRINGS = {
       steps: [
         "Tap the button below to open bilibili.com in Safari.",
         "Tap the Extensions icon on the right of the address bar, then tap <b>Manage Extensions</b>.",
-        "Turn on <b>BiBoost - Overseas Video Speedup</b>, then tap ✓ to finish.",
+        "Turn on <b>BiBoost - Video Speedup</b>, then tap ✓ to finish.",
         "Tap the Extensions icon again, tap <b>BiBoost</b>, choose <b>Always Allow…</b>, then <b>Always Allow on This Website</b>. Reload the page and you're done.",
       ],
       alt: "You can also turn it on in <b>Settings › Apps › Safari › Extensions</b>.",
@@ -55,7 +55,7 @@ const STRINGS = {
       title: "Turn on the extension on iPhone",
       steps: [
         "Open the <b>Settings</b> app and go to <b>Apps › Safari › Extensions</b>.",
-        "Tap <b>BiBoost - Overseas Video Speedup</b> and turn on <b>Allow Extension</b>.",
+        "Tap <b>BiBoost - Video Speedup</b> and turn on <b>Allow Extension</b>.",
         "Under website permissions, set <b>bilibili.com</b> to <b>Allow</b>.",
         "Tap the button below to open bilibili.com in Safari. Reload the page and you're done.",
       ],
@@ -68,7 +68,7 @@ const STRINGS = {
       stateOff: "BiBoost is off. Follow the steps below to turn it on.",
       steps: [
         "Click the button below. This app quits and Safari Settings opens to <b>Extensions</b>.",
-        "Select the checkbox next to <b>BiBoost - Overseas Video Speedup</b>.",
+        "Select the checkbox next to <b>BiBoost - Video Speedup</b>.",
         "Open bilibili.com in Safari, click the BiBoost icon in the toolbar, and choose <b>Always Allow on This Website</b>.",
       ],
     },
