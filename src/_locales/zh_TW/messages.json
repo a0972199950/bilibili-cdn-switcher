@@ -556,5 +556,29 @@
   },
   "reportErrPermission": {
     "message": "需要你允許附上診斷資料才能送出問題回報；若不想附上，請改用「複製診斷資料」自行到 GitHub 開 issue。"
+  },
+  "lotteryBarLabel": {
+    "message": "公告"
+  },
+  "lotteryBarNext": {
+    "message": "下一則公告"
+  },
+  "lotteryBarHide": {
+    "message": "關閉這則公告（3 天內不再顯示）"
+  },
+  "lotteryWinTitle": {
+    "message": "抽獎活動"
+  },
+  "lotteryWinHow": {
+    "message": "參加方式：下載「CDN 測速工具」，選「參加抽獎」並留下 email，完成測速並發送報告。"
+  },
+  "lotteryWinCta": {
+    "message": "下載測速工具與教學"
+  },
+  "lotteryWinClose": {
+    "message": "關閉"
+  },
+  "announceGone": {
+    "message": "這則公告已經結束或被移除。"
   }
 }

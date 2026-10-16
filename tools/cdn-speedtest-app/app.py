@@ -23,6 +23,7 @@ if not getattr(sys, "frozen", False):
 sys.path.insert(0, HERE)
 from i18n import LANGS, PRIVACY_EN, EXT_NAME, ext_name, t, default_lang  # noqa: E402
 import extdetect  # noqa: E402
+import lottery_text  # noqa: E402
 import updater  # noqa: E402
 
 EXT_URL_DEFAULT = ("https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch"
@@ -87,6 +88,11 @@ class LogWriter:
 # 細測權重由 24 調成 45；冷門探測只抓 1MB、403 立刻回應，給 3。尚未用實測校正
 WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5), ("stage1", 45), ("probe", 3),
            ("stage2", 45), ("report", 2)]
+
+
+# 進行中抽獎的 metadata（report worker，不用 token）；文字由 lottery_text.py 組。
+# 1.7.0（含）以前的 exe 是透過 Apps Script（action=lotteries）讀 lotteries.html，那條路保留給舊版用
+LOTTERY_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/lotteries"
 
 
 def post_json(payload, timeout=90):
@@ -327,7 +333,9 @@ class App(tk.Tk):
         self.country = None
         self.testing = False
         self.install_id, self.first_run = install_info()
-        self.lottery_items, self.lottery_lang = None, None   # 進行中的抽獎（Apps Script → Neon），依語言快取
+        self.lottery_items = None       # 進行中抽獎的 metadata（全部國家；None＝還沒抓到或抓失敗，下次進這頁再抓）
+        self.lottery_loading = False
+        self.lottery_shown, self.lottery_idx, self.lottery_sliding = [], 0, False   # 「測速目的」頁 carousel：列出的抽獎、顯示中的是第幾個、是否正在滑動
         self.add_ext = tk.BooleanVar(value=True)             # 發送後把建議節點加入擴充的自訂節點列表
         self.ext_vars = {b: tk.BooleanVar(value=(b == "Chrome")) for b in extdetect.BROWSERS}
         self.ext_results = {}       # 各瀏覽器建立自訂節點列表的結果：ok / missing / outdated（感謝頁用）
@@ -803,16 +811,11 @@ class App(tk.Tk):
                   justify="left", wraplength=0).pack(anchor="w", padx=(self.px(28), 0), pady=(0, self.px(4)))
         ttk.Radiobutton(body, text=self.T("opt_lottery"), variable=self.join, value="lottery",
                         command=self.on_join).pack(anchor="w", pady=(self.px(6), 0))
-        # 進行中的抽獎（HTML，從資料庫讀）：不管選哪個都顯示，吸引參加；讀到之前是空的
+        # 使用者所在國家進行中的抽獎：不管選哪個都顯示，吸引參加；沒有就顯示「目前暫無進行中的活動」，抓到之前是空的
         self.lottery_slot = ttk.Frame(body, padding=(self.px(28), self.px(6), 0, 0))
         self.lottery_slot.pack(fill="x")
-        # 選了參加抽獎才出現：禮物卡說明（有進行中的抽獎時不顯示）、email、必中獎邀請碼
+        # 選了參加抽獎才出現：email、必中獎邀請碼（獎品寫在上方的抽獎內容裡）
         form = self.lottery_form = ttk.Frame(body, padding=(self.px(28), self.px(6), 0, 0))
-        box = self.gift_box = ttk.Frame(form, style="Soft.TFrame", padding=(self.px(14), self.px(10)))
-        box.pack(fill="x", pady=(0, self.px(10)))
-        self.gift_label = self.text(box, self.T("gift_detecting"), style="Soft.TLabel", justify="left",
-                                    wraplength=self.wrap(510))
-        self.gift_label.pack(anchor="w")
         ttk.Label(form, text=self.T("email"), style="H2.TLabel").pack(anchor="w")
         self.email_ent = ttk.Entry(form, textvariable=self.email_var, font=self.fonts["body"])
         self.email_ent.pack(fill="x", pady=(self.px(4), 0))
@@ -842,51 +845,140 @@ class App(tk.Tk):
             threading.Thread(target=self.detect_country, daemon=True).start()
         else:
             self.on_country(self.country)
-        if self.lottery_lang == self.lang:
+        if self.lottery_items is not None:
             self.render_lotteries()
-        elif CONFIG.get("upload_url"):
-            threading.Thread(target=self.lottery_worker, args=(self.lang,), daemon=True).start()
+        elif not self.lottery_loading:
+            self.lottery_loading = True
+            threading.Thread(target=self.lottery_worker, daemon=True).start()
 
-    # ── 進行中的抽獎：Apps Script（action=lotteries）從 Neon 讀，HTML 用 tkinterweb 顯示 ──
-    def lottery_worker(self, lang):
+    # ── 進行中的抽獎：report worker 給 metadata（全部國家），只顯示使用者所在國家的；文字由 lottery_text.py 組成
+    #    HTML，用 tkinterweb 顯示 ──
+    def lottery_worker(self):
         try:
-            r = post_json(dict(token=CONFIG.get("token", ""), action="lotteries", lang=lang), timeout=20)
-            items = (r.get("items") or []) if r.get("ok") else []
+            req = urllib.request.Request(LOTTERY_API, headers={"User-Agent": f"CDNSpeedTest/{APP_VERSION}"})
+            r = json.load(urllib.request.urlopen(req, timeout=20))
+            items = r.get("items") if r.get("ok") else None
         except Exception:
-            items = []
-        self.q.put(("lotteries", lang, items))
+            items = None
+        self.q.put(("lotteries", items))
 
-    def on_lotteries(self, lang, items):
-        self.lottery_items, self.lottery_lang = items, lang
-        if lang == self.lang:
-            self.render_lotteries()
+    def on_lotteries(self, items):
+        self.lottery_loading = False
+        if isinstance(items, list):
+            self.lottery_items = items
+        self.render_lotteries()
 
     def render_lotteries(self):
         if not (hasattr(self, "lottery_slot") and self.lottery_slot.winfo_exists()): return
         for w in self.lottery_slot.winfo_children(): w.destroy()
-        items = self.lottery_items or []
-        if not items:
+        show_all = self.test_mode.get()   # 開發者測試模式：不管國家，全部顯示
+        if self.lottery_items is None or not (self.country or show_all):   # 還沒抓到（或抓失敗）、國家還沒偵測到：先不顯示
             return
-        self.gift_box.pack_forget()   # 抽獎內容會寫獎品，不再重複顯示 config 的禮物卡說明
+        now = time.time() * 1000
+        items = [i for i in self.lottery_items
+                 if (show_all or i.get("country") == self.country) and i.get("startsAt", 0) <= now < i.get("endsAt", 0)]
+        if not items:
+            self.text(self.lottery_slot, self.T("lottery_none"), style="Muted.TLabel").pack(anchor="w")
+            return
+        # 多個抽獎時是 carousel：一次顯示一個，左右滑動切換（不循環，到頭／到尾那邊的箭頭變灰），下方圓點指示目前是第幾個；
+        # 只有一個就不顯示導覽列。每個抽獎各一個 HtmlFrame，疊在同一個舞台（stage）裡，用 place(relx=…) 移動，
+        # 超出舞台的部分 Tk 會裁掉。舞台高度取所有抽獎裡最高的，切換時不會跳動
         from tkinterweb import HtmlFrame
-        box = tk.Frame(self.lottery_slot, bg=C["accent_soft"], height=self.px(120))
-        box.pack(fill="x")
-        box.pack_propagate(False)
-        hf = HtmlFrame(box, messages_enabled=False, horizontal_scrollbar=False, vertical_scrollbar="auto",
-                       on_link_click=webbrowser.open)
-        hf.load_html(f"<html><body style=\"margin:10px 14px;font-family:'{FAMILY.get(self.lang, 'Segoe UI')}';"
-                     f"font-size:10pt;color:{C['text']};background:{C['accent_soft']}\">"
-                     + '<hr style="border:0;border-top:1px solid #F5C2D1;margin:10px 0">'.join(i["html"] for i in items)
-                     + "</body></html>")
-        hf.pack(fill="both", expand=True)
+        try:
+            htmls = [lottery_text.to_html(i, self.lang) for i in items]
+        except Exception:   # metadata 不完整（理論上 lottery.mjs 會擋）
+            return
+        self.lottery_shown, self.lottery_idx, self.lottery_sliding = items, 0, False
+        stage = self.lottery_stage = tk.Frame(self.lottery_slot, bg=C["accent_soft"], height=self.px(120))
+        stage.pack(fill="x")
+        stage.pack_propagate(False)
+        self.lottery_pages = []
+        for i, h in enumerate(htmls):
+            hf = HtmlFrame(stage, messages_enabled=False, horizontal_scrollbar=False, vertical_scrollbar="auto",
+                           on_link_click=webbrowser.open)
+            hf.load_html(f"<html><body style=\"margin:10px 14px;font-family:'{FAMILY.get(self.lang, 'Segoe UI')}';"
+                         f"font-size:10pt;color:{C['text']};background:{C['accent_soft']}\">" + h + "</body></html>")
+            hf.place(relx=0 if i == 0 else 1, y=0, relwidth=1, relheight=1)
+            self.lottery_pages.append(hf)
+        if len(items) > 1:
+            self.lottery_nav_build()
 
-        def fit():   # 高度跟著內容，最多 220（超過就捲動）
+        def fit():   # 舞台高度＝最高的那個抽獎，最多 220（超過就捲動）
             try:
-                h = int(hf.html.bbox()[3])
+                if not stage.winfo_exists(): return
+                h = max(int(p.html.bbox()[3]) for p in self.lottery_pages)
             except Exception:
                 return
-            if h > 0: box.configure(height=min(h + 4, self.px(220)))
-        self.after(150, fit)
+            if h > 0: stage.configure(height=min(h + 4, self.px(220)))
+        # 排版完成的時間不固定（量太早會拿到 0 或不完整的高度，框就停在初始的 120）：多量幾次
+        for ms in (150, 500, 1200):
+            self.after(ms, fit)
+
+    def lottery_nav_build(self):
+        """carousel 導覽列：‹（圓形按鈕）・圓點指示器・›；都畫在 Canvas 上（ttk 按鈕做不出網頁 carousel 的樣子）"""
+        nav = tk.Frame(self.lottery_slot, bg=C["card"])
+        nav.pack(pady=(self.px(8), 0))
+        s, lw = self.px(26), max(2, self.px(2))
+        self.lottery_arrows = {}
+        for d in (-1, 1):
+            cv = tk.Canvas(nav, width=s, height=s, bg=C["card"], highlightthickness=0, bd=0)
+            cv.create_oval(1, 1, s - 2, s - 2, outline=C["line"], fill=C["card"], tags="ring")
+            m, a = s / 2, s * 0.14
+            pts = (m - d * a * 0.5, m - a, m + d * a * 0.5, m, m - d * a * 0.5, m + a)
+            cv.create_line(*pts, width=lw, capstyle="round", joinstyle="round", tags="chev")
+            cv.bind("<Button-1>", lambda e, d=d: self.lottery_go(self.lottery_idx + d))
+            cv.bind("<Enter>", lambda e, cv=cv: self.lottery_arrow_hover(cv, True))
+            cv.bind("<Leave>", lambda e, cv=cv: self.lottery_arrow_hover(cv, False))
+            cv.pack(side="left" if d < 0 else "right")
+            self.lottery_arrows[d] = cv
+        n, gap, r = len(self.lottery_pages), self.px(14), self.px(3.5)
+        dots = self.lottery_dots = tk.Canvas(nav, width=n * gap, height=s, bg=C["card"], highlightthickness=0, bd=0,
+                                             cursor="hand2")
+        for i in range(n):
+            cx = gap * i + gap / 2
+            dots.create_oval(cx - r, s / 2 - r, cx + r, s / 2 + r, outline="", tags=f"dot{i}")
+        dots.bind("<Button-1>", lambda e: self.lottery_go(min(n - 1, int(e.x // gap))))
+        dots.pack(side="left", padx=self.px(10))
+        self.lottery_nav_update()
+
+    def lottery_arrow_hover(self, cv, on):
+        enabled = cv.cget("cursor") == "hand2"
+        cv.itemconfigure("ring", fill=C["accent_soft"] if on and enabled else C["card"],
+                         outline=C["accent"] if on and enabled else C["line"])
+
+    def lottery_nav_update(self):
+        n, i = len(self.lottery_pages), self.lottery_idx
+        for d, cv in self.lottery_arrows.items():
+            enabled = 0 <= i + d < n
+            cv.itemconfigure("chev", fill=C["accent_dark"] if enabled else C["line"])
+            cv.configure(cursor="hand2" if enabled else "")
+            if not enabled: cv.itemconfigure("ring", fill=C["card"], outline=C["line"])
+        for k in range(n):
+            self.lottery_dots.itemconfigure(f"dot{k}", fill=C["accent"] if k == i else C["line"])
+
+    def lottery_go(self, i):
+        """滑到第 i 個抽獎：舊的往一邊滑出、新的從另一邊滑入（約 0.26 秒，減速）；超出範圍或滑動中不動"""
+        n = len(self.lottery_pages)
+        if not (0 <= i < n) or i == self.lottery_idx or self.lottery_sliding: return
+        old, new = self.lottery_pages[self.lottery_idx], self.lottery_pages[i]
+        d = 1 if i > self.lottery_idx else -1
+        self.lottery_idx, self.lottery_sliding = i, True
+        self.lottery_nav_update()
+        steps, dur = 16, 260
+        new.place_configure(relx=d)
+
+        def frame(k):
+            if not (old.winfo_exists() and new.winfo_exists()):
+                self.lottery_sliding = False
+                return
+            e = 1 - (1 - k / steps) ** 3   # ease-out cubic
+            old.place_configure(relx=-d * e)
+            new.place_configure(relx=d * (1 - e))
+            if k < steps:
+                self.after(dur // steps, lambda: frame(k + 1))
+            else:
+                self.lottery_sliding = False
+        frame(1)
 
     def on_join(self):
         free = self.join.get() == "free"
@@ -967,10 +1059,7 @@ class App(tk.Tk):
 
     def on_country(self, c):
         self.country = c or self.country
-        if not (hasattr(self, "gift_label") and self.gift_label.winfo_exists()): return
-        g = gift_for(c)
-        s = self.T("gift_body", gift=f"{g['vendor']} {g['amount']}".strip()) if g else self.T("gift_body_generic")
-        self.gift_label.config(text=cjk_wrap(s, self.fonts["body"], self.px(500)), wraplength=0)
+        self.render_lotteries()
 
     def email_next(self):
         self.no_email.set(self.join.get() == "free")

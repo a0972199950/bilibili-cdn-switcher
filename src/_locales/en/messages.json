@@ -556,5 +556,29 @@
   },
   "reportErrPermission": {
     "message": "Sending a problem report requires permission to attach diagnostics. If you prefer not to, use \"Copy diagnostics\" and open a GitHub issue yourself."
+  },
+  "lotteryBarLabel": {
+    "message": "Announcements"
+  },
+  "lotteryBarNext": {
+    "message": "Next announcement"
+  },
+  "lotteryBarHide": {
+    "message": "Close this announcement (hidden for 3 days)"
+  },
+  "lotteryWinTitle": {
+    "message": "Prize draws"
+  },
+  "lotteryWinHow": {
+    "message": "How to join: download the CDN speed test tool, choose \"Join the prize draw\", enter your email, finish the test and send the report."
+  },
+  "lotteryWinCta": {
+    "message": "Get the speed test tool"
+  },
+  "lotteryWinClose": {
+    "message": "Close"
+  },
+  "announceGone": {
+    "message": "This announcement has ended or been removed."
   }
 }

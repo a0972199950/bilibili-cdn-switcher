@@ -23,7 +23,7 @@ if ($LASTEXITCODE -ne 0) { throw "pip install 失敗" }
 & $vpy -m PyInstaller --noconfirm --clean --onefile --windowed --name CDNSpeedTest `
     --paths "$core" --paths "$here" `
     --hidden-import speedtest --hidden-import bili --hidden-import videos --hidden-import netinfo `
-    --hidden-import qrlogin --hidden-import i18n --hidden-import extdetect --hidden-import updater `
+    --hidden-import qrlogin --hidden-import i18n --hidden-import extdetect --hidden-import updater --hidden-import lottery_text `
     --collect-all tkinterweb --collect-all tkinterweb_tkhtml `
     --add-data "$core\nodes.json;." --add-data "$here\config.json;." --add-data "$icon;." `
     --icon "$iconExe" `

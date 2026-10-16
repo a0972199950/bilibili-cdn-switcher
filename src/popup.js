@@ -23,7 +23,8 @@ var DEFAULTS = {
   stVideoMb: 8,
   stVideoSec: 5,
   stLiveRuns: 3,
-  stLiveSec: 8
+  stLiveSec: 8,
+  zoneCheckedAt: 0 // 上次查 B 站 zone API 的時間：超過 ZONE_MAX_AGE_MS 才重查（refreshZoneIfStale）
 };
 
 // 功能開關：安裝後／切換國家／自訂切回清單時，第一支影片在背景自動測速一次並換成最快節點（popup 顯示「優化中」）。
@@ -241,6 +242,277 @@ document.getElementById("autoDetectBtn").addEventListener("click", function () {
   btn.addEventListener("click", function () { els.modeCustom.click(); });
   box.appendChild(btn);
   box.appendChild(document.createTextNode(parts[1] || ""));
+})();
+
+// -------- 公告欄：主頁的跑馬燈，公布使用者所在國家的公告（每則「前綴＋捲動的標題」，點了開公告視窗 announcement.html，只顯示那一則）--------
+// 多則時像兩張疊在一起的紙（後面那張往右下錯開、露出一角），手動切換、無限循環；樣式與動畫見 popup.html 的 #lotteryWrap。
+// 資料來自 report worker 的 GET /v1/announcements（Neon 的 announcements，本機後台 admin/ 維護，見 scripts/lib/announcements.mjs）：
+//   · type "lottery"：抽獎建立時自動產生。前綴（NT$200 抽獎:）與標題由 lottery-text.js 依抽獎資料組；只在抽獎期間、該國顯示
+//   · type "html"：後台寫的一般公告。前綴（可省略）、標題、點開的 HTML 都是 { 語言: 文字 }，依介面語言 → en → zh-TW 退回；
+//     countries 空＝所有國家
+// 只下載、不送任何資料；國家由這裡依本機的 detectedCountry 自己篩，國家不會送出去。
+// storage.local.announcementFeed = { v, at, items } 快取 LOTTERY_TTL_MS（v 不是 ANNOUNCE_FEED_V 的舊格式快取直接作廢）：開 popup 先畫快取、過期再背景更新。
+// 按 × 只關目前那一則：announcementDismissed = { <公告 id>: 到期時間（現在 + 3 天） }，其他則照常顯示，新公告自然會出現。
+var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements";
+var LOTTERY_TTL_MS = 15 * 60 * 1000; // 擴充自己的公告快取；加上 worker 的 1 分鐘，改了公告最慢約 16 分鐘使用者看得到
+var ANNOUNCE_FEED_V = 1; // announcementFeed 的格式版本：/v1/announcements 的回應格式改了就 +1，舊快取自動作廢（announcement.js 的同名常數要一起改）
+var LOTTERY_HIDE_MS = 3 * 24 * 60 * 60 * 1000;
+var LOTTERY_PX_PER_SEC = 40; // 捲動速度
+var LOTTERY_HOLD_MS = 1500; // 跑馬燈開始捲動前先停多久
+var LOTTERY_FADE_MS = 180;
+var LOTTERY_SWAP_MS = 480; // 換則時「下面那張翻到上面」的動畫
+(function announcementBar() {
+  var wrap = document.getElementById("lotteryWrap");
+  var stack = document.getElementById("lotteryStack");
+  var nextBtn = document.getElementById("lotteryNext");
+  var tpl = document.getElementById("lotteryCardTpl");
+  var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var lang = LOCALIZED_KEYS[uiLangCode()].replace("_", "-"); // lottery-text.js 與公告的語言鍵是 zh-TW 這種寫法
+  var items = [], shown = [], shownKey = "", idx = 0, country = "", dismissed = {}, showAll = false;
+  chrome.storage.local.remove(["lotteryFeed", "lotteryDismissed", "lotteryShowAll"]); // 改成公告之前（未上架的開發版）留下的舊資料
+  var front = null, back = null, anim = null, swapping = false, paused = false, laidOutWidth = 0;
+  stack.setAttribute("aria-label", t("lotteryBarLabel"));
+
+  // 一張紙：從 <template> 複製，記住裡面會用到的元素
+  function makeCard() {
+    var el = tpl.content.firstElementChild.cloneNode(true);
+    var c = { el: el, main: el.querySelector(".lotteryMain"), label: el.querySelector(".lotteryLabel"),
+      viewport: el.querySelector(".lotteryViewport"), text: el.querySelector(".lotteryText"),
+      close: el.querySelector(".lotteryClose"), full: "" };
+    c.close.setAttribute("aria-label", t("lotteryBarHide"));
+    c.close.title = t("lotteryBarHide");
+    c.main.addEventListener("click", function () { if (c === front) openWindow(); });
+    c.close.addEventListener("click", function (ev) { ev.stopPropagation(); if (c === front) dismissCurrent(); });
+    c.main.addEventListener("mouseenter", function () { if (c === front) setPaused(true); });
+    c.main.addEventListener("mouseleave", function () { if (c === front) setPaused(document.activeElement === c.main); });
+    c.main.addEventListener("focus", function () { if (c === front) setPaused(true); });
+    c.main.addEventListener("blur", function () { if (c === front) setPaused(c.main.matches(":hover")); });
+    return c;
+  }
+  // 把第 i 則的文字放進這張紙
+  function fill(c, i) {
+    var l = shown[i];
+    c.label.textContent = l.label;
+    c.label.style.display = l.label ? "" : "none";
+    c.full = l.text;
+    c.text.textContent = l.text;
+    c.main.title = l.label + l.text;
+    c.text.style.transform = "";
+    c.viewport.className = "lotteryViewport";
+  }
+  // 「下一則」按鈕：多則才顯示；3 則以上時提示下一則是第幾則
+  function updateNext() {
+    var n = shown.length;
+    nextBtn.style.display = n > 1 ? "" : "none";
+    var tip = t("lotteryBarNext") + (n > 2 ? " (" + ((idx + 1) % n + 1) + "/" + n + ")" : "");
+    nextBtn.setAttribute("aria-label", tip);
+    nextBtn.title = tip;
+  }
+  // 前面那張可以操作；後面那張只露出一角，設成 inert（點擊會落到 #lotteryStack，由它切到下一則）
+  function setRoles() {
+    front.el.className = "lotteryCard front";
+    front.el.removeAttribute("inert");
+    front.el.removeAttribute("aria-hidden");
+    if (back) {
+      back.el.className = "lotteryCard back";
+      back.el.setAttribute("inert", "");
+      back.el.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  // { 語言: 文字 } 取介面語言，沒有就依序退回 en、zh-TW、任一種
+  function pickLang(map) {
+    if (!map) return "";
+    var keys = [lang, "en", "zh-TW"].concat(Object.keys(map));
+    for (var i = 0; i < keys.length; i++) if (map[keys[i]]) return map[keys[i]];
+    return "";
+  }
+  function visibleAnnouncements() {
+    var now = Date.now(), out = [];
+    items.forEach(function (it) {
+      if (!it || (dismissed[it.id] && now < dismissed[it.id])) return; // 這則按過 ×，3 天內不顯示
+      if (it.type === "lottery") {
+        var l = it.lottery;
+        if (!l || !l.country || now < l.startsAt || now >= l.endsAt) return;
+        if (!showAll && l.country !== country) return;
+        try {
+          var c = LotteryText.compose(l, lang);
+          out.push({ id: it.id, label: c.label, text: c.line });
+        } catch (e) {} // metadata 不完整（理論上 lottery.mjs 會擋）就略過這筆
+      } else if (it.type === "html") {
+        if (!showAll && it.countries && it.countries.length && it.countries.indexOf(country) === -1) return;
+        var title = pickLang(it.title);
+        if (title) out.push({ id: it.id, label: pickLang(it.prefix), text: title });
+      }
+    });
+    return out;
+  }
+
+  function stop() {
+    if (anim) { anim.onfinish = null; anim.cancel(); anim = null; }
+  }
+  // 播前面那張：標題放得下就靜止；放不下就跑馬燈——後面接一份同樣的文字（中間「•」），停一下後一直往左捲，
+  // 每捲完一份的寬度剛好回到開頭的樣子，無縫循環。不會自動換下一則
+  function play() {
+    stop();
+    var c = front;
+    c.text.textContent = c.full;
+    c.text.style.transform = "";
+    c.viewport.className = "lotteryViewport";
+    laidOutWidth = c.viewport.clientWidth;
+    if (!laidOutWidth) return; // 主頁目前沒顯示（在別的頁面）：等 ResizeObserver 有寬度再排
+    var over = c.text.offsetWidth - laidOutWidth;
+    if (over <= 0) return;
+    if (reduceMotion) { c.viewport.classList.add("ellipsis"); return; }
+    c.viewport.classList.add("scroll");
+    c.text.textContent = "";
+    var first = document.createElement("span"), gap = document.createElement("span"), copy = document.createElement("span");
+    first.textContent = copy.textContent = c.full;
+    gap.className = "lotteryGap";
+    gap.textContent = "•";
+    gap.setAttribute("aria-hidden", "true");
+    copy.setAttribute("aria-hidden", "true"); // 第二份只是視覺上的循環，螢幕閱讀器不重複念
+    c.text.appendChild(first);
+    c.text.appendChild(gap);
+    c.text.appendChild(copy);
+    var dist = first.offsetWidth + gap.offsetWidth;
+    anim = c.text.animate([{ transform: "translateX(0)" }, { transform: "translateX(" + (-dist) + "px)" }], {
+      duration: dist / LOTTERY_PX_PER_SEC * 1000, delay: LOTTERY_HOLD_MS, iterations: Infinity, easing: "linear"
+    });
+    if (paused) anim.pause();
+  }
+
+  // 下一則（手動；無限循環）：下面那張從後面往右上抽出、翻到最上面再落到前面，原本前面那張退到後面
+  function advance() {
+    if (swapping || shown.length < 2) return;
+    stop();
+    var n = shown.length, oldFront = front, oldBack = back;
+    idx = (idx + 1) % n;
+    function finish() {
+      front = oldBack;
+      back = oldFront;
+      oldFront.el.style.zIndex = oldBack.el.style.zIndex = "";
+      setRoles();
+      fill(back, (idx + 1) % n); // 退到後面那張換成再下一則
+      swapping = false;
+      updateNext();
+      play();
+    }
+    if (reduceMotion) { finish(); return; }
+    swapping = true;
+    var opts = { duration: LOTTERY_SWAP_MS, easing: "ease-in-out" };
+    oldBack.el.animate([
+      { transform: "translate(5px, 5px)" },
+      { transform: "translate(16px, -12px) rotate(1.5deg)", offset: 0.45 },
+      { transform: "translate(0, 0)" }
+    ], opts);
+    oldFront.el.animate([
+      { transform: "translate(0, 0)" },
+      { transform: "translate(-3px, 2px)", offset: 0.45 },
+      { transform: "translate(5px, 5px)" }
+    ], opts).onfinish = finish;
+    // 抽到最高點時換上下：下面那張蓋到上面
+    setTimeout(function () {
+      oldBack.el.style.zIndex = "3";
+      oldBack.el.classList.remove("back"); // 內容不再變淡
+    }, LOTTERY_SWAP_MS * 0.45);
+  }
+
+  // 依目前的 shown 重建：一則＝一張紙；多則＝前後兩張（前面第 idx 則、後面下一則）
+  function build() {
+    stop();
+    swapping = false;
+    stack.textContent = "";
+    front = back = null;
+    if (!shown.length) { wrap.style.display = "none"; return; }
+    wrap.style.display = "";
+    idx = idx % shown.length;
+    front = makeCard();
+    fill(front, idx);
+    if (shown.length > 1) {
+      back = makeCard();
+      fill(back, (idx + 1) % shown.length);
+      stack.appendChild(back.el);
+    }
+    stack.appendChild(front.el);
+    stack.classList.toggle("multi", shown.length > 1);
+    wrap.classList.toggle("multi", shown.length > 1);
+    setRoles();
+    updateNext();
+    play();
+  }
+  function render() {
+    var list = visibleAnnouncements();
+    var key = JSON.stringify(list);
+    if (key === shownKey) return;
+    var cur = front && shown[idx] ? shown[idx].id : null;
+    shownKey = key;
+    shown = list;
+    // 盡量停在原本那一則；那一則不見了（例如剛按 ×）就停在同一個位置，也就是原本的下一則
+    idx = Math.min(idx, Math.max(0, shown.length - 1));
+    for (var i = 0; i < shown.length; i++) if (shown[i].id === cur) idx = i;
+    build();
+  }
+
+  function setPaused(v) {
+    paused = v;
+    if (anim) { if (v) anim.pause(); else anim.play(); }
+  }
+  // 點到後面那張露出的一角（inert，點擊落到 stack 本身）→ 下一則
+  stack.addEventListener("click", function (ev) { if (ev.target === stack && back) advance(); });
+  nextBtn.addEventListener("click", advance);
+  if (window.ResizeObserver) new ResizeObserver(function () {
+    if (front && !swapping && front.viewport.clientWidth && front.viewport.clientWidth !== laidOutWidth) play();
+  }).observe(stack);
+
+  // 公告視窗（只顯示點到的那一則）：同問題回報，由 background 開成獨立視窗，popup 隨即關閉
+  function openWindow() {
+    var l = shown[idx];
+    chrome.runtime.sendMessage({ type: "CDN_SWITCHER_OPEN_ANNOUNCEMENT_WINDOW", id: l ? l.id : null }, function () { void chrome.runtime.lastError; window.close(); });
+  }
+  // × 只關目前這一則（3 天），其他照常顯示；新的抽獎本來就沒被關過，自然會出現
+  function dismissCurrent() {
+    var l = shown[idx];
+    if (!l || swapping) return;
+    var now = Date.now();
+    dismissed[l.id] = now + LOTTERY_HIDE_MS;
+    for (var k in dismissed) if (dismissed[k] <= now) delete dismissed[k]; // 順便清掉過期的
+    chrome.storage.local.set({ announcementDismissed: dismissed });
+    stop();
+    function rebuild() { shownKey = ""; render(); }
+    if (reduceMotion) { rebuild(); return; }
+    swapping = true;
+    front.el.animate([{ opacity: 1, transform: "translate(0, 0)" }, { opacity: 0, transform: "translate(0, -6px)" }],
+      { duration: LOTTERY_FADE_MS, fill: "forwards" }).onfinish = rebuild;
+  }
+  // 第一次開 popup 時國家是查完 zone API 才寫入的：寫入後重新篩一次（announcementShowAll 是除錯開關，見檔尾 announcementShowAll()）
+  chrome.storage.onChanged.addListener(function (ch, area) {
+    if (area !== "local") return;
+    if (ch.detectedCountry) country = ch.detectedCountry.newValue || "";
+    if (ch.announcementShowAll) showAll = !!ch.announcementShowAll.newValue;
+    if (ch.detectedCountry || ch.announcementShowAll) render();
+  });
+
+  chrome.storage.local.get({ announcementFeed: null, announcementDismissed: null, detectedCountry: "", announcementShowAll: false }, function (s) {
+    showAll = !!s.announcementShowAll;
+    if (s.announcementDismissed && typeof s.announcementDismissed === "object") dismissed = s.announcementDismissed;
+    country = s.detectedCountry || "";
+    var feed = s.announcementFeed;
+    if (feed && (feed.v !== ANNOUNCE_FEED_V || !Array.isArray(feed.items))) feed = null; // 舊格式的快取：當作沒有，直接重抓
+    if (feed) { items = feed.items; render(); }
+    if (feed && Date.now() - feed.at < LOTTERY_TTL_MS) return;
+    // no-store：不用瀏覽器的 HTTP 快取（worker 回應帶 max-age=60，給 Cloudflare 用的）；快取由擴充自己的 announcementFeed 管，
+    // 不然 announcementReset() 清掉之後重抓，還是會拿到瀏覽器存著的舊回應
+    fetch(ANNOUNCE_API, { credentials: "omit", cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j || !j.ok || !Array.isArray(j.items)) return;
+        chrome.storage.local.set({ announcementFeed: { v: ANNOUNCE_FEED_V, at: Date.now(), items: j.items } });
+        items = j.items;
+        render();
+      })
+      .catch(function () {});
+  });
 })();
 
 var reviewUrl = STORE_REVIEW_URLS[detectBrowser()];
@@ -1884,6 +2156,21 @@ function previewWhatsNew(from) {
       return entries.length + " 條";
     });
 }
+
+// -------- 除錯用：不管 IP 國家，一律顯示所有公告（跑馬燈）--------
+// 在 popup 的 DevTools console（popup 上按右鍵 →「檢查」）執行 announcementShowAll(true) 打開、announcementShowAll(false) 關閉；
+// 存在 storage.local.announcementShowAll，重開 popup 仍然有效，要記得關。按 × 關閉的紀錄照樣有效（要看的話先 announcementReset()）。
+function announcementShowAll(on) {
+  chrome.storage.local.set({ announcementShowAll: !!on });
+  return on ? "已開啟：顯示所有國家的公告" : "已關閉：只顯示所在國家的公告";
+}
+function announcementReset() {
+  chrome.storage.local.remove(["announcementDismissed", "announcementFeed"]);
+  return "已清除關閉紀錄與快取，重開 popup 生效";
+}
+// 改成公告之前的舊名字，照樣能用
+var lotteryShowAll = announcementShowAll;
+var lotteryResetDismiss = announcementReset;
 
 // -------- 除錯用：假國家（測長國名的 UI）--------
 // 網址列開 chrome-extension://<擴充 ID>/popup.html?fakeCountry：清單多一個最長國名的假國家（節點沿用台灣），

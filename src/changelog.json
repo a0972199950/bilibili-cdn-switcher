@@ -1,13 +1,13 @@
 {
   "unreleased": [
     {
-      "type": "fix",
+      "type": "feature",
       "text": {
-        "zh_TW": "台灣的建議節點清單新增 2 個節點，改善中嘉寬頻用戶的播放速度",
-        "zh_CN": "台湾的推荐节点列表新增 2 个节点，改善中嘉宽带用户的播放速度",
-        "en": "Added 2 nodes to Taiwan's recommended node list to improve playback speed for CNS (China Network Systems) broadband users",
-        "ja": "台湾のおすすめノードリストに 2 つのノードを追加し、中嘉（CNS）ブロードバンド利用者の再生速度を改善しました",
-        "ko": "대만 추천 노드 목록에 노드 2개를 추가해 중자(CNS) 광대역 사용자의 재생 속도를 개선했습니다"
+        "zh_TW": "主畫面新增公告欄，輪流顯示你所在國家的公告與進行中的測速抽獎，點一下就會開出那則公告的完整內容；有多則時可以切換，按 × 可把該則關閉 3 天",
+        "zh_CN": "主界面新增公告栏，轮流显示你所在国家的公告与进行中的测速抽奖，点一下就会打开那则公告的完整内容；有多则时可以切换，点 × 可把该则关闭 3 天",
+        "en": "The main screen now has an announcement bar for news and speed-test prize draws in your country; click one to open its full details, switch between them when there are several, and press × to hide one for 3 days",
+        "ja": "メイン画面にお知らせバーを追加しました。お住まいの国向けのお知らせや開催中の速度テスト抽選を順番に表示し、クリックで詳細を開けます。複数ある場合は切り替えられ、× でそのお知らせを 3 日間非表示にできます",
+        "ko": "메인 화면에 공지 바를 추가했습니다. 내 국가의 공지와 진행 중인 속도 테스트 추첨을 차례로 보여 주며, 누르면 해당 공지의 자세한 내용이 열립니다. 여러 개일 때는 전환할 수 있고, ×를 누르면 해당 공지를 3일 동안 숨깁니다"
       }
     }
   ],

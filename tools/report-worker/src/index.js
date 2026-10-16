@@ -6,16 +6,22 @@
  *  4) 回傳 { ok, id, issueUrl, issueNumber, emailed }
  * 任一 GitHub 步驗失敗仍盡量回 200（檔案已存就算收到），避免使用者重送造成重複。
  * 這裡不另外記錄任何 log（避免第二份個資副本）。
+ *
+ * 另有兩個公開的 GET（不用 token、不收任何使用者資料；結果在 Cloudflare 邊緣快取 LOTTERY_CACHE_S 秒，Neon 不會每次開 popup 都被打到）：
+ *  - /v1/lotteries：進行中抽獎的 metadata（Neon 的 lotteries），給測速 exe 的「測速目的」頁，文字由 exe 自己組（lottery_text.py）
+ *  - /v1/announcements：擴充的公告（Neon 的 announcements）：抽獎公告附抽獎 metadata（擴充用 src/lottery-text.js 組字），
+ *    一般公告是後台寫的各語言前綴／標題／HTML
  */
 const MAX_BODY = 256 * 1024;
 const MAX_DESC = 4000;
 const RATE_LIMIT = 5; // 同一來源 IP 10 分鐘內最多幾筆
 const RATE_WINDOW_S = 600;
 const TYPES = ["bug", "feature"];
+const LOTTERY_CACHE_S = 60;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, X-BCS-Token",
   "Access-Control-Max-Age": "86400"
 };
@@ -111,10 +117,80 @@ function issueBody(p, fileUrl, id) {
   return lines.join("\n");
 }
 
+// Neon 的 HTTP SQL 介面（同 scripts/lottery.mjs）；DATABASE_URL 是 postgresql://… 連線字串
+async function neonSql(env, query, params = []) {
+  const host = new URL(env.DATABASE_URL).hostname;
+  const r = await fetch(`https://${host.replace(/^[^.]+\./, "api.")}/sql`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Neon-Connection-String": env.DATABASE_URL },
+    body: JSON.stringify({ query, params })
+  });
+  if (!r.ok) throw new Error("neon_" + r.status);
+  return (await r.json()).rows || [];
+}
+
+// 抽獎欄位（lotteries 的別名 l）：日期是台灣時間；startsAt / endsAt 是毫秒時間戳（endsAt 不含，即結束日隔天 00:00 台灣時間）
+const LOTTERY_FIELDS = `l.id as l_id, l.title as l_title, l.country as l_country, l.prize_amount::float8 as l_amount, l.currency as l_currency,
+    l.gift_cards as l_gift_cards, l.isps as l_isps, l.winners as l_winners, l.draw_days as l_draw_days,
+    to_char(l.starts_at at time zone 'Asia/Taipei', 'YYYY-MM-DD') as l_start_date,
+    to_char(l.ends_at at time zone 'Asia/Taipei' - interval '1 day', 'YYYY-MM-DD') as l_end_date,
+    to_char(l.ends_at at time zone 'Asia/Taipei' - interval '1 day' + make_interval(days => coalesce(l.draw_days, 7)), 'YYYY-MM-DD') as l_draw_by,
+    (extract(epoch from l.starts_at) * 1000)::float8 as l_starts_ms, (extract(epoch from l.ends_at) * 1000)::float8 as l_ends_ms`;
+const LOTTERY_ACTIVE = "l.ended_at is null and l.country is not null and now() >= l.starts_at and now() < l.ends_at";
+
+function lotteryItem(r) {
+  return {
+    id: r.l_id, title: r.l_title, country: r.l_country, prize: { amount: r.l_amount, currency: r.l_currency, giftCards: r.l_gift_cards || [] },
+    winners: r.l_winners, isps: r.l_isps || [], drawDays: r.l_draw_days == null ? 7 : r.l_draw_days,
+    startDate: r.l_start_date, endDate: r.l_end_date, drawBy: r.l_draw_by, startsAt: r.l_starts_ms, endsAt: r.l_ends_ms
+  };
+}
+
+// GET 清單的共同流程：Cloudflare 邊緣快取 LOTTERY_CACHE_S 秒，沒命中才查 Neon
+async function cachedList(request, env, ctx, path, load) {
+  const cache = caches.default;
+  const key = new Request(new URL(path, request.url).toString());
+  const hit = await cache.match(key);
+  if (hit) return hit;
+  if (!env.DATABASE_URL) return fail(503, "not_configured");
+  let items;
+  try { items = await load(); } catch (e) { return fail(502, "db"); }
+  const res = new Response(JSON.stringify({ ok: true, items }), {
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${LOTTERY_CACHE_S}`, ...CORS }
+  });
+  ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+
+// 進行中、有 metadata 的抽獎（依結束時間排序，不分國家，各端自己篩）——測速 exe 用：
+// { ok, items: [{ id, title, country: "TW", prize: { amount, currency, giftCards: [...] }, winners, isps: [...]（空＝不限）, drawDays,
+//   startDate: "2026-10-01", endDate: "2026-10-30", drawBy: "2026-11-06", startsAt, endsAt }] }
+function lotteries(request, env, ctx) {
+  return cachedList(request, env, ctx, "/v1/lotteries", async () =>
+    (await neonSql(env, `select ${LOTTERY_FIELDS} from lotteries l where ${LOTTERY_ACTIVE} order by l.ends_at, l.id`)).map(lotteryItem));
+}
+
+// 擴充的公告（新的在前，不分國家，擴充自己篩）：
+//   { id, type: "lottery", lottery: { 同 /v1/lotteries 的一筆 } }        只列進行中的抽獎；前綴、標題、內容由擴充依抽獎資料組
+//   { id, type: "html", prefix: { 語言: 文字 } | null, title: { 語言: 文字 }, html: { 語言: HTML }, countries: ["TW"] | null（全部） }
+function announcements(request, env, ctx) {
+  return cachedList(request, env, ctx, "/v1/announcements", async () => {
+    const rows = await neonSql(env, `select a.id, a.type, a.prefix, a.title, a.html, a.countries, ${LOTTERY_FIELDS}
+      from announcements a left join lotteries l on l.id = a.lottery_id
+      where a.type = 'html' or (a.type = 'lottery' and ${LOTTERY_ACTIVE})
+      order by a.created_at desc, a.id desc`);
+    return rows.map((r) => r.type === "lottery"
+      ? { id: r.id, type: "lottery", lottery: lotteryItem(r) }
+      : { id: r.id, type: "html", prefix: r.prefix || null, title: r.title || {}, html: r.html || {}, countries: r.countries || null });
+  });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/v1/lotteries") return lotteries(request, env, ctx);
+    if (request.method === "GET" && url.pathname === "/v1/announcements") return announcements(request, env, ctx);
     if (request.method !== "POST" || url.pathname !== "/v1/report") return fail(404, "not_found");
     if (request.headers.get("X-BCS-Token") !== env.REPORT_TOKEN) return fail(401, "bad_token");
     const len = Number(request.headers.get("content-length") || 0);

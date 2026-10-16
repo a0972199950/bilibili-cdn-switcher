@@ -5,8 +5,8 @@
 1. **入口**：選語言（繁中／簡中／英文／日文／韓文，預設依 Windows 介面語言）；閱讀英文隱私聲明；下方是「擴充功能【名稱】線上應用程式商店」與 Chrome ∙ Firefox ∙ Edge 三個商店連結（名稱用該語言的商店名稱，擴充沒有的語言用英文）；**勾選同意才能下一步**；「開發者測試模式」給作者自己用，藏在左下角「進階設定 → 開發者選項」第二層選單裡，免得一般使用者誤點。按下一步時送出使用紀錄（見下方「使用紀錄」）。
 2. **測速目的**（兩個選項）：
    - 「單純測試／建立擴充『自訂節點列表』」（預設）：網路檢查只做參考，不限網速與 VPN（想建立自己列表的人網路環境往往比較複雜，常常過不了門禁）。
-   - **進行中的抽獎**（見下方「抽獎公告」）：有的話在「參加抽獎」選項下方用 HTML 顯示，不管選哪個都看得到；有抽獎時就不再顯示 `gift_cards` 的禮物卡說明。
-   - 「參加抽獎」：選了才出現禮物卡說明（依國家，`config.json` 的 `gift_cards`）、email 與**必中獎邀請碼**（選填）。按「驗證」或直接按「下一步」時，透過 Apps Script 到 Neon 檢查「邀請碼 + email」是否相符且未被作廢；成功顯示綠框（按下一步直接前進），失敗顯示原因並留在本頁，再按一次「下一步」就**當作沒填邀請碼**繼續。改了 email 或邀請碼，先前的驗證結果就作廢。
+   - **進行中的抽獎**（見下方「抽獎公告」）：在「參加抽獎」選項下方顯示**使用者所在國家**的抽獎，不管選哪個都看得到；該國沒有抽獎時顯示「目前暫無進行中的活動」。
+   - 「參加抽獎」：選了才出現 email 與**必中獎邀請碼**（選填）；獎品寫在上方的抽獎內容裡（`config.json` 的 `gift_cards` 只用在確認信）。按「驗證」或直接按「下一步」時，透過 Apps Script 到 Neon 檢查「邀請碼 + email」是否相符且未被作廢；成功顯示綠框（按下一步直接前進），失敗顯示原因並留在本頁，再按一次「下一步」就**當作沒填邀請碼**繼續。改了 email 或邀請碼，先前的驗證結果就作廢。
 3. **網路檢查**（約 40 秒）：測總頻寬並偵測 VPN／代理。**參加抽獎時，下載速度 ≥ `min_down_mbps`（預設 50 Mbps）且沒有 VPN 才能下一步**，否則顯示原因、「重新檢查」，並提示「只是想建立自訂節點列表的話，按上一步改選單純測試就不受限制」。單純測試時只顯示警告，仍可繼續。測試模式下結果僅供參考、仍可繼續。從下一頁返回時沿用上次的結果，不重測。
    - 量得到頻寬就顯示「預計本次測試約需 N 分鐘，結束之前請不要關閉視窗」，測速頁的說明也用同一個數字。
    - N 的算法（`estimate_minutes`）：耗時主要取決於並行數（大部分時間花在等逾時的節點），所以先預測並行數，算法與測速相同：`下載頻寬 × 0.5 ÷ B 站單一連線速度`，限制在 1–8。B 站單一連線速度由 `probe_per_conn` 對 08ct／08c／hw 各下載 8MB 取中位數（約 5–20 秒），**最多算 60 Mbps**（`speedtest.PER_CONN_CAP`＝B 站 8K 串流碼率上限，正式測速決定並行數時也套用；量不到時直接用上限）。再用實測校正的 `7 + 105 ÷ 並行數` 換成分鐘（並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分），1.6.0 起再乘 1.25（細測改成快篩通過且冷門探測沒回 403 的全部節點，不再只取前 80 名；尚未用實測校正），取 5 的倍數、限制在 20–150 分。
@@ -41,19 +41,32 @@ https://www.bilibili.com/#cdnsw-import=1.<host>,<host>,…
 
 ## 抽獎公告（Neon）
 
-「測速目的」頁顯示進行中的抽獎，內容是 HTML，存在 Neon 的 `lotteries`（各語言一份）。exe 透過 Apps Script（`action: "lotteries"`）讀取，用 [tkinterweb](https://github.com/Andereoo/TkinterWeb) 內嵌顯示：支援常見的 HTML／CSS（標題、粗體、顏色、清單、連結），**不跑 JavaScript**，連結會用瀏覽器開；高度跟著內容，最高約 220px，超過就捲動。讀不到或沒有進行中的抽獎時，照舊顯示 `gift_cards` 的禮物卡說明。
+每個抽獎在 Neon 的 `lotteries` 存一份 metadata：舉辦國家（單一）、每名的面額與幣別、禮物卡種類（該國語言，多種＝擇一）、
+可參加的寬頻業者（該國語言，空＝該國所有使用者）、抽幾名、結束後幾天內抽出、起訖日。顯示的文字由各端自己依 metadata 組：
+
+- **exe**：「測速目的」頁向 report worker 的 `GET /v1/lotteries`（不用 token，見 `tools/report-worker/README.md`）抓全部進行中的抽獎，
+  只留**使用者所在國家**（出口 IP 的國家）的，用 `lottery_text.py` 組成 HTML（標題、參加資格、期間、獎品、抽獎方式、參加方式＋測速教學連結），
+  以 [tkinterweb](https://github.com/Andereoo/TkinterWeb) 內嵌顯示（不跑 JavaScript，連結用瀏覽器開；高度跟著內容，最高約 220px，超過就捲動）。
+  該國沒有抽獎時顯示「目前暫無進行中的活動」；抓不到（網路錯誤）時什麼都不顯示，下次進這頁再抓。
+  **開發者測試模式**開著時不管國家，全部顯示（測試用）。
+- **擴充**：popup 主頁的跑馬燈與點開的抽獎說明視窗，用 `src/lottery-text.js` 組字，同樣只顯示使用者所在國家的抽獎。
+  `lottery_text.py` 與 `lottery-text.js` 的範本表（`TEXT`）要一起改。
+  測試時要不管國家全部顯示：在 popup 的 DevTools console 執行 `lotteryShowAll(true)`（關閉：`lotteryShowAll(false)`）。
+- **舊版 exe（1.7.0（含）以前）**：透過 Apps Script（`action: "lotteries"`）讀 `lotteries.html`，而且不分國家、只顯示最新開始的一個。
+  `lottery:add`／`lottery:update` 會用 `lottery_text.py` 產生這份 html 一起寫進去（文字跟新版 exe 一樣），Apps Script 不用改。
 
 ```bash
-# 資料夾裡放 zh-TW.html、zh-CN.html、en.html、ja.html、ko.html（至少一個；缺的語言依序退回 en、zh-TW）
-npm run lottery:add -- scripts/lottery-example --start 2026-10-01 --end 2026-10-31 --title 十月抽獎
+npm run lottery:preview -- scripts/lottery-example.json      # 先看五種語言會顯示什麼（不寫資料庫）
+npm run lottery:add -- scripts/lottery-example.json          # 新增
+npm run lottery:update -- 3 scripts/lottery-example.json     # 改了 lottery.json 後覆寫第 3 個（期間、metadata、舊版 html 全部更新）
 npm run lottery:show          # 全部抽獎與狀態（進行中／未開始／已結束／提前結束）
 npm run lottery:end -- 3      # 提前結束第 3 個（資料保留）
 ```
 
-- 日期是台灣時間，`--end` 當天整天都算。期間重疊時**只顯示最新開始的那一個**（開始時間相同取後新增的）；較舊的等新的結束後才會再出現。`lottery:show` 會標出「進行中（顯示中）」與「進行中（被較新的蓋過）」。
-- Apps Script 會快取 5 分鐘：新增或結束後，exe 最多 5 分鐘後才看得到。
-- 範例在 `scripts/lottery-example/`（五種語言，獎品寫「等值美金 15 元的禮物卡」）。HTML 不用寫 `<html>`、`<body>`，字型與底色 exe 會自己套。
-- PowerShell 會吃掉 `--`，讓 npm 誤把 `--start` 當成自己的參數；在 PowerShell 請直接用 `node scripts/lottery.mjs add …`（或改用 cmd／Git Bash 跑 npm）。
+- `lottery.json` 的欄位說明在 `scripts/lottery.mjs` 開頭，範例 `scripts/lottery-example.json`。產生舊版 html 需要本機有 `python`。
+- 日期是台灣時間，`end` 當天整天都算。
+- 快取：worker 在 Cloudflare 邊緣快取 1 分鐘（新版 exe）；Apps Script 快取 5 分鐘（舊版 exe）；擴充另外快取 15 分鐘。
+- PowerShell 會吃掉 `--`；在 PowerShell 請直接用 `node scripts/lottery.mjs add …`（或改用 cmd／Git Bash 跑 npm）。
 
 ## 使用紀錄
 
@@ -90,7 +103,7 @@ Apps Script 端限流：同一個 install_id 每 10 分鐘 30 筆、全部合計
 | `extdetect.py` | 找出裝了擴充的瀏覽器／設定檔，開匯入網址建立「自訂節點列表」；各瀏覽器的商店網址 |
 | `apps-script/Code.gs` | 報告接收端：寄信給你（附件）、存雲端硬碟、寫試算表、寄確認信給測試者 |
 | `config.example.json` | 設定範本；實際的 `config.json` 不進版控 |
-| `build.ps1` | 建 `.venv`、裝 PyInstaller / qrcode / Pillow / tkinterweb（抽獎公告的 HTML 元件，連同 Tkhtml 一起打包）、打包成 `<repo>\release\CDNSpeedTest.exe`（視窗 icon 用正式版 `assets/icons-prod/icon128.png`，exe 檔案 icon 用 `assets/icon-master.png`；`src/icons` 是開發版，右上有紅點） |
+| `build.ps1` | 建 `.venv`、裝 PyInstaller / qrcode / Pillow / tkinterweb（抽獎公告的 HTML 元件，連同 Tkhtml 一起打包；文字由 `lottery_text.py` 組）、打包成 `<repo>\release\CDNSpeedTest.exe`（視窗 icon 用正式版 `assets/icons-prod/icon128.png`，exe 檔案 icon 用 `assets/icon-master.png`；`src/icons` 是開發版，右上有紅點） |
 
 ## config.json
 

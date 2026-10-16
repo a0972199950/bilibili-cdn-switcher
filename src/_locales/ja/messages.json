@@ -556,5 +556,29 @@
   },
   "reportErrPermission": {
     "message": "問題を報告するには診断データの添付を許可する必要があります。添付したくない場合は「診断データをコピー」して GitHub で issue を作成してください。"
+  },
+  "lotteryBarLabel": {
+    "message": "お知らせ"
+  },
+  "lotteryBarNext": {
+    "message": "次のお知らせ"
+  },
+  "lotteryBarHide": {
+    "message": "このお知らせを閉じる（3 日間表示しません）"
+  },
+  "lotteryWinTitle": {
+    "message": "抽選キャンペーン"
+  },
+  "lotteryWinHow": {
+    "message": "参加方法：「CDN 速度テストツール」をダウンロードし、「抽選に参加する」を選んでメールアドレスを入力、テストを完了してレポートを送信してください。"
+  },
+  "lotteryWinCta": {
+    "message": "速度テストツールを入手"
+  },
+  "lotteryWinClose": {
+    "message": "閉じる"
+  },
+  "announceGone": {
+    "message": "このお知らせは終了したか、削除されました。"
   }
 }
