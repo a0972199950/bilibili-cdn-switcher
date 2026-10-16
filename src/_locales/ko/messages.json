@@ -556,5 +556,29 @@
   },
   "reportErrPermission": {
     "message": "문제 신고를 보내려면 진단 데이터 첨부를 허용해야 합니다. 원하지 않으면 \"진단 데이터 복사\"로 GitHub에 직접 issue를 열어 주세요."
+  },
+  "lotteryBarLabel": {
+    "message": "공지"
+  },
+  "lotteryBarNext": {
+    "message": "다음 공지"
+  },
+  "lotteryBarHide": {
+    "message": "이 공지 닫기(3일 동안 표시 안 함)"
+  },
+  "lotteryWinTitle": {
+    "message": "추첨 이벤트"
+  },
+  "lotteryWinHow": {
+    "message": "참여 방법: 「CDN 속도 테스트 도구」를 내려받아 \"추첨에 참여\"를 선택하고 이메일을 입력한 뒤, 테스트를 마치고 보고서를 보내 주세요."
+  },
+  "lotteryWinCta": {
+    "message": "속도 테스트 도구 받기"
+  },
+  "lotteryWinClose": {
+    "message": "닫기"
+  },
+  "announceGone": {
+    "message": "이 공지는 종료되었거나 삭제되었습니다."
   }
 }

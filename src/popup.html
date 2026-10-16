@@ -647,6 +647,178 @@
       text-decoration: underline;
     }
 
+    /* 抽獎公告：每則一張「紙」（主題色淡底：明亮＝粉、黑暗＝藍），「固定的標籤（NT$200 抽獎:）＋捲動的標題」，
+       右邊關閉鈕（只關這一則）。有多則時後面再疊一張，往右下錯開、露出一角表示還有其他公告；紙外右側（垂直置中）有一顆往下的箭頭切到下一則
+       （放在右下角容易誤觸下面的啟用開關），
+       點露出的那一角也能切（無限循環，不會自動切）。標題放不下時跑馬燈：後面接一份同樣的文字，一直往左捲、無縫循環；
+       滑鼠移上去或鍵盤聚焦時暫停。換則時下面那張從後面往右上抽出、翻到最上面再落到前面，原本前面那張退到後面。
+       系統設了「減少動態效果」時不捲動、不播換則動畫，標題超出用刪節號。 */
+    /* 紙堆＋（多則時）右側的「下一則」箭頭排成一列 */
+    #lotteryWrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 2px;
+      margin: 0 0 10px;
+    }
+
+    #lotteryStack {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: grid;
+    }
+
+    /* 多則：用 padding 留出後面那張錯開的位置（露出的那一角要在 stack 範圍內，點擊才會落到 stack：
+       後面那張是 inert，點擊會穿過它）→ 下一則 */
+    #lotteryStack.multi {
+      padding: 0 5px 5px 0;
+      cursor: pointer;
+    }
+
+    .lotteryCard {
+      grid-area: 1 / 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      height: 28px;
+      padding: 0 3px 0 10px;
+      border: 1px solid var(--selected-bg);
+      border-radius: 6px;
+      /* 淡底疊在不透明的頁面底色上：兩張紙疊在一起時後面那張不會透出來 */
+      background: linear-gradient(var(--hover-bg), var(--hover-bg)), var(--bg);
+      font-size: 12px;
+      line-height: 1;
+      cursor: default;
+    }
+
+    .lotteryCard.front {
+      z-index: 2;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+    }
+
+    .lotteryCard.back {
+      z-index: 1;
+      transform: translate(5px, 5px);
+    }
+
+    .lotteryCard.back > * {
+      opacity: .45;
+    }
+
+    /* 標籤＋標題整塊是一顆按鈕：點了開抽獎說明視窗 */
+    button.lotteryMain {
+      flex: 1 1 auto;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .lotteryLabel {
+      flex: 0 0 auto;
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .lotteryViewport {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    /* 要捲動時兩端淡出，文字不會在邊界被硬切 */
+    .lotteryViewport.scroll {
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 6px, #000 calc(100% - 14px), transparent);
+      mask-image: linear-gradient(to right, transparent, #000 6px, #000 calc(100% - 14px), transparent);
+    }
+
+    .lotteryText {
+      display: inline-block;
+      padding: 3px 0 3px 1px;
+    }
+
+    .lotteryViewport.ellipsis .lotteryText {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    button.lotteryMain:hover .lotteryText {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+
+    /* 「下一則」：紙外右側、跟前面那張紙垂直置中，箭頭往下（指向下面那張） */
+    button.lotteryNext {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 28px;
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    button.lotteryNext:hover {
+      background: var(--selected-bg);
+      color: var(--text);
+    }
+
+    button.lotteryNext svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* 跑馬燈接回開頭時，兩份文字之間的分隔 */
+    .lotteryGap {
+      padding: 0 14px;
+      color: var(--accent);
+      opacity: .6;
+    }
+
+    button.lotteryClose {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 0;
+      border-radius: 4px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    button.lotteryClose:hover {
+      background: var(--selected-bg);
+      color: var(--text);
+    }
+
+    button.lotteryClose svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+
     .advItem {
       padding: 10px 0;
       border-bottom: 1px solid var(--line);
@@ -1743,6 +1915,29 @@
       <button id="staleReloadBtn" class="alertAction" type="button"></button>
     </div>
 
+    <div id="lotteryWrap" style="display:none">
+      <div id="lotteryStack" role="region"></div>
+      <button id="lotteryNext" class="lotteryNext" type="button" style="display:none">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z" />
+        </svg>
+      </button>
+    </div>
+    <!-- 抽獎公告的一張紙：popup.js 複製成前、後兩張放進 #lotteryStack -->
+    <template id="lotteryCardTpl">
+      <div class="lotteryCard">
+        <button class="lotteryMain" type="button">
+          <span class="lotteryLabel"></span>
+          <span class="lotteryViewport"><span class="lotteryText"></span></span>
+        </button>
+        <button class="lotteryClose" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+          </svg>
+        </button>
+      </div>
+    </template>
+
     <div class="row">
       <span><b id="enabledLabel"></b></span>
       <label class="switch"><input type="checkbox" id="enabled" /><span class="slider"></span></label>
@@ -2044,6 +2239,7 @@
   </div>
 
   <script src="i18n.js"></script>
+  <script src="lottery-text.js"></script>
   <script src="popup.js"></script>
 </body>
 

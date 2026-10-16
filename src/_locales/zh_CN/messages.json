@@ -556,5 +556,29 @@
   },
   "reportErrPermission": {
     "message": "需要你允许附上诊断数据才能提交问题反馈；若不想附上，请改用“复制诊断数据”自行到 GitHub 开 issue。"
+  },
+  "lotteryBarLabel": {
+    "message": "公告"
+  },
+  "lotteryBarNext": {
+    "message": "下一则公告"
+  },
+  "lotteryBarHide": {
+    "message": "关闭这则公告（3 天内不再显示）"
+  },
+  "lotteryWinTitle": {
+    "message": "抽奖活动"
+  },
+  "lotteryWinHow": {
+    "message": "参加方式：下载「CDN 测速工具」，选择“参加抽奖”并留下 email，完成测速并发送报告。"
+  },
+  "lotteryWinCta": {
+    "message": "下载测速工具与教程"
+  },
+  "lotteryWinClose": {
+    "message": "关闭"
+  },
+  "announceGone": {
+    "message": "这则公告已经结束或被移除。"
   }
 }

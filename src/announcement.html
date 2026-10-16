@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title></title>
+  <script src="theme.js"></script>
+  <style>
+    /* 公告視窗：popup 跑馬燈點下去，由 background 開的獨立視窗，只顯示點到的那一則。顏色變數與 popup.html / report.html 一致。
+       抽獎公告由 announcement.js 依抽獎資料（lottery-text.js 組字）建立；一般公告是後台寫的 HTML（html-sanitize.js 重建）。 */
+    :root,
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f5f7; --text: #18191c; --muted: #61666d; --line: #e3e5e7; --border: #e3e5e7;
+      --control-bg: #fff; --raised: #fff; --accent: #fb7299; --hover-bg: #ffecf1; --link: #00aeec; --code-bg: #f4f5f7;
+      --primary: #00aeec; --primary-hover: #0099d1; --primary-text: #fff; --secondary-text: #18191c; --secondary-hover-bg: #f1f2f3;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #1c1c1e; --text: #eaeaea; --muted: #888; --line: rgba(128, 128, 128, .3); --border: rgba(128, 128, 128, .4);
+      --control-bg: transparent; --raised: #2b2b2b; --accent: #00a1d6; --hover-bg: rgba(0, 161, 214, .12); --link: #00a1d6; --code-bg: rgba(255, 255, 255, .06);
+      --primary: #00a1d6; --primary-hover: #0090c0; --primary-text: #fff; --secondary-text: #00a1d6; --secondary-hover-bg: rgba(0, 161, 214, .15);
+    }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font: 14px/1.6 -apple-system, "Segoe UI", "Microsoft JhengHei", "Microsoft YaHei", "Hiragino Sans", "Apple SD Gothic Neo", sans-serif;
+      color: var(--text); background: var(--bg);
+      display: flex; align-items: flex-start; justify-content: center; box-sizing: border-box; padding: 24px 12px; overflow: auto;
+    }
+    :lang(ja) { word-break: auto-phrase; line-break: strict; }
+    :lang(ko) { word-break: keep-all; overflow-wrap: anywhere; }
+    .card {
+      width: 100%; max-width: 640px; background: var(--raised); color: var(--text); border-radius: 12px; box-sizing: border-box;
+      padding: 20px 24px 22px; box-shadow: 0 12px 48px rgba(0, 0, 0, .35); position: relative; max-height: calc(100vh - 48px); overflow: auto;
+    }
+    .head { display: flex; align-items: center; gap: 8px; margin: 0 40px 14px 0; }
+    .head svg { width: 20px; height: 20px; fill: var(--accent); flex: 0 0 auto; }
+    h1 { font-size: 18px; margin: 0; line-height: 1.4; }
+    .close { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
+    .close:hover { background: var(--hover-bg); color: var(--text); }
+
+    #body { overflow-wrap: anywhere; }
+    #body > :first-child { margin-top: 0; }
+    #body > :last-child { margin-bottom: 0; }
+
+    /* 抽獎公告 */
+    .lot h2 { margin: 0 0 6px; font-size: 16px; line-height: 1.4; color: var(--accent); }
+    .lot p { margin: 0 0 4px; }
+    .lot p.ispList { padding-left: 1.5em; }
+
+    /* 一般公告（後台寫的 HTML，只有白名單標籤、沒有屬性，樣式由這裡決定） */
+    .rich h1, .rich h2, .rich h3, .rich h4 { margin: 14px 0 6px; line-height: 1.4; }
+    .rich h1 { font-size: 18px; } .rich h2 { font-size: 16px; color: var(--accent); } .rich h3, .rich h4 { font-size: 15px; }
+    .rich p { margin: 0 0 8px; }
+    .rich ul, .rich ol { margin: 0 0 8px; padding-left: 22px; }
+    .rich hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+    .rich a { color: var(--link); }
+    .rich blockquote { margin: 0 0 8px; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); }
+    .rich code { font: 12.5px Consolas, Menlo, monospace; padding: 1px 4px; border-radius: 4px; background: var(--code-bg); }
+    .rich table { border-collapse: collapse; margin: 0 0 8px; }
+    .rich th, .rich td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+
+    .empty { color: var(--muted); margin: 8px 0; }
+    .how { margin-top: 18px; padding: 10px 12px; border-radius: 8px; background: var(--hover-bg); font-size: 13px; }
+    .actions { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    button.primary { font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 9px 22px; background: var(--primary); color: var(--primary-text); cursor: pointer; }
+    button.primary:hover { background: var(--primary-hover); }
+    button.secondary { font: inherit; border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; background: var(--control-bg); color: var(--secondary-text); cursor: pointer; }
+    button.secondary:hover { background: var(--secondary-hover-bg); }
+    @media (max-width: 520px) { body { padding: 8px; } .card { padding: 16px; border-radius: 10px; max-height: calc(100vh - 16px); } }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <button class="close" id="closeBtn" type="button">×</button>
+    <div class="head">
+      <svg id="giftIcon" viewBox="0 0 24 24" aria-hidden="true" style="display:none">
+        <path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z" />
+      </svg>
+      <h1 id="title"></h1>
+    </div>
+    <div id="body"></div>
+    <div class="how" id="how" style="display:none"></div>
+    <div class="actions">
+      <button type="button" class="primary" id="ctaBtn" style="display:none"></button>
+      <button type="button" class="secondary" id="closeBtn2"></button>
+    </div>
+  </div>
+  <script src="i18n.js"></script>
+  <script src="lottery-text.js"></script>
+  <script src="html-sanitize.js"></script>
+  <script src="announcement.js"></script>
+</body>
+
+</html>

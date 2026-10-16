@@ -56,3 +56,6 @@ promotions/
 # 私人 repo（scripts/private-repo.mjs）：資料庫本身，與 setup 時被覆蓋前的本機檔案備份
 /.git-private/
 /.private-restore-backup/
+
+# 本機後台（Next.js，只在 localhost 跑、不部署），只進私人 repo
+/admin/

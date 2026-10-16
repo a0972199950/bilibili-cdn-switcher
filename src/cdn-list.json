@@ -4,16 +4,16 @@
     {
       "code": "TW", "dial": 886, "name": {"zh_TW":"台灣","zh_CN":"台湾","en":"Taiwan","ja":"台湾","ko":"대만"},
       "nodes": [
-        "cn-jssz-cm-02-18.bilivideo.com",
+        "cn-sdjn-fx-01-01.bilivideo.com",
         "upos-sz-mirrorhw.bilivideo.com",
-        "cn-sdjn-fx-01-02.bilivideo.com",
+        "cn-jxnc-cm-01-19.bilivideo.com",
         "cn-hbwh-fx-01-01.bilivideo.com",
-        "cn-gddg-cu-01-07.bilivideo.com",
         "cn-bj-se-01-05.bilivideo.com",
         "cn-hk-eq-01-14.bilivideo.com",
         "cn-hncs-fx-01-01.bilivideo.com",
-        "upos-sz-mirror08ct.bilivideo.com",
-        "upos-sz-mirror08c.bilivideo.com",
+        "upos-sz-mirror08h.bilivideo.com",
+        "cn-hnzz-fx-01-01.bilivideo.com",
+        "cn-sdqd-cu-01-25.bilivideo.com",
         "cn-hk-eq-01-09.bilivideo.com",
         "cn-sccd-fx-01-01.bilivideo.com"
       ]
@@ -36,6 +36,7 @@
     {
       "code": "HK", "dial": 852, "name": {"zh_TW":"香港","zh_CN":"香港","en":"Hong Kong","ja":"香港","ko":"홍콩"},
       "nodes": [
+        "cn-jssz-cm-02-25.bilivideo.com",
         "cn-sdjn-fx-01-01.bilivideo.com",
         "upos-sz-estghw.bilivideo.com",
         "cn-hbwh-fx-01-01.bilivideo.com",

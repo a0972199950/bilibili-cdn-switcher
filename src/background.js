@@ -110,10 +110,16 @@ function putSnapshot(tabId, snap) {
 
 // 4) 回報頁的獨立視窗（目前分頁不是 B 站、或頁內 iframe 載不出來時的退路）
 function openReportWindow(tabId) {
-  var url = chrome.runtime.getURL("report.html") + (tabId != null ? "?tab=" + tabId : "");
+  openExtWindow(chrome.runtime.getURL("report.html") + (tabId != null ? "?tab=" + tabId : ""), 760, 720);
+}
+// 公告視窗（announcement.html）：popup 的跑馬燈點下去開，?id= 是點到的那則公告（只顯示那一則）
+function openAnnouncementWindow(id) {
+  openExtWindow(chrome.runtime.getURL("announcement.html") + (/^\d+$/.test(String(id)) ? "?id=" + id : ""), 560, 680);
+}
+function openExtWindow(url, width, height) {
   try {
     if (chrome.windows && chrome.windows.create) {
-      chrome.windows.create({ url: url, type: "popup", width: 760, height: 720, focused: true }, function () {
+      chrome.windows.create({ url: url, type: "popup", width: width, height: height, focused: true }, function () {
         if (chrome.runtime.lastError) chrome.tabs.create({ url: url }); // Firefox Android 等沒有視窗的環境
       });
       return;
@@ -140,5 +146,6 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     putSnapshot(tabId, { t: Date.now(), tab: tabId, url: msg.url || "", payload: msg.payload }).then(function () { sendResponse({ ok: true }); });
     return true;
   }
+  if (msg.type === "CDN_SWITCHER_OPEN_ANNOUNCEMENT_WINDOW") { openAnnouncementWindow(msg.id); sendResponse({ ok: true }); return true; }
   if (msg.type === "CDN_SWITCHER_OPEN_REPORT_WINDOW") { openReportWindow(msg.tab != null ? msg.tab : tabId); sendResponse({ ok: true }); return true; }
 });

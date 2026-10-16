@@ -4,6 +4,7 @@
 #   REPORT_TOKEN  與 src/report.js 的 REPORT_TOKEN 相同的固定字串（弱驗證，擋無差別掃描）
 #   MAIL_URL      Apps Script「回報表單同步 issue」專案 Mailer.gs web app 的 /exec 網址（由作者 Gmail 寄確認信）
 #   MAIL_SECRET   與該 Apps Script 內 SECRET 相同的字串
+#   DATABASE_URL  Neon 的 Postgres 連線字串（同 .env.local），GET /v1/lotteries 讀抽獎用
 name = "bcs-report"
 main = "src/index.js"
 compatibility_date = "2026-01-01"

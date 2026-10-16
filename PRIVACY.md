@@ -2,7 +2,7 @@
 
 **B 站 CDN 線路重排（Bilibili CDN Switcher）**
 
-最後更新 / Last updated：2026-10-10
+最後更新 / Last updated：2026-10-15
 
 ---
 
@@ -18,7 +18,7 @@
 
 - 不會讀取、記錄或上傳你的帳號資訊或 Cookie 內容
 - 不使用任何分析、追蹤或廣告 SDK（沒有 Google Analytics、沒有任何遙測）
-- 除了你主動送出的問題回報之外，不會將任何資料傳送到作者或任何第三方的伺服器
+- 除了你主動送出的問題回報之外，不會將任何資料傳送到作者或任何第三方的伺服器（擴充會從作者的伺服器**下載**公告，但不附帶任何資料，見下方「公告」）
 - 你在彈出視窗（popup）裡的設定（例如選擇的 CDN 節點、開關狀態）只會透過瀏覽器內建的 `chrome.storage.local` 存在**你自己的裝置上**，不會同步到雲端、不會離開你的電腦
 - 為了讓問題回報能附上「問題發生前發生了什麼」，擴充會在**你自己的瀏覽器裡**保留最近 10 分鐘的運作紀錄（切換節點、自動切換、分段請求失敗、下載速度等），存在 `chrome.storage.session`，關閉瀏覽器即清空；沒有送出回報就不會離開你的電腦
 
@@ -37,6 +37,15 @@
 
 - 這個請求只送往 bilibili.com（擴充原本就有權限、你看 B 站時本來就會連線的網站），**不帶 Cookie**，不會送往作者或任何第三方。
 - 回傳結果（國家、省份、ISP、IP）存在本機 `chrome.storage.local`，供節點清單選國家與「問題回報」的診斷資料使用；超過 24 小時會在你打開彈出視窗或回報頁時重新查詢。除了你主動送出的問題回報之外，不會上傳到任何地方。
+
+### 公告
+
+彈出視窗主畫面的公告欄與點開後的公告視窗，會從作者架設的接收端（Cloudflare Workers，`https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements`）下載公告（抽獎活動的資料，以及作者寫的一般公告），在你打開彈出視窗時最多每 15 分鐘一次（公告欄關閉期間也會照常下載，才知道有沒有新的公告）。
+
+- 這是單純的下載（GET），**不帶 Cookie、不附任何資料**；接收端不會另外記錄任何存取紀錄。
+- 有些公告只給特定國家：顯示哪些由擴充依本機已存的國家（上述「依 IP 自動選擇國家」的結果）**自己判斷**，你的國家不會送出去。
+- 下載的只是資料，不會執行任何下載來的程式：抽獎公告的文字由擴充自己組成；一般公告的內容只保留標題、段落、清單、表格、連結等排版標籤，不載入圖片或其他外部資源。
+- 下載的清單與關閉紀錄存在本機 `chrome.storage.local`。
 
 ### 問題回報
 
@@ -69,7 +78,7 @@ This extension intercepts and rewrites the video-CDN network requests your brows
 
 - We do not read, log, or upload your account information or cookie contents
 - No analytics, tracking, or advertising SDKs are used (no Google Analytics, no telemetry of any kind)
-- Apart from problem reports you choose to send, no data is ever sent to the extension author or any third party
+- Apart from problem reports you choose to send, no data is ever sent to the extension author or any third party (the extension **downloads** announcements from the author's server but sends nothing with the request — see "Announcements" below)
 - Your settings in the popup (e.g., selected CDN node, toggle states) are stored only via the browser's built-in `chrome.storage.local`, on **your own device**. They are never synced to any cloud service and never leave your computer
 - So that a problem report can show what happened before the problem, the extension keeps the last 10 minutes of its own activity (node switches, auto-switches, failed segment requests, download speed, etc.) **inside your browser** in `chrome.storage.session`, which is cleared when the browser closes. It never leaves your computer unless you send a report
 
@@ -88,6 +97,15 @@ The first time you open the popup after installing or updating, the extension as
 
 - The request goes only to bilibili.com (a site the extension already has permission for and that you connect to anyway when watching bilibili), **without cookies**, and never to the author or any third party.
 - The result (country, province, ISP, IP) is stored locally in `chrome.storage.local` for choosing the country and for the diagnostics attached to problem reports; it is refreshed when older than 24 hours the next time you open the popup or the report form. Apart from problem reports you choose to send, it is never uploaded anywhere.
+
+### Announcements
+
+The announcement bar on the popup's main screen, and the announcement window it opens, download announcements (data about ongoing prize draws, and general announcements written by the author) from an endpoint run by the author (Cloudflare Workers, `https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements`) when you open the popup, at most once every 15 minutes (this continues while the bar is closed, so it knows when a new announcement appears).
+
+- It is a plain download (GET) **with no cookies and no data attached**; the endpoint keeps no access logs.
+- Some announcements are limited to certain countries. Which ones to show is decided **by the extension itself** from the country already stored on your device (the result of "Automatic country selection by IP" above); your country is never sent.
+- Only data is downloaded and no downloaded code is ever run: prize-draw text is composed by the extension itself; general announcements keep only layout tags such as headings, paragraphs, lists, tables and links, and never load images or other external resources.
+- The downloaded list and your close record are stored locally in `chrome.storage.local`.
 
 ### Problem reports
 

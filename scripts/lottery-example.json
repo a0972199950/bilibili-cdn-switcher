@@ -1,0 +1,10 @@
+{
+  "title": "2026-11 日本抽獎（範例）",
+  "country": "JP",
+  "start": "2026-11-01",
+  "end": "2026-11-30",
+  "prize": { "amount": 1500, "currency": "JPY", "giftCards": ["Amazon ギフトカード"] },
+  "winners": 5,
+  "isps": [],
+  "drawDays": 7
+}

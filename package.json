@@ -17,6 +17,8 @@
     "invite:show": "node scripts/invite.mjs show",
     "events:show": "node scripts/events.mjs show",
     "lottery:add": "node scripts/lottery.mjs add",
+    "lottery:update": "node scripts/lottery.mjs update",
+    "lottery:preview": "node scripts/lottery.mjs preview",
     "lottery:end": "node scripts/lottery.mjs end",
     "lottery:show": "node scripts/lottery.mjs show",
     "private:setup": "node scripts/private-repo.mjs setup",

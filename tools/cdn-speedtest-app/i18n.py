@@ -37,7 +37,7 @@ HOW IT IS USED
 • Data is sent to the developer's Google account (Google Apps Script, Gmail, Google Drive / Sheets). It is not sold or shared with third parties.
 
 SERVICES THIS APP CONTACTS DURING THE TEST
-Bilibili, ipinfo.io and ip-api.com (VPN check), Cloudflare (speed.cloudflare.com) or Linode speed-test servers, Google Public DNS (dns.google), and Google Apps Script (usage log, invite code check, and the report when you click "Send").
+Bilibili, ipinfo.io and ip-api.com (VPN check), Cloudflare (speed.cloudflare.com) or Linode speed-test servers, Google Public DNS (dns.google), Google Apps Script (usage log, invite code check, and the report when you click "Send"), and the developer's Cloudflare Worker (list of current prize draws; nothing is sent).
 
 You can stop the test at any time; no test results are sent unless you click "Send". After a successful upload, the local copy of the results is deleted when you close the app. To have your data deleted, contact the developer via the extension's support page:
 {support}
@@ -82,25 +82,13 @@ S = {
         "en": "After you send the results, the 10 fastest servers are added to the extension's \"Custom node list\". The network check is for reference only — no minimum speed, and VPNs are allowed.",
         "ja": "結果を送信すると、最も速い 10 個のサーバーが拡張機能の「カスタムノードリスト」に追加されます。ネットワークチェックは参考のみで、速度や VPN の制限はありません。",
         "ko": "결과를 보내면 가장 빠른 서버 10개가 확장 프로그램의 \"사용자 지정 노드 목록\"에 추가됩니다. 네트워크 확인은 참고용이며 속도·VPN 제한이 없습니다."},
-    "gift_body": {
-        "zh-TW": "為了感謝你協助測試，留下 email 就能參加抽獎，獎品是價值 {gift} 的禮物卡。有「必中獎邀請碼」的話，確認測試結果後一定會收到。",
-        "zh-CN": "为了感谢你协助测试，留下 email 就能参加抽奖，奖品是价值 {gift} 的礼品卡。有「必中奖邀请码」的话，确认测试结果后一定会收到。",
-        "en": "As thanks for running this test, leave your email to enter a prize draw for a {gift} gift card. With a guaranteed-prize invite code, you'll definitely get one once your results are verified.",
-        "ja": "ご協力のお礼として、メールアドレスを登録すると {gift} 相当のギフトカードの抽選に参加できます。「当選確定招待コード」をお持ちの方は、結果の確認後に必ずお受け取りいただけます。",
-        "ko": "협조에 대한 감사의 표시로, 이메일을 남기시면 {gift} 상당의 기프트 카드 추첨에 참여할 수 있습니다. \"당첨 확정 초대 코드\"가 있으면 결과 확인 후 반드시 받으실 수 있습니다."},
-    "gift_body_generic": {
-        "zh-TW": "為了感謝你協助測試，留下 email 就能參加禮物卡抽獎（品牌與金額之後以 email 通知）。有「必中獎邀請碼」的話，確認測試結果後一定會收到。",
-        "zh-CN": "为了感谢你协助测试，留下 email 就能参加礼品卡抽奖（品牌与金额之后以 email 通知）。有「必中奖邀请码」的话，确认测试结果后一定会收到。",
-        "en": "As thanks for running this test, leave your email to enter a gift card prize draw (brand and amount confirmed by email). With a guaranteed-prize invite code, you'll definitely get one once your results are verified.",
-        "ja": "ご協力のお礼として、メールアドレスを登録するとギフトカードの抽選に参加できます（ブランドと金額は後ほどメールでお知らせします）。「当選確定招待コード」をお持ちの方は、結果の確認後に必ずお受け取りいただけます。",
-        "ko": "협조에 대한 감사의 표시로, 이메일을 남기시면 기프트 카드 추첨에 참여할 수 있습니다(브랜드와 금액은 추후 이메일로 안내). \"당첨 확정 초대 코드\"가 있으면 결과 확인 후 반드시 받으실 수 있습니다."},
-    "gift_detecting": {"zh-TW": "正在偵測你所在的國家…", "zh-CN": "正在检测你所在的国家…", "en": "Detecting your country…",
-                       "ja": "国を検出しています…", "ko": "국가를 확인하는 중…"},
     "email": {"zh-TW": "Email", "zh-CN": "Email", "en": "Email", "ja": "メールアドレス", "ko": "이메일"},
     "opt_free": {"zh-TW": "單純測試／建立擴充「自訂節點列表」", "zh-CN": "单纯测试／创建扩展「自定义节点列表」",
                  "en": "Just test / build the extension's \"Custom node list\"",
                  "ja": "テストのみ／拡張機能の「カスタムノードリスト」を作成",
                  "ko": "테스트만 / 확장 프로그램의 \"사용자 지정 노드 목록\" 만들기"},
+    "lottery_none": {"zh-TW": "目前暫無進行中的活動", "zh-CN": "目前暂无进行中的活动", "en": "No prize draw is running right now.",
+                     "ja": "現在開催中の抽選はありません。", "ko": "현재 진행 중인 추첨이 없습니다."},
     "opt_lottery": {"zh-TW": "參加抽獎", "zh-CN": "参加抽奖", "en": "Join the prize draw", "ja": "抽選に参加する",
                     "ko": "추첨에 참여"},
     "invite": {"zh-TW": "必中獎邀請碼（選填）", "zh-CN": "必中奖邀请码（选填）", "en": "Guaranteed-prize invite code (optional)",

@@ -28,13 +28,14 @@ const PRIVATE_PATHS = [
   "growth-report",
   "cdn-speedtest-results",
   "store",
+  "admin", // 本機後台（Next.js）
   // 本機憑證
   ".env.local",
   "tools/report-worker/.dev.vars",
   "tools/cdn-speedtest-app/config.json",
 ];
 // 執行期產物，就算在私人路徑底下也不備份
-const JUNK_NAMES = new Set(["__pycache__", ".venv", "node_modules", ".DS_Store", "Thumbs.db", "desktop.ini"]);
+const JUNK_NAMES = new Set(["__pycache__", ".venv", "node_modules", ".next", ".DS_Store", "Thumbs.db", "desktop.ini"]);
 const JUNK_EXTS = [".pyc"];
 // setup 時本機已有、內容又跟私人 repo 不同的檔案，覆蓋前先搬到這裡
 const RESTORE_BACKUP_DIR = ".private-restore-backup";
