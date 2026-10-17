@@ -610,5 +610,8 @@
   },
   "announceGone": {
     "message": "这则公告已经结束或被移除。"
+  },
+  "lotteryNote": {
+    "message": "备注"
   }
 }

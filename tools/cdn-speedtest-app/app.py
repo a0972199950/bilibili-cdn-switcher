@@ -91,8 +91,9 @@ WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5),
 
 
 # 進行中抽獎的 metadata（report worker，不用 token）；文字由 lottery_text.py 組。
+# v2：只有抽獎 v2（禮物卡各自有面額，lottery_text.py 兩種格式都吃）；/v1/lotteries 只有 v1 的抽獎，留給舊版 exe。
 # 1.7.0（含）以前的 exe 是透過 Apps Script（action=lotteries）讀 lotteries.html，那條路保留給舊版用
-LOTTERY_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/lotteries"
+LOTTERY_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/lotteries"
 
 
 def post_json(payload, timeout=90):
@@ -346,6 +347,10 @@ class App(tk.Tk):
         self.after(100, self.pump)
         self.show_entry()
         threading.Thread(target=self.update_worker, daemon=True).start()
+        # 抽獎清單一啟動就先抓（不送任何資料，隱私聲明有列這個 Worker），進第 2 頁時通常已經抓好、不用等；
+        # 國家偵測（查出口 IP）還是等同意隱私聲明、進第 2 頁才做
+        self.lottery_loading = True
+        threading.Thread(target=self.lottery_worker, daemon=True).start()
 
     # ── 自我更新（updater.py） ─────────────────────────────
     def update_worker(self):

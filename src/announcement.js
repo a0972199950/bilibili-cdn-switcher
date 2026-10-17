@@ -1,12 +1,13 @@
 "use strict";
 /*
  * 公告視窗（announcement.html）：popup 跑馬燈點下去，由 background 開成獨立視窗（同問題回報）；?id=<n> 是點到的公告，只顯示那一則。
- *  - 資料同 popup：storage.local.announcementFeed（popup 抓的快取），找不到那一則就向 report worker 的 GET /v1/announcements 重抓
- *  - type "lottery"：標題「抽獎活動」，內容由 lottery-text.js 依抽獎資料組，下面接參加方式、「下載測速工具與教學」
+ *  - 資料同 popup：storage.local.announcementFeed（popup 抓的快取），找不到那一則就向 report worker 的 GET /v2/announcements 重抓
+ *  - type "lottery"：標題「抽獎活動」，內容由 lottery-text.js 依抽獎資料組；抽獎有備註（v2 的 note，後台寫的 { 語言: HTML }）時接一個「備註」區塊
+ *    （html-sanitize.js 依白名單重建），下面接參加方式、「下載測速工具與教學」
  *  - type "html"：標題是公告的標題，內容是後台寫的 HTML（html-sanitize.js 依白名單重建），只有「關閉」
  */
-var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements";
-var ANNOUNCE_FEED_V = 1; // 同 popup.js：announcementFeed 的格式版本，不同的舊快取不用
+var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/announcements";
+var ANNOUNCE_FEED_V = 2; // 同 popup.js：announcementFeed 的格式版本，不同的舊快取不用
 var SPEEDTEST_DOC_URL = "https://lazy-cv.com/docs/bilibili-cdn-speedtest";
 
 var params = new URLSearchParams(location.search);
@@ -67,6 +68,15 @@ function renderLottery(l) {
   sec.appendChild(el("p", c.eligible));
   if (c.ispList) sec.appendChild(el("p", c.ispList)).className = "ispList";
   [c.period, c.prize, c.draw].forEach(function (line) { sec.appendChild(el("p", line)); });
+  var noteHtml = l.note && typeof l.note === "object" ? pickLang(l.note) : l.note; // v2：{ 語言: HTML }
+  if (noteHtml) {
+    var note = sec.appendChild(document.createElement("div"));
+    note.className = "lotNote";
+    note.appendChild(el("div", t("lotteryNote"))).className = "lotNoteHead";
+    var noteBody = note.appendChild(document.createElement("div"));
+    noteBody.className = "rich";
+    HtmlSanitize.render(noteHtml, noteBody, openTab);
+  }
   $("how").style.display = "";
   $("ctaBtn").style.display = "";
   return true;

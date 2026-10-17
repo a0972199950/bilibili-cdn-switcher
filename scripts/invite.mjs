@@ -5,6 +5,8 @@
 //
 // 規則：邀請碼綁定 email（同一個 email 可以有多組）。有效期間可以無限次驗證、送報告（包括自己測試），
 // 直到確定發出獎品後用 invite:delete 標記失效。Apps Script（指令碼屬性 NEON_URL）只讀取狀態並記錄使用紀錄。
+// 本機後台的「必中獎」頁（scripts/lib/invites.mjs）也能做這些事，另外有審核、寄信、記錄獎品已寄出；
+// 建議改在後台產生邀請碼：會綁定屬於哪個抽獎（獎品照那個抽獎），這裡產生的沒有綁定，後台要從報告推測。
 //
 // 連線字串放 .env.local 的 DATABASE_URL（見 .env.local.example）。走 Neon 的 HTTP SQL 端點，不額外裝套件。
 import path from "node:path";

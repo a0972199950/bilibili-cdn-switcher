@@ -610,5 +610,8 @@
   },
   "announceGone": {
     "message": "這則公告已經結束或被移除。"
+  },
+  "lotteryNote": {
+    "message": "備註"
   }
 }

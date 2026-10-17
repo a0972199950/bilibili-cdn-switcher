@@ -58,6 +58,23 @@ commit 進私有 repo `bilibili-cdn-switcher-reports`、在公開 repo 開 issue
 ```
 
 抽獎公告在新增抽獎時自動建立（`scripts/lib/lotteries.mjs` 的 `addLottery`），一般公告由本機後台 `admin/` 維護（`scripts/lib/announcements.mjs`）。
+
+## 抽獎 v2（`/v2/lotteries`、`/v2/announcements`）
+
+新版擴充（公告欄、公告視窗）與新版 exe 用的版本。抽獎只來自抽獎 v2（Neon 的 `lotteries_v2`，`scripts/lib/lotteries-v2.mjs`，
+本機後台「抽獎 v2」），跟 `/v1/*`（只來自 `lotteries`）各自獨立：v2 建的抽獎舊版看不到。格式同上，差別只在抽獎那一筆——禮物卡各自有面額、多了備註 HTML：
+
+```jsonc
+{ "id": 1,   // v2 的 id
+  "title": { "zh-TW": "…", "en": "…" },   // 各語言可只填一種，各端依 介面語言 → en → zh-TW → 任一 取一種
+  "prize": { "currency": "HKD", "giftCards": [{ "name": "7-Eleven 電子現金券", "amount": 100 }, { "name": "Google Play 禮品卡", "amount": 150 }] },
+  "note": { "zh-TW": "<p>…</p>" } | null,   // 擴充公告視窗的「備註」區塊（html-sanitize.js 依白名單重建），語言退回同 title
+  /* 其餘欄位同 /v1/lotteries */ }
+```
+
+抽獎公告：`/v2/announcements` 只列掛在抽獎 v2 上的（`announcements.lottery_v2_id`），`/v1/announcements` 只列掛在 v1 上的（`lottery_id`）。
+從 v1 遷移的抽獎，那則公告兩個都有（舊版看 v1、新版看 v2，公告 id 不變）。
+**`lotteries_v2` 與 `announcements.lottery_v2_id` 要先存在（後台打開過「抽獎 v2」就會建）再部署有 `/v2/*` 的 worker，否則 `/v2/*` 回 502。**
 快取：邊緣 1 分鐘（同 `/v1/lotteries`；各邊緣節點各自快取，新增後不同節點可能要等滿 1 分鐘才一致）、擴充另外 15 分鐘（`storage.local.announcementFeed`），
 改了公告最慢約 16 分鐘使用者看得到。
 

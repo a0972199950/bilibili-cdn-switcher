@@ -25,7 +25,8 @@
     "private:pull": "node scripts/private-repo.mjs pull",
     "prepare":"git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
-    "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml"
+    "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml",
+    "admin": "npm --prefix admin run dev"
   },
   "devDependencies": {
     "jszip": "^3.10.1",

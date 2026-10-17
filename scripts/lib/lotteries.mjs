@@ -5,6 +5,7 @@
 //   { title, country: "TW", start: "2026-10-01", end: "2026-10-30",
 //     prize: { amount: 200, currency: "TWD", giftCards: ["7-11 禮物卡", ...] }, winners: 3, isps: [...], drawDays: 7 }
 // 欄位說明見 scripts/lottery.mjs 開頭。錯誤一律丟 LotteryError（訊息給人看的中文）。
+// 抽獎 v2（每張禮物卡各自的面額、備註）在 lotteries-v2.mjs，跟這裡各自獨立；已遷移到 v2 的抽獎在這裡不能改（refuseMigrated）。
 import fs from "node:fs";
 import path from "node:path";
 import vm from "node:vm";
@@ -82,6 +83,26 @@ export function ensureTable() {
     await sql(`insert into announcements (type, lottery_id, created_at)
       select 'lottery', l.id, l.created_at from lotteries l
       where l.country is not null and not exists (select 1 from announcements a where a.lottery_id = l.id)`);
+    // 抽獎 v2（2026-10 起，見 scripts/lib/lotteries-v2.mjs）：每張禮物卡各自的面額（gift_cards = [{ name, amount }]）、
+    // 標題與備註都是 { 語言: 文字／HTML }。
+    // 跟 lotteries 各自獨立（舊版擴充與 exe 只讀 lotteries，看不到 v2）；migrated_from＝從哪一筆 lotteries 遷移來的。
+    // 抽獎公告用 announcements.lottery_v2_id 掛在 v2 上（遷移來的那則公告 lottery_id、lottery_v2_id 都有：舊版看 v1、新版看 v2）
+    await sql(`create table if not exists lotteries_v2 (
+      id serial primary key,
+      migrated_from int unique references lotteries(id) on delete set null,
+      title jsonb not null,
+      country text not null,
+      currency text not null,
+      gift_cards jsonb not null,
+      note jsonb,
+      isps text[],
+      winners int not null,
+      draw_days int not null,
+      starts_at timestamptz not null,
+      ends_at timestamptz not null,
+      ended_at timestamptz,
+      created_at timestamptz not null default now())`);
+    await sql("alter table announcements add column if not exists lottery_v2_id int unique references lotteries_v2(id) on delete cascade");
   })().catch((e) => { tableReady = null; throw e; });
   return tableReady;
 }
@@ -120,8 +141,13 @@ export function apiMeta(m) {
 
 // 舊版 exe 用的 html（也是新版 exe 顯示的樣子）：交給 exe 自己的 lottery_text.py 產生
 export function legacyHtml(m) {
+  return htmlFromApi(apiMeta(m));
+}
+
+// 同上，參數是 API 格式的 metadata（v2 也用這個）
+export function htmlFromApi(api) {
   const r = spawnSync(process.platform === "win32" ? "python" : "python3", [LOTTERY_TEXT_PY], {
-    input: JSON.stringify(apiMeta(m)), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+    input: JSON.stringify(api), encoding: "utf8", env: { ...process.env, PYTHONIOENCODING: "utf-8" },
   });
   if (r.status !== 0) throw new LotteryError(`lottery_text.py 失敗：${r.stderr || r.error}`);
   return JSON.parse(r.stdout);
@@ -157,10 +183,14 @@ function extCompose(meta, lang) {
 
 // 各端會顯示什麼：{ exe: { 語言: html }, ext: { 語言: { label, line, title, eligible, ispList, period, prize, draw } } }
 export function previewTexts(m) {
-  const api = apiMeta(m);
+  return previewFromApi(apiMeta(m));
+}
+
+// 同上，參數是 API 格式的 metadata（v2 也用這個）
+export function previewFromApi(api) {
   const ext = {};
   for (const lang of LANGS) ext[lang] = extCompose(api, lang);
-  return { exe: legacyHtml(m), ext };
+  return { exe: htmlFromApi(api), ext };
 }
 
 function metaParams(m) {
@@ -169,6 +199,12 @@ function metaParams(m) {
 }
 const START_SQL = "($3::date)::timestamp at time zone 'Asia/Taipei'";
 const END_SQL = "($4::date + 1)::timestamp at time zone 'Asia/Taipei'";
+
+// 已遷移到 v2 的抽獎不能再改（改了新版也看不到，新版看的是 v2）；提前結束還可以（只影響舊版）
+async function refuseMigrated(id) {
+  const rows = await sql("select id from lotteries_v2 where migrated_from = $1", [id]);
+  if (rows.length) throw new LotteryError(`這個抽獎已遷移到 v2（v2 第 ${rows[0].id} 個），請到「抽獎 v2」修改；這筆只留給舊版擴充與 exe 顯示到結束`);
+}
 
 // 新增，回傳 id；同時建立對應的公告（type = 'lottery'，跟抽獎同一句 SQL，不會只建一半）
 export async function addLottery(meta) {
@@ -189,6 +225,7 @@ export async function addLottery(meta) {
 export async function updateLottery(id, meta) {
   const m = validateMeta(meta);
   await ensureTable();
+  await refuseMigrated(id);
   const rows = await sql(
     `update lotteries set title = $1, html = $2::jsonb, starts_at = ${START_SQL}, ends_at = ${END_SQL}, country = $5,
        prize_amount = $6, currency = $7, gift_cards = $8::text[], isps = $9::text[], winners = $10, draw_days = $11
@@ -206,6 +243,7 @@ export async function endLottery(id) {
 }
 
 const ROW_SQL = `select id, title, country, prize_amount::float8 as amount, currency, gift_cards, isps, winners, draw_days, ended_at,
+    (select v.id from lotteries_v2 v where v.migrated_from = lotteries.id) as v2_id,
     to_char(starts_at at time zone 'Asia/Taipei', 'YYYY-MM-DD') as start_date,
     to_char(ends_at at time zone 'Asia/Taipei' - interval '1 day', 'YYYY-MM-DD') as end_date,
     case when ended_at is not null then 'ended_early' when now() < starts_at then 'upcoming'
@@ -214,7 +252,7 @@ const ROW_SQL = `select id, title, country, prize_amount::float8 as amount, curr
 
 function rowToLottery(r) {
   return {
-    id: r.id, title: r.title, status: r.status, hasMeta: !!r.country,
+    id: r.id, title: r.title, status: r.status, hasMeta: !!r.country, v2Id: r.v2_id,   // v2Id：已遷移到 v2 的哪一筆
     country: r.country, start: r.start_date, end: r.end_date,
     prize: { amount: r.amount, currency: r.currency, giftCards: r.gift_cards || [] },
     winners: r.winners, isps: r.isps || [], drawDays: r.draw_days == null ? 7 : r.draw_days,

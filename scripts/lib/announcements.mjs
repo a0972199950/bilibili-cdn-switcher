@@ -1,5 +1,5 @@
 // 擴充的公告（Neon 的 announcements；資料表建在 lotteries.mjs 的 ensureTable，因為抽獎建立時要同一句 SQL 建公告）。
-//   · type = 'lottery'：新增抽獎時自動建立。前綴（NT$200 抽獎:）、標題、國家、期間、點開後的內容都跟著抽獎，
+//   · type = 'lottery'：新增抽獎時自動建立（v1 抽獎掛 lottery_id、抽獎 v2 掛 lottery_v2_id；/v1/announcements 只看前者、/v2 只看後者）。前綴（NT$200 抽獎:）、標題、國家、期間、點開後的內容都跟著抽獎，
 //     由擴充依抽獎資料自己組（src/lottery-text.js），這裡不能改；抽獎結束後公告自動不顯示
 //   · type = 'html'：後台寫的一般公告。前綴（可省略）、標題、點開後的 HTML 都是 { 語言: 文字 }，
 //     只填一種語言也行（擴充依 介面語言 → en → zh-TW → 任一 的順序退回）；countries 空＝所有國家；
@@ -31,18 +31,24 @@ export function validateHtmlAnnouncement(a) {
   return { prefix: langMap(a.prefix), title, html, countries: [...new Set(countries)] };
 }
 
-const ROW_SQL = `select a.id, a.type, a.lottery_id, a.prefix, a.title, a.html, a.countries,
+// 抽獎公告：掛在抽獎 v2（lottery_v2_id，新版擴充看的）就用 v2 的標題與狀態；只掛在 v1（lottery_id）的只有舊版擴充看得到
+const ROW_SQL = `select a.id, a.type, a.lottery_id, a.lottery_v2_id, a.prefix, a.title, a.html, a.countries,
     to_char(a.created_at at time zone 'Asia/Taipei', 'YYYY-MM-DD HH24:MI') as created,
     to_char(a.updated_at at time zone 'Asia/Taipei', 'YYYY-MM-DD HH24:MI') as updated,
-    l.title as lottery_title, l.country as lottery_country,
-    case when l.id is null then null when l.ended_at is not null then 'ended_early' when now() < l.starts_at then 'upcoming'
+    v.title as lottery_v2_title, l.title as lottery_title, coalesce(v.country, l.country) as lottery_country,
+    case when v.id is not null then
+           case when v.ended_at is not null then 'ended_early' when now() < v.starts_at then 'upcoming'
+                when now() >= v.ends_at then 'ended' else 'active' end
+         when l.id is null then null when l.ended_at is not null then 'ended_early' when now() < l.starts_at then 'upcoming'
          when now() >= l.ends_at then 'ended' else 'active' end as lottery_status
-  from announcements a left join lotteries l on l.id = a.lottery_id`;
+  from announcements a left join lotteries l on l.id = a.lottery_id left join lotteries_v2 v on v.id = a.lottery_v2_id`;
 
 function rowToAnnouncement(r) {
   const base = { id: r.id, type: r.type, created: r.created, updated: r.updated };
   if (r.type === "lottery") {
-    return { ...base, lotteryId: r.lottery_id, title: { "zh-TW": r.lottery_title }, countries: r.lottery_country ? [r.lottery_country] : [],
+    const v2 = r.lottery_v2_id != null;
+    return { ...base, lotteryId: v2 ? r.lottery_v2_id : r.lottery_id, lotteryHref: v2 ? `/lotteries-v2/${r.lottery_v2_id}` : `/lotteries/${r.lottery_id}`,
+             legacyOnly: !v2, title: v2 ? r.lottery_v2_title || {} : { "zh-TW": r.lottery_title }, countries: r.lottery_country ? [r.lottery_country] : [],
              lotteryStatus: r.lottery_status, visible: r.lottery_status === "active" };
   }
   return { ...base, prefix: r.prefix || {}, title: r.title || {}, html: r.html || {}, countries: r.countries || [], visible: true };

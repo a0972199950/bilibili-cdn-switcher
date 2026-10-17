@@ -250,16 +250,17 @@ document.getElementById("autoDetectBtn").addEventListener("click", function () {
 
 // -------- 公告欄：主頁的跑馬燈，公布使用者所在國家的公告（每則「前綴＋捲動的標題」，點了開公告視窗 announcement.html，只顯示那一則）--------
 // 多則時像兩張疊在一起的紙（後面那張往右下錯開、露出一角），手動切換、無限循環；樣式與動畫見 popup.html 的 #lotteryWrap。
-// 資料來自 report worker 的 GET /v1/announcements（Neon 的 announcements，本機後台 admin/ 維護，見 scripts/lib/announcements.mjs）：
-//   · type "lottery"：抽獎建立時自動產生。前綴（NT$200 抽獎:）與標題由 lottery-text.js 依抽獎資料組；只在抽獎期間、該國顯示
+// 資料來自 report worker 的 GET /v2/announcements（Neon 的 announcements，本機後台 admin/ 維護，見 scripts/lib/announcements.mjs）：
+//   · type "lottery"：抽獎建立時自動產生。前綴（NT$200 抽獎:）與標題由 lottery-text.js 依抽獎資料組；只在抽獎期間、該國顯示。
+//     抽獎 v2 的禮物卡各自有面額（前綴的金額變成範圍，例如 HK$100–150）、可能有備註（公告視窗才顯示）
 //   · type "html"：後台寫的一般公告。前綴（可省略）、標題、點開的 HTML 都是 { 語言: 文字 }，依介面語言 → en → zh-TW 退回；
 //     countries 空＝所有國家
 // 只下載、不送任何資料；國家由這裡依本機的 detectedCountry 自己篩，國家不會送出去。
 // storage.local.announcementFeed = { v, at, items } 快取 LOTTERY_TTL_MS（v 不是 ANNOUNCE_FEED_V 的舊格式快取直接作廢）：開 popup 先畫快取、過期再背景更新。
 // 按 × 只關目前那一則：announcementDismissed = { <公告 id>: 到期時間（現在 + 3 天） }，其他則照常顯示，新公告自然會出現。
-var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements";
+var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/announcements";
 var LOTTERY_TTL_MS = 15 * 60 * 1000; // 擴充自己的公告快取；加上 worker 的 1 分鐘，改了公告最慢約 16 分鐘使用者看得到
-var ANNOUNCE_FEED_V = 1; // announcementFeed 的格式版本：/v1/announcements 的回應格式改了就 +1，舊快取自動作廢（announcement.js 的同名常數要一起改）
+var ANNOUNCE_FEED_V = 2; // announcementFeed 的格式版本：公告 API 的回應格式改了就 +1，舊快取自動作廢（announcement.js 的同名常數要一起改）；2＝/v2/announcements
 var LOTTERY_HIDE_MS = 3 * 24 * 60 * 60 * 1000;
 var LOTTERY_PX_PER_SEC = 40; // 捲動速度
 var LOTTERY_HOLD_MS = 1500; // 跑馬燈開始捲動前先停多久

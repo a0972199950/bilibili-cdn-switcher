@@ -6,6 +6,8 @@
 // metadata：{ title: "…"（跑馬燈捲動的那段）, country: "TW", prize: { amount: 200, currency: "TWD", giftCards: ["7-11 禮物卡", ...] }, winners: 3,
 //             isps: ["台灣大寬頻", ...]（空的＝該國所有使用者）, drawDays: 7,
 //             startDate: "2026-10-01", endDate: "2026-10-30", drawBy: "2026-11-06" }
+// v2（/v2/*）的禮物卡各自有面額：prize: { currency: "HKD", giftCards: [{ name: "7-Eleven 電子現金券", amount: 100 }, ...] }（沒有 prize.amount）；
+// 面額不同時金額寫成範圍（HK$100–150），獎品那行每張卡後面附面額。title 是 { 語言: 文字 }（依介面語言 → en → zh-TW → 任一 取一種）。兩種格式都吃。
 // 禮物卡與寬頻業者名稱只用舉辦國家的語言（參加者都在那個國家），其餘文字依介面語言。
 (function () {
   "use strict";
@@ -63,17 +65,29 @@
     prize: ["獎品價值：{amount} 的 {prizeCards}", "奖品价值：{amount} 的 {prizeCards}",
       "Prize value: {amount} — {prizeCards}",
       "賞品の価値：{amount} の {prizeCards}", "경품 가치: {amount} 상당의 {prizeCards}"],
+    // 禮物卡面額不同時（v2）：{prizeCards} 是「A HK$100／B HK$150（自選）」
+    prize_each: ["獎品：{prizeCards}", "奖品：{prizeCards}", "Prize: {prizeCards}", "賞品：{prizeCards}", "경품: {prizeCards}"],
     draw: ["活動結束後 {days} 日內（{drawBy} 前）抽出 {n} 名符合資格的參加者，以 email 通知",
       "活动结束后 {days} 日内（{drawBy} 前）抽出 {n} 名符合资格的参加者，以 email 通知",
       "Winners ({n}) will be drawn from eligible participants within {days} days after the event ends (by {drawBy}) and notified by email",
       "終了後 {days} 日以内（{drawBy} まで）に条件を満たす参加者から {n} 名を抽選し、メールでお知らせします",
       "종료 후 {days}일 이내({drawBy}까지) 조건을 충족한 참여자 중 {n}명을 추첨해 이메일로 알려 드립니다"]
   };
-  function amountText(prize) {
-    var a = Number(prize.amount);
-    var num = a.toLocaleString("en-US", { minimumFractionDigits: a === Math.floor(a) ? 0 : 2, maximumFractionDigits: 2 });
-    var cur = String(prize.currency || "").toUpperCase();
+  function numText(a) {
+    a = Number(a);
+    return a.toLocaleString("en-US", { minimumFractionDigits: a === Math.floor(a) ? 0 : 2, maximumFractionDigits: 2 });
+  }
+  // 金額；給 max（且不同於 a）時是範圍：HK$100–150、100–150 XXX
+  function amountText(a, currency, max) {
+    var cur = String(currency || "").toUpperCase();
+    var num = numText(a) + (max != null && Number(max) !== Number(a) ? "–" + numText(max) : "");
     return CURRENCY[cur] ? CURRENCY[cur] + num : (num + " " + cur).trim();
+  }
+  // 禮物卡清單統一成 [{ name, amount }]：舊格式是字串陣列，面額都是 prize.amount
+  function cardList(prize) {
+    return (prize.giftCards || []).map(function (c) {
+      return typeof c === "string" ? { name: c, amount: prize.amount } : { name: c && c.name, amount: c && c.amount };
+    }).filter(function (c) { return c.name; });
   }
   function monthDay(d) {
     var p = String(d).split("-");
@@ -90,6 +104,13 @@
     if (COUNTRY[code]) return COUNTRY[code][LANGS.indexOf(lang)];
     try { return new Intl.DisplayNames([lang], { type: "region", style: "short" }).of(code) || code; } catch (e) { return code; } // short：「香港」而不是「中國香港特別行政區」
   }
+  // v1 的 title 是字串；v2 是 { 語言: 文字 }：介面語言 → en → zh-TW → 任一種
+  function pickText(v, lang) {
+    if (!v || typeof v !== "object") return v || "";
+    var keys = [lang, "en", "zh-TW"].concat(Object.keys(v));
+    for (var k = 0; k < keys.length; k++) if (v[keys[k]]) return String(v[keys[k]]);
+    return "";
+  }
   function fill(tpl, v) {
     return tpl.replace(/\{(\w+)\}/g, function (m, k) { return k in v ? String(v[k]) : m; });
   }
@@ -100,20 +121,25 @@
     if (LANGS.indexOf(lang) === -1) lang = "en";
     var i = LANGS.indexOf(lang);
     var isps = (meta.isps || []).filter(Boolean);
-    var cards = (meta.prize.giftCards || []).filter(Boolean).map(String);
+    var list = cardList(meta.prize), cur = meta.prize.currency;
+    var cards = list.map(function (c) { return String(c.name); });
+    var amounts = list.map(function (c) { return Number(c.amount); });
+    var lo = Math.min.apply(null, amounts), hi = Math.max.apply(null, amounts);
+    var each = lo !== hi; // 面額不同：獎品那行每張卡附面額
+    var prizeCards = each ? list.map(function (c) { return c.name + " " + amountText(c.amount, cur); }) : cards;
     var v = {
-      amount: amountText(meta.prize), n: meta.winners, country: countryName(meta.country, lang),
+      amount: amountText(lo, cur, hi), n: meta.winners, country: countryName(meta.country, lang),
       isps: isps.join(ISP_SEP[lang]), cards: joinOr(cards, lang),
-      prizeCards: cards.join(CARD_SEP[lang]) + (cards.length > 1 ? CHOICE[lang] : ""),
+      prizeCards: prizeCards.join(CARD_SEP[lang]) + (cards.length > 1 ? CHOICE[lang] : ""),
       start: monthDay(meta.startDate), end: monthDay(meta.endDate), drawBy: monthDay(meta.drawBy),
       days: meta.drawDays == null ? 7 : meta.drawDays
     };
     function T(key) { return fill(TEXT[key][i], v); }
     v.who = isps.length ? T("who_isps") : T("who_country");
     return {
-      label: T("label"), line: meta.title || T("line"), title: T("title"), eligible: isps.length ? T("eligible_isps") : T("eligible_all"),
+      label: T("label"), line: pickText(meta.title, lang) || T("line"), title: T("title"), eligible: isps.length ? T("eligible_isps") : T("eligible_all"),
       ispList: v.isps,
-      period: T("period"), prize: T("prize"), draw: T("draw")
+      period: T("period"), prize: T(each ? "prize_each" : "prize"), draw: T("draw")
     };
   }
 

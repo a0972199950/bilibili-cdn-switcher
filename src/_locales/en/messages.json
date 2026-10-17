@@ -610,5 +610,8 @@
   },
   "announceGone": {
     "message": "This announcement has ended or been removed."
+  },
+  "lotteryNote": {
+    "message": "Notes"
   }
 }

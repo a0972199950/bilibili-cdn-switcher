@@ -44,7 +44,8 @@ https://www.bilibili.com/#cdnsw-import=1.<host>,<host>,…
 每個抽獎在 Neon 的 `lotteries` 存一份 metadata：舉辦國家（單一）、每名的面額與幣別、禮物卡種類（該國語言，多種＝擇一）、
 可參加的寬頻業者（該國語言，空＝該國所有使用者）、抽幾名、結束後幾天內抽出、起訖日。顯示的文字由各端自己依 metadata 組：
 
-- **exe**：「測速目的」頁向 report worker 的 `GET /v1/lotteries`（不用 token，見 `tools/report-worker/README.md`）抓全部進行中的抽獎，
+- **exe**：「測速目的」頁向 report worker 的 `GET /v2/lotteries`（不用 token，見 `tools/report-worker/README.md`；抽獎 v2 的禮物卡各自有面額，
+  舊版 exe 讀的 `/v1/lotteries` 只有 v1 的抽獎）抓全部進行中的抽獎，
   只留**使用者所在國家**（出口 IP 的國家）的，用 `lottery_text.py` 組成 HTML（標題、參加資格、期間、獎品、抽獎方式、參加方式＋測速教學連結），
   以 [tkinterweb](https://github.com/Andereoo/TkinterWeb) 內嵌顯示（不跑 JavaScript，連結用瀏覽器開；高度跟著內容，最高約 220px，超過就捲動）。
   該國沒有抽獎時顯示「目前暫無進行中的活動」；抓不到（網路錯誤）時什麼都不顯示，下次進這頁再抓。

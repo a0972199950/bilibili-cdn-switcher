@@ -11,6 +11,8 @@
  *  - /v1/lotteries：進行中抽獎的 metadata（Neon 的 lotteries），給測速 exe 的「測速目的」頁，文字由 exe 自己組（lottery_text.py）
  *  - /v1/announcements：擴充的公告（Neon 的 announcements）：抽獎公告附抽獎 metadata（擴充用 src/lottery-text.js 組字），
  *    一般公告是後台寫的各語言前綴／標題／HTML
+ *  - /v2/lotteries、/v2/announcements：新版擴充與 exe 用。抽獎只來自抽獎 v2（Neon 的 lotteries_v2，見 scripts/lib/lotteries-v2.mjs：
+ *    每張禮物卡各自的面額、備註 HTML），v1 只來自 lotteries，兩邊各自獨立（v2 建的抽獎舊版看不到）
  */
 const MAX_BODY = 256 * 1024;
 const MAX_DESC = 4000;
@@ -146,6 +148,24 @@ function lotteryItem(r) {
   };
 }
 
+// 抽獎 v2 的欄位（lotteries_v2 的別名 v），日期規則同 LOTTERY_FIELDS
+const LOTTERY_V2_FIELDS = `v.id as v_id, v.title as v_title, v.country as v_country, v.currency as v_currency, v.gift_cards as v_gift_cards,
+    v.note as v_note, v.isps as v_isps, v.winners as v_winners, v.draw_days as v_draw_days,
+    to_char(v.starts_at at time zone 'Asia/Taipei', 'YYYY-MM-DD') as v_start_date,
+    to_char(v.ends_at at time zone 'Asia/Taipei' - interval '1 day', 'YYYY-MM-DD') as v_end_date,
+    to_char(v.ends_at at time zone 'Asia/Taipei' - interval '1 day' + make_interval(days => v.draw_days), 'YYYY-MM-DD') as v_draw_by,
+    (extract(epoch from v.starts_at) * 1000)::float8 as v_starts_ms, (extract(epoch from v.ends_at) * 1000)::float8 as v_ends_ms`;
+const LOTTERY_V2_ACTIVE = "v.ended_at is null and now() >= v.starts_at and now() < v.ends_at";
+
+// v2 的一筆：跟 v1 一樣，差在 prize 沒有 amount、giftCards 是 [{ name, amount }]，title 是 { 語言: 文字 }，多了 note（{ 語言: HTML } 或 null）
+function lotteryItemV2(r) {
+  return {
+    id: r.v_id, title: r.v_title, country: r.v_country, prize: { currency: r.v_currency, giftCards: r.v_gift_cards || [] },
+    note: r.v_note || null, winners: r.v_winners, isps: r.v_isps || [], drawDays: r.v_draw_days,
+    startDate: r.v_start_date, endDate: r.v_end_date, drawBy: r.v_draw_by, startsAt: r.v_starts_ms, endsAt: r.v_ends_ms
+  };
+}
+
 // GET 清單的共同流程：Cloudflare 邊緣快取 LOTTERY_CACHE_S 秒，沒命中才查 Neon
 async function cachedList(request, env, ctx, path, load) {
   const cache = caches.default;
@@ -170,17 +190,29 @@ function lotteries(request, env, ctx) {
     (await neonSql(env, `select ${LOTTERY_FIELDS} from lotteries l where ${LOTTERY_ACTIVE} order by l.ends_at, l.id`)).map(lotteryItem));
 }
 
+// v2：進行中的抽獎 v2，格式同 /v1/lotteries，但 prize: { currency, giftCards: [{ name, amount }] }（沒有 prize.amount）、title: { 語言: 文字 }、note: { 語言: HTML } | null
+function lotteriesV2(request, env, ctx) {
+  return cachedList(request, env, ctx, "/v2/lotteries", async () =>
+    (await neonSql(env, `select ${LOTTERY_V2_FIELDS} from lotteries_v2 v where ${LOTTERY_V2_ACTIVE} order by v.ends_at, v.id`)).map(lotteryItemV2));
+}
+
 // 擴充的公告（新的在前，不分國家，擴充自己篩）：
 //   { id, type: "lottery", lottery: { 同 /v1/lotteries 的一筆 } }        只列進行中的抽獎；前綴、標題、內容由擴充依抽獎資料組
 //   { id, type: "html", prefix: { 語言: 文字 } | null, title: { 語言: 文字 }, html: { 語言: HTML }, countries: ["TW"] | null（全部） }
-function announcements(request, env, ctx) {
-  return cachedList(request, env, ctx, "/v1/announcements", async () => {
-    const rows = await neonSql(env, `select a.id, a.type, a.prefix, a.title, a.html, a.countries, ${LOTTERY_FIELDS}
-      from announcements a left join lotteries l on l.id = a.lottery_id
-      where a.type = 'html' or (a.type = 'lottery' and ${LOTTERY_ACTIVE})
-      order by a.created_at desc, a.id desc`);
+// v2（/v2/announcements）：抽獎公告只列掛在抽獎 v2 上的（announcements.lottery_v2_id），lottery 是 /v2/lotteries 的一筆
+function announcements(request, env, ctx, v2) {
+  return cachedList(request, env, ctx, v2 ? "/v2/announcements" : "/v1/announcements", async () => {
+    const rows = await neonSql(env, v2
+      ? `select a.id, a.type, a.prefix, a.title, a.html, a.countries, ${LOTTERY_V2_FIELDS}
+          from announcements a left join lotteries_v2 v on v.id = a.lottery_v2_id
+          where a.type = 'html' or (a.type = 'lottery' and ${LOTTERY_V2_ACTIVE})
+          order by a.created_at desc, a.id desc`
+      : `select a.id, a.type, a.prefix, a.title, a.html, a.countries, ${LOTTERY_FIELDS}
+          from announcements a left join lotteries l on l.id = a.lottery_id
+          where a.type = 'html' or (a.type = 'lottery' and ${LOTTERY_ACTIVE})
+          order by a.created_at desc, a.id desc`);
     return rows.map((r) => r.type === "lottery"
-      ? { id: r.id, type: "lottery", lottery: lotteryItem(r) }
+      ? { id: r.id, type: "lottery", lottery: v2 ? lotteryItemV2(r) : lotteryItem(r) }
       : { id: r.id, type: "html", prefix: r.prefix || null, title: r.title || {}, html: r.html || {}, countries: r.countries || null });
   });
 }
@@ -190,7 +222,9 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/v1/lotteries") return lotteries(request, env, ctx);
-    if (request.method === "GET" && url.pathname === "/v1/announcements") return announcements(request, env, ctx);
+    if (request.method === "GET" && url.pathname === "/v1/announcements") return announcements(request, env, ctx, false);
+    if (request.method === "GET" && url.pathname === "/v2/lotteries") return lotteriesV2(request, env, ctx);
+    if (request.method === "GET" && url.pathname === "/v2/announcements") return announcements(request, env, ctx, true);
     if (request.method !== "POST" || url.pathname !== "/v1/report") return fail(404, "not_found");
     if (request.headers.get("X-BCS-Token") !== env.REPORT_TOKEN) return fail(401, "bad_token");
     const len = Number(request.headers.get("content-length") || 0);

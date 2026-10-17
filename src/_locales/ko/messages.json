@@ -610,5 +610,8 @@
   },
   "announceGone": {
     "message": "이 공지는 종료되었거나 삭제되었습니다."
+  },
+  "lotteryNote": {
+    "message": "참고 사항"
   }
 }

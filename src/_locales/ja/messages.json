@@ -610,5 +610,8 @@
   },
   "announceGone": {
     "message": "このお知らせは終了したか、削除されました。"
+  },
+  "lotteryNote": {
+    "message": "備考"
   }
 }
