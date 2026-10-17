@@ -1,67 +1,72 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "主畫面新增公告欄，顯示所在國家的公告與測速抽獎",
-        "zh_CN": "主界面新增公告栏，显示所在国家的公告与测速抽奖",
-        "en": "New announcement bar on the main screen for news and speed-test prize draws in your country",
-        "ja": "メイン画面にお知らせバーを追加し、お住まいの国のお知らせや速度テスト抽選を表示",
-        "ko": "메인 화면에 공지 바를 추가해 내 국가의 공지와 속도 테스트 추첨을 표시"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "擴充改名為「嗶速 - 海外影片加速 for bilibili」",
-        "zh_CN": "扩展改名为「哔速 - 海外视频加速 for bilibili」",
-        "en": "Renamed to \"BiBoost - Overseas Video Speedup for bilibili\"",
-        "ja": "名前を「BiBoost - 海外動画加速 for bilibili」に変更",
-        "ko": "이름을 「BiBoost - 해외 영상 가속 for bilibili」로 변경"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "修正影片測速誤用音訊檔、測速門檻沒生效的問題",
-        "zh_CN": "修正视频测速误用音频文件、测速门槛没生效的问题",
-        "en": "Fixed video speed tests measuring the audio file and ignoring the test limits",
-        "ja": "動画の速度テストが音声ファイルで測定され、テスト上限が効かない問題を修正",
-        "ko": "영상 속도 테스트가 오디오 파일로 측정되고 테스트 한도가 적용되지 않던 문제 수정"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "測速結果標示節點夠看 8K／4K／1080P／720P 還是可能卡頓",
-        "zh_CN": "测速结果标示节点够看 8K／4K／1080P／720P 还是可能卡顿",
-        "en": "Speed-test results now show whether a node is good for 8K/4K/1080p/720p or may stutter",
-        "ja": "速度テスト結果に、そのノードで 8K／4K／1080p／720p が安定するか、カクつく可能性があるかを表示",
-        "ko": "속도 테스트 결과에 노드가 8K/4K/1080p/720p에 충분한지, 끊길 수 있는지 표시"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "進階設定的測速門檻可一鍵套用快／適中／準確三種預設",
-        "zh_CN": "进阶设置的测速门槛可一键套用快／适中／准确三种预设",
-        "en": "Speed-test limits in Advanced settings now have Fast / Balanced / Accurate presets",
-        "ja": "詳細設定の速度テスト上限に「高速／標準／高精度」のプリセットを追加",
-        "ko": "고급 설정의 속도 테스트 한도에 빠름/보통/정확 프리셋 추가"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "依最新實測更新台灣、香港的建議節點",
-        "zh_CN": "根据最新实测更新台湾、香港的推荐节点",
-        "en": "Updated the recommended nodes for Taiwan and Hong Kong based on the latest tests",
-        "ja": "最新の実測をもとに台湾・香港のおすすめノードを更新",
-        "ko": "최신 실측을 바탕으로 대만·홍콩 추천 노드 업데이트"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.5.0",
+      "date": "2026-10-17",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "主畫面新增公告欄，顯示所在國家的公告與測速抽獎",
+            "zh_CN": "主界面新增公告栏，显示所在国家的公告与测速抽奖",
+            "en": "New announcement bar on the main screen for news and speed-test prize draws in your country",
+            "ja": "メイン画面にお知らせバーを追加し、お住まいの国のお知らせや速度テスト抽選を表示",
+            "ko": "메인 화면에 공지 바를 추가해 내 국가의 공지와 속도 테스트 추첨을 표시"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "擴充改名為「嗶速 - 海外影片加速 for bilibili」",
+            "zh_CN": "扩展改名为「哔速 - 海外视频加速 for bilibili」",
+            "en": "Renamed to \"BiBoost - Overseas Video Speedup for bilibili\"",
+            "ja": "名前を「BiBoost - 海外動画加速 for bilibili」に変更",
+            "ko": "이름을 「BiBoost - 해외 영상 가속 for bilibili」로 변경"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "修正影片測速誤用音訊檔、測速門檻沒生效的問題",
+            "zh_CN": "修正视频测速误用音频文件、测速门槛没生效的问题",
+            "en": "Fixed video speed tests measuring the audio file and ignoring the test limits",
+            "ja": "動画の速度テストが音声ファイルで測定され、テスト上限が効かない問題を修正",
+            "ko": "영상 속도 테스트가 오디오 파일로 측정되고 테스트 한도가 적용되지 않던 문제 수정"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "測速結果標示節點夠看 8K／4K／1080P／720P 還是可能卡頓",
+            "zh_CN": "测速结果标示节点够看 8K／4K／1080P／720P 还是可能卡顿",
+            "en": "Speed-test results now show whether a node is good for 8K/4K/1080p/720p or may stutter",
+            "ja": "速度テスト結果に、そのノードで 8K／4K／1080p／720p が安定するか、カクつく可能性があるかを表示",
+            "ko": "속도 테스트 결과에 노드가 8K/4K/1080p/720p에 충분한지, 끊길 수 있는지 표시"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "進階設定的測速門檻可一鍵套用快／適中／準確三種預設",
+            "zh_CN": "进阶设置的测速门槛可一键套用快／适中／准确三种预设",
+            "en": "Speed-test limits in Advanced settings now have Fast / Balanced / Accurate presets",
+            "ja": "詳細設定の速度テスト上限に「高速／標準／高精度」のプリセットを追加",
+            "ko": "고급 설정의 속도 테스트 한도에 빠름/보통/정확 프리셋 추가"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "依最新實測更新台灣、香港的建議節點",
+            "zh_CN": "根据最新实测更新台湾、香港的推荐节点",
+            "en": "Updated the recommended nodes for Taiwan and Hong Kong based on the latest tests",
+            "ja": "最新の実測をもとに台湾・香港のおすすめノードを更新",
+            "ko": "최신 실측을 바탕으로 대만·홍콩 추천 노드 업데이트"
+          }
+        }
+      ]
+    },
     {
       "version": "2.4.0",
       "date": "2026-10-12",
