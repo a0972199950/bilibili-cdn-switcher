@@ -1,15 +1,15 @@
 {
   "extName": {
-    "message": "海外影片加速 for bilibili"
+    "message": "嗶速 - 海外影片加速 for bilibili"
   },
   "extDescription": {
     "message": "讓海外使用者在網頁版 bilibili 上更順暢觀看 4K 等高畫質影片，減少緩衝與卡頓。非官方第三方擴充，與 bilibili 官方無關聯。"
   },
   "extActionTitle": {
-    "message": "海外影片加速"
+    "message": "嗶速 - 海外影片加速"
   },
   "popupHeaderTitle": {
-    "message": "海外影片加速 for bilibili"
+    "message": "嗶速 - 海外影片加速 for bilibili"
   },
   "popupTitle": {
     "message": "CDN 線路"
@@ -88,6 +88,21 @@
   },
   "speedtestStatusWaiting": {
     "message": "等待中"
+  },
+  "stQuality8k": {
+    "message": "8K 穩看"
+  },
+  "stQuality4k": {
+    "message": "4K 穩看"
+  },
+  "stQuality1080": {
+    "message": "1080P 穩看"
+  },
+  "stQuality720": {
+    "message": "720P 穩看"
+  },
+  "stQualityLow": {
+    "message": "可能卡頓"
   },
   "speedtestFailedTemplate": {
     "message": "失敗（{err}）"
@@ -316,6 +331,21 @@
   },
   "resetDefault": {
     "message": "恢復預設"
+  },
+  "stPresetLabel": {
+    "message": "套用"
+  },
+  "stPresetFast": {
+    "message": "測速快 - 準確度低"
+  },
+  "stPresetMedium": {
+    "message": "適中"
+  },
+  "stPresetAccurate": {
+    "message": "測速慢 - 準確度高"
+  },
+  "stPresetCustom": {
+    "message": "自訂"
   },
   "staleTabTitle": {
     "message": "這個分頁需要重新整理"

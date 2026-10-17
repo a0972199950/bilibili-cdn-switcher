@@ -47,6 +47,12 @@
       --warn: #b36b00;
       --warn-bar: #f0a020;
       --warn-bg: #fff4e5;
+      --input-disabled-bg: #f1f2f3;
+      --q-8k: #8041c8; /* 測速畫質標示：8K 紫、4K 金、1080P 綠、720P 橘、可能卡頓 紅（同一明度、不刺眼） */
+      --q-4k: #c78e0a;
+      --q-1080: #2a9262;
+      --q-720: #da671b;
+      --q-low: #d62f29;
       --slider-off: #c9ccd0;
       --tag-fix: #9499a0;
       --code-bg: #fafbfc;
@@ -91,6 +97,12 @@
       --warn: #e08a00;
       --warn-bar: #f0a020;
       --warn-bg: rgba(240, 160, 32, .12);
+      --input-disabled-bg: rgba(255, 255, 255, .06);
+      --q-8k: #b787ee;
+      --q-4k: #ebbc47;
+      --q-1080: #53c68c;
+      --q-720: #f19455;
+      --q-low: #f36d68;
       --slider-off: #bbb;
       --tag-fix: #8a8a8a;
       --code-bg: rgba(255, 255, 255, .06);
@@ -905,6 +917,33 @@
       margin-top: 4px;
     }
 
+    /* 測速門檻：左下角「套用：」預設組合選單、右下角「恢復預設」 */
+    .advItem .linkRow.presetRow {
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .presetPick {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
+      color: var(--muted);
+    }
+
+    .presetPick .countryPick {
+      max-width: none;
+    }
+
+    /* 選了預設組合（非自訂）時數字不能改 */
+    .numRow input:disabled {
+      background: var(--input-disabled-bg);
+      border-color: var(--line);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
     /* 進階設定最下方的「恢復原始設置」：置中紅字 */
     .resetAllRow {
       margin: 14px 0 4px;
@@ -1108,11 +1147,57 @@
       white-space: nowrap;
     }
 
-    .stRow .stSpeed {
+    /* 影片測速列加高：左邊名稱靠上、網址靠下；右邊速度上下置中、畫質標示靠下（跟網址同一條底線），
+       速度離右上角的皇冠夠遠才不會被蓋到 */
+    .stRow:not(.stRowLive) {
+      align-items: stretch;
+      padding: 6px 4px;
+    }
+
+    .stRow:not(.stRowLive) .stRowMain {
+      justify-content: space-between;
+    }
+
+    .stRow .stSpeedCol {
       flex: 0 0 auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 46px;
+      line-height: 1.4;
+    }
+
+    .stRow .stSpeed {
       white-space: nowrap;
       color: var(--muted);
     }
+
+    /* 速度下方的「4K 穩看」等畫質標示 */
+    .stRow .stQuality {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      font-size: 10px;
+      line-height: 1.5;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .stQualityStar {
+      width: 9px;
+      height: 9px;
+      margin-right: 2px;
+      vertical-align: -1px;
+      fill: currentColor;
+    }
+
+    .stQuality.q8k { color: var(--q-8k); }
+    .stQuality.q4k { color: var(--q-4k); }
+    .stQuality.q1080 { color: var(--q-1080); }
+    .stQuality.q720 { color: var(--q-720); }
+    .stQuality.qLow { color: var(--q-low); }
 
     .stRow.stTesting .stSpeed {
       color: var(--accent);
@@ -2071,7 +2156,7 @@
       <div class="hint" id="stVideoLimitHint"></div>
       <div class="numRow"><span id="stVideoMbLabel"></span><span><input type="number" id="stVideoMb" min="1" max="100" step="1" /><span class="unit">MB</span></span></div>
       <div class="numRow"><span id="stVideoSecLabel"></span><span><input type="number" id="stVideoSec" min="1" max="60" step="1" /><span class="unit" id="stVideoSecUnit"></span></span></div>
-      <div class="linkRow"><button type="button" class="linkBtn" id="stVideoReset"></button></div>
+      <div class="linkRow presetRow"><span class="presetPick"><span id="stVideoPresetLabel"></span><span class="countryPick"><span id="stVideoPresetText"></span><span class="countryArrow" aria-hidden="true">▾</span><select id="stVideoPreset"></select></span></span><button type="button" class="linkBtn" id="stVideoReset"></button></div>
     </div>
 
     <div class="advItem">
@@ -2079,7 +2164,7 @@
       <div class="hint" id="stLiveLimitHint"></div>
       <div class="numRow"><span id="stLiveRunsLabel"></span><span><input type="number" id="stLiveRuns" min="1" max="10" step="1" /><span class="unit" id="stLiveRunsUnit"></span></span></div>
       <div class="numRow"><span id="stLiveSecLabel"></span><span><input type="number" id="stLiveSec" min="3" max="60" step="1" /><span class="unit" id="stLiveSecUnit"></span></span></div>
-      <div class="linkRow"><button type="button" class="linkBtn" id="stLiveReset"></button></div>
+      <div class="linkRow presetRow"><span class="presetPick"><span id="stLivePresetLabel"></span><span class="countryPick"><span id="stLivePresetText"></span><span class="countryArrow" aria-hidden="true">▾</span><select id="stLivePreset"></select></span></span><button type="button" class="linkBtn" id="stLiveReset"></button></div>
     </div>
 
     <div class="advItem">

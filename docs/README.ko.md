@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 해외 영상 가속 for bilibili
+# 🎬 BiBoost - 해외 영상 가속 for bilibili
 
 **언어 / Language：** [繁體中文](README.zh-TW.md)｜[简体中文](README.zh-CN.md)｜[English](../README.md)｜[日本語](README.ja.md)｜한국어(이 페이지)
 
@@ -70,10 +70,9 @@ bilibili-cdn-switcher/
 ├── scripts/              ← 개발/빌드 스크립트. 모두 순수 Node로 Windows / Mac / Linux에서 동작
 │   ├── build.mjs                 ← 스토어 제출용 zip 패키징(Chrome + Firefox + Edge)
 │   ├── build-safari.mjs          ← Xcode로 Safari 확장 프로그램을 .app으로 패키징(macOS 전용)
-│   ├── gen-icons.mjs             ← 아이콘 재생성
-│   └── capture-screenshots.mjs   ← 브라우저를 자동 조작해 스토어 스크린샷 촬영(아래 참고)
+│   └── gen-icons.mjs             ← 아이콘 재생성
 ├── package.json           ← scripts/*.mjs가 쓰는 Node 의존성(jszip / puppeteer / sharp)
-├── .env.local.example     ← 스크린샷용 로그인 cookie 예시(.env.local로 복사해서 사용)
+├── .env.local.example     ← 로컬 자격 증명 예시: 스토어 게시 키, bilibili 로그인 cookie(.env.local로 복사해서 사용)
 └── README.md
 ```
 
@@ -141,33 +140,6 @@ npm run gen-icons
 「압축해제된 확장 프로그램을 로드」가 평소 읽는 아이콘으로, 스토어에서 설치한 버전과 구분하기 쉽게 하기 위함)와
 `assets/icons-prod/`(스토어용, 배지 없음). `scripts/build.mjs`는 zip을 패키징할 때 자동으로
 `assets/icons-prod/`의 아이콘으로 바꿔 넣습니다.
-
-### 📸 스토어 스크린샷 생성(5개 화면 × 5개 언어, 총 25장, 1280x800 png)
-
-```bash
-npm run capture-screenshots                      # 기본 1280x800(Chrome 스토어는 정확히 이 크기여야 함)
-npm run capture-screenshots -- --size=2560x1600  # Mac App Store용 고해상도. 파일 이름에 크기가 들어가므로 별도 세트로 저장(1280x800을 덮어쓰지 않음)
-```
-
-Puppeteer로 `src/`를 압축해제된 확장 프로그램으로 불러온 뒤, 브라우저 언어를 `en-US` / `zh-CN` / `zh-TW` / `ja` / `ko`로
-바꿔 가며 실제 bilibili 영상 페이지를 엽니다(URL은 `scripts/capture-screenshots.mjs` 맨 위의 `VIDEO_URL`.
-영상을 바꾸려면 그 줄을 수정). 언어마다 5개 화면 —— 영상 메인, 라이브 메인, 영상 속도 테스트(테스트 도중),
-고급 설정, 페이지의 디버그 오버레이 —— 를 찍고, 각각 검은 여백을 넣어 1280x800으로 맞춘 뒤 `store/`에 저장해
-해당 `screenshot-<언어>-<NN>-<화면>-1280x800.png`를 덮어씁니다(언어가 앞에 오므로 파일 이름순으로 정렬하면
-언어별, 표시 순서대로 모입니다). 라이브 메인은 bilibili 추천 목록에서 고른 라이브 방송을 사용합니다
-(`.env.local`에 `LIVE_ROOM=<방 번호>`를 지정하면 고정). bilibili CDN에 실제로 속도 테스트를 하므로
-한 번 실행에 몇 분이 걸리고 네트워크 상황에 따라 달라집니다.
-
-`--locale=en|zhcn|zhtw|ja|ko`로 한 언어만 실행할 수 있습니다. `docs/`의 README용 이미지는 스크립트로 만들지 않고 직접 관리합니다.
-
-**로그인 cookie(선택 사항, 스크린샷 화질을 좌우함)**: 로그인하지 않으면 bilibili는 약 480P까지만
-제공하므로 스크린샷의 `qn`도 480P가 됩니다. 고화질로 찍으려면 `.env.local.example`을 `.env.local`로
-복사하고 본인의 `BILI_COOKIE`를 채우세요(bilibili 로그인 → DevTools → Network → 아무 요청 →
-Request Headers → Cookie 줄 전체 복사). 스크립트가 이를 찾으면 로그인 상태로 영상 페이지를 열고,
-파일이 없으면 기존처럼 비로그인 상태로 실행합니다. `.env.local`은 gitignore되어 있습니다 ——
-**안의 `SESSDATA`는 계정 자격 증명과 같으므로 절대 커밋하거나 다른 사람에게 공유하지 마세요**.
-
----
 
 ## 🎛️ UI 설명
 

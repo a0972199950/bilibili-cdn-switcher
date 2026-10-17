@@ -1049,13 +1049,14 @@
   }, true);
 
   // ---------------- 被动观测「当前 CDN」（不改变任何原生行为）----------------
-  var lastSegUrl = ""; // 最近一个「已实际下载完」的分段 URL，最准确，但要等播放器真的抓过分段才有
+  var lastSegUrl = ""; // 最近一个「已实际下载完」的 video 分段 URL，最准确，但要等播放器真的抓过分段才有
   var earlySegUrl = ""; // playurl/playinfo 一解析完就有：当前画质第一个 video track 的 URL，不用等开始播放
+  var lastAudioSegUrl = ""; // audio（或认不出轨道的）分段：整档常只有几 MB，测速会在门槛前就下载完，只在没别的可用时才拿来测
   function noteEarlySample(url) { if (url) earlySegUrl = url; }
-  function sampleUrl() { return lastSegUrl || earlySegUrl; } // 手动测速用：优先用真实下载过的，没有才退回 early
+  function sampleUrl() { return lastSegUrl || earlySegUrl || lastAudioSegUrl; } // 手动测速用：优先用真实下载过的 video，没有才退回 early
 
   function noteSegment(url) {
-    lastSegUrl = url;
+    if (trackOf(url) === "v") lastSegUrl = url; else lastAudioSegUrl = url;
     maybeScheduleAutoTest();
     var q = videoQnByPath[pathOf(url)]; // 是 video 分段才会命中；audio 分段不动画质
     if (typeof q === "number" && q !== lastVideoQn) { if (lastVideoQn != null) jlog("play.qn", { from: lastVideoQn, to: q }); lastVideoQn = q; }

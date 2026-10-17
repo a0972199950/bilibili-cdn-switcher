@@ -24,6 +24,10 @@ var DEFAULTS = {
   stVideoSec: 5,
   stLiveRuns: 3,
   stLiveSec: 8,
+  // 門檻的預設組合（進階設定左下角「套用：」）："fast" | "medium" | "accurate" | "custom"；
+  // null = 還沒選過（新功能上線前的設定），載入時依目前數字推斷，對不上任何組合就當自訂
+  stVideoPreset: null,
+  stLivePreset: null,
   zoneCheckedAt: 0 // 上次查 B 站 zone API 的時間：超過 ZONE_MAX_AGE_MS 才重查（refreshZoneIfStale）
 };
 
@@ -103,9 +107,9 @@ document.documentElement.lang = uiLanguage();
   ["sortBySpeedLabel", "sortBySpeedLabel"], ["sortBySpeedHint", "sortBySpeedHint"],
   ["optTitle", "optimizingTitle"], ["optSkip", "optimizingSkip"],
   ["stVideoLimitTitle", "stVideoLimitTitle"], ["stVideoLimitHint", "stVideoLimitHint"], ["stVideoMbLabel", "stVideoMbLabel"],
-  ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"],
+  ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"], ["stVideoPresetLabel", "stPresetLabel"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
-  ["stLiveRunsUnit", "unitTimes"], ["stLiveSecLabel", "stLiveSecLabel"], ["stLiveSecUnit", "unitSec"], ["stLiveReset", "resetDefault"], ["liveRouteExplain", "liveRouteExplain"], ["showDebugHint", "showDebugHint"],
+  ["stLiveRunsUnit", "unitTimes"], ["stLiveSecLabel", "stLiveSecLabel"], ["stLiveSecUnit", "unitSec"], ["stLiveReset", "resetDefault"], ["stLivePresetLabel", "stPresetLabel"], ["liveRouteExplain", "liveRouteExplain"], ["showDebugHint", "showDebugHint"],
   ["staleTitle", "staleTabTitle"], ["staleText", "staleTabText"], ["staleReloadBtn", "staleTabReloadBtn"],
   ["customAddBtn", "customAddBtn"], ["customClearBtn", "customClearBtn"], ["resetAllBtn", "resetAllBtn"],
   ["wnSubtitle", "whatsNewSubtitle"], ["wnClose", "whatsNewClose"]
@@ -950,6 +954,7 @@ Promise.all([
   if (sortOn && cfg.speedOrder) speedOrder = { video: cfg.speedOrder.video || [], live: cfg.speedOrder.live || [] };
   applyDropdownOrder();
   LIMIT_FIELDS.forEach(function (f) { limits[f.key] = clampLimit(f, cfg[f.key]); document.getElementById(f.key).value = limits[f.key]; });
+  loadPresets(cfg);
   for (var jk in cfg) lastCfg[jk] = cfg[jk];
   journalReady = true;
   autoSelectCountry(cfg);
@@ -1547,8 +1552,70 @@ function resetLimits(group) {
     limits[f.key] = patch[f.key] = DEFAULTS[f.key];
     document.getElementById(f.key).value = DEFAULTS[f.key];
   });
+  presets[group] = patch[PRESET_KEY[group]] = "medium";
+  syncPresetUI(group);
   save(patch);
 }
+
+// 門檻預設組合：選了快／適中／準確就把對應數字寫進 stVideoMb 等欄位（main-hook、bridge 照舊只讀數字），
+// 輸入框鎖住；選自訂才能改，從目前的數字開始改。「適中」就是 DEFAULTS
+var PRESET_ORDER = ["fast", "medium", "accurate", "custom"];
+var PRESET_LABEL = { fast: "stPresetFast", medium: "stPresetMedium", accurate: "stPresetAccurate", custom: "stPresetCustom" };
+var PRESET_KEY = { video: "stVideoPreset", live: "stLivePreset" };
+var PRESET_ID = { video: "stVideo", live: "stLive" };
+var PRESETS = {
+  video: {
+    fast: { stVideoMb: 4, stVideoSec: 3 },
+    medium: { stVideoMb: DEFAULTS.stVideoMb, stVideoSec: DEFAULTS.stVideoSec },
+    accurate: { stVideoMb: 25, stVideoSec: 10 }
+  },
+  live: {
+    fast: { stLiveRuns: 2, stLiveSec: 5 },
+    medium: { stLiveRuns: DEFAULTS.stLiveRuns, stLiveSec: DEFAULTS.stLiveSec },
+    accurate: { stLiveRuns: 5, stLiveSec: 15 }
+  }
+};
+var presets = { video: "medium", live: "medium" };
+function inferPreset(group) {
+  for (var name in PRESETS[group]) {
+    var vals = PRESETS[group][name], same = true;
+    for (var k in vals) if (limits[k] !== vals[k]) same = false;
+    if (same) return name;
+  }
+  return "custom";
+}
+function syncPresetUI(group) {
+  var sel = document.getElementById(PRESET_ID[group] + "Preset");
+  sel.value = presets[group];
+  document.getElementById(PRESET_ID[group] + "PresetText").textContent = t(PRESET_LABEL[presets[group]]);
+  LIMIT_FIELDS.forEach(function (f) { if (f.group === group) document.getElementById(f.key).disabled = presets[group] !== "custom"; });
+}
+function loadPresets(cfg) {
+  ["video", "live"].forEach(function (group) {
+    var v = cfg[PRESET_KEY[group]];
+    presets[group] = PRESET_ORDER.indexOf(v) >= 0 ? v : inferPreset(group);
+    syncPresetUI(group);
+  });
+}
+["video", "live"].forEach(function (group) {
+  var sel = document.getElementById(PRESET_ID[group] + "Preset");
+  PRESET_ORDER.forEach(function (name) {
+    var opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = t(PRESET_LABEL[name]);
+    sel.appendChild(opt);
+  });
+  sel.setAttribute("aria-label", t("stPresetLabel"));
+  syncPresetUI(group);
+  sel.addEventListener("change", function () {
+    var name = sel.value, patch = {};
+    presets[group] = patch[PRESET_KEY[group]] = name;
+    var vals = PRESETS[group][name];
+    for (var k in vals) { limits[k] = patch[k] = vals[k]; document.getElementById(k).value = vals[k]; }
+    syncPresetUI(group);
+    save(patch);
+  });
+});
 document.getElementById("stVideoReset").addEventListener("click", function () { resetLimits("video"); });
 document.getElementById("stLiveReset").addEventListener("click", function () { resetLimits("live"); });
 function lim(key) { return limits[key] || DEFAULTS[key]; }
@@ -1575,6 +1642,7 @@ function resetAllSettings() {
     limits[f.key] = patch[f.key] = DEFAULTS[f.key];
     document.getElementById(f.key).value = DEFAULTS[f.key];
   });
+  ["video", "live"].forEach(function (group) { presets[group] = patch[PRESET_KEY[group]] = "medium"; syncPresetUI(group); });
   // 影片
   videoOn = true;
   cdnMode = "list";
@@ -1832,6 +1900,29 @@ function crownIcon(i) {
   return svg;
 }
 
+// 测速结果下方的画质标示：用串流平台通用的保守建议频宽（8K 100 Mbps、4K 25 Mbps、1080P 5 Mbps、720P 3 Mbps）判断。
+// bps 是 bytes/秒，门槛先换算好：100 Mbps ≈ 12.5 MB/s、25 Mbps ≈ 3.0 MB/s
+var QUALITY_TIERS = [
+  { bps: 100e6 / 8, key: "stQuality8k", cls: "q8k", stars: 2 }, // 8K 紫、4K 金，前面加星星（8K 两颗）
+  { bps: 25e6 / 8, key: "stQuality4k", cls: "q4k", stars: 1 },
+  { bps: 5e6 / 8, key: "stQuality1080", cls: "q1080" },
+  { bps: 3e6 / 8, key: "stQuality720", cls: "q720" }
+];
+function starIcon() {
+  var svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "stQualityStar");
+  svg.setAttribute("aria-hidden", "true");
+  var path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", "M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7-6.3-3.8-6.3 3.8 1.7-7L2 9.5l7.1-.6z");
+  svg.appendChild(path);
+  return svg;
+}
+function qualityTier(bps) {
+  for (var i = 0; i < QUALITY_TIERS.length; i++) if (bps >= QUALITY_TIERS[i].bps) return QUALITY_TIERS[i];
+  return { key: "stQualityLow", cls: "qLow" };
+}
+
 function renderSpeedtest(st) {
   if (!st) return;
   lastSpeedtestState = st;
@@ -1900,9 +1991,20 @@ function renderSpeedtest(st) {
       var speedSpan = document.createElement("span");
       speedSpan.className = "stSpeed";
       speedSpan.textContent = text;
+      var speedCol = document.createElement("span");
+      speedCol.className = "stSpeedCol";
+      speedCol.appendChild(speedSpan);
+      if (r && !r.error && r.bps > 0) {
+        var tier = qualityTier(r.bps);
+        var qSpan = document.createElement("span");
+        qSpan.className = "stQuality " + tier.cls;
+        for (var si = 0; si < (tier.stars || 0); si++) qSpan.appendChild(starIcon());
+        qSpan.appendChild(document.createTextNode(t(tier.key)));
+        speedCol.appendChild(qSpan);
+      }
 
       row.appendChild(main);
-      row.appendChild(speedSpan);
+      row.appendChild(speedCol);
       if (host in crownOf) row.appendChild(crownIcon(crownOf[host]));
       frag.appendChild(row);
     });

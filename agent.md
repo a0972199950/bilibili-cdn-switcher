@@ -23,6 +23,12 @@
 `entry` 格式：`{ "type": "feature" | "fix", "text": { "zh_TW": "...", "zh_CN": "...", "en": "...", "ja": "...", "ko": "..." } }`。
 `/release` 會把 `unreleased` 搬進新版本、並用它更新商店介紹與「更新內容」popup，所以文字要寫給**使用者**看，不是寫給開發者看。
 
+**寫作規則：**
+
+- 只寫使用者看得到的改動。
+- 簡明扼要，不提細節，一句話說完（例：「依最新實測更新台灣、香港的建議節點」）。
+- 不得重複：同一件事在 `unreleased` 已經有一條（例如兩次優化節點、同一個功能又改了一次），就改寫那一條、以最新的內容為主，不要再追加一條。
+
 `.githooks/pre-push`（`npm install` 會自動設定 `core.hooksPath`）會比對「這次 push 的最新 commit」與「分支從主線分出來的基準 commit」：
 若 `src/changelog.json` 沒有變動，就會擋下並詢問 `Ignore and push: No/Yes`。agent 沒有終端機可互動，所以會直接被擋。
 

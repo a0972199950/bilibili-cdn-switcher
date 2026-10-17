@@ -74,10 +74,9 @@ bilibili-cdn-switcher/
 │   ├── release.mjs               ← 發版機械步驟（升版號、把 unreleased 搬進新版本）
 │   ├── publish-stores.mjs        ← 用 API 金鑰上傳新版 zip 到 Chrome / Edge / Firefox（不會按發布）
 │   ├── test-whats-new.mjs        ← 用真的 Chrome 測「更新內容」popup
-│   ├── gen-icons.mjs             ← 重新產生圖示
-│   └── capture-screenshots.mjs   ← 自動開瀏覽器截五語系商店截圖（見下）
+│   └── gen-icons.mjs             ← 重新產生圖示
 ├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
-├── .env.local.example     ← 截圖用登入 cookie 的範例（複製成 .env.local 再填，見下）
+├── .env.local.example     ← 本機憑證範例：商店上架金鑰、bilibili 登入 cookie（複製成 .env.local 再填）
 └── README.md
 ```
 
@@ -146,31 +145,6 @@ npm run gen-icons
 ```
 
 以 512px 母檔縮出 16/32/48/128，同時產生兩份：`src/icons/`（開發版，帶紅點角標，`Load unpacked` 平常讀到的就是這份，方便跟已安裝的正式版分辨）與 `assets/icons-prod/`（正式版，無角標）。`scripts/build.mjs` 打包 zip 時會自動把圖示換成 `assets/icons-prod/` 底下的正式版。
-
-### 📸 產生商店截圖（五語系 × 五個畫面，共 25 張 1280x800 png）
-
-```bash
-npm run capture-screenshots                      # 預設 1280x800（Chrome 商店固定要這尺寸）
-npm run capture-screenshots -- --size=2560x1600  # Mac App Store 用的高解析版；檔名帶尺寸，另存一套不覆蓋 1280x800
-```
-
-用 Puppeteer 載入 unpacked 的 `src/`，依序切 `en-US`／`zh-CN`／`zh-TW`／`ja`／`ko` 五個瀏覽器語系，實際打開一支
-bilibili 影片頁（網址寫在 `scripts/capture-screenshots.mjs` 開頭的 `VIDEO_URL`，要換片直接改那行），
-分別截點播主頁、直播主頁、點播測速頁（測速中）、進階設定頁、頁面上的 debug 疊層五張，等比縮放＋黑邊填成
-1280x800，輸出到 `store/` 覆蓋同名檔案（`screenshot-<語系>-<序號>-<畫面>-1280x800.png`，語系在前，
-依檔名排序時同語系會排在一起並照畫面順序）。直播主頁的直播間從 B 站推薦清單動態挑選，
-要固定房間可在 `.env.local` 設 `LIVE_ROOM=<房號>`。因為要連真實 bilibili 影片頁測速，跑一輪約
-數分鐘，且吃網路狀況。
-
-`--locale=en|zhcn|zhtw|ja|ko` 可只跑單一語系。`docs/` 裡 README 用的圖不由腳本產生，是手動維護的。
-
-**登入 cookie（選用，決定截圖畫質）**：未登入時 B 站只給約 480P，截圖裡的 `qn` 就會是 480P。
-想要高畫質截圖的話，把 `.env.local.example` 複製成 `.env.local`，填入自己的 `BILI_COOKIE`
-（登入 B 站 → DevTools → Network → 任一請求 → Request Headers → 複製整段 Cookie）。
-腳本有讀到就帶登入狀態開影片頁，沒有這個檔就照舊用未登入狀態跑，其餘流程完全一樣。
-`.env.local` 已列入 `.gitignore`，**裡面的 `SESSDATA` 等同帳號憑證，不要 commit 或外傳**。
-
----
 
 ## 🎛️ UI 說明
 

@@ -25,7 +25,8 @@ const SENDER_NAME = 'Overseas Video Speedup for bilibili';
 
 const HEADER = ['收到時間', '報告編號', '測試模式', 'Email', '無償', '國家', '城市', 'ISP', 'IP', '網路類型',
                 '下載 Mbps', '上傳 Mbps', '延遲 ms', 'B站頻寬上限 Mbps', '建議預設節點', '已登入', '語言', 'App 版本',
-                '禮物卡', '確認信', 'Gmail 連結', '報告檔', '禮物卡已寄', '備註', '參加方式', '邀請碼'];
+                '禮物卡', '確認信', 'Gmail 連結', '報告檔', '禮物卡已寄', '備註', '參加方式', '邀請碼',
+                '禮物卡種類', '禮物卡價值', '禮物卡序號'];  // 「禮物卡已寄」「備註」與最後三欄由人工填寫
 
 const EXT_URL_DEFAULT = 'https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch' +
   '?utm_source=cdn_speedtest_mail&utm_medium=email&utm_campaign=speedtest';
@@ -244,12 +245,29 @@ function handleReport(body) {
 
   // 3) 試算表
   const gmail = `https://mail.google.com/mail/u/0/#search/${encodeURIComponent('subject:' + rid)}`;
-  sheet().appendRow([new Date(), rid, test ? 'TEST' : '', email, body.no_compensation ? '是' : '',
-                     m.country || '', m.city || '', m.isp || '', m.ip || '', m.network || '',
-                     num(m.down_mbps), num(m.up_mbps), num(m.latency_ms), num(m.ceiling), m.default || '',
-                     m.login ? '是' : '否', body.lang || '', body.app_version || '', g, confirm, gmail, rf.getUrl(),
-                     '', '', join, inviteNote]);
+  appendLogRow([new Date(), rid, test ? 'TEST' : '', email, body.no_compensation ? '是' : '',
+                m.country || '', m.city || '', m.isp || '', m.ip || '', m.network || '',
+                num(m.down_mbps), num(m.up_mbps), num(m.latency_ms), num(m.ceiling), m.default || '',
+                m.login ? '是' : '否', body.lang || '', body.app_version || '', g, confirm, gmail, rf.getUrl(),
+                '', '', join, inviteNote, '', '', '']);
   return { ok: true, rid, confirm, guaranteed };
+}
+
+// 不用 appendRow：它會自動轉型，報告編號 089934e2 會變成科學記號數字。
+// 先把文字欄設成純文字再寫入；只有 收到時間（A）與 下載～B站頻寬上限（K–N）維持數字。
+function appendLogRow(row) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = sheet();
+    const r = sh.getLastRow() + 1;
+    if (r > sh.getMaxRows()) sh.insertRowsAfter(sh.getMaxRows(), 1);
+    sh.getRange(r, 2, 1, 9).setNumberFormat('@');
+    sh.getRange(r, 15, 1, row.length - 14).setNumberFormat('@');
+    sh.getRange(r, 1, 1, row.length).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP).setValues([row]);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function sendConfirm(email, lang, g, rid, country, nNodes, extUrl, guaranteed) {

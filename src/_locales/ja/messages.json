@@ -1,15 +1,15 @@
 {
   "extName": {
-    "message": "海外動画加速 for bilibili"
+    "message": "BiBoost - 海外動画加速 for bilibili"
   },
   "extDescription": {
     "message": "海外からでも Web 版 bilibili で 4K などの高画質動画をスムーズに再生し、バッファリングやカクつきを減らします。非公式のサードパーティ製拡張機能で、bilibili 公式とは関係ありません。"
   },
   "extActionTitle": {
-    "message": "海外動画加速"
+    "message": "BiBoost - 海外動画加速"
   },
   "popupHeaderTitle": {
-    "message": "海外動画加速 for bilibili"
+    "message": "BiBoost - 海外動画加速 for bilibili"
   },
   "popupTitle": {
     "message": "CDN 回線"
@@ -88,6 +88,21 @@
   },
   "speedtestStatusWaiting": {
     "message": "待機中"
+  },
+  "stQuality8k": {
+    "message": "8K 安定"
+  },
+  "stQuality4k": {
+    "message": "4K 安定"
+  },
+  "stQuality1080": {
+    "message": "1080p 安定"
+  },
+  "stQuality720": {
+    "message": "720p 安定"
+  },
+  "stQualityLow": {
+    "message": "カクつく可能性"
   },
   "speedtestFailedTemplate": {
     "message": "失敗（{err}）"
@@ -316,6 +331,21 @@
   },
   "resetDefault": {
     "message": "既定に戻す"
+  },
+  "stPresetLabel": {
+    "message": "プリセット"
+  },
+  "stPresetFast": {
+    "message": "高速 - 精度低め"
+  },
+  "stPresetMedium": {
+    "message": "標準"
+  },
+  "stPresetAccurate": {
+    "message": "低速 - 精度高め"
+  },
+  "stPresetCustom": {
+    "message": "カスタム"
   },
   "staleTabTitle": {
     "message": "このタブは再読み込みが必要です"

@@ -1,15 +1,15 @@
 {
   "extName": {
-    "message": "해외 영상 가속 for bilibili"
+    "message": "BiBoost - 해외 영상 가속 for bilibili"
   },
   "extDescription": {
     "message": "해외에서도 웹 bilibili에서 4K 등 고화질 영상을 더 매끄럽게 재생하고 버퍼링과 끊김을 줄여 줍니다. 비공식 서드파티 확장 프로그램이며 bilibili 공식과 관련이 없습니다."
   },
   "extActionTitle": {
-    "message": "해외 영상 가속"
+    "message": "BiBoost - 해외 영상 가속"
   },
   "popupHeaderTitle": {
-    "message": "해외 영상 가속 for bilibili"
+    "message": "BiBoost - 해외 영상 가속 for bilibili"
   },
   "popupTitle": {
     "message": "CDN 회선"
@@ -88,6 +88,21 @@
   },
   "speedtestStatusWaiting": {
     "message": "대기 중"
+  },
+  "stQuality8k": {
+    "message": "8K 원활"
+  },
+  "stQuality4k": {
+    "message": "4K 원활"
+  },
+  "stQuality1080": {
+    "message": "1080p 원활"
+  },
+  "stQuality720": {
+    "message": "720p 원활"
+  },
+  "stQualityLow": {
+    "message": "끊길 수 있음"
   },
   "speedtestFailedTemplate": {
     "message": "실패({err})"
@@ -316,6 +331,21 @@
   },
   "resetDefault": {
     "message": "기본값 복원"
+  },
+  "stPresetLabel": {
+    "message": "프리셋"
+  },
+  "stPresetFast": {
+    "message": "빠름 - 정확도 낮음"
+  },
+  "stPresetMedium": {
+    "message": "보통"
+  },
+  "stPresetAccurate": {
+    "message": "느림 - 정확도 높음"
+  },
+  "stPresetCustom": {
+    "message": "사용자 지정"
   },
   "staleTabTitle": {
     "message": "이 탭은 새로고침이 필요합니다"

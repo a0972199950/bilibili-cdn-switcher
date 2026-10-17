@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 海外動画加速 for bilibili
+# 🎬 BiBoost - 海外動画加速 for bilibili
 
 **言語 / Language：** [繁體中文](README.zh-TW.md)｜[简体中文](README.zh-CN.md)｜[English](../README.md)｜日本語（このページ）｜[한국어](README.ko.md)
 
@@ -70,10 +70,9 @@ bilibili-cdn-switcher/
 ├── scripts/              ← 開発／ビルド用スクリプト。すべて純粋な Node で、Windows / Mac / Linux で動作
 │   ├── build.mjs                 ← ストア提出用 zip をパッケージ化（Chrome + Firefox + Edge）
 │   ├── build-safari.mjs          ← Xcode で Safari 拡張機能を .app にパッケージ化（macOS 専用）
-│   ├── gen-icons.mjs             ← アイコンを再生成
-│   └── capture-screenshots.mjs   ← ブラウザを自動操作してストア用スクリーンショットを撮影（下記参照）
+│   └── gen-icons.mjs             ← アイコンを再生成
 ├── package.json           ← scripts/*.mjs が使う Node の依存（jszip / puppeteer / sharp）
-├── .env.local.example     ← スクリーンショット用ログイン cookie のサンプル（.env.local にコピーして使用）
+├── .env.local.example     ← ローカル認証情報のサンプル：ストア公開用キー、bilibili ログイン cookie（.env.local にコピーして使用）
 └── README.md
 ```
 
@@ -141,33 +140,6 @@ npm run gen-icons
 「パッケージ化されていない拡張機能を読み込む」で普段読み込まれるもの。ストアからインストールした版と見分けやすくするため）と
 `assets/icons-prod/`（ストア版、バッジなし）。`scripts/build.mjs` は zip をパッケージ化するときに自動で
 `assets/icons-prod/` のアイコンに差し替えます。
-
-### 📸 ストア用スクリーンショットの生成（5 画面 × 5 言語、計 25 枚、1280x800 png）
-
-```bash
-npm run capture-screenshots                      # 既定 1280x800（Chrome ストアはこのサイズちょうどが必須）
-npm run capture-screenshots -- --size=2560x1600  # Mac App Store 用の高解像度版。ファイル名にサイズが入るので別セットとして保存（1280x800 は上書きしない）
-```
-
-Puppeteer で `src/` をパッケージ化されていない拡張機能として読み込み、ブラウザの言語を `en-US` / `zh-CN` / `zh-TW` / `ja` / `ko` に
-切り替えながら、実際の bilibili の動画ページを開きます（URL は `scripts/capture-screenshots.mjs` 冒頭の `VIDEO_URL`。
-動画を変えたいときはその行を編集）。言語ごとに 5 画面 —— 動画メイン、ライブメイン、動画の速度テスト（テスト途中）、
-詳細設定、ページ上のデバッグ表示 —— を撮影し、それぞれ黒帯で 1280x800 に収めて `store/` に書き出し、
-対応する `screenshot-<言語>-<NN>-<画面>-1280x800.png` を上書きします（言語が先頭なので、ファイル名順に並べると
-言語ごと・表示順にまとまります）。ライブメインは bilibili のおすすめ一覧から選んだライブ配信を使います
-（`.env.local` に `LIVE_ROOM=<ルーム番号>` を書けば固定できます）。bilibili の CDN に対して実際に速度テストを行うため、
-1 回の実行に数分かかり、ネットワーク状況にも左右されます。
-
-`--locale=en|zhcn|zhtw|ja|ko` で 1 つの言語だけ実行できます。`docs/` の README 用画像はスクリプトでは生成せず、手動で管理しています。
-
-**ログイン cookie（任意。スクリーンショットの画質を左右します）**：ログインしていないと bilibili は約 480P までしか
-配信しないため、スクリーンショットの `qn` も 480P になります。高画質で撮りたい場合は `.env.local.example` を
-`.env.local` にコピーし、自分の `BILI_COOKIE` を記入してください（bilibili にログイン → DevTools → Network →
-任意のリクエスト → Request Headers → Cookie の行をまるごとコピー）。スクリプトがこれを見つけるとログイン状態で
-動画ページを開き、ファイルがなければ従来どおり未ログインで実行します。`.env.local` は gitignore 済みです ——
-**中の `SESSDATA` はアカウントの認証情報と同じなので、絶対にコミットしたり人に渡したりしないでください**。
-
----
 
 ## 🎛️ UI の説明
 

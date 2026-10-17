@@ -8,7 +8,6 @@
     "build:safari": "node scripts/build-safari.mjs",
     "package": "node scripts/package.mjs",
     "gen-icons": "node scripts/gen-icons.mjs",
-    "capture-screenshots": "node scripts/capture-screenshots.mjs",
     "changelog:validate": "node scripts/changelog.mjs validate",
     "publish-stores": "node scripts/publish-stores.mjs",
     "test:whats-new": "node scripts/test-whats-new.mjs",

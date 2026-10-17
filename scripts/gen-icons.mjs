@@ -1,6 +1,6 @@
 // 產生擴充圖示：粉色圓角底 + 白色雙向箭頭（線路切換）。
 // 純 Node 實作（原本用 Windows 專屬的 System.Drawing，Mac 沒辦法跑），畫法改成先組 SVG 字串，
-// 再用 sharp（跨平台，capture-screenshots.mjs 也在用）點陣化＋縮放。
+// 再用 sharp（跨平台）點陣化＋縮放。
 // 同時產生兩份：
 //   src/icons/           開發版（多一個紅色圓點角標），Load unpacked 時讀到的就是這份，方便跟已安裝的正式版分辨
 //   assets/icons-prod/    正式版（無角標），build.mjs 打包 zip 時會換成這份

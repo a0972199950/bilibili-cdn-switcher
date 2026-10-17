@@ -1,15 +1,15 @@
 {
   "extName": {
-    "message": "Overseas Video Speedup for bilibili"
+    "message": "BiBoost - Overseas Video Speedup for bilibili"
   },
   "extDescription": {
     "message": "Smoother 4K playback on web bilibili for overseas users. Unofficial, not affiliated with bilibili."
   },
   "extActionTitle": {
-    "message": "Overseas Video Speedup"
+    "message": "BiBoost - Overseas Video Speedup"
   },
   "popupHeaderTitle": {
-    "message": "Video Speedup for bilibili"
+    "message": "BiBoost - Speedup for bilibili"
   },
   "popupTitle": {
     "message": "CDN Route"
@@ -88,6 +88,21 @@
   },
   "speedtestStatusWaiting": {
     "message": "Waiting"
+  },
+  "stQuality8k": {
+    "message": "Smooth 8K"
+  },
+  "stQuality4k": {
+    "message": "Smooth 4K"
+  },
+  "stQuality1080": {
+    "message": "Smooth 1080p"
+  },
+  "stQuality720": {
+    "message": "Smooth 720p"
+  },
+  "stQualityLow": {
+    "message": "May stutter"
   },
   "speedtestFailedTemplate": {
     "message": "Failed ({err})"
@@ -316,6 +331,21 @@
   },
   "resetDefault": {
     "message": "Reset to default"
+  },
+  "stPresetLabel": {
+    "message": "Preset"
+  },
+  "stPresetFast": {
+    "message": "Fast - less accurate"
+  },
+  "stPresetMedium": {
+    "message": "Balanced"
+  },
+  "stPresetAccurate": {
+    "message": "Slow - more accurate"
+  },
+  "stPresetCustom": {
+    "message": "Custom"
   },
   "staleTabTitle": {
     "message": "This tab needs a refresh"
