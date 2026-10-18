@@ -1,17 +1,22 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "抽獎公告顯示每種禮物卡的面額，並可附上活動備註",
-        "zh_CN": "抽奖公告显示每种礼品卡的面额，并可附上活动备注",
-        "en": "Prize draw announcements now show each gift card's value and can include extra notes",
-        "ja": "抽選のお知らせにギフトカードごとの金額と備考を表示できるようになりました",
-        "ko": "추첨 공지에 기프트 카드별 금액과 참고 사항을 표시할 수 있게 되었어요"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.6.0",
+      "date": "2026-10-18",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "抽獎公告顯示每種禮物卡的面額，並可附上活動備註",
+            "zh_CN": "抽奖公告显示每种礼品卡的面额，并可附上活动备注",
+            "en": "Prize draw announcements now show each gift card's value and can include extra notes",
+            "ja": "抽選のお知らせにギフトカードごとの金額と備考を表示できるようになりました",
+            "ko": "추첨 공지에 기프트 카드별 금액과 참고 사항을 표시할 수 있게 되었어요"
+          }
+        }
+      ]
+    },
     {
       "version": "2.5.0",
       "date": "2026-10-17",
