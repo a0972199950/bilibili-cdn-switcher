@@ -16,7 +16,7 @@ import json, os, queue, re, shutil, sys, threading, time, traceback, urllib.requ
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.8.0"
+APP_VERSION = "1.9.0"
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
