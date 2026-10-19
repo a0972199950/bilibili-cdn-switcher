@@ -57,6 +57,16 @@
 		2B5DF7033066315B00949CE2 /* report.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7013066315B00949CE2 /* report.html */; };
 		2B5DF63F3066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
 		2B5DF6403066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
+		2B5DF8113066315B00949CE2 /* common.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8103066315B00949CE2 /* common.js */; };
+		2B5DF8123066315B00949CE2 /* common.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8103066315B00949CE2 /* common.js */; };
+		2B5DF8143066315B00949CE2 /* lottery-text.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8133066315B00949CE2 /* lottery-text.js */; };
+		2B5DF8153066315B00949CE2 /* lottery-text.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8133066315B00949CE2 /* lottery-text.js */; };
+		2B5DF8173066315B00949CE2 /* html-sanitize.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8163066315B00949CE2 /* html-sanitize.js */; };
+		2B5DF8183066315B00949CE2 /* html-sanitize.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8163066315B00949CE2 /* html-sanitize.js */; };
+		2B5DF81A3066315B00949CE2 /* announcement.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8193066315B00949CE2 /* announcement.js */; };
+		2B5DF81B3066315B00949CE2 /* announcement.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8193066315B00949CE2 /* announcement.js */; };
+		2B5DF81D3066315B00949CE2 /* announcement.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF81C3066315B00949CE2 /* announcement.html */; };
+		2B5DF81E3066315B00949CE2 /* announcement.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF81C3066315B00949CE2 /* announcement.html */; };
 		2B5DF6423066315B00949CE2 /* changelog.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6413066315B00949CE2 /* changelog.json */; };
 		2B5DF6433066315B00949CE2 /* changelog.json in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6413066315B00949CE2 /* changelog.json */; };
 		2B5DF6473066315B00949CE2 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF6443066315B00949CE2 /* InfoPlist.strings */; };
@@ -143,6 +153,11 @@
 		2B5DF7043066315B00949CE2 /* report.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = report.js; path = ../../../src/report.js; sourceTree = "<group>"; };
 		2B5DF7013066315B00949CE2 /* report.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = report.html; path = ../../../src/report.html; sourceTree = "<group>"; };
 		2B5DF63E3066315B00949CE2 /* theme.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = theme.js; path = ../../../src/theme.js; sourceTree = "<group>"; };
+		2B5DF8103066315B00949CE2 /* common.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = common.js; path = ../../../src/common.js; sourceTree = "<group>"; };
+		2B5DF8133066315B00949CE2 /* lottery-text.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = lottery-text.js; path = ../../../src/lottery-text.js; sourceTree = "<group>"; };
+		2B5DF8163066315B00949CE2 /* html-sanitize.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = html-sanitize.js; path = ../../../src/html-sanitize.js; sourceTree = "<group>"; };
+		2B5DF8193066315B00949CE2 /* announcement.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = announcement.js; path = ../../../src/announcement.js; sourceTree = "<group>"; };
+		2B5DF81C3066315B00949CE2 /* announcement.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = announcement.html; path = ../../../src/announcement.html; sourceTree = "<group>"; };
 		2B5DF6413066315B00949CE2 /* changelog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = changelog.json; path = ../../../src/changelog.json; sourceTree = "<group>"; };
 		2B5DF6453066315B00949CE2 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		2B5DF6463066315B00949CE2 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
@@ -290,6 +305,11 @@
 				2B5DF7043066315B00949CE2 /* report.js */,
 				2B5DF7013066315B00949CE2 /* report.html */,
 				2B5DF63E3066315B00949CE2 /* theme.js */,
+				2B5DF8103066315B00949CE2 /* common.js */,
+				2B5DF8133066315B00949CE2 /* lottery-text.js */,
+				2B5DF8163066315B00949CE2 /* html-sanitize.js */,
+				2B5DF8193066315B00949CE2 /* announcement.js */,
+				2B5DF81C3066315B00949CE2 /* announcement.html */,
 				2B5DF6413066315B00949CE2 /* changelog.json */,
 			);
 			name = Resources;
@@ -479,6 +499,11 @@
 				2B5DF7063066315B00949CE2 /* report.js in Resources */,
 				2B5DF7033066315B00949CE2 /* report.html in Resources */,
 				2B5DF6403066315B00949CE2 /* theme.js in Resources */,
+				2B5DF8123066315B00949CE2 /* common.js in Resources */,
+				2B5DF8153066315B00949CE2 /* lottery-text.js in Resources */,
+				2B5DF8183066315B00949CE2 /* html-sanitize.js in Resources */,
+				2B5DF81B3066315B00949CE2 /* announcement.js in Resources */,
+				2B5DF81E3066315B00949CE2 /* announcement.html in Resources */,
 				2B5DF6433066315B00949CE2 /* changelog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -501,6 +526,11 @@
 				2B5DF7053066315B00949CE2 /* report.js in Resources */,
 				2B5DF7023066315B00949CE2 /* report.html in Resources */,
 				2B5DF63F3066315B00949CE2 /* theme.js in Resources */,
+				2B5DF8113066315B00949CE2 /* common.js in Resources */,
+				2B5DF8143066315B00949CE2 /* lottery-text.js in Resources */,
+				2B5DF8173066315B00949CE2 /* html-sanitize.js in Resources */,
+				2B5DF81A3066315B00949CE2 /* announcement.js in Resources */,
+				2B5DF81D3066315B00949CE2 /* announcement.html in Resources */,
 				2B5DF6423066315B00949CE2 /* changelog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

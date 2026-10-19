@@ -88,10 +88,7 @@ var els = {
   stList: document.getElementById("stList")
 };
 
-// -------- i18n：套用 chrome.i18n 訊息到靜態文字節點 --------
-// 使用者在進階設定選了語言時，優先讀 i18n.js 載入的那份語系；沒選就走 chrome.i18n（依瀏覽器語言）
-function t(key) { return (uiMessages && uiMessages[key]) || chrome.i18n.getMessage(key) || key; }
-function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "-") : chrome.i18n.getUILanguage(); }
+// -------- i18n：套用 chrome.i18n 訊息到靜態文字節點（t / uiLanguage 等共用函式在 common.js）--------
 document.title = t("popupTitle");
 document.documentElement.lang = uiLanguage();
 [
@@ -191,17 +188,7 @@ els.debug.textContent = t("debugInitial");
 setRichText(document.getElementById("autoSpeedSwitchHint"), t("autoSpeedSwitchHint"));
 document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwitchAllNote");
 
-// -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨；沒有對應網址就不顯示 --------
-// UI 語言代碼，挑意見回饋表單與組 utm_content 都用這個（代碼定義見 promotions/campaigns.md）
-function uiLangCode() {
-  var lang = (uiLanguage() || "").toLowerCase();
-  if (lang.indexOf("ja") === 0) return "ja";
-  if (lang.indexOf("ko") === 0) return "ko";
-  if (lang.indexOf("zh") !== 0) return "en";
-  return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
-}
-// uiLangCode() → cdn-list.json / changelog.json 多語字串的語系鍵
-var LOCALIZED_KEYS = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en", ja: "ja", ko: "ko" };
+// -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨（detectBrowser，common.js）；沒有對應網址就不顯示 --------
 // 一律用不含 slug 的短網址：商店改名後 slug 會失效，靠 ID／slug 本身跳轉才不會壞。
 // Edge Add-ons 沒有 /reviews 這層（會 404），只能導到商品頁，讓使用者自己往下捲到評論區。
 var STORE_REVIEW_URLS = {
@@ -209,14 +196,6 @@ var STORE_REVIEW_URLS = {
   edge: "https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp",
   firefox: "https://addons.mozilla.org/addon/bilibili-cdn-switcher/reviews"
 };
-function detectBrowser() {
-  var ua = navigator.userAgent;
-  if (ua.indexOf("Firefox/") !== -1) return "firefox";
-  if (ua.indexOf("Edg/") !== -1) return "edge";
-  if (ua.indexOf("Chrome/") !== -1) return "chrome";
-  return "safari";
-}
-function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
 
 // 從擴充內按評分屬於「已安裝使用者」，跟 README 的取得管道（utm_campaign=readme）分開記，
 // 免得把安裝來源報表灌成 GitHub 帶來的。
@@ -272,7 +251,7 @@ var LOTTERY_SWAP_MS = 480; // 換則時「下面那張翻到上面」的動畫
   var nextBtn = document.getElementById("lotteryNext");
   var tpl = document.getElementById("lotteryCardTpl");
   var reduceMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var lang = LOCALIZED_KEYS[uiLangCode()].replace("_", "-"); // lottery-text.js 與公告的語言鍵是 zh-TW 這種寫法
+  var lang = uiLangTag(); // lottery-text.js 與公告的語言鍵是 zh-TW 這種寫法
   var items = [], shown = [], shownKey = "", idx = 0, country = "", dismissed = {}, showAll = false;
   chrome.storage.local.remove(["lotteryFeed", "lotteryDismissed", "lotteryShowAll"]); // 改成公告之前（未上架的開發版）留下的舊資料
   var front = null, back = null, anim = null, swapping = false, paused = false, laidOutWidth = 0;
@@ -325,13 +304,6 @@ var LOTTERY_SWAP_MS = 480; // 換則時「下面那張翻到上面」的動畫
     }
   }
 
-  // { 語言: 文字 } 取介面語言，沒有就依序退回 en、zh-TW、任一種
-  function pickLang(map) {
-    if (!map) return "";
-    var keys = [lang, "en", "zh-TW"].concat(Object.keys(map));
-    for (var i = 0; i < keys.length; i++) if (map[keys[i]]) return map[keys[i]];
-    return "";
-  }
   function visibleAnnouncements() {
     var now = Date.now(), out = [];
     items.forEach(function (it) {
@@ -582,13 +554,6 @@ var cdnPools = {}; // cdn-list.json 的 pools：池类型的多语标签
 var currentCdnHost = null; // 目前生效的 cdnHost，供测速页标示「目前使用」＋点击切换比对
 var videoOn = true; // 一般影片没选「关闭」；关闭时测速页不标示「目前使用」
 
-// cdn-list.json / changelog.json 里 { zh_TW, zh_CN, en, ja, ko } 形式的多语字串（ja / ko 缺的话退回 en）
-function localized(obj) {
-  if (!obj) return "";
-  var key = LOCALIZED_KEYS[uiLangCode()];
-  return obj[key] || obj.en || obj.zh_TW || "";
-}
-
 // 具名节点：「技术代号 (池类型)」；特殊选项（backup）用 nameKey + noteKey
 function cdnDisplayName(o) {
   var name = o.nameKey ? t(o.nameKey) : o.name;
@@ -701,44 +666,27 @@ els.countrySelect.addEventListener("change", function () {
   applyCountry(code);
 });
 
-// 依 IP 判斷國家：B 站 zone API（擴充原本就有 bilibili.com 的權限，不需新增權限；不帶 cookie）。
+// 依 IP 判斷國家：B 站 zone API（fetchZone，common.js）。
 // 回傳清單內的國家 code；不在清單內回 ""；查詢失敗回 null（下次開啟再試）
-var ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
 var countryAutoPending = false;
-// 回傳 zone API 的 data（失敗回 null），並把 IP／ISP／省份存進 storage：節點好壞幾乎取決於 ISP，問題回報要附上
-function fetchZone() {
-  return fetch(ZONE_API, { credentials: "omit", cache: "no-store" })
-    .then(function (r) { return r.json(); })
-    .then(function (j) {
-      if (!j || j.code !== 0 || !j.data) return null;
-      var d = j.data;
-      chrome.storage.local.set({ detectedIp: d.addr || "", detectedIsp: d.isp || "", detectedProvince: d.province || "", detectedCountryName: d.country || "", detectedDial: Number(d.country_code) || null, zoneCheckedAt: Date.now() });
-      return d;
-    })
-    .catch(function () { return null; });
-}
 // The zone API only reports the international dialing code, and some codes are shared:
 // +7 is Russia and Kazakhstan, +1 is the US, Canada and most of the Caribbean. We deliberately
 // treat every +7 user as RU and every +1 user as US — the node lists are the same either way,
 // only the "you are here" label can be off.
-function detectCountry() {
-  return fetchZone().then(function (d) {
-    if (!d) return null;
-    var dial = Number(d.country_code);
-    for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) return cdnCountries[i].code;
-    return "";
-  });
+function countryByDial(dial) {
+  for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) return cdnCountries[i].code;
+  return "";
 }
-var ZONE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+function detectCountry() {
+  return fetchZone().then(function (d) { return d ? countryByDial(Number(d.country_code)) : null; });
+}
 function refreshZoneIfStale(items) {
   if (items && items.countryAutoDone === false) return; // 第一次：autoSelectCountry 自己會查
   if (items && items.zoneCheckedAt && Date.now() - items.zoneCheckedAt < ZONE_MAX_AGE_MS) return;
-  fetchZone().then(function (d) {
+  detectCountry().then(function (code) {
     // 使用者換了網路、IP 國家變了：只更新「你在這裡」標記，不動使用者選的國家
-    if (!d) return;
-    var dial = Number(d.country_code), code = "";
-    for (var i = 0; i < cdnCountries.length; i++) if (cdnCountries[i].dial === dial) code = cdnCountries[i].code;
-    if (code !== detectedCountry) { detectedCountry = code; save({ detectedCountry: code }); renderCountrySelect(); }
+    if (code === null || code === detectedCountry) return;
+    detectedCountry = code; save({ detectedCountry: code }); renderCountrySelect();
   });
 }
 function autoSelectCountry(cfg) {
@@ -899,11 +847,10 @@ var JOURNAL_TOGGLE_KEYS = ["enabled", "autoFallback", "videoEnabled", "liveEnabl
 function journalUi(k, d) {
   try { chrome.runtime.sendMessage({ type: "CDN_SWITCHER_JOURNAL", entry: { t: Date.now(), k: k, d: d } }, function () { void chrome.runtime.lastError; }); } catch (e) {}
 }
-function shortHostJ(h) { return typeof h === "string" ? h.replace(/\.bilivideo\.(com|cn)$/i, "") : h; }
 function save(patch) {
   chrome.storage.local.set(patch);
   if (journalReady) {
-    if ("cdnHost" in patch && patch.cdnHost !== lastCfg.cdnHost) journalUi("ui.node", { from: shortHostJ(lastCfg.cdnHost), to: shortHostJ(patch.cdnHost), mode: patch.cdnMode || lastCfg.cdnMode, auto: "autoTestPending" in patch && patch.autoTestPending ? 1 : 0 });
+    if ("cdnHost" in patch && patch.cdnHost !== lastCfg.cdnHost) journalUi("ui.node", { from: shortHost(lastCfg.cdnHost), to: shortHost(patch.cdnHost), mode: patch.cdnMode || lastCfg.cdnMode, auto: "autoTestPending" in patch && patch.autoTestPending ? 1 : 0 });
     if ("cdnCountry" in patch && patch.cdnCountry !== lastCfg.cdnCountry) journalUi("ui.country", { from: lastCfg.cdnCountry, to: patch.cdnCountry, auto: "detectedCountry" in patch ? 1 : 0 });
     if ("liveRoute" in patch && patch.liveRoute !== lastCfg.liveRoute) journalUi("ui.liveRoute", { from: lastCfg.liveRoute, to: patch.liveRoute });
     if ("cdnMode" in patch && patch.cdnMode !== lastCfg.cdnMode) journalUi("ui.mode", { from: lastCfg.cdnMode, to: patch.cdnMode });
@@ -1310,23 +1257,8 @@ els.liveModeOff.addEventListener("change", function () {
   save({ liveEnabled: false });
 });
 
-// -------- Debug 读取 --------
+// -------- Debug 读取（qnText / spdText 在 common.js）--------
 function disp(s) { return s == null ? "-" : String(s); }
-var QN_LABELS = {
-  6: "240P", 16: "360P", 32: "480P", 64: "720P", 74: "720P60",
-  80: "1080P", 100: "1080P AI", 112: "1080P+", 116: "1080P60",
-  120: "4K", 125: "HDR", 126: "Dolby Vision", 127: "8K"
-};
-function qnText(q) {
-  if (q == null) return "-";
-  var name = QN_LABELS[q];
-  return name ? name + " (" + q + ")" : String(q);
-}
-function spdText(bps, idle) {
-  if (!bps) return "-";
-  var s = bps >= 1048576 ? (bps / 1048576).toFixed(1) + " MB/s" : Math.round(bps / 1024) + " kB/s";
-  return idle ? s + " (idle)" : s;
-}
 function renderDebug(d) {
   liveSnap = (d && d.live) || null;
   renderLiveRows();
@@ -2315,7 +2247,7 @@ if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "func
     els: els, DEFAULTS: DEFAULTS, t: t, uiLangCode: uiLangCode, localized: localized, cdnDisplayName: cdnDisplayName,
     normHost: normHost, parseVer: parseVer, cmpVer: cmpVer, changelogText: changelogText, clampLimit: clampLimit, inferPreset: inferPreset,
     findCountry: findCountry, validCountry: validCountry, countryHosts: countryHosts, activeHosts: activeHosts, visibleCdnOptions: visibleCdnOptions,
-    detectCountry: detectCountry, refreshZoneIfStale: refreshZoneIfStale, autoSelectCountry: autoSelectCountry,
+    detectCountry: detectCountry, countryByDial: countryByDial, refreshZoneIfStale: refreshZoneIfStale, autoSelectCountry: autoSelectCountry,
     withSaved: withSaved, sortedKeys: sortedKeys, qualityTier: qualityTier, QUALITY_TIERS: QUALITY_TIERS, durationText: durationText, withUtm: withUtm, detectBrowser: detectBrowser,
     setRichText: setRichText, save: save,
     state: function () {

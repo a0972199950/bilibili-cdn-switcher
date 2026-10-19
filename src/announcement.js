@@ -13,26 +13,8 @@ var SPEEDTEST_DOC_URL = "https://lazy-cv.com/docs/bilibili-cdn-speedtest";
 var params = new URLSearchParams(location.search);
 var ID = /^\d+$/.test(params.get("id") || "") ? Number(params.get("id")) : null;
 
-function t(key) { return (uiMessages && uiMessages[key]) || chrome.i18n.getMessage(key) || key; }
-function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "-") : chrome.i18n.getUILanguage(); }
-// 同 popup.js 的 uiLangCode()：utm_content 用
-function uiLangCode() {
-  var l = (uiLanguage() || "").toLowerCase();
-  if (l.indexOf("ja") === 0) return "ja";
-  if (l.indexOf("ko") === 0) return "ko";
-  if (l.indexOf("zh") !== 0) return "en";
-  return l.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
-}
-var LANG = { zhtw: "zh-TW", zhcn: "zh-CN", en: "en", ja: "ja", ko: "ko" }[uiLangCode()];
-function $(id) { return document.getElementById(id); }
-function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
-// { 語言: 文字 } 取介面語言，沒有就依序退回 en、zh-TW、任一種（同 popup.js）
-function pickLang(map) {
-  if (!map) return "";
-  var keys = [LANG, "en", "zh-TW"].concat(Object.keys(map));
-  for (var i = 0; i < keys.length; i++) if (map[keys[i]]) return map[keys[i]];
-  return "";
-}
+// t / uiLanguage / uiLangCode / $ / openTab / pickLang come from common.js
+var LANG = uiLangTag(); // lottery-text.js and the announcement API use "zh-TW"-style tags
 function el(tag, text) {
   var e = document.createElement(tag);
   e.textContent = text;

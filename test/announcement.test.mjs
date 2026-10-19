@@ -16,7 +16,7 @@ async function boot(id, { feed = { v: 2, at: now, items: ITEMS }, api = null, ui
     if (url === API && api) return { json: () => Promise.resolve(api) };
     throw new TypeError("Failed to fetch");
   };
-  ["theme.js", "i18n.js", "lottery-text.js", "html-sanitize.js", "announcement.js"].forEach((f) => env.load(f));
+  ["theme.js", "i18n.js", "common.js", "lottery-text.js", "html-sanitize.js", "announcement.js"].forEach((f) => env.load(f));
   await env.settle(20);
   return env;
 }

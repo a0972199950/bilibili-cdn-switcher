@@ -14,7 +14,7 @@ async function boot(storage = {}, { zone = null, uiLanguage } = {}) {
     if (url === ZONE_API && zone) return { ok: true, status: 200, json: () => Promise.resolve(zone) };
     throw new TypeError("Failed to fetch");
   };
-  ["theme.js", "i18n.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
+  ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
   await env.settle(20);
   return env;
 }
@@ -130,6 +130,31 @@ describe("pure helpers", () => {
     assert.equal(el.innerHTML, "a <b>b</b> c <b>d</b>");
     p.setRichText(el, "<script>x</script>");
     assert.equal(el.innerHTML, "&lt;script&gt;x&lt;/script&gt;");
+  });
+  test("countryByDial: shared dial codes resolve to the first listed country (+7 → RU, +1 → US)", () => {
+    assert.equal(p.countryByDial(886), "TW");
+    assert.equal(p.countryByDial(7), "RU");
+    assert.equal(p.countryByDial(1), "US");
+    assert.equal(p.countryByDial(999), "");
+    assert.equal(p.countryByDial(NaN), "");
+  });
+  test("shared helpers from common.js", () => {
+    assert.equal(p.t("popupTitle"), env.chrome.i18n.getMessage("popupTitle"));
+    assert.equal(p.t("no-such-key"), "no-such-key");
+    assert.equal(env.window.uiLangTag(), "en");
+    assert.equal(env.window.shortHost("upos-sz-mirror08ct.bilivideo.com"), "upos-sz-mirror08ct");
+    assert.equal(env.window.shortHost("d1--ov-gotcha07.bilivideo.cn"), "d1--ov-gotcha07");
+    assert.equal(env.window.shortHost(undefined), "");
+    assert.equal(env.window.spdText(0), "-");
+    assert.equal(env.window.spdText(1048576 * 1.5), "1.5 MB/s");
+    assert.equal(env.window.spdText(1024 * 300, true), "300 kB/s (idle)");
+    assert.equal(env.window.qnText(null), "-");
+    assert.equal(env.window.qnText(120), "4K (120)");
+    assert.equal(env.window.qnText(7), "7");
+    assert.equal(env.window.pickLang({ ja: "j", en: "e" }, "ja"), "j");
+    assert.equal(env.window.pickLang({ ja: "j", en: "e" }), "e");
+    assert.equal(env.window.pickLang({ "zh-TW": "t" }), "t");
+    assert.equal(env.window.pickLang(null), "");
   });
   test("detectCountry maps the zone dial code onto the country list", async () => {
     for (const [dial, code] of [[886, "TW"], [65, "SG"], [1, "US"], [7, "RU"], [999, ""]]) {

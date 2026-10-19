@@ -1085,7 +1085,7 @@
   // popup 离开测速页或关闭时会送 speedtest-stop，中止目前请求、不再排下一个节点。
   // 每个节点下载到 N MB 或测满 N 秒先到者为准；预设 8MB / 5 秒，使用者可在 popup 进阶设定调整，
   // 每次开测由 popup 带进来（clampNum 挡掉不合理的值）
-  var ST_DEFAULT_MB = 8, ST_DEFAULT_SEC = 5;
+  var ST_DEFAULT_MB = DEFAULTS.stVideoMb, ST_DEFAULT_SEC = DEFAULTS.stVideoSec; // single source: DEFAULTS at the top
   var stMaxBytes = ST_DEFAULT_MB * 1024 * 1024;
   var stMaxMs = ST_DEFAULT_SEC * 1000;
   function clampNum(v, min, max, dflt) { v = Number(v); return isFinite(v) && v > 0 ? Math.min(max, Math.max(min, v)) : dflt; }

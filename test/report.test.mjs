@@ -9,7 +9,7 @@ async function boot(storage = {}, opts = {}) {
     if (url === ZONE_API && opts.zone) return { json: () => Promise.resolve(opts.zone) };
     throw new TypeError("Failed to fetch");
   };
-  ["theme.js", "i18n.js", "report.js"].forEach((f) => env.load(f));
+  ["theme.js", "i18n.js", "common.js", "report.js"].forEach((f) => env.load(f));
   await env.settle(20);
   return env;
 }

@@ -9,6 +9,7 @@
 //   ...
 //   env.close();                             // clears jsdom timers
 import fs from "node:fs";
+import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { JSDOM, VirtualConsole } from "jsdom";
@@ -209,8 +210,9 @@ export function createEnv(opts = {}) {
     onInstalledListeners,
     onConnectListeners,
     load(file) {
-      // Evaluate in the window's global scope so top-level `var`s become window properties
-      window.eval(readSrc(file) + "\n//# sourceURL=" + file);
+      // Run as a classic script in the window's realm: top-level function/var declarations become
+      // window globals even under "use strict" (window.eval would keep them local to the eval).
+      vm.runInContext(readSrc(file), dom.getInternalVMContext(), { filename: file });
       return env;
     },
     internals(name) {

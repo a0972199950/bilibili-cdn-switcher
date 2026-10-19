@@ -12,8 +12,6 @@ var REPORT_ENDPOINT = "https://bcs-report.bilibili-cdn-switcher-tools.workers.de
 var REPORT_TOKEN = "bcs-f302715d682c1c7864032e45"; // 與 Worker 的 REPORT_TOKEN 相同：弱驗證，只擋無差別掃描
 var PRIVACY_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/blob/master/PRIVACY.md";
 var ISSUES_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/issues/new";
-var ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
-var ZONE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 var DIAG_STORE = chrome.storage.session || chrome.storage.local;
 var DIAG_KEEP_MS = 10 * 60 * 1000;
 var TYPES = ["bug", "feature"];
@@ -22,9 +20,7 @@ var TYPE_KEYS = { bug: "reportTypeBug", feature: "reportTypeFeature" };
 var params = new URLSearchParams(location.search);
 var TAB_ID = /^\d+$/.test(params.get("tab") || "") ? Number(params.get("tab")) : null;
 
-function t(key) { return (uiMessages && uiMessages[key]) || chrome.i18n.getMessage(key) || key; }
-function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "-") : chrome.i18n.getUILanguage(); }
-function $(id) { return document.getElementById(id); }
+// t / uiLanguage / $ / detectBrowser / shortHost / fetchZone come from common.js
 document.title = t("reportTitle");
 document.documentElement.lang = uiLanguage();
 $("title").textContent = t("reportTitle");
@@ -88,19 +84,11 @@ document.addEventListener("keydown", function (e) { if (e.key === "Escape") tryC
 
 // -------- 收集資料 --------
 function storageGet(area, keys) { return new Promise(function (res) { try { area.get(keys, function (items) { res(items || {}); }); } catch (e) { res({}); } }); }
-function detectBrowser() {
-  var ua = navigator.userAgent;
-  if (ua.indexOf("Firefox/") !== -1) return "firefox";
-  if (ua.indexOf("Edg/") !== -1) return "edge";
-  if (ua.indexOf("Chrome/") !== -1) return "chrome";
-  return "safari";
-}
 function browserVersion() {
   var m = navigator.userAgent.match(/(Firefox|Edg|Chrome|Version)\/([\d.]+)/);
   return detectBrowser() + (m ? " " + m[2] : "");
 }
 function osName() { return (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "-"; }
-function shortHost(h) { return (h || "").replace(/\.bilivideo\.(com|cn)$/i, ""); }
 
 // 目前分頁是 B 站：向它要「此刻」的快照；不是（或聯絡不上）：拿 storage 裡最近更新的那一份
 function freshSnapshot() {
@@ -124,16 +112,14 @@ function newestSnapshot(snaps) {
   for (var k in snaps || {}) { var s = snaps[k]; if (s && now - s.t < DIAG_KEEP_MS && (!best || s.t > best.t)) best = s; }
   return best;
 }
-// IP／ISP：B 站 zone API（擴充本來就有 bilibili.com 權限，不帶 cookie）。超過 24 小時或沒有就重查，順手存回 storage 給 popup 用
+// IP／ISP：超過 24 小時或沒有就重查（fetchZone 會順手存回 storage 給 popup 用）
 function zoneInfo(cfg) {
   var cached = { ip: cfg.detectedIp, isp: cfg.detectedIsp, province: cfg.detectedProvince, countryName: cfg.detectedCountryName, dial: cfg.detectedDial, at: cfg.zoneCheckedAt };
   if (cached.at && Date.now() - cached.at < ZONE_MAX_AGE_MS && cached.ip) return Promise.resolve(cached);
-  return fetch(ZONE_API, { credentials: "omit", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
-    if (!j || j.code !== 0 || !j.data) return cached;
-    var d = j.data, out = { ip: d.addr || "", isp: d.isp || "", province: d.province || "", countryName: d.country || "", dial: Number(d.country_code) || null, at: Date.now() };
-    try { chrome.storage.local.set({ detectedIp: out.ip, detectedIsp: out.isp, detectedProvince: out.province, detectedCountryName: out.countryName, detectedDial: out.dial, zoneCheckedAt: out.at }); } catch (e) {}
-    return out;
-  }).catch(function () { return cached; });
+  return fetchZone().then(function (d) {
+    if (!d) return cached;
+    return { ip: d.addr || "", isp: d.isp || "", province: d.province || "", countryName: d.country || "", dial: Number(d.country_code) || null, at: Date.now() };
+  });
 }
 
 function kv(obj) {
@@ -153,7 +139,8 @@ function fmtDetail(d) {
   return parts.join(" ");
 }
 function rel(t, now) { return "-" + Math.max(0, Math.round((now - t) / 1000)) + "s"; }
-function spdText(bps) { if (!bps) return "0"; return bps >= 1048576 ? (bps / 1048576).toFixed(1) + "M" : Math.round(bps / 1024) + "k"; }
+// Compact speed for the diagnostics text ("2.0M" / "350k"); not the UI's spdText from common.js
+function spdShort(bps) { if (!bps) return "0"; return bps >= 1048576 ? (bps / 1048576).toFixed(1) + "M" : Math.round(bps / 1024) + "k"; }
 
 // 擴充自己先算一個初判，AI 讀的時候少繞路（判錯沒關係，有原始資料可以推翻）
 function detectPattern(snap, journal, samples, zone, cfg) {
@@ -203,7 +190,7 @@ function buildDiag(data) {
   if (cfg.speedOrder && cfg.speedOrder.video && cfg.speedOrder.video.length) lines.push("[rank] lastSpeedOrder=" + cfg.speedOrder.video.slice(0, 12).map(shortHost).join(" > "));
   if (snap) {
     lines.push("[page] " + kv({ snapshotAge: Math.round((now - snap.t) / 1000) + "s", fresh: snap.fresh ? 1 : 0, tab: snap.tab, url: snap.url, type: dg.page && dg.page.type, bvid: dg.page && dg.page.bvid, cid: dg.page && dg.page.cid, epid: dg.page && dg.page.epid, room: dg.page && dg.page.room, player: dg.page && dg.page.player, dash: dg.dash ? 1 : 0, spaNav: dg.spaNav, top: dg.page && dg.page.top }));
-    lines.push("[play] " + kv({ src: p.lastSource, rw: p.rewriteCount, seg: p.segRewriteCount, qn: p.lastQn, spd: spdText(p.speedBps) + (p.speedIdle ? "(idle)" : ""), buf: dg.buf, rs: dg.rs, paused: dg.paused, ct: dg.ct, lat: dg.lastSegMs, lastSegReqAgo: dg.lastSegReqAgo, lastSampleAgo: dg.lastSampleAgo }));
+    lines.push("[play] " + kv({ src: p.lastSource, rw: p.rewriteCount, seg: p.segRewriteCount, qn: p.lastQn, spd: spdShort(p.speedBps) + (p.speedIdle ? "(idle)" : ""), buf: dg.buf, rs: dg.rs, paused: dg.paused, ct: dg.ct, lat: dg.lastSegMs, lastSegReqAgo: dg.lastSegReqAgo, lastSampleAgo: dg.lastSampleAgo }));
     lines.push("[fb]   " + kv({ stallSince: dg.stallSince ? Math.round((now - dg.stallSince) / 1000) + "s" : null, stallLimit: dg.stallLimit, attempts: dg.fb && dg.fb.attempts, max: dg.fb && dg.fb.max, cooldownLeft: dg.fb && dg.fb.cooldownLeft, tried: dg.fb && dg.fb.tried.map(shortHost), hookAt: dg.hookAt, playurlBeforeHook: dg.playurlBeforeHook ? 1 : 0, active: dg.active ? 1 : 0 }));
     if (p.lastError) lines.push("[err]  " + p.lastError + (dg.lastErrorAt ? "  (" + Math.round((now - dg.lastErrorAt) / 1000) + "s ago)" : ""));
     if (p.live) lines.push("[live] " + kv({ route: p.live.route, eff: p.live.eff, auto: p.live.auto, cluster: p.live.cluster, protocol: p.live.protocol, orig: p.live.origRoute, active: p.live.activeHost, avail: p.live.avail, pinned: p.live.pinned }));
@@ -225,13 +212,13 @@ function buildDiag(data) {
   lines.push("   t   spd    buf    qn  rs p  lat   host");
   if (!data.samples.length) lines.push("(empty)");
   data.samples.forEach(function (r) {
-    lines.push([rel(r.t, now).padStart(6), (spdText(r.spd) + (r.idle ? "*" : "")).padStart(6), (r.buf != null ? r.buf + "s" : "-").padStart(6), String(r.qn == null ? "-" : r.qn).padStart(5), String(r.rs).padStart(3), r.paused ? "P" : "-", String(r.lat || 0).padStart(5), r.host || "-"].join(" "));
+    lines.push([rel(r.t, now).padStart(6), (spdShort(r.spd) + (r.idle ? "*" : "")).padStart(6), (r.buf != null ? r.buf + "s" : "-").padStart(6), String(r.qn == null ? "-" : r.qn).padStart(5), String(r.rs).padStart(3), r.paused ? "P" : "-", String(r.lat || 0).padStart(5), r.host || "-"].join(" "));
   });
   lines.push("");
   var summary = {
     version: manifest.version, browser: browserVersion(), os: osName(), country: (cfg.cdnCountry || "-") + (detectedCode ? "/" + detectedCode : ""), isp: zone.isp || "", vpnSuspect: vpnSuspect,
     configured: cfg.videoEnabled === false ? "off" : shortHost(cfg.cdnHost), effective: shortHost(dg.effective), playurlGiven: shortHost(dg.playurlGiven), currentCdn: shortHost(p.currentCdn),
-    qn: p.lastQn, speed: p.speedBps ? spdText(p.speedBps) + "B/s" : "", pattern: pattern,
+    qn: p.lastQn, speed: p.speedBps ? spdShort(p.speedBps) + "B/s" : "", pattern: pattern,
     recentKinds: data.journal.slice(-5).map(function (e) { return e.k; })
   };
   return { text: lines.join("\n"), summary: summary };
@@ -366,7 +353,7 @@ $("form").addEventListener("submit", function (ev) {
 // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
 if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
   globalThis.__BCS_TEST__.register("report", {
-    detectPattern: detectPattern, buildDiag: buildDiag, zoneInfo: zoneInfo, newestSnapshot: newestSnapshot, kv: kv, fmtDetail: fmtDetail, spdText: spdText,
+    detectPattern: detectPattern, buildDiag: buildDiag, zoneInfo: zoneInfo, newestSnapshot: newestSnapshot, kv: kv, fmtDetail: fmtDetail, spdShort: spdShort,
     detectBrowser: detectBrowser, errText: errText, includeDiag: includeDiag, diag: function () { return diag; }
   });
 }
