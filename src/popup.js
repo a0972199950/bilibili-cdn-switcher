@@ -7,7 +7,7 @@ var DEFAULTS = {
   customHosts: [], // 自訂節點列表（使用者加入的、測速工具匯入的），依加入順序
   cdnCountry: null, // 節點清單的國家選項（cdn-list.json countries 的 code，或 "ALL"）
   detectedCountry: "", // 依 IP 偵測到、且在清單內的國家；標「你在這裡」用
-  countryAutoDone: false, // 依 IP 自動選國家只做一次（新安裝與更新後），使用者自己選過也算
+  countryAutoDone: false, // IP-based country selection runs once per install (never reset, not even on update); a manual choice also sets it
   autoFallback: true,
   autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
@@ -717,6 +717,10 @@ function fetchZone() {
     })
     .catch(function () { return null; });
 }
+// The zone API only reports the international dialing code, and some codes are shared:
+// +7 is Russia and Kazakhstan, +1 is the US, Canada and most of the Caribbean. We deliberately
+// treat every +7 user as RU and every +1 user as US — the node lists are the same either way,
+// only the "you are here" label can be off.
 function detectCountry() {
   return fetchZone().then(function (d) {
     if (!d) return null;
@@ -746,8 +750,9 @@ function autoSelectCountry(cfg) {
     detectedCountry = code;
     var target = code || COUNTRY_FALLBACK;
     var patch = { cdnCountry: target, detectedCountry: code, countryAutoDone: true };
-    // 新安裝與更新後的使用者一律換成該國第一個節點：舊版選的節點多半不在新的國家清單裡，
-    // 留著會變成下拉裡看不到的選項。用自訂節點列表的使用者不動
+    // First run only (countryAutoDone is never reset): switch to the country's first node, because a
+    // node chosen before the country lists existed is usually not in the list and would be invisible
+    // in the dropdown. Users on the custom list keep their node.
     if (cdnMode !== "custom") {
       useCountryFirstNode(target, patch);
       patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && target !== COUNTRY_ALL;
@@ -2168,7 +2173,7 @@ els.stRetestBtn.addEventListener("click", function () {
 setInterval(function () { pollDebug(); pollSpeedtest(); }, 1000);
 
 // -------- 版本更新提示 --------
-// storage 記著使用者「已經看過更新內容的版本」。每次開啟設定選單都跟目前擴充版本比對：
+// storage 記著使用者「已經看過更新內容的版本」。每次開啟 popup 都跟目前擴充版本比對：
 //  - 沒有紀錄 → 新使用者：直接寫入目前版本，不跳提示
 //  - 有紀錄且較舊 → 老使用者：跳一次性提示，列出（上次版本, 目前版本] 之間新增的功能；使用者關掉提示後才寫入新版本
 //  - 較舊版本之間沒有任何要顯示的紀錄 → 不打擾，直接寫入新版本

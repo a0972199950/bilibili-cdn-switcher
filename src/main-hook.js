@@ -26,7 +26,7 @@
   var FEATURE_AUTO_TEST_ON_COUNTRY = false;
   var DEFAULTS = {
     enabled: true, // 预设开启
-    cdnHost: "upos-sz-mirror08ct.bilivideo.com", // 默认：TW/SG 实测都是第一梯队；'base'=不覆写
+    cdnHost: "upos-sz-mirror08ct.bilivideo.com", // 默认：TW/SG 实测都是第一梯队。'base' (= do not rewrite) is a legacy value: popup.js migrates it to videoEnabled=false, MAIN keeps accepting it for old configs
     autoFallback: true, // 失败自动切换：预设开启；网络本身不稳（弱 WiFi 等）的用户可关掉，避免频繁黑屏重载
     showDebug: false, // debug 叠层预设关闭，避免新装用户被打扰
     videoEnabled: true, // 一般影片的「关闭」：false = 不介入影片 CDN 选线（enabled 是总开关，管影片与直播）

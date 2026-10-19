@@ -258,7 +258,7 @@ function collect() {
   });
 }
 $("diagTitle").textContent = t("reportDiagTitle").replace("{kb}", "…");
-try { window.focus(); $("desc").focus(); } catch (e) {} // iframe 一開就取得焦點：Escape 才會送到這裡
+try { window.focus(); $("desc").focus(); } catch (e) {} // Focus the window on open so Escape reaches the keydown handler above
 collect().catch(function () { diag = diag || { text: "(failed to collect diagnostics)", summary: {} }; });
 
 // -------- 送出 --------

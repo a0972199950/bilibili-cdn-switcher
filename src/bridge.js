@@ -204,10 +204,8 @@
     }
   });
 
-  // popup 的查询 / 测速指令只由最上层 frame 回应：iPad Safari 送讯息时不能指定 frameId: 0（见 popup.js 的 sendToTop），
-  // 会送到所有 frame，iframe 里的 bridge 不能抢着回应（isTopFrame 在上面）
-
-  // 回应 popup 查询 / 测速指令
+  // 回应 popup 查询 / 测速指令。只由最上层 frame 回应：iPad Safari 送讯息时不能指定 frameId: 0（见 popup.js 的 sendToTop），
+  // 会送到所有 frame，iframe 里的 bridge 不能抢着回应
   try {
     chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
       if (!isTopFrame) return;

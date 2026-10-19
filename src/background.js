@@ -108,7 +108,7 @@ function putSnapshot(tabId, snap) {
   return diagChain;
 }
 
-// 4) 回報頁的獨立視窗（目前分頁不是 B 站、或頁內 iframe 載不出來時的退路）
+// 4) 回報頁一律開成獨立視窗（popup 按「問題回報」時）；?tab= 是按下時的 B 站分頁，沒有就不帶
 function openReportWindow(tabId) {
   openExtWindow(chrome.runtime.getURL("report.html") + (tabId != null ? "?tab=" + tabId : ""), 760, 720);
 }

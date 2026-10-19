@@ -115,7 +115,7 @@
     return tpl.replace(/\{(\w+)\}/g, function (m, k) { return k in v ? String(v[k]) : m; });
   }
 
-  // 回傳 { label（跑馬燈固定在最前面的「NT$200 抽獎：」）, line（跑馬燈捲動的那段：抽獎的 title；沒有 title 時用組出來的一句話）, line（跑馬燈的一句話）, title, eligible,
+  // 回傳 { label（跑馬燈固定在最前面的「NT$200 抽獎：」）, line（跑馬燈捲動的那段：抽獎的 title；沒有 title 時用組出來的一句話）, title, eligible,
   //        ispList（限定業者時列在 eligible 下一行的業者名單，不限時是空字串）, period, prize, draw }
   function compose(meta, lang) {
     if (LANGS.indexOf(lang) === -1) lang = "en";
