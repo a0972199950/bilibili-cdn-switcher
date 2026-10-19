@@ -42,13 +42,27 @@ describe("autotest-done → storage", () => {
     const env = boot({ autoSpeedSwitch: true });
     autotestDone(env, { host: B, from: A, reason: "video" });
     assert.equal(env.storage.cdnHost, B);
-    assert.equal(env.storage.videoEnabled, true);
+    assert.equal("videoEnabled" in env.storage, false, "only cdnHost is written");
     env.close();
   });
-  test("country test applies regardless of the switch", () => {
-    const env = boot({});
+  test("country test applies regardless of the switch — but only after a real pending test armed it", () => {
+    const env = boot({ autoTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
+    assert.equal(env.storage.autoTestPending, false, "flag cleared on start");
     autotestDone(env, { host: B, from: A, reason: "country" });
     assert.equal(env.storage.cdnHost, B);
+    assert.equal("videoEnabled" in env.storage, false, "never forced from a page message");
+    autotestDone(env, { host: A, from: B, reason: "country" });
+    assert.equal(env.storage.cdnHost, B, "arming is single-use");
+    env.close();
+  });
+  test("forged country result without a pending test is ignored (feature flag off → autoTestPending never true)", () => {
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "country" });
+    assert.equal(env.storage.cdnHost, A);
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
+    autotestDone(env, { host: B, from: A, reason: "country" });
+    assert.equal(env.storage.cdnHost, A, "forged autotest-start does not arm it either");
     env.close();
   });
   test("user changed the node meanwhile (from mismatch) → not overwritten", () => {
@@ -58,7 +72,8 @@ describe("autotest-done → storage", () => {
     env.close();
   });
   test("forged result with a host outside autoSpeedHosts is rejected (page scripts can post this)", () => {
-    const env = boot({ autoSpeedSwitch: true });
+    const env = boot({ autoSpeedSwitch: true, autoTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
     autotestDone(env, { host: "attacker.example", from: A, reason: "country" });
     autotestDone(env, { host: "attacker.example", from: A, reason: "video" });
     assert.equal(env.storage.cdnHost, A);
@@ -170,7 +185,10 @@ describe("speed test state for the popup", () => {
     env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "xx", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 1 } } });
     env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "attacker.example", startup: { avg: 1 } } });
     env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 1 } } });
-    assert.equal(env.internals("bridge").speedTest().results.length, 1);
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "cnb", host: "cn-gotcha05b.some-other-cdn.net", startup: { avg: 1 } } });
+    assert.equal(env.internals("bridge").speedTest().results.length, 2, "live hosts may use any domain suffix, like main-hook's LIVE_HOST_RE");
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "attacker-bilivideo.com", startup: { avg: 1 } } });
+    assert.equal(env.internals("bridge").speedTest().results.length, 2);
     env.close();
   });
   test("GET_DEBUG returns the latest MAIN snapshot and pokes MAIN to probe live routes", () => {

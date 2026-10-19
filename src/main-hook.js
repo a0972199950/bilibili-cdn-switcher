@@ -233,7 +233,8 @@
   }
 
   var SEG_RE = /\/upgcxcode\/.*\.m4s|\/upgcxcode\//i;
-  var CDN_HOST_RE = /(bilivideo\.(com|cn)|akamaized\.net|hdslb\.com)$/i;
+  // Anchored on a label boundary so "attacker-bilivideo.com" does not count as a CDN host
+  var CDN_HOST_RE = /(^|\.)(bilivideo\.(com|cn)|akamaized\.net|hdslb\.com)$/i;
   // 分段判定必须同时验 host：data.bilibili.com 的打点上报会把分段 URL 塞在 query 里，
   // 只看路径会把上报误认成分段（污染 currentCdn / 速度样本 / 备用URL模式的失败判定）
   function isSegUrl(url) { return SEG_RE.test(url) && CDN_HOST_RE.test(hostOf(url)); }
@@ -1587,8 +1588,11 @@
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost(), beforeLiveSig = liveSig(cfg);
     var beforePending = !!cfg.autoTestPending;
-    // Same trust issue as bridge.js: page scripts can post a forged "config". A host we would
-    // never route to (not a CDN host and not in the user's node list) is dropped.
+    // Tripwire, not a security boundary: everything MAIN world sees (this message, the localStorage
+    // copy read by readCfg) is writable by page scripts, and a script that runs in the page could
+    // wrap fetch itself anyway. The persistent path (storage) is guarded in bridge.js. This check
+    // only drops hosts that are neither a CDN domain nor in the node list that arrives with the
+    // same config (bridge pushes the whole cfg, so a newly added custom host and its list come together).
     if (d.payload.cdnHost !== undefined && !isAllowedCdnHost(d.payload.cdnHost, d.payload.autoSpeedHosts || cfg.autoSpeedHosts)) {
       jlog("page.cfg", { rejected: String(d.payload.cdnHost).slice(0, 60) });
       return;

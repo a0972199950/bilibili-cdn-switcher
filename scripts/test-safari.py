@@ -113,12 +113,12 @@ def run_tests():
         except Exception as e:
             check("Video page test", False, str(e))
 
-        # ── Test 6: popup.js detectBrowser() Safari fix ──────────────────────
+        # ── Test 6: common.js detectBrowser() Safari fix ──────────────────────
         print("\n── Test 6: detectBrowser() Safari fix (inject + run) ──")
         try:
-            popup_path = "/Users/bytedance/Documents/programing/personal/bilibili-cdn-switcher/src/popup.js"
-            with open(popup_path) as f:
-                popup_src = f.read()
+            common_path = "/Users/bytedance/Documents/programing/personal/bilibili-cdn-switcher/src/common.js"
+            with open(common_path) as f:
+                common_src = f.read()
 
             # Extract and run just the detectBrowser function
             detect_fn = driver.execute_script("""
@@ -131,7 +131,7 @@ def run_tests():
                 } catch(e) {
                     return "error: " + e.message;
                 }
-            """, popup_src)
+            """, common_src)
             # In Safari, UA contains "Safari" but not "Chrome/"
             check(
                 "detectBrowser() returns 'safari' in Safari UA",

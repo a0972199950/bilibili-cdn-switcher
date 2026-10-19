@@ -44,13 +44,17 @@
   var latestAutoTest = null; // 切换国家后自动测速的进度（autotest-start/progress/end）
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
   var speedTestHosts = []; // hosts of the current video run (from the popup); live runs have none
-  var CDN_HOST_RE = /(\.bilivideo\.(com|cn)|\.akamaized\.net)$/i;
   var LIVE_ROUTES = ["ov", "ovb", "cn", "cnb"];
+  // Same shape main-hook.js derives live hosts from (LIVE_HOST_RE there): any domain suffix is allowed
+  var LIVE_HOST_RE = /^((?:[a-z0-9]+--)?)(ov|cn)-gotcha(\d+)(b?)(\.[a-z0-9.-]+)$/i;
   function isOwnSpeedtestRow(row) {
     if (typeof row.host !== "string") return false;
-    if (row.route) return LIVE_ROUTES.indexOf(row.route) >= 0 && CDN_HOST_RE.test(row.host);
+    if (row.route) return LIVE_ROUTES.indexOf(row.route) >= 0 && LIVE_HOST_RE.test(row.host);
     return speedTestHosts.indexOf(row.host) >= 0;
   }
+  // "country" auto test: armed only when storage (which the page cannot write) says one is pending
+  // at the time autotest-start arrives; a forged autotest-done with reason "country" is otherwise ignored.
+  var countryTestArmed = false;
 
   function pushConfig(cfg) {
     try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -150,7 +154,14 @@
     // 一开始就把旗标清掉，之后不论结果都不再测
     if (d.dir === "autotest-start" && d.payload) {
       latestAutoTest = { running: true, reason: d.payload.reason || "", total: d.payload.total || 0, done: 0 };
-      if (d.payload.reason === "country") { try { chrome.storage.local.set({ autoTestPending: false }); } catch (e) {} }
+      if (d.payload.reason === "country") {
+        try {
+          chrome.storage.local.get({ autoTestPending: false }, function (items) {
+            countryTestArmed = !!items.autoTestPending;
+            if (items.autoTestPending) chrome.storage.local.set({ autoTestPending: false });
+          });
+        } catch (e) {}
+      }
       return;
     }
     if (d.dir === "autotest-progress" && d.payload) { if (latestAutoTest) latestAutoTest.done = d.payload.done || 0; return; }
@@ -174,20 +185,24 @@
     }
     // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
     // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
-    // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关
+    // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关，但要先经过上面的 countryTestArmed
     // Security: any script running in the page context (bilibili's own, third-party SDKs, other
     // extensions) can post a forged "autotest-done", and whatever host we store here is applied to
-    // every segment request in every tab from then on. Only accept hosts from the list the popup
-    // wrote into storage (autoSpeedHosts) — that is the list the auto test was asked to measure.
+    // every segment request in every tab from then on. Every condition below reads storage, which
+    // the page cannot write: the host must be in autoSpeedHosts (the list the test was asked to
+    // measure), the "country" bypass of autoSpeedSwitch needs a real pending test, and videoEnabled
+    // is never touched from here (auto tests only run while video override is on anyway).
     if (d.dir === "autotest-done" && d.payload && typeof d.payload.host === "string") {
       var p = d.payload;
       journal("ui.speedtest", { phase: "apply", kind: "auto-" + (p.reason || ""), host: p.host, from: p.from });
+      var country = p.reason === "country" && countryTestArmed;
+      if (p.reason === "country") countryTestArmed = false;
       try {
         chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost, autoSpeedHosts: [] }, function (items) {
           if (!Array.isArray(items.autoSpeedHosts) || items.autoSpeedHosts.indexOf(p.host) < 0) return;
           if (items.cdnHost !== p.from) return;
-          if (p.reason !== "country" && !items.autoSpeedSwitch) return;
-          chrome.storage.local.set({ cdnHost: p.host, videoEnabled: true });
+          if (!country && !items.autoSpeedSwitch) return;
+          chrome.storage.local.set({ cdnHost: p.host });
         });
       } catch (e) {}
       return;

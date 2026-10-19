@@ -53,6 +53,7 @@ describe("pure helpers", () => {
     assert.equal(mh.isSegUrl(`https://${MCDN}:4483/upgcxcode/1/x.m4s`), false, "port breaks the $ anchor on purpose");
     assert.equal(mh.isSegUrl("https://data.bilibili.com/log?u=https://x/upgcxcode/a.m4s"), false, "tracking beacon that embeds a segment URL");
     assert.equal(mh.isSegUrl(`https://${COS}/other/x.m4s`), false);
+    assert.equal(mh.isSegUrl("https://attacker-bilivideo.com/upgcxcode/1/x.m4s"), false, "label boundary");
   });
   test("isSwappableSeg / swapSegHost", () => {
     const akam = `https://upos-hz-mirrorakam.akamaized.net/upgcxcode/1/x.m4s?deadline=${FUTURE}`;
@@ -378,6 +379,8 @@ describe("config messages from bridge", () => {
     assert.equal(ok("my.own.host", []), false);
     assert.equal(ok("my.own.host", "nope"), false);
     assert.equal(ok("evil.bilivideo.com.attacker.example"), false);
+    assert.equal(ok("attacker-bilivideo.com"), false, "suffix match must sit on a label boundary");
+    assert.equal(ok("bilivideo.com"), true);
     assert.equal(ok(""), false);
     assert.equal(ok(42), false);
     env.close();
