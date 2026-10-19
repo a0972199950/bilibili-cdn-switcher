@@ -52,7 +52,7 @@ https://www.bilibili.com/#cdnsw-import=1.<host>,<host>,…
   **開發者測試模式**開著時不管國家，全部顯示（測試用）。
 - **擴充**：popup 主頁的跑馬燈與點開的抽獎說明視窗，用 `src/lottery-text.js` 組字，同樣只顯示使用者所在國家的抽獎。
   `lottery_text.py` 與 `lottery-text.js` 的範本表（`TEXT`）要一起改。
-  測試時要不管國家全部顯示：在 popup 的 DevTools console 執行 `lotteryShowAll(true)`（關閉：`lotteryShowAll(false)`）。
+  測試時要不管國家全部顯示：在 popup 的 DevTools console 執行 `announcementShowAll(true)`（關閉：`announcementShowAll(false)`）。
 - **舊版 exe（1.7.0（含）以前）**：透過 Apps Script（`action: "lotteries"`）讀 `lotteries.html`，而且不分國家、只顯示最新開始的一個。
   `lottery:add`／`lottery:update` 會用 `lottery_text.py` 產生這份 html 一起寫進去（文字跟新版 exe 一樣），Apps Script 不用改。
 

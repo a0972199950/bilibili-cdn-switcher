@@ -2217,9 +2217,6 @@ function announcementReset() {
   chrome.storage.local.remove(["announcementDismissed", "announcementFeed"]);
   return "已清除關閉紀錄與快取，重開 popup 生效";
 }
-// 改成公告之前的舊名字，照樣能用
-var lotteryShowAll = announcementShowAll;
-var lotteryResetDismiss = announcementReset;
 
 // -------- 除錯用：假國家（測長國名的 UI）--------
 // 網址列開 chrome-extension://<擴充 ID>/popup.html?fakeCountry：清單多一個最長國名的假國家（節點沿用台灣），
