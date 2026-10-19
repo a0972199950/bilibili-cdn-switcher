@@ -355,6 +355,33 @@ describe("config messages from bridge", () => {
     assert.ok(env.window.sessionStorage.getItem("__CDN_SWITCHER_SWITCH_TOAST__").includes(COS));
     env.close();
   });
+  test("a forged cdnHost that is neither a CDN host nor one of the user's nodes is rejected", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: "attacker.example", showDebug: true } });
+    assert.equal(mh.cfg().cdnHost, HOST);
+    assert.equal(mh.cfg().showDebug, false, "the whole message is dropped");
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: "my.own.host", autoSpeedHosts: ["my.own.host"] } });
+    assert.equal(mh.cfg().cdnHost, "my.own.host", "custom hosts arrive together with the list they are in");
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: "backup" } });
+    assert.equal(mh.cfg().cdnHost, "backup");
+    env.close();
+  });
+  test("isAllowedCdnHost", () => {
+    const env = boot({});
+    const ok = env.internals("main-hook").isAllowedCdnHost;
+    assert.equal(ok(HOST), true);
+    assert.equal(ok("upos-hz-mirrorakam.akamaized.net"), true);
+    assert.equal(ok("base"), true);
+    assert.equal(ok("backup"), true);
+    assert.equal(ok("my.own.host", ["my.own.host"]), true);
+    assert.equal(ok("my.own.host", []), false);
+    assert.equal(ok("my.own.host", "nope"), false);
+    assert.equal(ok("evil.bilivideo.com.attacker.example"), false);
+    assert.equal(ok(""), false);
+    assert.equal(ok(42), false);
+    env.close();
+  });
   test("unknown keys in the payload are ignored", () => {
     const env = boot({});
     const mh = env.internals("main-hook");

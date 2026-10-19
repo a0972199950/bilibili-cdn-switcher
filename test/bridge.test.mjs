@@ -57,6 +57,20 @@ describe("autotest-done → storage", () => {
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
+  test("forged result with a host outside autoSpeedHosts is rejected (page scripts can post this)", () => {
+    const env = boot({ autoSpeedSwitch: true });
+    autotestDone(env, { host: "attacker.example", from: A, reason: "country" });
+    autotestDone(env, { host: "attacker.example", from: A, reason: "video" });
+    assert.equal(env.storage.cdnHost, A);
+    assert.equal("videoEnabled" in env.storage, false);
+    env.close();
+  });
+  test("autoSpeedHosts missing or malformed → nothing is applied", () => {
+    const env = boot({ autoSpeedSwitch: true, autoSpeedHosts: "oops" });
+    autotestDone(env, { host: B, from: A, reason: "country" });
+    assert.equal(env.storage.cdnHost, A);
+    env.close();
+  });
   test("missing host is ignored", () => {
     const env = boot({ autoSpeedSwitch: true });
     autotestDone(env, { from: A, reason: "country" });
@@ -124,13 +138,13 @@ describe("speed test state for the popup", () => {
     let resp;
     env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_RUN_LIVE_SPEEDTEST", limits: { runs: 2, sec: 5 } }, (r) => { resp = r; });
     assert.deepEqual(plain(resp), { ok: true });
-    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "x", startup: { avg: 100 } } });
-    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "x", sustain: { lag: 0 } } });
-    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "cn", host: "y", error: "timeout" } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 100 } } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "d1--ov-gotcha07.bilivideo.com", sustain: { lag: 0 } } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "cn", host: "d1--cn-gotcha07.bilivideo.com", error: "timeout" } });
     let st = env.internals("bridge").speedTest();
     assert.equal(st.running, true);
     assert.equal(st.total, 4);
-    assert.deepEqual(plain(st.results), [{ route: "ov", host: "x", startup: { avg: 100 }, sustain: { lag: 0 } }, { route: "cn", host: "y", error: "timeout" }]);
+    assert.deepEqual(plain(st.results), [{ route: "ov", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 100 }, sustain: { lag: 0 } }, { route: "cn", host: "d1--cn-gotcha07.bilivideo.com", error: "timeout" }]);
 
     env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_RUN_SPEEDTEST", hosts: [A, B] }, () => {});
     env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { host: A, bps: 1 } });
@@ -143,6 +157,20 @@ describe("speed test state for the popup", () => {
     let got;
     env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_GET_SPEEDTEST" }, (r) => { got = r; });
     assert.equal(got.speedTest.results.length, 2);
+    env.close();
+  });
+  test("progress rows that are not part of the current run are dropped", () => {
+    const env = boot({});
+    env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_RUN_SPEEDTEST", hosts: [A, "my.own.host"] }, () => {});
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { host: "attacker.example", bps: 9e9 } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { bps: 1 } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { host: "my.own.host", bps: 1 } });
+    assert.deepEqual(plain(env.internals("bridge").speedTest().results), [{ host: "my.own.host", bps: 1 }], "custom hosts from the popup are fine");
+    env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_RUN_LIVE_SPEEDTEST" }, () => {});
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "xx", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 1 } } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "attacker.example", startup: { avg: 1 } } });
+    env.postMessage({ __cdnSwitcher: 1, dir: "speedtest-progress", payload: { route: "ov", host: "d1--ov-gotcha07.bilivideo.com", startup: { avg: 1 } } });
+    assert.equal(env.internals("bridge").speedTest().results.length, 1);
     env.close();
   });
   test("GET_DEBUG returns the latest MAIN snapshot and pokes MAIN to probe live routes", () => {

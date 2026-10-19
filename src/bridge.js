@@ -43,6 +43,14 @@
 
   var latestAutoTest = null; // 切换国家后自动测速的进度（autotest-start/progress/end）
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
+  var speedTestHosts = []; // hosts of the current video run (from the popup); live runs have none
+  var CDN_HOST_RE = /(\.bilivideo\.(com|cn)|\.akamaized\.net)$/i;
+  var LIVE_ROUTES = ["ov", "ovb", "cn", "cnb"];
+  function isOwnSpeedtestRow(row) {
+    if (typeof row.host !== "string") return false;
+    if (row.route) return LIVE_ROUTES.indexOf(row.route) >= 0 && CDN_HOST_RE.test(row.host);
+    return speedTestHosts.indexOf(row.host) >= 0;
+  }
 
   function pushConfig(cfg) {
     try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -154,6 +162,9 @@
     }
     if (d.dir === "speedtest-avail" && d.payload) { speedTest.avail = d.payload.avail || null; return; }
     if (d.dir === "speedtest-progress" && d.payload) {
+      // Page-forgeable as well; results only feed the popup's list, but still refuse rows that
+      // are not part of the run we started (video: the host list from the popup; live: a known route on a CDN host).
+      if (!isOwnSpeedtestRow(d.payload)) return;
       // 直播测速一条线路会分几次回报（起播 → 持续），以 route 合并成同一笔；点播测速没有 route，照旧依序追加
       var idx = -1;
       if (d.payload.route) for (var i = 0; i < speedTest.results.length; i++) if (speedTest.results[i].route === d.payload.route) { idx = i; break; }
@@ -164,11 +175,16 @@
     // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
     // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
     // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关
-    if (d.dir === "autotest-done" && d.payload && d.payload.host) {
+    // Security: any script running in the page context (bilibili's own, third-party SDKs, other
+    // extensions) can post a forged "autotest-done", and whatever host we store here is applied to
+    // every segment request in every tab from then on. Only accept hosts from the list the popup
+    // wrote into storage (autoSpeedHosts) — that is the list the auto test was asked to measure.
+    if (d.dir === "autotest-done" && d.payload && typeof d.payload.host === "string") {
       var p = d.payload;
       journal("ui.speedtest", { phase: "apply", kind: "auto-" + (p.reason || ""), host: p.host, from: p.from });
       try {
-        chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost }, function (items) {
+        chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost, autoSpeedHosts: [] }, function (items) {
+          if (!Array.isArray(items.autoSpeedHosts) || items.autoSpeedHosts.indexOf(p.host) < 0) return;
           if (items.cdnHost !== p.from) return;
           if (p.reason !== "country" && !items.autoSpeedSwitch) return;
           chrome.storage.local.set({ cdnHost: p.host, videoEnabled: true });
@@ -205,6 +221,7 @@
         // 一律直接开新一轮：MAIN world 若前一轮还在跑，runSpeedTest 自己会中断旧的再开始
         // （用 generation 计数器隔开新旧两轮的 continuation，见 main-hook.js）
         var hosts = Array.isArray(msg.hosts) ? msg.hosts : [];
+        speedTestHosts = hosts.slice();
         speedTest = { running: true, results: [], total: hosts.length, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
         journal("ui.speedtest", { phase: "start", kind: "video", hosts: hosts.length });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "speedtest-run", payload: { hosts: hosts, limits: msg.limits || null } }, "*"); } catch (e) {}
@@ -212,6 +229,7 @@
         return true;
       }
       if (msg && msg.type === "CDN_SWITCHER_RUN_LIVE_SPEEDTEST") {
+        speedTestHosts = [];
         speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
         journal("ui.speedtest", { phase: "start", kind: "live" });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}

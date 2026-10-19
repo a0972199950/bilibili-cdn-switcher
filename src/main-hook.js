@@ -1535,6 +1535,14 @@
 
   // ---------------- 切换 CDN 时的重载策略 ----------------
   function effSig(c) { return isActive(c) ? ("on:" + c.cdnHost) : "off"; }
+  // "base" / "backup" are modes, not hosts; otherwise it must be a bilibili CDN host or one of the
+  // user's own nodes (custom hosts are not necessarily on a bilibili domain).
+  function isAllowedCdnHost(h, userHosts) {
+    if (typeof h !== "string" || !h) return false;
+    if (h === "base" || h === "backup") return true;
+    if (CDN_HOST_RE.test(h)) return true;
+    return Array.isArray(userHosts) && userHosts.indexOf(h) >= 0;
+  }
   var WATCH_RE = /\/(video|bangumi|list|festival|medialist|cheese|blackboard)\//i;
 
   // 播放器内重载：重新请求分段（会被分段 hook 导到新节点），保留全屏；并回到原进度
@@ -1579,6 +1587,12 @@
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost(), beforeLiveSig = liveSig(cfg);
     var beforePending = !!cfg.autoTestPending;
+    // Same trust issue as bridge.js: page scripts can post a forged "config". A host we would
+    // never route to (not a CDN host and not in the user's node list) is dropped.
+    if (d.payload.cdnHost !== undefined && !isAllowedCdnHost(d.payload.cdnHost, d.payload.autoSpeedHosts || cfg.autoSpeedHosts)) {
+      jlog("page.cfg", { rejected: String(d.payload.cdnHost).slice(0, 60) });
+      return;
+    }
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
     if (beforeSig !== effSig(cfg) || beforeLiveSig !== liveSig(cfg)) jlog("page.cfg", { sig: effSig(cfg), live: liveSig(cfg) });
     // 影片播放中切换国家：不等下一支影片，这支就排程测一次（有样本才会真的开始）
@@ -1786,7 +1800,7 @@
       noteBackupHost: noteBackupHost, setPendingBackupHosts: function (v) { pendingBackupHosts = v; }, getPendingBackupHosts: function () { return pendingBackupHosts; },
       liveInfo: liveInfo, liveHostFor: liveHostFor, parseM3u8: parseM3u8, FlvParser: FlvParser, isAvTag: isAvTag,
       playInfoExpires: playInfoExpires, usablePlayInfo: usablePlayInfo, playInfoKey: playInfoKey,
-      clampNum: clampNum, cleanTitle: cleanTitle, pageTypeOf: pageTypeOf, qnText: qnText, currentQn: currentQn,
+      clampNum: clampNum, cleanTitle: cleanTitle, pageTypeOf: pageTypeOf, qnText: qnText, currentQn: currentQn, isAllowedCdnHost: isAllowedCdnHost,
       addSample: addSample, updateSpeed: updateSpeed, videoQnByPath: function () { return videoQnByPath; }
     });
   }
