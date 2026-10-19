@@ -254,4 +254,12 @@
       });
     });
   } catch (e) {}
+
+  // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+  if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+    globalThis.__BCS_TEST__.register("bridge", {
+      IMPORT_RE: IMPORT_RE, importFromHash: importFromHash, DEFAULTS: DEFAULTS,
+      speedTest: function () { return speedTest; }, latestDebug: function () { return latestDebug; }, latestAutoTest: function () { return latestAutoTest; }
+    });
+  }
 })();

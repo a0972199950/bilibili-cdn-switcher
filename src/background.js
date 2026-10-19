@@ -149,3 +149,11 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (msg.type === "CDN_SWITCHER_OPEN_ANNOUNCEMENT_WINDOW") { openAnnouncementWindow(msg.id); sendResponse({ ok: true }); return true; }
   if (msg.type === "CDN_SWITCHER_OPEN_REPORT_WINDOW") { openReportWindow(msg.tab != null ? msg.tab : tabId); sendResponse({ ok: true }); return true; }
 });
+
+// Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+  globalThis.__BCS_TEST__.register("background", {
+    importCustomHosts: importCustomHosts, appendJournal: appendJournal, appendSample: appendSample, putSnapshot: putSnapshot, pruneOld: pruneOld,
+    JOURNAL_MAX: JOURNAL_MAX, SAMPLES_MAX: SAMPLES_MAX, MERGE_WINDOW_MS: MERGE_WINDOW_MS, DIAG_KEEP_MS: DIAG_KEEP_MS
+  });
+}

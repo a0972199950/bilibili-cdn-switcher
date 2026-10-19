@@ -1774,4 +1774,20 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderOverlay);
   else renderOverlay();
   setInterval(function () { updateSpeed(); checkStall(); diagTick(); renderOverlay(); postDebug(); }, 1000);
+
+  // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+  if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+    globalThis.__BCS_TEST__.register("main-hook", {
+      cfg: function () { return cfg; }, debug: debug, isActive: isActive, effHost: effHost, isHostMode: isHostMode,
+      isExpiredUrl: isExpiredUrl, isSegUrl: isSegUrl, isSwappableSeg: isSwappableSeg, swapSegHost: swapSegHost, replaceHost: replaceHost, hostOf: hostOf,
+      isFailureStatus: isFailureStatus, shouldFallbackOnStatus: shouldFallbackOnStatus, pickFallbackHost: pickFallbackHost,
+      backupHosts: function () { return backupHosts; }, FALLBACK: FALLBACK,
+      applyTrack: applyTrack, rewriteContainer: rewriteContainer, rewriteRoot: rewriteRoot, tryRewriteText: tryRewriteText,
+      noteBackupHost: noteBackupHost, setPendingBackupHosts: function (v) { pendingBackupHosts = v; }, getPendingBackupHosts: function () { return pendingBackupHosts; },
+      liveInfo: liveInfo, liveHostFor: liveHostFor, parseM3u8: parseM3u8, FlvParser: FlvParser, isAvTag: isAvTag,
+      playInfoExpires: playInfoExpires, usablePlayInfo: usablePlayInfo, playInfoKey: playInfoKey,
+      clampNum: clampNum, cleanTitle: cleanTitle, pageTypeOf: pageTypeOf, qnText: qnText, currentQn: currentQn,
+      addSample: addSample, updateSpeed: updateSpeed, videoQnByPath: function () { return videoQnByPath; }
+    });
+  }
 })();

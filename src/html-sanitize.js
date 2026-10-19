@@ -37,4 +37,9 @@
       rebuild(doc.body, container, openLink || function (url) { window.open(url, "_blank", "noopener"); });
     },
   };
+
+  // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+  if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+    globalThis.__BCS_TEST__.register("html-sanitize", { KEEP_TAGS: KEEP_TAGS, DROP_TAGS: DROP_TAGS, rebuild: rebuild });
+  }
 })();

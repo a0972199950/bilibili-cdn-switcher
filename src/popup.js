@@ -490,6 +490,15 @@ var LOTTERY_SWAP_MS = 480; // 換則時「下面那張翻到上面」的動畫
     front.el.animate([{ opacity: 1, transform: "translate(0, 0)" }, { opacity: 0, transform: "translate(0, -6px)" }],
       { duration: LOTTERY_FADE_MS, fill: "forwards" }).onfinish = rebuild;
   }
+  // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+  if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+    globalThis.__BCS_TEST__.register("popup-announcement", {
+      visibleAnnouncements: visibleAnnouncements, pickLang: pickLang,
+      setState: function (s) { if (s.items) items = s.items; if (s.country != null) country = s.country; if (s.dismissed) dismissed = s.dismissed; if (s.showAll != null) showAll = s.showAll; },
+      shown: function () { return shown; }, render: render
+    });
+  }
+
   // 第一次開 popup 時國家是查完 zone API 才寫入的：寫入後重新篩一次（announcementShowAll 是除錯開關，見檔尾 announcementShowAll()）
   chrome.storage.onChanged.addListener(function (ch, area) {
     if (area !== "local") return;
@@ -2294,3 +2303,23 @@ function addFakeCountry() {
   var params = new URLSearchParams(location.search);
   if (params.has("whatsNew")) previewWhatsNew(params.get("whatsNew") || undefined);
 })();
+
+// Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+  globalThis.__BCS_TEST__.register("popup", {
+    els: els, DEFAULTS: DEFAULTS, t: t, uiLangCode: uiLangCode, localized: localized, cdnDisplayName: cdnDisplayName,
+    normHost: normHost, parseVer: parseVer, cmpVer: cmpVer, changelogText: changelogText, clampLimit: clampLimit, inferPreset: inferPreset,
+    findCountry: findCountry, validCountry: validCountry, countryHosts: countryHosts, activeHosts: activeHosts, visibleCdnOptions: visibleCdnOptions,
+    detectCountry: detectCountry, refreshZoneIfStale: refreshZoneIfStale, autoSelectCountry: autoSelectCountry,
+    withSaved: withSaved, sortedKeys: sortedKeys, qualityTier: qualityTier, QUALITY_TIERS: QUALITY_TIERS, durationText: durationText, withUtm: withUtm, detectBrowser: detectBrowser,
+    setRichText: setRichText, save: save,
+    state: function () {
+      return { cdnMode: cdnMode, customHosts: customHosts, countrySel: countrySel, detectedCountry: detectedCountry, currentCdnHost: currentCdnHost, cdnSelectValue: cdnSelectValue,
+        videoOn: videoOn, liveOn: liveOn, liveRouteSel: liveRouteSel, sortOn: sortOn, speedOrder: speedOrder, limits: limits, presets: presets, cdnList: cdnList, cdnCountries: cdnCountries };
+    },
+    setState: function (s) {
+      if (s.cdnMode !== undefined) cdnMode = s.cdnMode; if (s.customHosts) customHosts = s.customHosts; if (s.countrySel !== undefined) countrySel = s.countrySel;
+      if (s.sortOn !== undefined) sortOn = s.sortOn; if (s.speedOrder) speedOrder = s.speedOrder; if (s.limits) limits = s.limits;
+    }
+  });
+}

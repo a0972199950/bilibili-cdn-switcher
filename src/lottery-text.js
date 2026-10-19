@@ -144,4 +144,9 @@
   }
 
   window.LotteryText = { compose: compose };
+
+  // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+  if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+    globalThis.__BCS_TEST__.register("lottery-text", { compose: compose, pickText: pickText, countryName: countryName, amountText: amountText, cardList: cardList, joinOr: joinOr, monthDay: monthDay, fill: fill });
+  }
 })();

@@ -4,6 +4,7 @@
   "type": "module",
   "description": "Dev tooling only (dependencies for the Node scripts under scripts/); not the extension itself. The extension source lives in src/.",
   "scripts": {
+    "test": "node --test \"test/*.test.mjs\"",
     "build": "node scripts/build.mjs",
     "build:safari": "node scripts/build-safari.mjs",
     "package": "node scripts/package.mjs",
@@ -23,12 +24,13 @@
     "private:setup": "node scripts/private-repo.mjs setup",
     "private:push": "node scripts/private-repo.mjs push",
     "private:pull": "node scripts/private-repo.mjs pull",
-    "prepare":"git config core.hooksPath .githooks || exit 0",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
     "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml",
     "admin": "npm --prefix admin run dev"
   },
   "devDependencies": {
+    "jsdom": "^27.0.1",
     "jszip": "^3.10.1",
     "puppeteer": "^25.5.0",
     "sharp": "^0.35.3",

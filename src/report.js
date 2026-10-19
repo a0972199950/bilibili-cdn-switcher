@@ -362,3 +362,11 @@ $("form").addEventListener("submit", function (ev) {
       });
   }
 });
+
+// Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+  globalThis.__BCS_TEST__.register("report", {
+    detectPattern: detectPattern, buildDiag: buildDiag, zoneInfo: zoneInfo, newestSnapshot: newestSnapshot, kv: kv, fmtDetail: fmtDetail, spdText: spdText,
+    detectBrowser: detectBrowser, errText: errText, includeDiag: includeDiag, diag: function () { return diag; }
+  });
+}

@@ -118,3 +118,8 @@ chrome.storage.local.get({ announcementFeed: null }, function (s) {
     })
     .catch(function () { render(cached); });
 });
+
+// Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
+if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
+  globalThis.__BCS_TEST__.register("announcement", { render: render, renderLottery: renderLottery, renderHtml: renderHtml, pickLang: pickLang, uiLangCode: uiLangCode, ID: ID });
+}
