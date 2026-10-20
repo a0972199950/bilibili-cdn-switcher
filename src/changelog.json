@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增澳門、英國、西班牙、俄羅斯的建議節點清單",
+        "zh_CN": "新增澳门、英国、西班牙、俄罗斯的建议节点列表",
+        "en": "Added recommended node lists for Macau, the UK, Spain and Russia",
+        "ja": "マカオ・イギリス・スペイン・ロシアのおすすめノードリストを追加",
+        "ko": "마카오, 영국, 스페인, 러시아의 추천 노드 목록을 추가했어요"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.6.0",

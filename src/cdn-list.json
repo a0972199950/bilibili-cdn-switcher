@@ -89,6 +89,66 @@
         "cn-jsnj-gd-01-02.bilivideo.com",
         "cn-jssz-cm-02-18.bilivideo.com"
       ]
+    },
+    {
+      "code": "MO", "dial": 853, "name": {"zh_TW":"澳門","zh_CN":"澳门","en":"Macau","ja":"マカオ","ko":"마카오"},
+      "nodes": [
+        "cn-sccd-fx-01-06.bilivideo.com",
+        "cn-gdgz-gd-01-01.bilivideo.com",
+        "cn-gddg-cu-01-04.bilivideo.com",
+        "cn-sdqd-cu-01-08.bilivideo.com",
+        "cn-jsnj-gd-01-02.bilivideo.com",
+        "cn-sdjn-fx-01-02.bilivideo.com",
+        "cn-hbwh-fx-01-13.bilivideo.com",
+        "cn-bj-fx-01-04.bilivideo.com",
+        "ec-jssz-ct-01-02.bilivideo.com",
+        "cn-bj-se-01-05.bilivideo.com"
+      ]
+    },
+    {
+      "code": "GB", "dial": 44, "name": {"zh_TW":"英國","zh_CN":"英国","en":"United Kingdom","ja":"イギリス","ko":"영국"},
+      "nodes": [
+        "upos-sz-mirror08c.bilivideo.com",
+        "upos-sz-estgcos.bilivideo.com",
+        "upos-sz-mirrorhwb.bilivideo.com",
+        "upos-sz-estghw.bilivideo.com",
+        "cn-jxnc-cm-01-04.bilivideo.com",
+        "cn-gdgz-gd-01-01.bilivideo.com",
+        "cn-jssz-cm-02-31.bilivideo.com",
+        "cn-sccd-fx-01-01.bilivideo.com",
+        "cn-sdqd-ccc-01-01.bilivideo.com",
+        "upos-tf-all-hw.bilivideo.com"
+      ]
+    },
+    {
+      "code": "ES", "dial": 34, "name": {"zh_TW":"西班牙","zh_CN":"西班牙","en":"Spain","ja":"スペイン","ko":"스페인"},
+      "nodes": [
+        "upos-sz-mirror08c.bilivideo.com",
+        "cn-bj-se-01-05.bilivideo.com",
+        "upos-sz-estghw.bilivideo.com",
+        "upos-sz-mirrorali.bilivideo.com",
+        "upos-sz-mirrorhw.bilivideo.com",
+        "cn-hk-eq-01-09.bilivideo.com",
+        "cn-jxnc-cm-01-09.bilivideo.com",
+        "cn-jssz-cm-02-34.bilivideo.com",
+        "cn-sdqd-ccc-01-01.bilivideo.com",
+        "cn-sccd-fx-01-01.bilivideo.com"
+      ]
+    },
+    {
+      "code": "RU", "dial": 7, "name": {"zh_TW":"俄羅斯","zh_CN":"俄罗斯","en":"Russia","ja":"ロシア","ko":"러시아"},
+      "nodes": [
+        "upos-sz-mirror08c.bilivideo.com",
+        "upos-sz-estgcos.bilivideo.com",
+        "cn-gdgz-gd-01-01.bilivideo.com",
+        "upos-sz-mirrorhwb.bilivideo.com",
+        "upos-sz-estghw.bilivideo.com",
+        "upos-sz-mirror08h.bilivideo.com",
+        "upos-sz-mirrorhw.bilivideo.com",
+        "cn-hk-eq-01-09.bilivideo.com",
+        "cn-jssz-cm-02-34.bilivideo.com",
+        "cn-jxnc-cm-01-19.bilivideo.com"
+      ]
     }
   ],
   "pools": {
