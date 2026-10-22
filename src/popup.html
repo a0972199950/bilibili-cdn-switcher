@@ -116,6 +116,70 @@
        视频透上来使灰字与细线几乎看不清。铺满不透明背景即可，跟其他浏览器观感一致。 */
     html {
       background: var(--bg);
+      /* 隱藏原生的整頁捲動條，改用浮在右緣的 #pageScrollbar：主畫面內容超過 popup 高度上限時（例如頁面縮放 110% 又多了「需要重新整理」橫幅），
+         原生捲動條會把 popup 撐寬約 15px，之後切到測速頁也不會縮回去，右側多一條空白 */
+      scrollbar-width: none;
+    }
+
+    html::-webkit-scrollbar {
+      display: none; /* 不支援 scrollbar-width 的舊版 Safari */
+    }
+
+    /* 頁內其他會捲動的區塊（測速清單、下拉選單、公告卡片…）：改成細的捲動條，顏色跟 #pageScrollbar 一致。
+       這些在 popup 裡面，不會撐寬 popup，用原生的就好（Safari 不支援 scrollbar-color，但 macOS／iOS 原本就是細的浮動捲動條）。
+       選擇器權重是 0，html 自己的 scrollbar-width: none 會蓋過這裡 */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in srgb, var(--placeholder) 55%, transparent) transparent;
+    }
+
+    /* 不支援 scrollbar-width 的舊版 Chrome／Safari 用 webkit 偽元素畫同樣的細條 */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--placeholder) 55%, transparent);
+    }
+
+    /* 浮動的細捲動條（見 popup.js 的 initPageScrollbar）：疊在內容上、不佔寬度，內容沒超出時隱藏；滑過或拖曳時變粗 */
+    #pageScrollbar {
+      position: fixed;
+      top: 3px;
+      right: 2px;
+      bottom: 3px;
+      width: 8px;
+      z-index: 60; /* 蓋過內容、在確認框（z-index 100 起）之下 */
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .2s;
+    }
+
+    #pageScrollbar.show {
+      opacity: 1;
+    }
+
+    #pageScrollbar .thumb {
+      position: absolute;
+      right: 0;
+      width: 4px;
+      border-radius: 4px;
+      background: var(--placeholder);
+      opacity: .55;
+      pointer-events: auto;
+      transition: width .15s, opacity .15s;
+    }
+
+    #pageScrollbar .thumb:hover,
+    #pageScrollbar .thumb.dragging {
+      width: 8px;
+      opacity: .85;
     }
 
     body {
@@ -258,6 +322,22 @@
 
     .cdnOptRow.selected .cdnOptName {
       font-weight: 600;
+    }
+
+    /* 點播節點：下拉清單裡選中的那列、以及收起時的選取框，名稱前面加一個圓圈外框的勾（強調色：明亮＝粉、黑暗＝藍）。
+       圖形用 SVG 當遮罩、底色填強調色，才能跟著主題換色。
+       清單是空的（自訂列表還沒加節點）時選取框顯示的是提示文字，不打勾 */
+    #cdnSelectList .cdnOptRow.selected .cdnOptName::before,
+    #cdnSelect:not(.empty) .cdnSelectName::before {
+      content: "";
+      display: inline-block;
+      width: 1.05em;
+      height: 1.05em;
+      margin-right: 5px;
+      vertical-align: -0.18em;
+      background-color: var(--accent);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M7.5 12.3l3 3 6-6.3'/%3E%3C/svg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M7.5 12.3l3 3 6-6.3'/%3E%3C/svg%3E") center / contain no-repeat;
     }
 
     .cdnOptName {
@@ -522,6 +602,9 @@
       display: flex;
       flex-direction: column;
       height: 100%;
+      /* 高度鎖定前不超過目前可見高度（popup.js 的 setStVisibleH；沒設變數時這行無效＝不設上限）：
+         否則置中的提示卡片會先照 600px 排、鎖定後又往上跳 */
+      max-height: calc(var(--st-visible-h) - 28px);
     }
 
     #speedtestView > * {
@@ -1469,6 +1552,250 @@
       overflow-x: hidden; /* 旋轉的皇冠會凸出右緣，不要因此出現橫向捲動條 */
     }
 
+    /* 測速開不了（見 popup.js setStNoticeMode）：只留標題列和提示，影片資訊、測速說明、重新測速／停止都藏起來 */
+    #speedtestView.stNoticeMode #stMeta,
+    #speedtestView.stNoticeMode #stDesc,
+    #speedtestView.stNoticeMode .stActions {
+      display: none;
+    }
+
+    /* 測速清單位置的提示卡片（例如分頁要重新整理）：圓形圖示、粗體標題、灰色說明、膠囊按鈕，全部置中。
+       垂直位置見下面的 #stGuide 區塊；清單是等寬字，這裡換回一般字型 */
+    .stCard {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 22px 18px 20px;
+      border: 1px solid var(--border-soft);
+      border-radius: 12px;
+      background: var(--raised);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .06);
+      text-align: center;
+      font: 13px/1.6 -apple-system, "Segoe UI", "Microsoft JhengHei", sans-serif;
+    }
+
+    .stCardIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      margin-bottom: 2px;
+      border-radius: 50%;
+      background: var(--hover-bg);
+    }
+
+    .stCardIcon svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--accent);
+    }
+
+    .stCardIcon.spin svg {
+      animation: stCardSpin 1s linear infinite;
+    }
+
+    @keyframes stCardSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    .stCardTitle {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .stCardText {
+      margin: 0;
+    }
+
+    /* 有標題時說明退成灰字 */
+    .stCardTitle + .stCardText {
+      color: var(--muted);
+    }
+
+    /* 卡片裡的主要動作（重新整理、前往範例影片）：主題強調色的膠囊按鈕（明亮＝粉、黑暗＝藍），不滿版 */
+    button.stCta {
+      min-width: 140px;
+      margin-top: 6px;
+      padding: 7px 28px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--accent-text);
+    }
+
+    button.stCta:hover {
+      background: var(--accent-hover);
+    }
+
+    /* 目前分頁沒有影片可測時取代測速清單：說明＋操作示意動畫＋「前往範例影片」 */
+    #speedtestView > #stGuide {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding-top: 4px;
+    }
+
+    /* 提示、示意卡片放在剩下高度的「視覺中心」：比正中間稍微偏上（正中間看起來會偏低），
+       上下留白 2:3，卡片中心落在空白約 40% 的高度。容器改 flex column，上下各一個撐開的空白；
+       內容超高時空白縮成 0，從頂端開始排、可以捲動，不會被裁掉 */
+    #speedtestView.stNoticeMode > #stList,
+    #speedtestView > #stGuide {
+      display: flex;
+      flex-direction: column;
+    }
+
+    #speedtestView.stNoticeMode > #stList::before,
+    #speedtestView > #stGuide::before {
+      content: "";
+      flex: 2 1 0;
+    }
+
+    #speedtestView.stNoticeMode > #stList::after,
+    #speedtestView > #stGuide::after {
+      content: "";
+      flex: 3 1 0;
+    }
+
+    #speedtestView.stNoticeMode > #stList > *,
+    #speedtestView > #stGuide > * {
+      flex: 0 0 auto;
+    }
+
+
+    /* 示意動畫（10 秒一輪）：滑鼠點播放器開始播 → 移到右上角點擴充圖示 → popup 彈出 → 點測速按鈕 → 結果長條依序長出來。
+       會動的元素都用場景座標畫，平移用外層 g、按下的縮放用內層 g，避免 CSS transform 互相覆蓋；
+       縮放、伸長類的動畫用 transform-box: fill-box 以元素自己的框為基準 */
+    .sgScene {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: 4px 0 0;
+    }
+
+    .sgFrame { fill: var(--raised); stroke: var(--border); }
+    .sgSoft { fill: var(--line); }
+    .sgField { fill: var(--bg); }
+    .sgDot { fill: var(--placeholder); }
+    .sgOutline { fill: none; stroke: var(--border); }
+
+    .sgPlay, .sgRip, .sgPop, .sgProg, .sgBar {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+
+    .sgCursor { animation: sgCursorMove 10s ease-in-out infinite; }
+    .sgCursorIn { animation: sgCursorPress 10s linear infinite; }
+    .sgRip { opacity: 0; fill: none; stroke: #fb7299; stroke-width: 1.5; }
+    .sgRip1 { animation: sgRip1 10s ease-out infinite; }
+    .sgRip2 { animation: sgRip2 10s ease-out infinite; }
+    .sgRip3 { animation: sgRip3 10s ease-out infinite; }
+    .sgPlay { animation: sgPlay 10s ease-out infinite; }
+    .sgDim { animation: sgDim 10s ease-out infinite; }
+    .sgProg { transform-origin: left center; animation: sgProg 10s linear infinite; }
+    .sgPop { transform-origin: right top; animation: sgPop 10s ease-out infinite; }
+    .sgBtnHi { fill: var(--hover-bg); opacity: 0; animation: sgBtnHi 10s linear infinite; }
+    .sgBar { transform-origin: left center; animation: 10s ease-out infinite; }
+    .sgBar1 { fill: var(--q-4k); animation-name: sgBar1; }
+    .sgBar2 { fill: var(--q-1080); animation-name: sgBar2; }
+    .sgBar3 { fill: var(--q-720); animation-name: sgBar3; }
+    .sgBar4 { fill: var(--q-low); animation-name: sgBar4; }
+
+    @keyframes sgCursorMove {
+      0%, 4% { transform: translate(60px, 150px); opacity: 0; }
+      6% { opacity: 1; }
+      14%, 18% { transform: translate(92px, 84px); }
+      34%, 40% { transform: translate(234px, 10px); }
+      50%, 88% { transform: translate(206px, 78px); opacity: 1; }
+      93% { transform: translate(206px, 78px); opacity: 0; }
+      100% { transform: translate(60px, 150px); opacity: 0; }
+    }
+
+    @keyframes sgCursorPress {
+      0%, 14%, 17%, 34%, 37%, 51%, 54%, 100% { transform: scale(1); }
+      15.5%, 35.5%, 52.5% { transform: scale(.8); }
+    }
+
+    @keyframes sgRip1 {
+      0%, 15% { opacity: 0; transform: scale(.3); }
+      16% { opacity: .9; transform: scale(.5); }
+      22%, 100% { opacity: 0; transform: scale(1.6); }
+    }
+
+    @keyframes sgRip2 {
+      0%, 35% { opacity: 0; transform: scale(.3); }
+      36% { opacity: .9; transform: scale(.5); }
+      42%, 100% { opacity: 0; transform: scale(1.6); }
+    }
+
+    @keyframes sgRip3 {
+      0%, 52% { opacity: 0; transform: scale(.3); }
+      53% { opacity: .9; transform: scale(.5); }
+      59%, 100% { opacity: 0; transform: scale(1.6); }
+    }
+
+    @keyframes sgPlay {
+      0%, 16% { opacity: 1; transform: scale(1); }
+      21%, 94% { opacity: 0; transform: scale(1.4); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes sgDim {
+      0%, 16% { opacity: .5; }
+      22%, 94% { opacity: 0; }
+      100% { opacity: .5; }
+    }
+
+    @keyframes sgProg {
+      0%, 17% { transform: scaleX(0); }
+      90% { transform: scaleX(.9); }
+      97%, 100% { transform: scaleX(0); }
+    }
+
+    @keyframes sgPop {
+      0%, 37% { opacity: 0; transform: scale(.6); }
+      41%, 89% { opacity: 1; transform: scale(1); }
+      95%, 100% { opacity: 0; transform: scale(.6); }
+    }
+
+    @keyframes sgBtnHi {
+      0%, 52% { opacity: 0; }
+      53.5%, 58% { opacity: 1; }
+      66%, 100% { opacity: 0; }
+    }
+
+    @keyframes sgBar1 {
+      0%, 56% { transform: scaleX(0); }
+      66%, 100% { transform: scaleX(1); }
+    }
+
+    @keyframes sgBar2 {
+      0%, 59% { transform: scaleX(0); }
+      70%, 100% { transform: scaleX(1); }
+    }
+
+    @keyframes sgBar3 {
+      0%, 62% { transform: scaleX(0); }
+      74%, 100% { transform: scaleX(1); }
+    }
+
+    @keyframes sgBar4 {
+      0%, 65% { transform: scaleX(0); }
+      78%, 100% { transform: scaleX(1); }
+    }
+
+    /* 不要動畫時停在最後一格：已經在播、popup 開著、結果都出來了、滑鼠停在測速按鈕上 */
+    @media (prefers-reduced-motion: reduce) {
+      .sgCursor, .sgCursorIn, .sgRip, .sgPlay, .sgDim, .sgProg, .sgPop, .sgBtnHi, .sgBar { animation: none; }
+      .sgCursor { transform: translate(206px, 78px); }
+      .sgPlay, .sgDim { opacity: 0; }
+      .sgProg { transform: scaleX(.6); }
+    }
+
     .stRow {
       position: relative;
     }
@@ -1908,6 +2235,13 @@
       background: var(--raised);
     }
 
+    /* 提示模式下清單區裡放的是提示卡片，外面不要再包一層白框 */
+    :root[data-theme="light"] #speedtestView.stNoticeMode > #stList {
+      padding: 4px 0 0;
+      border: 0;
+      background: none;
+    }
+
     /* 明亮主題：原生 radio 跟主色一致，輸入框與「加入／清空」按鈕改成白卡圓角（黑暗主題維持原生外觀） */
     /* 明亮主題：鍵盤焦點改成淡藍光暈，取代原生的粗黑框（確認框開啟時會自動聚焦按鈕） */
     :root[data-theme="light"] button:focus-visible,
@@ -2217,6 +2551,104 @@
       <button id="stStopBtn" type="button" disabled></button>
     </div>
     <div id="stList"></div>
+    <!-- 目前分頁沒有影片可測：顯示操作示意（見 popup.js showStGuide）。示意畫面不放文字，各語言共用 -->
+    <div id="stGuide" style="display:none">
+      <div class="stCard">
+        <div class="stCardTitle" id="stGuideTitle"></div>
+        <p class="stCardText" id="stGuideText"></p>
+        <svg class="sgScene" viewBox="0 0 260 160" aria-hidden="true">
+          <defs>
+            <!-- 不能共用 #optimizing 的 optBg：那塊平常是 display:none，裡面的漸層畫不出來 -->
+            <linearGradient id="sgIconBg" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="rgb(255,138,176)" />
+              <stop offset="100%" stop-color="rgb(235,90,140)" />
+            </linearGradient>
+            <clipPath id="sgPlayerClip">
+              <rect x="10" y="38" width="164" height="92" rx="4" />
+            </clipPath>
+          </defs>
+          <!-- 瀏覽器外框、工具列（右上角是擴充圖示）-->
+          <rect class="sgFrame" x="1" y="1" width="258" height="158" rx="8" />
+          <line x1="1" y1="21" x2="259" y2="21" stroke="var(--line)" />
+          <circle class="sgDot" cx="12" cy="11" r="2.2" />
+          <circle class="sgDot" cx="20" cy="11" r="2.2" />
+          <circle class="sgDot" cx="28" cy="11" r="2.2" />
+          <rect class="sgField" x="40" y="6" width="150" height="10" rx="5" />
+          <g transform="translate(228,4) scale(0.0254)">
+            <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sgIconBg)" />
+            <g fill="white">
+              <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+              <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+            </g>
+          </g>
+          <!-- B 站影片頁：頁首、播放器、標題、右側推薦 -->
+          <rect x="10" y="25" width="22" height="6" rx="3" fill="#00aeec" />
+          <rect class="sgField" x="90" y="24" width="70" height="8" rx="4" />
+          <g clip-path="url(#sgPlayerClip)">
+            <rect x="10" y="38" width="164" height="92" fill="#1f2329" />
+            <circle cx="140" cy="62" r="9" fill="#ffd166" />
+            <polygon points="10,130 10,104 48,82 86,108 118,90 174,118 174,130" fill="#2ec4b6" />
+            <polygon points="10,130 10,118 60,100 108,120 150,106 174,114 174,130" fill="#1a936f" />
+            <rect class="sgDim" x="10" y="38" width="164" height="92" fill="#000" opacity=".5" />
+            <rect x="16" y="123" width="152" height="2.5" rx="1.25" fill="rgba(255,255,255,.35)" />
+            <rect class="sgProg" x="16" y="123" width="152" height="2.5" rx="1.25" fill="#fb7299" />
+          </g>
+          <g class="sgPlay">
+            <circle cx="92" cy="84" r="12" fill="rgba(255,255,255,.92)" />
+            <polygon points="88.5,78 88.5,90 98.5,84" fill="#fb7299" />
+          </g>
+          <rect class="sgSoft" x="10" y="137" width="120" height="6" rx="3" />
+          <rect class="sgSoft" x="10" y="148" width="80" height="5" rx="2.5" />
+          <rect class="sgSoft" x="182" y="38" width="28" height="18" rx="2" />
+          <rect class="sgSoft" x="214" y="40" width="38" height="4" rx="2" />
+          <rect class="sgSoft" x="214" y="48" width="26" height="4" rx="2" />
+          <rect class="sgSoft" x="182" y="62" width="28" height="18" rx="2" />
+          <rect class="sgSoft" x="214" y="64" width="38" height="4" rx="2" />
+          <rect class="sgSoft" x="214" y="72" width="26" height="4" rx="2" />
+          <rect class="sgSoft" x="182" y="86" width="28" height="18" rx="2" />
+          <rect class="sgSoft" x="214" y="88" width="38" height="4" rx="2" />
+          <rect class="sgSoft" x="214" y="96" width="26" height="4" rx="2" />
+          <rect class="sgSoft" x="182" y="110" width="28" height="18" rx="2" />
+          <rect class="sgSoft" x="214" y="112" width="38" height="4" rx="2" />
+          <rect class="sgSoft" x="214" y="120" width="26" height="4" rx="2" />
+          <!-- 擴充 popup：開關、節點選單、測速按鈕，按下後長出各節點的速度長條 -->
+          <g class="sgPop">
+            <rect x="162" y="24" width="92" height="104" rx="6" fill="rgba(0,0,0,.12)" />
+            <rect class="sgFrame" x="160" y="22" width="92" height="104" rx="6" />
+            <rect x="168" y="30" width="8" height="8" rx="2" fill="#fb7299" />
+            <rect class="sgSoft" x="180" y="32" width="40" height="4" rx="2" />
+            <rect class="sgSoft" x="168" y="45" width="48" height="4" rx="2" />
+            <rect x="228" y="43" width="16" height="8" rx="4" fill="var(--primary)" />
+            <circle cx="240" cy="47" r="3" fill="#fff" />
+            <rect class="sgOutline" x="168" y="57" width="76" height="10" rx="3" />
+            <rect class="sgFrame" x="168" y="72" width="76" height="12" rx="3" />
+            <rect class="sgBtnHi" x="168" y="72" width="76" height="12" rx="3" />
+            <circle cx="177" cy="77.5" r="2.4" fill="none" stroke="var(--text)" stroke-width="1" />
+            <line x1="178.8" y1="79.3" x2="180.6" y2="81.1" stroke="var(--text)" stroke-width="1" stroke-linecap="round" />
+            <rect x="185" y="76.3" width="50" height="3.4" rx="1.7" fill="var(--muted)" />
+            <rect class="sgSoft" x="168" y="93" width="16" height="3.5" rx="1.75" />
+            <rect class="sgBar sgBar1" x="188" y="93" width="56" height="3.5" rx="1.75" />
+            <rect class="sgSoft" x="168" y="101" width="16" height="3.5" rx="1.75" />
+            <rect class="sgBar sgBar2" x="188" y="101" width="44" height="3.5" rx="1.75" />
+            <rect class="sgSoft" x="168" y="109" width="16" height="3.5" rx="1.75" />
+            <rect class="sgBar sgBar3" x="188" y="109" width="30" height="3.5" rx="1.75" />
+            <rect class="sgSoft" x="168" y="117" width="16" height="3.5" rx="1.75" />
+            <rect class="sgBar sgBar4" x="188" y="117" width="16" height="3.5" rx="1.75" />
+          </g>
+          <!-- 點擊的漣漪：播放器、擴充圖示、測速按鈕 -->
+          <circle class="sgRip sgRip1" cx="92" cy="84" r="9" />
+          <circle class="sgRip sgRip2" cx="234.5" cy="10.5" r="9" />
+          <circle class="sgRip sgRip3" cx="206" cy="78" r="9" />
+          <!-- 滑鼠游標：尖端在原點，外層 g 平移、內層 g 做按下的縮放 -->
+          <g class="sgCursor">
+            <g class="sgCursorIn">
+              <path d="M0 0 L0 13 L3.5 9.8 L6 15 L8.2 14 L5.8 8.9 L10.5 8.9 Z" fill="#fff" stroke="#18191c" stroke-width="1" stroke-linejoin="round" />
+            </g>
+          </g>
+        </svg>
+        <button id="stGuideBtn" class="stCta" type="button"></button>
+      </div>
+    </div>
   </div>
 
   <!-- 切換國家後的自動測速：目前分頁回報進行中才顯示（見 popup.js renderOptimizing）；手動測速不會出現 -->
@@ -2322,6 +2754,8 @@
       <button id="wnClose" type="button"></button>
     </div>
   </div>
+
+  <div id="pageScrollbar" aria-hidden="true"><div class="thumb"></div></div>
 
   <script src="i18n.js"></script>
   <script src="common.js"></script>

@@ -74,11 +74,23 @@
   "stHintBandwidth": {
     "message": "ここで測るのは各ノードの<b>理論上の最大帯域</b>で、再生中の実際の速度ではありません。デバッグ表示より高い数値になるのは正常です。"
   },
-  "speedtestNoSampleHint": {
-    "message": "先に bilibili の動画ページで再生を始め、セグメントのサンプルを取得してからテストしてください。"
-  },
   "speedtestCannotStart": {
     "message": "テストを開始できません。現在のタブが bilibili の動画ページか確認してください。"
+  },
+  "stGuideTitle": {
+    "message": "このタブにはテストできる動画がありません"
+  },
+  "stGuideText": {
+    "message": "bilibili の動画を開いて再生を始めてから、拡張機能のアイコンをクリックして「各ノードの速度をテスト」を押してください。"
+  },
+  "stGuideBtn": {
+    "message": "サンプル動画を開く"
+  },
+  "stStaleText": {
+    "message": "拡張機能をインストール・更新した直後です。再読み込みするとテストできます。"
+  },
+  "stStaleReloading": {
+    "message": "再読み込み中… 完了すると自動でテストを始めます。"
   },
   "speedtestStatusTesting": {
     "message": "テスト中…"

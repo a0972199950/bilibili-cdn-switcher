@@ -85,7 +85,8 @@ var els = {
   stBackBtn: document.getElementById("stBackBtn"),
   stRetestBtn: document.getElementById("stRetestBtn"),
   stMeta: document.getElementById("stMeta"),
-  stList: document.getElementById("stList")
+  stList: document.getElementById("stList"),
+  stGuide: document.getElementById("stGuide")
 };
 
 // -------- i18n：套用 chrome.i18n 訊息到靜態文字節點（t / uiLanguage 等共用函式在 common.js）--------
@@ -107,7 +108,7 @@ document.documentElement.lang = uiLanguage();
   ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"], ["stVideoPresetLabel", "stPresetLabel"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
   ["stLiveRunsUnit", "unitTimes"], ["stLiveSecLabel", "stLiveSecLabel"], ["stLiveSecUnit", "unitSec"], ["stLiveReset", "resetDefault"], ["stLivePresetLabel", "stPresetLabel"], ["liveRouteExplain", "liveRouteExplain"], ["showDebugHint", "showDebugHint"],
-  ["staleTitle", "staleTabTitle"], ["staleText", "staleTabText"], ["staleReloadBtn", "staleTabReloadBtn"],
+  ["staleTitle", "staleTabTitle"], ["stGuideTitle", "stGuideTitle"], ["stGuideText", "stGuideText"], ["stGuideBtn", "stGuideBtn"], ["staleText", "staleTabText"], ["staleReloadBtn", "staleTabReloadBtn"],
   ["customAddBtn", "customAddBtn"], ["customClearBtn", "customClearBtn"], ["resetAllBtn", "resetAllBtn"],
   ["wnSubtitle", "whatsNewSubtitle"], ["wnClose", "whatsNewClose"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
@@ -1325,9 +1326,12 @@ function connectTop(tabId, name) {
 }
 
 // 擴充剛重新載入／更新時，已經開著的 B 站分頁裡還是舊的 content script（已跟擴充斷線，收不到訊息），
-// 瀏覽器不會自動把新的注入進去，要重新整理分頁才行。連續兩次聯絡不上 B 站分頁就提示並提供重新整理按鈕
-// （只失敗一次可能是分頁剛好在載入中，不急著提示）。
+// 瀏覽器不會自動把新的注入進去，要重新整理分頁才行。已載入完成的 B 站分頁連續兩次聯絡不上就提示並提供重新整理按鈕
+// （第一次失敗會立刻重試一次，見 pollDebug；載入中的分頁 content script 可能還沒好，不提示）。
 var BILI_TAB_RE = /^https?:\/\/([a-z0-9-]+\.)*bilibili\.com\//i;
+// 有播放器、能測速的頁面（對照 main-hook.js 的 pageTypeOf）：影片／番劇／課程／播放清單，直播間
+var VIDEO_PAGE_RE = /^https?:\/\/([a-z0-9-]+\.)*bilibili\.com\/(video|bangumi\/play|cheese\/play|list|medialist|festival|blackboard)\//i;
+var LIVE_PAGE_RE = /^https?:\/\/live\.bilibili\.com\/(blanc\/)?\d+/i;
 var debugMissCount = 0;
 function setStale(on) { document.getElementById("staleBanner").style.display = on ? "flex" : "none"; }
 document.getElementById("staleReloadBtn").addEventListener("click", function () {
@@ -1345,9 +1349,12 @@ function pollDebug() {
     sendToTop(tabs[0].id, { type: "CDN_SWITCHER_GET_DEBUG" }, function (resp) {
       if (chrome.runtime.lastError) {
         debugMissCount++;
-        setStale(onBili && tabs[0].status === "complete" && debugMissCount >= 2);
+        var maybeStale = onBili && tabs[0].status === "complete";
+        setStale(maybeStale && debugMissCount >= 2);
         renderDebug(null);
         renderOptimizing(null);
+        // 第一次聯絡不上就立刻再確認一次，不等下一秒的輪詢：popup 一打開就能顯示提示，不會晚一秒才把下面的內容往下推
+        if (maybeStale && debugMissCount === 1) pollDebug();
         return;
       }
       debugMissCount = 0;
@@ -1625,6 +1632,10 @@ var speedtestHosts = []; // 本次送出测试的 host 顺序，index 对应 spe
 var speedtestTabId = null;
 var speedtestPort = null; // 只用来让 content script 侦测「离开测速页 / popup 关闭」→ 立即中止
 var lastSpeedtestState = null; // 最近一次 renderSpeedtest 的资料，点击切换节点后立即重绘打勾标示用
+var stReloadTabId = null; // 測速頁按了「重新整理」的分頁：重新整理完就自動開測（見 pollSpeedtest）
+var stAwaitStart = false; // 剛進測速頁、這一輪還沒開始：輪詢先不畫，免得畫出分頁上一輪留下的測速狀態
+// 目前分頁沒有影片可測時，「前往範例影片」開的影片（跟商店截圖用的同一部 4K 展示片）
+var SAMPLE_VIDEO_URL = "https://www.bilibili.com/video/BV1R1e4zKEh1/";
 
 function speedtestHostList() { return activeHosts(); }
 
@@ -1772,8 +1783,8 @@ function liveMetrics(st, r, testing) {
 
 function renderLiveSpeedtest(st) {
   renderSpeedtestMeta(st);
-  if (st.error === "no-sample") { els.stList.textContent = t("liveSpeedtestNoSampleHint"); return; }
-  if (st.error === "unavailable") { els.stList.textContent = t("liveSpeedtestUnavailableHint"); return; }
+  if (st.error === "no-sample") { fillStNotice({ icon: "info", text: t("liveSpeedtestNoSampleHint") }); return; }
+  if (st.error === "unavailable") { fillStNotice({ icon: "info", text: t("liveSpeedtestUnavailableHint") }); return; }
   var byRoute = {};
   st.results.forEach(function (r) { if (r.route) byRoute[r.route] = r; });
   function finished(r) { return !!r && (r.error || r.sustain || r.sustainError); }
@@ -1874,12 +1885,11 @@ function renderSpeedtest(st) {
   if (!st) return;
   lastSpeedtestState = st;
   document.getElementById("stStopBtn").disabled = !st.running;
+  showStGuide(speedtestMode === "video" && st.error === "no-sample");
+  setStNoticeMode(st.error === "no-sample" || st.error === "unavailable");
   if (speedtestMode === "live") { renderLiveSpeedtest(st); return; }
   renderSpeedtestMeta(st);
-  if (st.error === "no-sample") {
-    els.stList.textContent = t("speedtestNoSampleHint");
-    return;
-  }
+  if (st.error === "no-sample") return;
   var bestHost = null, bestBps = 0;
   st.results.forEach(function (r) { if (!r.error && r.bps > bestBps) { bestBps = r.bps; bestHost = r.host; } });
   // 目前最快的前三名戴金／銀／銅皇冠（測速中就隨結果更新）
@@ -1979,6 +1989,8 @@ els.stList.addEventListener("click", function (ev) {
 
 function pollSpeedtest() {
   if (speedtestTabId == null) return;
+  if (stReloadTabId === speedtestTabId) { startAfterReload(speedtestTabId); return; }
+  if (stAwaitStart) return;
   sendToTop(speedtestTabId, { type: "CDN_SWITCHER_GET_SPEEDTEST" }, function (resp) {
     if (chrome.runtime.lastError) return;
     var st = resp && resp.speedTest;
@@ -2001,6 +2013,10 @@ function showSpeedtestView(tabId, mode) {
   els.speedtestView.style.display = "";
   enterStLayout();
   syncDescOverflow(); // 要在畫面顯示後才量得到高度
+  // 先只顯示標題列：確定能測（第一份測速狀態回來）才顯示說明與清單，不能測就直接換成提示，不會先閃一下測速清單
+  els.stList.textContent = "";
+  setStNoticeMode(true);
+  stAwaitStart = true;
   // 开一个长连线：popup 关闭或按返回时会自动/主动断线，content script 收到 onDisconnect 就中止测速
   speedtestPort = connectTop(tabId, "cdn-switcher-speedtest");
 }
@@ -2008,8 +2024,16 @@ function showSpeedtestView(tabId, mode) {
 // 測速頁版面（見 popup.html 的 html.stMode）：先讓 html 撐到 600px 向瀏覽器要最大的 popup，
 // popup 視窗跟著變大是非同步的，等 resize 停下來（或一段時間都沒有 resize＝本來就已經最大）後，
 // 再把 html 高度鎖成實際可見高度，內容剛好等於視窗，不會超出也不會留白
+// 鎖定前的這段時間，測速頁的高度上限先設成「目前可見高度」（--st-visible-h，每次 resize 更新）：
+// 頁面縮放超過 100% 時可見高度不到 600px，不設上限的話，置中的提示卡片會先照 600px 排、鎖定後又往上跳
 var stLayoutTimer = null;
+function setStVisibleH() {
+  var h = window.innerHeight;
+  if (h < 300) return; // iPad Safari 量到的不可信（見 lockStLayout），維持不設上限
+  document.documentElement.style.setProperty("--st-visible-h", h + "px");
+}
 function onStLayoutResize() {
+  setStVisibleH();
   clearTimeout(stLayoutTimer);
   stLayoutTimer = setTimeout(lockStLayout, 150);
 }
@@ -2023,6 +2047,7 @@ function enterStLayout() {
   var html = document.documentElement;
   html.style.height = "";
   html.classList.add("stMode");
+  setStVisibleH();
   window.addEventListener("resize", onStLayoutResize);
   clearTimeout(stLayoutTimer);
   stLayoutTimer = setTimeout(lockStLayout, 400);
@@ -2032,7 +2057,138 @@ function leaveStLayout() {
   window.removeEventListener("resize", onStLayoutResize);
   document.documentElement.classList.remove("stMode");
   document.documentElement.style.height = "";
+  document.documentElement.style.removeProperty("--st-visible-h");
 }
+
+// 整頁捲動條：原生的會把 popup 撐寬（見 popup.html 的 html 樣式），改畫一條浮在右緣的細捲動條。
+// 跟著捲動位置與內容高度更新，內容沒超出（或在測速頁，整頁鎖住不捲）時隱藏；拖曳滑塊可以捲動
+(function initPageScrollbar() {
+  var root = document.scrollingElement || document.documentElement;
+  var bar = document.getElementById("pageScrollbar"), thumb = bar.firstElementChild;
+  function update() {
+    var view = root.clientHeight, total = root.scrollHeight;
+    var show = total > view + 1 && !document.documentElement.classList.contains("stMode");
+    bar.classList.toggle("show", show);
+    if (!show) return;
+    var track = bar.clientHeight;
+    var h = Math.max(24, track * view / total);
+    thumb.style.height = h + "px";
+    thumb.style.top = (track - h) * root.scrollTop / (total - view) + "px";
+  }
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update);
+  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(document.body); // 內容長高／變矮（展開區塊、切換畫面）
+  thumb.addEventListener("pointerdown", function (e) {
+    e.preventDefault();
+    var startY = e.clientY, startTop = root.scrollTop;
+    var ratio = (root.scrollHeight - root.clientHeight) / Math.max(1, bar.clientHeight - thumb.offsetHeight);
+    try { thumb.setPointerCapture(e.pointerId); } catch (err) {}
+    thumb.classList.add("dragging");
+    function move(ev) { root.scrollTop = startTop + (ev.clientY - startY) * ratio; }
+    function end() {
+      thumb.classList.remove("dragging");
+      thumb.removeEventListener("pointermove", move);
+      thumb.removeEventListener("pointerup", end);
+      thumb.removeEventListener("pointercancel", end);
+    }
+    thumb.addEventListener("pointermove", move);
+    thumb.addEventListener("pointerup", end);
+    thumb.addEventListener("pointercancel", end);
+  });
+  update();
+})();
+
+// 目前分頁沒有影片可測（不是 B 站分頁、不是影片頁、影片還沒載入）：測速清單換成操作示意動畫＋「前往範例影片」
+function showStGuide(on) {
+  els.stGuide.style.display = on ? "" : "none";
+  els.stList.style.display = on ? "none" : "";
+}
+
+// 測速開不了時只留標題列和提示：影片資訊、測速說明、重新測速／停止這時都用不到，藏起來
+function setStNoticeMode(on) {
+  if (els.speedtestView.classList.contains("stNoticeMode") === on) return;
+  els.speedtestView.classList.toggle("stNoticeMode", on);
+  if (!on) syncDescOverflow(); // 說明區藏著時量不到高度，回來後重量
+}
+
+// 提示卡片上方的圓形圖示（Material Icons 的路徑）。"reloading" 用同一個重新整理圖示、轉圈
+var ST_NOTICE_ICONS = {
+  refresh: "M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z",
+  info: "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"
+};
+
+// 在測速清單的位置放一張提示卡片：圖示、標題（可省略）、說明，需要的話再加一顆按鈕。
+// n = { icon: "refresh" | "reloading" | "info", title, text, btn, onClick }
+function fillStNotice(n) {
+  els.stList.textContent = "";
+  var card = document.createElement("div");
+  card.className = "stCard";
+  var badge = document.createElement("div");
+  badge.className = "stCardIcon" + (n.icon === "reloading" ? " spin" : "");
+  var svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("aria-hidden", "true");
+  var path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("d", ST_NOTICE_ICONS[n.icon === "reloading" ? "refresh" : n.icon]);
+  svg.appendChild(path);
+  badge.appendChild(svg);
+  card.appendChild(badge);
+  if (n.title) {
+    var title = document.createElement("div");
+    title.className = "stCardTitle";
+    title.textContent = n.title;
+    card.appendChild(title);
+  }
+  var text = document.createElement("p");
+  text.className = "stCardText";
+  text.textContent = n.text;
+  card.appendChild(text);
+  if (n.btn) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "stCta";
+    btn.textContent = n.btn;
+    btn.addEventListener("click", n.onClick);
+    card.appendChild(btn);
+  }
+  els.stList.appendChild(card);
+}
+
+// 不是從測速狀態來的提示（開不了測速、重新整理中）。清掉 lastSpeedtestState：別處重繪測速清單時才不會蓋掉這段提示
+function renderStNotice(n) {
+  lastSpeedtestState = null;
+  showStGuide(false);
+  setStNoticeMode(true);
+  fillStNotice(n);
+}
+
+// 擴充剛安裝／更新時，之前就開著的 B 站分頁沒有可用的 content script，要重新整理才能測。
+// 在測速頁直接給重新整理按鈕；重新整理完 pollSpeedtest 會自動開測，不用再回主畫面按一次
+function renderStaleNotice(tabId) {
+  renderStNotice({ icon: "refresh", title: t("staleTabTitle"), text: t("stStaleText"), btn: t("staleTabReloadBtn"), onClick: function () {
+    renderStNotice({ icon: "reloading", text: t("stStaleReloading") });
+    // 等 reload 真的開始（分頁變成 loading）才標記，免得下一次 poll 看到的還是舊頁面的 complete 就急著開測
+    chrome.tabs.reload(tabId, function () {
+      void chrome.runtime.lastError;
+      if (speedtestTabId === tabId) stReloadTabId = tabId;
+    });
+  } });
+}
+
+// 重新整理的分頁載完就開測：原本的長連線連的是舊頁面，要重連，content script 才偵測得到 popup 關掉而中止測速
+function startAfterReload(tabId) {
+  chrome.tabs.get(tabId, function (tab) {
+    if (chrome.runtime.lastError || !tab || tab.status !== "complete" || stReloadTabId !== tabId) return;
+    stReloadTabId = null;
+    if (speedtestPort) { try { speedtestPort.disconnect(); } catch (e) {} }
+    speedtestPort = connectTop(tabId, "cdn-switcher-speedtest");
+    startSpeedtest(tabId, true);
+  });
+}
+
+els.stGuide.querySelector("#stGuideBtn").addEventListener("click", function () {
+  chrome.tabs.create({ url: SAMPLE_VIDEO_URL });
+});
 
 function showMainView() {
   setDescExpanded(false);
@@ -2042,12 +2198,34 @@ function showMainView() {
   if (speedtestPort) { try { speedtestPort.disconnect(); } catch (e) {} speedtestPort = null; }
   speedtestTabId = null;
   speedtestHosts = [];
+  stReloadTabId = null;
+  stAwaitStart = false;
+  showStGuide(false);
+  els.speedtestView.classList.remove("stNoticeMode");
 }
 
-function startSpeedtest(tabId) {
+// 沒有影片可測：顯示操作示意＋「前往範例影片」
+function renderStGuide() {
+  lastSpeedtestState = null;
+  showStGuide(true);
+  setStNoticeMode(true);
+}
+
+// 從主畫面進測速頁：不是 B 站分頁就直接顯示操作示意，不用先試著開測
+function enterSpeedtest(tabId) {
+  chrome.tabs.get(tabId, function (tab) {
+    void chrome.runtime.lastError;
+    if (speedtestTabId !== tabId) return;
+    if (speedtestMode === "video" && !(tab && BILI_TAB_RE.test(tab.url || ""))) { renderStGuide(); return; }
+    startSpeedtest(tabId, true);
+  });
+}
+
+// fresh：剛進測速頁（或分頁剛重新整理完），還不知道能不能測，先不畫清單，等第一份測速狀態回來再畫（見 showSpeedtestView）
+function startSpeedtest(tabId, fresh) {
   save({ autoTestPending: false }); // 使用者自己測速了，切換國家後的自動測速取消（MAIN 那邊開手動測速也會讓它作廢）
   var prev = lastSpeedtestState || {};
-  renderSpeedtest({ running: true, results: [], error: null, title: prev.title || "", qn: prev.qn || "", avail: prev.avail || null });
+  if (!fresh) renderSpeedtest({ running: true, results: [], error: null, title: prev.title || "", qn: prev.qn || "", avail: prev.avail || null });
   var live = speedtestMode === "live";
   var msg = live
     ? { type: "CDN_SWITCHER_RUN_LIVE_SPEEDTEST", limits: { runs: lim("stLiveRuns"), sec: lim("stLiveSec") } }
@@ -2057,8 +2235,22 @@ function startSpeedtest(tabId) {
     if (err || !resp || !resp.ok) {
       // 附上瀏覽器給的原因（沒有的話標出是哪種情況），使用者回報截圖時才看得出卡在哪
       var why = err ? err.message : !resp ? "no response" : "not ok";
-      els.stList.textContent = t(live ? "liveSpeedtestCannotStart" : "speedtestCannotStart") + " (" + why + ")";
+      chrome.tabs.get(tabId, function (tab) {
+        void chrome.runtime.lastError;
+        if (speedtestTabId !== tabId) return;
+        var url = (tab && tab.url) || "";
+        var onPlayPage = (live ? LIVE_PAGE_RE : VIDEO_PAGE_RE).test(url);
+        // 載完的影片頁／直播間卻聯絡不上 → 擴充剛安裝／更新、分頁還沒重新整理
+        if (onPlayPage && tab.status === "complete") { renderStaleNotice(tabId); return; }
+        // 不是影片頁（包含剛安裝、還沒重新整理的 B 站其他頁面）：重新整理了也沒影片可測，直接給操作示意；
+        // 前往範例影片開的是新頁面，content script 本來就會注入，順便解決了要重新整理的問題。直播沒有範例可用，維持原本的說明
+        if (!live && !onPlayPage) { renderStGuide(); return; }
+        renderStNotice({ icon: "info", text: t(live ? "liveSpeedtestCannotStart" : "speedtestCannotStart") + " (" + why + ")" });
+      });
+      return;
     }
+    stAwaitStart = false;
+    if (fresh) setTimeout(pollSpeedtest, 150); // 不等每秒一次的輪詢，盡快把第一份狀態畫出來
   });
 }
 
@@ -2071,7 +2263,7 @@ els.speedtestBtn.addEventListener("click", function () {
       var tabId = tabs[0].id;
       showSpeedtestView(tabId, "video");
       speedtestHosts = hosts;
-      startSpeedtest(tabId);
+      enterSpeedtest(tabId);
     });
   });
 });
@@ -2081,7 +2273,7 @@ els.liveSpeedtestBtn.addEventListener("click", function () {
     if (!tabs || !tabs[0]) return;
     var tabId = tabs[0].id;
     showSpeedtestView(tabId, "live");
-    startSpeedtest(tabId);
+    enterSpeedtest(tabId);
   });
 });
 

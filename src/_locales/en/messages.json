@@ -74,11 +74,23 @@
   "stHintBandwidth": {
     "message": "This measures each node's <b>theoretical maximum bandwidth</b>, not the speed used during playback, so it's normal for it to be higher than the debug overlay."
   },
-  "speedtestNoSampleHint": {
-    "message": "Start playback on a bilibili video page first to get a segment sample before testing."
-  },
   "speedtestCannotStart": {
     "message": "Could not start the speed test. Make sure the current tab is a bilibili video page."
+  },
+  "stGuideTitle": {
+    "message": "No video to test in this tab"
+  },
+  "stGuideText": {
+    "message": "Open a bilibili video and start playback, then click the extension icon and press \"Test node speeds\"."
+  },
+  "stGuideBtn": {
+    "message": "Go to a sample video"
+  },
+  "stStaleText": {
+    "message": "The extension was just installed or updated. Refresh the tab to run the speed test."
+  },
+  "stStaleReloading": {
+    "message": "Refreshing… the test will start automatically when it's done."
   },
   "speedtestStatusTesting": {
     "message": "Testing…"

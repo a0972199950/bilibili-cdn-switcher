@@ -74,11 +74,23 @@
   "stHintBandwidth": {
     "message": "這裡測的是各節點的<b>理論最大頻寬</b>，不是播放時實際用到的速度，所以比 debug 疊層的數字高是正常的。"
   },
-  "speedtestNoSampleHint": {
-    "message": "請先在 B 站影片頁開始播放，取得分段樣本後再測速。"
-  },
   "speedtestCannotStart": {
     "message": "無法開始測速，請確認目前分頁是 B 站影片頁。"
+  },
+  "stGuideTitle": {
+    "message": "目前分頁沒有可測速的影片"
+  },
+  "stGuideText": {
+    "message": "打開一部 B 站影片並開始播放，再點擴充圖示按「測試各節點速度」。"
+  },
+  "stGuideBtn": {
+    "message": "前往範例影片"
+  },
+  "stStaleText": {
+    "message": "擴充剛安裝或更新，重新整理後就能測速。"
+  },
+  "stStaleReloading": {
+    "message": "重新整理中，完成後會自動開始測速…"
   },
   "speedtestStatusTesting": {
     "message": "測試中…"

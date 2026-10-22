@@ -74,11 +74,23 @@
   "stHintBandwidth": {
     "message": "这里测的是各节点的<b>理论最大带宽</b>，不是播放时实际用到的速度，所以比 debug 浮层的数字高是正常的。"
   },
-  "speedtestNoSampleHint": {
-    "message": "请先在 B 站视频页开始播放，获取分段样本后再测速。"
-  },
   "speedtestCannotStart": {
     "message": "无法开始测速，请确认当前标签页是 B 站视频页。"
+  },
+  "stGuideTitle": {
+    "message": "当前标签页没有可测速的视频"
+  },
+  "stGuideText": {
+    "message": "打开一部 B 站视频并开始播放，再点扩展图标按「测试各节点速度」。"
+  },
+  "stGuideBtn": {
+    "message": "前往示例视频"
+  },
+  "stStaleText": {
+    "message": "扩展刚安装或更新，刷新后就能测速。"
+  },
+  "stStaleReloading": {
+    "message": "刷新中，完成后会自动开始测速…"
   },
   "speedtestStatusTesting": {
     "message": "测试中…"

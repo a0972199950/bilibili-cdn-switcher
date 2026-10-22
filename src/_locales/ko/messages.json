@@ -74,11 +74,23 @@
   "stHintBandwidth": {
     "message": "여기서는 각 노드의 <b>이론상 최대 대역폭</b>을 측정하며, 재생 중 실제 속도와는 다릅니다. 디버그 오버레이보다 높게 나오는 것이 정상입니다."
   },
-  "speedtestNoSampleHint": {
-    "message": "먼저 bilibili 영상 페이지에서 재생을 시작해 세그먼트 샘플을 얻은 뒤 테스트하세요."
-  },
   "speedtestCannotStart": {
     "message": "테스트를 시작할 수 없습니다. 현재 탭이 bilibili 영상 페이지인지 확인하세요."
+  },
+  "stGuideTitle": {
+    "message": "이 탭에는 테스트할 영상이 없습니다"
+  },
+  "stGuideText": {
+    "message": "bilibili 영상을 열어 재생을 시작한 뒤, 확장 프로그램 아이콘을 눌러 「노드별 속도 테스트」를 누르세요."
+  },
+  "stGuideBtn": {
+    "message": "샘플 영상으로 이동"
+  },
+  "stStaleText": {
+    "message": "확장 프로그램을 방금 설치하거나 업데이트했습니다. 새로고침하면 테스트할 수 있습니다."
+  },
+  "stStaleReloading": {
+    "message": "새로고침 중… 완료되면 자동으로 테스트를 시작합니다."
   },
   "speedtestStatusTesting": {
     "message": "테스트 중…"

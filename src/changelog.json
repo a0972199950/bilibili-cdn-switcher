@@ -39,6 +39,26 @@
         "ja": "akamai ノードを選ぶと動画が再生できない問題を修正",
         "ko": "akamai 노드를 선택하면 영상이 재생되지 않던 문제를 고쳤어요"
       }
+    },
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "測速無法開始時（不在影片頁、剛安裝需重新整理），改成清楚提示下一步怎麼做",
+        "zh_CN": "测速无法开始时（不在视频页、刚安装需刷新），改为清楚提示下一步怎么做",
+        "en": "When a speed test can't start (not on a video page, or the tab needs a refresh after install), the popup now clearly shows what to do next",
+        "ja": "テストを開始できないとき（動画ページ以外、インストール直後で再読み込みが必要）に、次にすべきことをわかりやすく表示",
+        "ko": "테스트를 시작할 수 없을 때(영상 페이지가 아니거나 설치 직후 새로고침이 필요한 경우) 다음에 할 일을 알기 쉽게 안내"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "節點選單會用勾勾標示目前使用的節點",
+        "zh_CN": "节点菜单会用勾号标示当前使用的节点",
+        "en": "The node menu now marks the node in use with a check mark",
+        "ja": "ノードのメニューで、使用中のノードにチェックマークを表示",
+        "ko": "노드 메뉴에서 현재 사용 중인 노드를 체크 표시로 표시"
+      }
     }
   ],
   "releases": [
