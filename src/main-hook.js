@@ -6,7 +6,9 @@
  *    重新「请求分段」。因此只改 playurl 无法对正在播的影片生效（除非整页重载）。
  *  - 正解：直接改写「分段请求(.m4s)」的 host。搭配 player.reload() 让播放器重发分段，
  *    这些分段就会被导到指定节点 —— 不整页刷新、保留全屏与进度。
- *  - host 差替后仍回 206 且 CORS 通过（已实测），故此法成立。
+ *  - host 差替后仍回 206 且 CORS 通过（已实测），故此法成立。akamai 例外：它的 URL 带绑档案的 token，
+ *    只能用 B 站给的原始 URL（见 needsOwnSig）。
+ *  - 2026-10 的回报日志：现在 player.reload() 之后约 1 秒内播放器会再打一次 playurl（同一支影片）。
  *
  * 设计：
  *  - 重排「关闭」(或选「原始」)时完全不碰原生行为：不 wrap fetch/XHR、不 defineProperty。
@@ -317,6 +319,7 @@
   // 可能超过 20 秒才恢复走针，冷却太短会在恢复前就误弹「皆无法播放」
   var FALLBACK_COOLDOWN_MS = 30000;
   var stallState = { lastTime: -1, stuckSince: null };
+  var TRICKLE_BPS = 50 * 1024; // 缓冲耗尽时，低于这个速度的「还有资料在动」不算在补缓冲（连 360P 都撑不住）
   var progressSince = null; // 连续顺畅播放的起点：顺播够久代表线路恢复，重置回退额度
   var askToastOn = false; // 「皆无法播放」询问弹窗显示中：播放一旦恢复就自动收掉
   var backupHosts = []; // 最近一次 playurl 解析到的候选 host（base + backupUrl），依出现顺序
@@ -362,8 +365,12 @@
     return isCurrentSegHost(hostOf(url));
   }
 
+  // 同一支影片的分段都在同一个目录（路径含 cid），拿第一个 video track 的目录当影片识别
+  var mediaKey = null, pendingMediaKey = null;
+  function mediaKeyOf(url) { return pathOf(url).replace(/[^/]*$/, ""); }
+
   function resetFallbackState() {
-    if (FALLBACK.attempts) jlog("fb.reset", { reason: "newPlayurl" });
+    if (FALLBACK.attempts) jlog("fb.reset", { reason: "newMedia" });
     FALLBACK.attempts = 0; FALLBACK.tried = {};
     stallState.lastTime = -1; stallState.stuckSince = null;
   }
@@ -389,6 +396,7 @@
   // 静默套用自动回退：只动 autoHost，不碰 cfg 与 chrome.storage（用户设定不变）
   function applyAutoHost(next) {
     autoHost = next;
+    segFail.reason = null; // 换了节点，前一个节点的失败不算到新节点头上
     renderOverlay(); postDebug();
     if (next === "backup") {
       // 备用URL 走 playurl 层，需重打 playurl 才生效 → 整页重载，覆写用 sessionStorage 一次性带过去
@@ -413,7 +421,8 @@
     var next = FALLBACK.attempts === 1 ? pickFallbackHost() : null;
     if (next) {
       debug.lastError = "auto-fallback(" + reason + "): " + effHost() + " -> " + next;
-      jlog("fb.switch", { n: FALLBACK.attempts, reason: reason, from: shortHost(effHost()), to: shortHost(next) });
+      var fv = getMainVideo();
+      jlog("fb.switch", { n: FALLBACK.attempts, reason: reason, from: shortHost(effHost()), to: shortHost(next), buf: fv ? forwardBufferSec(fv).toFixed(1) : "-" });
       showToast(MSGS.mhToastAutoSwitched.replace("{host}", next));
       applyAutoHost(next);
       return;
@@ -422,6 +431,33 @@
     // 弹提示让用户自己决定；本支影片只问这一次（attempts 直接封顶）
     FALLBACK.attempts = FALLBACK_MAX_ATTEMPTS;
     askBackupSwitch(reason);
+  }
+
+  // 分段请求失败（HTTP 错误／网路错误）：只看前方缓冲决定切不切 ——
+  // 回报里有缓冲还剩 22 秒、只失败一次就被切走的案例（使用者看到的是「还没卡就跳节点」）。
+  // 换节点会 player.reload()、已缓冲的资料全丢，缓冲还够时提早切只会更早中断画面；
+  // 先记下来，播放器自己会重试：之后 SEG_FAIL_RECENT_MS 内又失败、且缓冲掉到门槛以下才回退（checkSegFailure 每秒看一次），
+  // 一直没再失败就当作重试成功、作废。真的播不动还有 checkStall 兜底
+  var SEG_FAIL_RECENT_MS = 20000, SEG_FAIL_BUFFER_SEC = 5; // 门槛压低：尽量给播放器自己恢复的机会，没事不积极介入
+  var segFail = { at: 0, reason: null }; // 最近一次被暂缓的失败
+  function onSegFailure(reason) {
+    var v = getMainVideo(), buf = v ? forwardBufferSec(v) : 0;
+    if (buf >= SEG_FAIL_BUFFER_SEC) {
+      if (!segFail.reason) jlog("fb.defer", { reason: reason, buf: buf.toFixed(1) });
+      segFail.at = Date.now(); segFail.reason = reason;
+      return;
+    }
+    segFail.reason = null;
+    maybeFallback(reason);
+  }
+  function checkSegFailure() {
+    if (!segFail.reason) return;
+    if (Date.now() - segFail.at > SEG_FAIL_RECENT_MS) { jlog("fb.defer", { phase: "expired" }); segFail.reason = null; return; }
+    var v = getMainVideo();
+    if (v && forwardBufferSec(v) >= SEG_FAIL_BUFFER_SEC) return;
+    var reason = segFail.reason;
+    segFail.reason = null;
+    maybeFallback(reason);
   }
 
   function askBackupSwitch(reason) {
@@ -467,11 +503,14 @@
       // 分段请求持续在送、却一直抓不到任何资料 → 线路死了。这是最强的讯号，
       // 连 readyState 0（初载就遇到死线路，影片从没拿到过资料）都盖得住
       var starving = (now - lastSegReqAt < 10000 && now - lastSampleAt > 5000 && lastSegReqAt > 0) || liveNoData(v, now);
+      // 有资料在动、但只有几 kB/s 的「细水长流」：不算在补缓冲（见下方 lastSampleAt 那段）
+      var trickling = now - lastSampleAt < 5000 && debug.speedBps < TRICKLE_BPS;
       if (v && v.ended) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
       if (!v || v.readyState === 0) {
         // 没有 video / 还没有任何媒体资料：通常是还没开始（或 player.reload() 过渡），
-        // 不算卡；但 starving 时代表初载就遇到死线路，照样累计
-        if (!starving) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+        // 不算卡；但 starving 时代表初载就遇到死线路，照样累计；细水长流的话一直拿不到能播的资料，宽限 20 秒后照样累计
+        if (!starving && !trickling) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+        if (!starving) limit = 20000;
       } else if (v.paused && hasForwardBuffer(v)) {
         // 还有前向缓冲的暂停 = 使用者主动暂停，不算卡
         stallState.lastTime = -1; stallState.stuckSince = null; return;
@@ -492,8 +531,10 @@
         if (now - lastSampleAt < 5000) {
           // 线路还有资料在动：暂停中（缓冲耗尽但还在补）属正常，不算卡；
           // 播放中卡住但仍在下载 → 只是缓冲慢，宽限到 20 秒再判定，
-          // 免得音轨还活着、视轨已死的情况永远判不到
-          if (v.paused) { stallState.stuckSince = null; return; }
+          // 免得音轨还活着、视轨已死的情况永远判不到。
+          // 但只有几 kB/s 的「细水长流」不算在补：回报里有节点 1~11 kB/s、黑屏两分多钟，
+          // 因为一直有零星资料进来，暂停中的计时每次都被重置、永远判不到卡住 → 一样宽限 20 秒后回退
+          if (v.paused && !trickling) { stallState.stuckSince = null; return; }
           limit = 20000;
         }
       }
@@ -513,9 +554,27 @@
     if (!isHostMode()) return false;
     if (!SEG_RE.test(url)) return false;
     var h = hostOf(url);
-    return !!h && CDN_HOST_RE.test(h) && h !== effHost();
+    if (!h || !CDN_HOST_RE.test(h) || h === effHost()) return false;
+    // akamai 要带它自己的 token，记不到这个档案在 akamai 的原始 URL 就留在原 host（硬换只会 403）
+    return !needsOwnSig(effHost()) || !!knownUrlOn(url, effHost());
   }
-  function swapSegHost(url) { return replaceHost(url, effHost()); }
+  function swapSegHost(url) { return urlOnHost(url, effHost()); }
+
+  // 实测（2026-10）：bilivideo 自家节点（upos-* / cn-*）共用同一套签名，换 host 就能用；
+  // akamai 的 URL 多一个 hdnts token，绑单一档案，换 host、借别的档案的 token 都是 403。
+  // 所以解析 playurl 时记下每个档案在各 host 的原始 URL，换到那个 host 时优先用 B 站给的整条 URL。
+  var SIG_HOST_RE = /(^|\.)akamaized\.net$/i;
+  function needsOwnSig(host) { return SIG_HOST_RE.test(host || ""); }
+  var hostUrls = {}, hostUrlCount = 0; // host + pathname -> B 站给的原始 URL
+  function noteHostUrl(url) {
+    var h = hostOf(url), p = pathOf(url);
+    if (!h || !p || !CDN_HOST_RE.test(h)) return;
+    if (hostUrlCount > 2000) { hostUrls = {}; hostUrlCount = 0; } // 只是快取，长时间连看就整份重来
+    if (!hostUrls[h + p]) hostUrlCount++;
+    hostUrls[h + p] = url;
+  }
+  function knownUrlOn(url, host) { return hostUrls[host + pathOf(url)] || null; }
+  function urlOnHost(url, host) { return knownUrlOn(url, host) || replaceHost(url, host); }
   var swapLogged = false; // 每份 playurl 之後第一個被改寫的分段記一筆，證明分段層改寫真的生效
   function noteSwap(url) { if (!swapLogged) { swapLogged = true; jlog("cdn.segFirst", { host: shortHost(effHost()), seg: segName(url).replace(/^[^/]*/, "") }); } }
   function trackOf(url) { return typeof videoQnByPath[pathOf(url)] === "number" ? "v" : "a"; }
@@ -801,14 +860,19 @@
     if (!Array.isArray(backups)) backups = [];
     backups = backups.map(asStr).filter(Boolean);
     if (!base && !backups.length) return null;
-    if (pendingBackupHosts && !pendingBackupHosts.length && base) debug.playurlGiven = hostOf(base); // 第一個 track（video）原本的 host
+    if (pendingBackupHosts && !pendingBackupHosts.length && base) {
+      debug.playurlGiven = hostOf(base); // 第一個 track（video）原本的 host
+      pendingMediaKey = mediaKeyOf(base);
+    }
     noteBackupHost(base);
     for (var bi = 0; bi < backups.length; bi++) noteBackupHost(backups[bi]);
+    if (base) noteHostUrl(base);
+    for (var bj = 0; bj < backups.length; bj++) noteHostUrl(backups[bj]);
     var ordered;
     if (effHost() === "backup") {
       ordered = distinct(backups.concat([base])).filter(Boolean); // 优先 B 站给的备援节点
     } else {
-      var swapped = base ? replaceHost(base, effHost()) : "";
+      var swapped = base && (!needsOwnSig(effHost()) || knownUrlOn(base, effHost())) ? urlOnHost(base, effHost()) : "";
       ordered = distinct([swapped, base].concat(backups)).filter(Boolean);
     }
     if (!ordered.length) return null;
@@ -853,11 +917,14 @@
       // 番剧/课程（pgc v2、SSR playurlSSRData）把 dash/durl 多包一层在 result.video_info 下
       if (d && typeof d === "object" && d.video_info && typeof d.video_info === "object" &&
           (d.video_info.dash || d.video_info.durl)) d = d.video_info;
-      pendingBackupHosts = [];
+      pendingBackupHosts = []; pendingMediaKey = null;
       var changed = rewriteContainer(d);
       if (changed) {
         if (pendingBackupHosts.length) backupHosts = pendingBackupHosts;
-        debug.lastSource = source; debug.rewriteCount++; resetFallbackState(); renderOverlay(); postDebug();
+        // 回退额度以「影片」为单位：player.reload() 后播放器会再打一次同一支影片的 playurl（2026-10 的回报日志），
+        // 每份 playurl 都重置的话「最多切 2 次再问使用者」永远到不了，会在备援之间每 30 秒来回切
+        if (pendingMediaKey !== mediaKey) { mediaKey = pendingMediaKey; resetFallbackState(); }
+        debug.lastSource = source; debug.rewriteCount++; renderOverlay(); postDebug();
         swapLogged = false;
         jlog("cdn.rewrite", { src: source, orig: shortHost(debug.playurlGiven), to: effHost() === "backup" ? "backup" : shortHost(effHost()), backups: backupHosts.map(shortHost), dash: d && d.dash ? 1 : 0 });
       }
@@ -936,14 +1003,14 @@
             resp.clone().arrayBuffer().then(function (buf) { addSample(buf.byteLength, Date.now() - t0, true); }).catch(function () {});
             if (!resp.ok) {
               jlog("net.http", { status: resp.status, host: shortHost(hostOf(reqUrl)), track: trackOf(reqUrl), expired: isExpiredUrl(reqUrl) ? 1 : 0 });
-              if (shouldFallbackOnStatus(resp.status, reqUrl)) maybeFallback("http-" + resp.status);
+              if (shouldFallbackOnStatus(resp.status, reqUrl)) onSegFailure("http-" + resp.status);
             }
             return resp;
           }, function (err) {
             // 播放器 seek / 切画质会主动 abort 在飞的分段请求，不是线路问题
             if (!(err && err.name === "AbortError")) {
               jlog("net.error", { host: shortHost(hostOf(reqUrl)), track: trackOf(reqUrl), msg: String(err && err.message || err).slice(0, 60) });
-              if (isCurrentSegHost(hostOf(reqUrl))) maybeFallback("network-error");
+              if (isCurrentSegHost(hostOf(reqUrl))) onSegFailure("network-error");
             }
             throw err;
           });
@@ -988,12 +1055,12 @@
               else { var cl = self.getResponseHeader("content-length"); if (cl) bytes = parseInt(cl, 10) || 0; }
               addSample(bytes, Date.now() - t0, true);
               if (self.status >= 400) jlog("net.http", { status: self.status, host: shortHost(hostOf(url)), track: trackOf(url), expired: isExpiredUrl(url) ? 1 : 0 });
-              if (shouldFallbackOnStatus(self.status, self.__cdnSwitcherUrl || "")) maybeFallback("http-" + self.status);
+              if (shouldFallbackOnStatus(self.status, self.__cdnSwitcherUrl || "")) onSegFailure("http-" + self.status);
             } catch (e) {}
           });
           self.addEventListener("error", function () {
             jlog("net.error", { host: shortHost(hostOf(url)), track: trackOf(url), xhr: 1 });
-            if (isCurrentSegHost(hostOf(self.__cdnSwitcherUrl || ""))) maybeFallback("network-error");
+            if (isCurrentSegHost(hostOf(self.__cdnSwitcherUrl || ""))) onSegFailure("network-error");
           });
         }
         if (ACTIVE && PLAYURL_RE.test(url) && textDesc && respDesc) {
@@ -1569,6 +1636,8 @@
     } catch (e) { return false; }
   }
 
+  function mainVideoIdle() { var v = getMainVideo(); return !!v && (v.paused || v.ended); }
+
   // 整页重载（保留进度）：用于需要安装/移除 hook 的切换
   function fullReload() {
     try {
@@ -1632,6 +1701,10 @@
     } else if (cfg.cdnHost === "backup" || beforeEffHost === "backup") {
       toastAfterReload(switchedText);
       fullReload(); // 「备用」走 playurl 层，需重打 playurl 才生效 → 整页重载
+    } else if (!WATCH_RE.test(location.pathname) || mainVideoIdle()) {
+      // 具名节点只靠分段层改导，之后的分段请求自然会走新节点，不重载也生效。节点存在 storage、所有分页共用，
+      // 一个分页测速换节点，其他分页也会收到这次变更：暂停／播完的分页若跟着 player.reload()，
+      // 影片会自己播起来（回报 #33）；非观看页（首页预览）也不必整页重载
     } else if (playerReload()) {
       if (switchedText) showToast(switchedText); // 具名节点：播放器内重载（分段层即时导向）
     } else {
@@ -1791,7 +1864,7 @@
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderOverlay);
   else renderOverlay();
-  setInterval(function () { updateSpeed(); checkStall(); diagTick(); renderOverlay(); postDebug(); }, 1000);
+  setInterval(function () { updateSpeed(); checkStall(); checkSegFailure(); diagTick(); renderOverlay(); postDebug(); }, 1000);
 
   // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
   if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
@@ -1805,7 +1878,9 @@
       liveInfo: liveInfo, liveHostFor: liveHostFor, parseM3u8: parseM3u8, FlvParser: FlvParser, isAvTag: isAvTag,
       playInfoExpires: playInfoExpires, usablePlayInfo: usablePlayInfo, playInfoKey: playInfoKey,
       clampNum: clampNum, cleanTitle: cleanTitle, pageTypeOf: pageTypeOf, qnText: qnText, currentQn: currentQn, isAllowedCdnHost: isAllowedCdnHost,
-      addSample: addSample, updateSpeed: updateSpeed, videoQnByPath: function () { return videoQnByPath; }
+      addSample: addSample, updateSpeed: updateSpeed, videoQnByPath: function () { return videoQnByPath; },
+      needsOwnSig: needsOwnSig, knownUrlOn: knownUrlOn, onSegFailure: onSegFailure, checkSegFailure: checkSegFailure, segFail: segFail, checkStall: checkStall, stallState: stallState,
+      autoHost: function () { return autoHost; }, mainVideoIdle: mainVideoIdle
     });
   }
 })();

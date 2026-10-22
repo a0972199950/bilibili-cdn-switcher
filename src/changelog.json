@@ -9,6 +9,36 @@
         "ja": "マカオ・イギリス・スペイン・ロシアのおすすめノードリストを追加",
         "ko": "마카오, 영국, 스페인, 러시아의 추천 노드 목록을 추가했어요"
       }
+    },
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "開多個分頁時，換節點不再讓其他分頁暫停中的影片自己開始播放（感謝 matt 回報）",
+        "zh_CN": "打开多个标签页时，切换节点不再让其他标签页暂停中的视频自己开始播放（感谢 matt 反馈）",
+        "en": "With several tabs open, switching nodes no longer makes paused videos in other tabs start playing (thanks to matt for reporting)",
+        "ja": "複数のタブを開いているとき、ノードを切り替えても他のタブで一時停止中の動画が勝手に再生されなくなりました（matt さん、報告ありがとうございます）",
+        "ko": "여러 탭을 열어 둔 상태에서 노드를 바꿔도 다른 탭에서 일시정지한 영상이 저절로 재생되지 않아요 (matt 님, 제보 감사합니다)"
+      }
+    },
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "失敗自動切換更準確：不會還沒卡就切走、不再在備援節點間來回切換，也能發現幾乎沒速度的節點",
+        "zh_CN": "失败自动切换更准确：不会还没卡就切走、不再在备援节点间来回切换，也能发现几乎没速度的节点",
+        "en": "Smarter automatic fallback: no more switching before playback actually stalls or bouncing between backup nodes, and nodes that barely load are now caught",
+        "ja": "自動切り替えの精度を改善：止まる前に切り替えたり、予備ノードの間を行き来したりしなくなり、ほとんど速度が出ないノードも検出できるようになりました",
+        "ko": "자동 전환이 더 정확해졌어요: 끊기기 전에 전환하거나 백업 노드 사이를 오가지 않고, 거의 속도가 안 나는 노드도 감지해요"
+      }
+    },
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "修正選用 akamai 節點時影片無法播放",
+        "zh_CN": "修复选用 akamai 节点时视频无法播放",
+        "en": "Fixed videos not playing on the akamai node",
+        "ja": "akamai ノードを選ぶと動画が再生できない問題を修正",
+        "ko": "akamai 노드를 선택하면 영상이 재생되지 않던 문제를 고쳤어요"
+      }
     }
   ],
   "releases": [

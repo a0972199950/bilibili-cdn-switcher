@@ -401,3 +401,188 @@ describe("config messages from bridge", () => {
 });
 
 after(closeAll);
+
+const AKAM = "upos-hz-mirrorakam.akamaized.net";
+// Same shape as a real playurl (2026-10): the akamai URL carries an hdnts token bound to that one file
+function akamPlayurl(dir = "1/2/3") {
+  const cos = (f) => `https://${COS}/upgcxcode/${dir}/${f}?deadline=${FUTURE}&upsig=s`;
+  const akam = (f) => `https://${AKAM}/upgcxcode/${dir}/${f}?deadline=${FUTURE}&upsig=s&hdnts=exp=1~hmac=${f}`;
+  return {
+    code: 0, data: {
+      quality: 80,
+      dash: {
+        video: [{ id: 80, baseUrl: cos("v80.m4s"), backupUrl: [akam("v80.m4s")] }],
+        audio: [{ id: 30280, baseUrl: cos("a.m4s"), backupUrl: [akam("a.m4s")] }]
+      }
+    }
+  };
+}
+// jsdom has no media pipeline: give the page a <video> with the given state
+function addVideo(env, { paused = true, ended = false, currentTime = 10, buffered = null, readyState = 4 } = {}) {
+  const v = env.window.document.createElement("video");
+  const ranges = buffered ? { length: 1, start: () => buffered[0], end: () => buffered[1] } : { length: 0, start() {}, end() {} };
+  for (const [k, val] of Object.entries({ paused, ended, currentTime, readyState, buffered: ranges })) {
+    Object.defineProperty(v, k, { configurable: true, get: () => val, set() {} });
+  }
+  env.window.document.body.appendChild(v);
+  return v;
+}
+
+describe("akamai needs its own signed URL", () => {
+  test("switching segments to akamai uses bilibili's URL for that file, never a host-swapped one", () => {
+    const env = boot({ cdnHost: AKAM });
+    const mh = env.internals("main-hook");
+    assert.equal(mh.needsOwnSig(AKAM), true);
+    assert.equal(mh.needsOwnSig(COS), false);
+    const root = akamPlayurl();
+    mh.rewriteRoot(root, "playurl");
+    assert.ok(root.data.dash.video[0].baseUrl.includes("hmac=v80.m4s"), "baseUrl is the original akamai URL");
+    assert.ok(root.data.dash.audio[0].baseUrl.includes("hmac=a.m4s"), "each file keeps its own token");
+    const seg = `https://${COS}/upgcxcode/1/2/3/a.m4s?deadline=${FUTURE}&upsig=s`;
+    assert.equal(mh.isSwappableSeg(seg), true);
+    assert.ok(mh.swapSegHost(seg).includes("hmac=a.m4s"));
+    const unknown = `https://${COS}/upgcxcode/9/9/9/other.m4s?deadline=${FUTURE}`;
+    assert.equal(mh.isSwappableSeg(unknown), false, "no token for this file: stay on the original host instead of a sure 403");
+    env.close();
+  });
+  test("an akamai node with no akamai URL in the playurl leaves the base untouched", () => {
+    const env = boot({ cdnHost: AKAM });
+    const mh = env.internals("main-hook");
+    const root = playurl();
+    mh.rewriteRoot(root, "playurl");
+    assert.equal(mh.hostOf(root.data.dash.video[0].baseUrl), COS);
+    env.close();
+  });
+  test("bilivideo nodes still swap the host directly", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(akamPlayurl(), "playurl");
+    const seg = `https://${AKAM}/upgcxcode/1/2/3/a.m4s?deadline=${FUTURE}&upsig=s&hdnts=x`;
+    assert.equal(mh.hostOf(mh.swapSegHost(seg)), HOST);
+    env.close();
+  });
+});
+
+describe("fallback budget is per video, not per playurl", () => {
+  test("a second playurl for the same video keeps attempts and tried hosts; a new video resets them", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    mh.FALLBACK.attempts = 1; mh.FALLBACK.tried[COS] = true;
+    mh.rewriteRoot(playurl(), "playurl"); // what player.reload() triggers now
+    assert.equal(mh.FALLBACK.attempts, 1);
+    assert.equal(mh.FALLBACK.tried[COS], true);
+    mh.rewriteRoot(akamPlayurl("4/5/6"), "playurl");
+    assert.equal(mh.FALLBACK.attempts, 0);
+    assert.deepEqual(plain(mh.FALLBACK.tried), {});
+    env.close();
+  });
+});
+
+describe("segment failures", () => {
+  test("failures with plenty of buffer are deferred, however many; the switch comes once the buffer runs low", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    const v = addVideo(env, { paused: false, currentTime: 10, buffered: [0, 32] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    for (let i = 0; i < 5; i++) mh.onSegFailure("network-error");
+    mh.checkSegFailure();
+    assert.equal(mh.FALLBACK.attempts, 0, "switching would throw the 22s of buffer away");
+    assert.equal(mh.autoHost(), null);
+    Object.defineProperty(v, "buffered", { configurable: true, get: () => ({ length: 1, start: () => 0, end: () => 13 }) });
+    mh.checkSegFailure();
+    assert.equal(mh.FALLBACK.attempts, 1, "buffer below 5s after a recent failure");
+    assert.equal(mh.autoHost(), COS);
+    env.close();
+  });
+  test("a deferred failure that is not repeated expires (the player's own retry worked)", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    const v = addVideo(env, { paused: false, currentTime: 10, buffered: [0, 32] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("network-error");
+    mh.segFail.at = Date.now() - 21000;
+    Object.defineProperty(v, "buffered", { configurable: true, get: () => ({ length: 1, start: () => 0, end: () => 12 }) });
+    mh.checkSegFailure();
+    assert.equal(mh.segFail.reason, null);
+    assert.equal(mh.FALLBACK.attempts, 0);
+    env.close();
+  });
+  test("with the buffer nearly gone a single failure switches right away", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1);
+    env.close();
+  });
+});
+
+describe("stall detection", () => {
+  test("paused with an empty buffer and only a trickle of data still counts as stuck", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    addVideo(env, { paused: true, readyState: 1, currentTime: 10 });
+    mh.addSample(2048, 1000, true); // 2 kB/s
+    mh.updateSpeed();
+    mh.checkStall(); mh.checkStall();
+    assert.notEqual(mh.stallState.stuckSince, null);
+    assert.equal(mh.stallState.limit, 20000);
+    env.close();
+  });
+  test("no media data at all (readyState 0) with only a trickle still counts as stuck", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    addVideo(env, { paused: true, readyState: 0, currentTime: 0 });
+    mh.addSample(2048, 1000, true);
+    mh.updateSpeed();
+    mh.checkStall(); mh.checkStall();
+    assert.notEqual(mh.stallState.stuckSince, null);
+    assert.equal(mh.stallState.limit, 20000);
+    env.close();
+  });
+  test("readyState 0 while a normal-speed load is under way is not a stall", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    addVideo(env, { paused: true, readyState: 0, currentTime: 0 });
+    mh.addSample(1024 * 1024, 500, true);
+    mh.updateSpeed();
+    mh.checkStall(); mh.checkStall();
+    assert.equal(mh.stallState.stuckSince, null);
+    env.close();
+  });
+  test("paused with an empty buffer while data comes in at a real speed is just refilling", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    addVideo(env, { paused: true, readyState: 1, currentTime: 10 });
+    mh.addSample(2 * 1024 * 1024, 1000, true);
+    mh.updateSpeed();
+    mh.checkStall(); mh.checkStall();
+    assert.equal(mh.stallState.stuckSince, null);
+    env.close();
+  });
+});
+
+describe("node change in other tabs", () => {
+  test("a paused tab picks the new node up without reloading the player", () => {
+    const env = boot({});
+    const mh = env.internals("main-hook");
+    addVideo(env, { paused: true });
+    assert.equal(mh.mainVideoIdle(), true);
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: COS } });
+    assert.equal(mh.effHost(), COS, "later segment requests go to the new node");
+    assert.equal(env.window.sessionStorage.getItem("__CDN_SWITCHER_SWITCH_TOAST__"), null, "no reload was queued");
+    env.close();
+  });
+  test("a non-watch page with a preview video is not reloaded", () => {
+    const env = boot({}, "https://www.bilibili.com/");
+    addVideo(env, { paused: false });
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: COS } });
+    assert.equal(env.internals("main-hook").effHost(), COS);
+    env.close();
+  });
+});
