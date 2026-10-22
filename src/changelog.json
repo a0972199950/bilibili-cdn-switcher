@@ -1,67 +1,72 @@
 {
-  "unreleased": [
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "新增澳門、英國、西班牙、俄羅斯的建議節點清單",
-        "zh_CN": "新增澳门、英国、西班牙、俄罗斯的建议节点列表",
-        "en": "Added recommended node lists for Macau, the UK, Spain and Russia",
-        "ja": "マカオ・イギリス・スペイン・ロシアのおすすめノードリストを追加",
-        "ko": "마카오, 영국, 스페인, 러시아의 추천 노드 목록을 추가했어요"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "開多個分頁時，換節點不再讓其他分頁暫停中的影片自己開始播放（感謝 matt 回報）",
-        "zh_CN": "打开多个标签页时，切换节点不再让其他标签页暂停中的视频自己开始播放（感谢 matt 反馈）",
-        "en": "With several tabs open, switching nodes no longer makes paused videos in other tabs start playing (thanks to matt for reporting)",
-        "ja": "複数のタブを開いているとき、ノードを切り替えても他のタブで一時停止中の動画が勝手に再生されなくなりました（matt さん、報告ありがとうございます）",
-        "ko": "여러 탭을 열어 둔 상태에서 노드를 바꿔도 다른 탭에서 일시정지한 영상이 저절로 재생되지 않아요 (matt 님, 제보 감사합니다)"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "失敗自動切換更準確：不會還沒卡就切走、不再在備援節點間來回切換，也能發現幾乎沒速度的節點",
-        "zh_CN": "失败自动切换更准确：不会还没卡就切走、不再在备援节点间来回切换，也能发现几乎没速度的节点",
-        "en": "Smarter automatic fallback: no more switching before playback actually stalls or bouncing between backup nodes, and nodes that barely load are now caught",
-        "ja": "自動切り替えの精度を改善：止まる前に切り替えたり、予備ノードの間を行き来したりしなくなり、ほとんど速度が出ないノードも検出できるようになりました",
-        "ko": "자동 전환이 더 정확해졌어요: 끊기기 전에 전환하거나 백업 노드 사이를 오가지 않고, 거의 속도가 안 나는 노드도 감지해요"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "修正選用 akamai 節點時影片無法播放",
-        "zh_CN": "修复选用 akamai 节点时视频无法播放",
-        "en": "Fixed videos not playing on the akamai node",
-        "ja": "akamai ノードを選ぶと動画が再生できない問題を修正",
-        "ko": "akamai 노드를 선택하면 영상이 재생되지 않던 문제를 고쳤어요"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "測速無法開始時（不在影片頁、剛安裝需重新整理），改成清楚提示下一步怎麼做",
-        "zh_CN": "测速无法开始时（不在视频页、刚安装需刷新），改为清楚提示下一步怎么做",
-        "en": "When a speed test can't start (not on a video page, or the tab needs a refresh after install), the popup now clearly shows what to do next",
-        "ja": "テストを開始できないとき（動画ページ以外、インストール直後で再読み込みが必要）に、次にすべきことをわかりやすく表示",
-        "ko": "테스트를 시작할 수 없을 때(영상 페이지가 아니거나 설치 직후 새로고침이 필요한 경우) 다음에 할 일을 알기 쉽게 안내"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "節點選單會用勾勾標示目前使用的節點",
-        "zh_CN": "节点菜单会用勾号标示当前使用的节点",
-        "en": "The node menu now marks the node in use with a check mark",
-        "ja": "ノードのメニューで、使用中のノードにチェックマークを表示",
-        "ko": "노드 메뉴에서 현재 사용 중인 노드를 체크 표시로 표시"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.7.0",
+      "date": "2026-10-22",
+      "entries": [
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "新增澳門、英國、西班牙、俄羅斯的建議節點清單",
+            "zh_CN": "新增澳门、英国、西班牙、俄罗斯的建议节点列表",
+            "en": "Added recommended node lists for Macau, the UK, Spain and Russia",
+            "ja": "マカオ・イギリス・スペイン・ロシアのおすすめノードリストを追加",
+            "ko": "마카오, 영국, 스페인, 러시아의 추천 노드 목록을 추가했어요"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "開多個分頁時，換節點不再讓其他分頁暫停中的影片自己開始播放（感謝 matt 回報）",
+            "zh_CN": "打开多个标签页时，切换节点不再让其他标签页暂停中的视频自己开始播放（感谢 matt 反馈）",
+            "en": "With several tabs open, switching nodes no longer makes paused videos in other tabs start playing (thanks to matt for reporting)",
+            "ja": "複数のタブを開いているとき、ノードを切り替えても他のタブで一時停止中の動画が勝手に再生されなくなりました（matt さん、報告ありがとうございます）",
+            "ko": "여러 탭을 열어 둔 상태에서 노드를 바꿔도 다른 탭에서 일시정지한 영상이 저절로 재생되지 않아요 (matt 님, 제보 감사합니다)"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "失敗自動切換更準確：不會還沒卡就切走、不再在備援節點間來回切換，也能發現幾乎沒速度的節點",
+            "zh_CN": "失败自动切换更准确：不会还没卡就切走、不再在备援节点间来回切换，也能发现几乎没速度的节点",
+            "en": "Smarter automatic fallback: no more switching before playback actually stalls or bouncing between backup nodes, and nodes that barely load are now caught",
+            "ja": "自動切り替えの精度を改善：止まる前に切り替えたり、予備ノードの間を行き来したりしなくなり、ほとんど速度が出ないノードも検出できるようになりました",
+            "ko": "자동 전환이 더 정확해졌어요: 끊기기 전에 전환하거나 백업 노드 사이를 오가지 않고, 거의 속도가 안 나는 노드도 감지해요"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "修正選用 akamai 節點時影片無法播放",
+            "zh_CN": "修复选用 akamai 节点时视频无法播放",
+            "en": "Fixed videos not playing on the akamai node",
+            "ja": "akamai ノードを選ぶと動画が再生できない問題を修正",
+            "ko": "akamai 노드를 선택하면 영상이 재생되지 않던 문제를 고쳤어요"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "測速無法開始時（不在影片頁、剛安裝需重新整理），改成清楚提示下一步怎麼做",
+            "zh_CN": "测速无法开始时（不在视频页、刚安装需刷新），改为清楚提示下一步怎么做",
+            "en": "When a speed test can't start (not on a video page, or the tab needs a refresh after install), the popup now clearly shows what to do next",
+            "ja": "テストを開始できないとき（動画ページ以外、インストール直後で再読み込みが必要）に、次にすべきことをわかりやすく表示",
+            "ko": "테스트를 시작할 수 없을 때(영상 페이지가 아니거나 설치 직후 새로고침이 필요한 경우) 다음에 할 일을 알기 쉽게 안내"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "節點選單會用勾勾標示目前使用的節點",
+            "zh_CN": "节点菜单会用勾号标示当前使用的节点",
+            "en": "The node menu now marks the node in use with a check mark",
+            "ja": "ノードのメニューで、使用中のノードにチェックマークを表示",
+            "ko": "노드 메뉴에서 현재 사용 중인 노드를 체크 표시로 표시"
+          }
+        }
+      ]
+    },
     {
       "version": "2.6.0",
       "date": "2026-10-18",
