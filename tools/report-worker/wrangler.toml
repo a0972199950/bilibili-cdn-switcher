@@ -14,6 +14,11 @@ workers_dev = true
 LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
 ISSUES_REPO = "a0972199950/bilibili-cdn-switcher"
 
+# 公告 API 的下載次數（國家 × 瀏覽器 × 路徑，不記 IP）；查詢：npm run worker:opens
+[[analytics_engine_datasets]]
+binding = "OPENS"
+dataset = "bcs_announce_opens"
+
 [[kv_namespaces]]
 binding = "RATE_KV"
 id = "e6adf184d971421581d54c062d13a55a"

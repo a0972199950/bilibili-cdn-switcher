@@ -78,6 +78,20 @@ commit 進私有 repo `bilibili-cdn-switcher-reports`、在公開 repo 開 issue
 快取：邊緣 1 分鐘（同 `/v1/lotteries`；各邊緣節點各自快取，新增後不同節點可能要等滿 1 分鐘才一致）、擴充另外 15 分鐘（`storage.local.announcementFeed`），
 改了公告最慢約 16 分鐘使用者看得到。
 
+### 下載次數統計
+
+`/v1/announcements`、`/v2/announcements` 每被請求一次，`countOpen` 就在 Workers Analytics Engine 的 `bcs_announce_opens`
+（綁定 `OPENS`，見 `wrangler.toml`）記一筆 `blobs = [國家, 瀏覽器, 路徑]`：
+
+- 國家：`request.cf.country`（Cloudflare 依 IP 判斷，`XX` 不明、`T1` Tor）；**IP、User-Agent 都不寫入**。
+- 瀏覽器：由 `Origin` 判斷——`chrome`／`edge`（依商店的擴充 ID）、`chromium-dev`（其他 ID，開發中的未封裝版）、`firefox`
+  （`moz-extension://` 的主機名是每次安裝不同的 UUID，只記種類）、`safari`、`other`（不是從擴充發出的請求）。
+
+擴充自己快取 15 分鐘，所以這是「打開 popup 且快取過期」的次數，不是使用者數。用途是看各國實際在用的比例，
+對照商店後台按區域分的每週使用者（例如 Chrome 後台 2026-10-18 起美國每週使用者暴增、卻沒有對應的安裝與商店頁瀏覽）。
+查詢：`npm run worker:opens [天數]`（預設 14 天，日期是 UTC），需要 `.env.local` 的 `BCS_CF_ACCOUNT_ID`、`BCS_CF_ANALYTICS_TOKEN`
+（權限 Account Analytics: Read）。Analytics Engine 免費版每天可寫 10 萬筆，資料保留 3 個月。這項統計已寫進 `PRIVACY.md` 的「公告」。
+
 ## 部署
 
 ```sh

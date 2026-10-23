@@ -27,6 +27,7 @@
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
     "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml",
+    "worker:opens": "node tools/report-worker/opens.mjs",
     "admin": "npm --prefix admin run dev"
   },
   "devDependencies": {

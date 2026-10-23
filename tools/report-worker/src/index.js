@@ -13,6 +13,8 @@
  *    一般公告是後台寫的各語言前綴／標題／HTML
  *  - /v2/lotteries、/v2/announcements：新版擴充與 exe 用。抽獎只來自抽獎 v2（Neon 的 lotteries_v2，見 scripts/lib/lotteries-v2.mjs：
  *    每張禮物卡各自的面額、備註 HTML），v1 只來自 lotteries，兩邊各自獨立（v2 建的抽獎舊版看不到）
+ * 公告 API（/v1、/v2/announcements）每被下載一次，在 Workers Analytics Engine 記一筆「國家 × 瀏覽器 × 路徑」（countOpen），
+ * 用來看各國實際打開 popup 的比例；不記 IP、User-Agent 或任何能識別個人的資料。查詢：npm run worker:opens（opens.mjs）。
  */
 const MAX_BODY = 256 * 1024;
 const MAX_DESC = 4000;
@@ -20,6 +22,8 @@ const RATE_LIMIT = 5; // 同一來源 IP 10 分鐘內最多幾筆
 const RATE_WINDOW_S = 600;
 const TYPES = ["bug", "feature"];
 const LOTTERY_CACHE_S = 60;
+// 公告請求的 Origin 對應到哪家商店的擴充（同一份程式碼，各商店 ID 不同）；其他 chrome-extension:// 是開發中的未封裝版本
+const EXT_IDS = { dfaddcffoondcendifiljhdbdagebgch: "chrome", dllallgilijcacpdemjafegibdafcbdp: "edge" };
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -217,14 +221,41 @@ function announcements(request, env, ctx, v2) {
   });
 }
 
+// 公告下載次數（Analytics Engine 的 OPENS 綁定，wrangler.toml）：每次一筆 blobs = [國家, 瀏覽器, 路徑]。
+// 國家是 Cloudflare 依 IP 判斷的兩碼（XX＝不明、T1＝Tor），IP 本身不寫入；Firefox 的 moz-extension:// 主機名是每次安裝不同的 UUID，只記 "firefox"。
+// 擴充自己快取 15 分鐘，所以這是「打開 popup 且快取過期」的次數，不是使用者數；看各國比例用。
+function browserOf(request) {
+  const m = /^([a-z-]+):\/\/([^/]*)/.exec(request.headers.get("Origin") || "");
+  if (!m) return "other";
+  if (m[1] === "chrome-extension") return EXT_IDS[m[2]] || "chromium-dev";
+  if (m[1] === "moz-extension") return "firefox";
+  if (m[1] === "safari-web-extension") return "safari";
+  return "other";
+}
+function countOpen(request, env, path) {
+  if (!env.OPENS) return;
+  try {
+    const country = (request.cf && request.cf.country) || "XX";
+    env.OPENS.writeDataPoint({ blobs: [country, browserOf(request), path], doubles: [1], indexes: [country] });
+  } catch (e) {
+    // 統計失敗不影響公告
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/v1/lotteries") return lotteries(request, env, ctx);
-    if (request.method === "GET" && url.pathname === "/v1/announcements") return announcements(request, env, ctx, false);
+    if (request.method === "GET" && url.pathname === "/v1/announcements") {
+      countOpen(request, env, url.pathname);
+      return announcements(request, env, ctx, false);
+    }
     if (request.method === "GET" && url.pathname === "/v2/lotteries") return lotteriesV2(request, env, ctx);
-    if (request.method === "GET" && url.pathname === "/v2/announcements") return announcements(request, env, ctx, true);
+    if (request.method === "GET" && url.pathname === "/v2/announcements") {
+      countOpen(request, env, url.pathname);
+      return announcements(request, env, ctx, true);
+    }
     if (request.method !== "POST" || url.pathname !== "/v1/report") return fail(404, "not_found");
     if (request.headers.get("X-BCS-Token") !== env.REPORT_TOKEN) return fail(401, "bad_token");
     const len = Number(request.headers.get("content-length") || 0);
