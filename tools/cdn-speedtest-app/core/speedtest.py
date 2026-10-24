@@ -18,7 +18,7 @@
 # Exit code：0 完成、3 未完成（再跑一次續跑）、4 未登入（需使用者決定）、5 出口國家與指定不符（疑似 VPN／漫遊）、
 #            6 DNS 解析器與所在地不一致（GeoDNS 失真，見 SKILL.md「DNS 陷阱」）、2 參數或前置步驟錯誤
 # <國家> 省略時依出口 IP 自動偵測。
-import argparse, json, os, re, sys, time, random, socket, statistics, subprocess, threading, urllib.request, urllib.error, urllib.parse
+import argparse, json, os, re, sys, time, random, socket, ssl, statistics, subprocess, threading, urllib.request, urllib.error, urllib.parse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
@@ -152,6 +152,25 @@ def fetch(url, nbytes, timeout=10, cap=30):
                     else "timeout" if "timed out" in msg else msg[:60])
 
 
+def reachable(url, hosts, secs=8):
+    """並行對各節點抓前 64KB，回傳 secs 秒內有回應的節點（快的在前）。
+    連不上的節點常解析出 6–8 個 IP、urllib 逐一等逾時，單連線測速一台就卡 30 秒以上，先篩掉"""
+    out = {}
+    print(f"  同時試連 {len(hosts)} 個節點（最多等 {secs} 秒）…", flush=True)
+
+    def go(h):
+        r = fetch(swap(url, h), 65536, timeout=secs)
+        if not r.get("err"): out[h] = r["ttfb"]
+    ths = [threading.Thread(target=go, args=(h,), daemon=True) for h in hosts]
+    for t in ths: t.start()
+    end = time.time() + secs
+    for t in ths: t.join(max(0.0, end - time.time()))
+    ok = dict(out)
+    bad = [h for h in hosts if h not in ok]
+    print(f"  連得上 {len(ok)} 個" + (f"；連不上（跳過）：{'、'.join(bad)}" if bad else ""), flush=True)
+    return sorted(ok, key=ok.get)
+
+
 def tcp_rtt(host, port=443, n=5):
     ts = []
     for _ in range(n):
@@ -222,6 +241,7 @@ def system_dns_server():
 
 DNS = os.environ.get("DNS") or None  # 例如 168.95.1.1：節點網域改用指定 DNS 解析；"doh" = Google DoH 帶自己的 ECS
 PROGRESS = None  # 選用：PROGRESS(階段, 已完成, 總數)，給 GUI 顯示進度
+PRESET_DNS_CHECK = None  # GUI 第 1 步已跑過的 dns_check() 結果（成功才設）；cmd_env 直接沿用，不重查
 # 決定並行數時，單一連線速度最多算到這裡（Mbps）：B 站 8K 串流宣告碼率實測 12–59 Mbps，取 60。
 # 節點再快，播放也用不到，所以並行時頂端被抹平成同一級沒關係，換來更多並行、更短的測速時間
 PER_CONN_CAP = 60
@@ -324,21 +344,83 @@ def assign_pools(res):
 
 
 # ── 並行測試矩陣（可續跑） ─────────────────────────────────────
-def run_matrix(tasks, conc, nbytes, logname, timeout, cap=30):
+HEARTBEAT = 30  # 每幾秒印一次進度與「正在等哪個節點」，分得出是卡住還是在等逾時
+# 節點層級的失敗（換哪支影片都一樣）：逾時、DNS 失敗、連線被拒。HTTP 錯誤（403 等）與連線被重設會因影片而異或只是暫時的，不算
+DEAD_ERR = re.compile(r"^(timeout|DNS)$|10061|refused", re.I)
+PRECHECK_CONC = 64  # 快篩前試連用的同時連線數：只握手不下載，開多條也不佔頻寬
+
+
+def tls_check(host, timeout):
+    """對節點做 TCP 連線＋TLS 握手（不送 HTTP 請求，不會預熱快取）。成功回 None，失敗回與 fetch 相同格式的錯誤字串。
+    逾時與解析方式跟 fetch 一樣：系統 DNS 時每個 IP 各等 timeout 秒"""
+    try:
+        with socket.create_connection((host, 443), timeout=timeout) as s:
+            with ssl.create_default_context().wrap_socket(s, server_hostname=host):
+                return None
+    except socket.gaierror:
+        return "DNS"
+    except (socket.timeout, TimeoutError):
+        return "timeout"
+    except Exception as e:
+        return str(e)[:60]
+
+
+def precheck(hosts, timeout):
+    """同時試連所有節點，回傳 {連不上的節點: 錯誤}（只收 DEAD_ERR：逾時、DNS 失敗、連線被拒）。
+    run_matrix 的 skip_dead 原本要等節點在測試中第一次逾時才跳過，逾時期間佔住並行名額；先一起試連，
+    判斷標準不變，只是提早知道"""
+    print(f"    先同時試連 {len(hosts)} 個節點（只做 TLS 握手、不下載；逾時同樣每個 IP {timeout}s）…", flush=True)
+    t0 = time.time()
+    with ThreadPoolExecutor(PRECHECK_CONC) as ex:
+        errs = dict(zip(hosts, ex.map(lambda h: tls_check(h, timeout), hosts)))
+    dead = {h: e for h, e in errs.items() if e and DEAD_ERR.search(e)}
+    c = Counter("DNS" if e == "DNS" else "timeout" if e == "timeout" else "refused" for e in dead.values())
+    print(f"    試連完成，耗時 {time.time() - t0:.0f} 秒；連不上 {len(dead)} 個" + (f"（{dict(c)}），這些節點直接跳過" if dead else ""),
+          flush=True)
+    return dead
+
+
+def run_matrix(tasks, conc, nbytes, logname, timeout, cap=30, skip_dead=False):
     """tasks = [(host, video_key, url)]；隨機順序並行跑，每筆結果即時追加到 <logname>.jsonl。
-    已在記錄檔裡的 (host, key) 會跳過，所以中斷後重跑即可續跑。全部完成才回傳 [(host, key, result)]。"""
+    已在記錄檔裡的 (host, key) 會跳過，所以中斷後重跑即可續跑。全部完成才回傳 [(host, key, result)]。
+    skip_dead=True：節點有一筆 DEAD_ERR 後，同節點還沒開始的其他筆不再下載，記成 err="skipped"
+    （快篩要三支都成功才保留，跳過不影響結果，只省下等逾時的時間）。開始前先 precheck 所有節點：
+    試連失敗的節點，第一筆記成試連的錯誤（precheck=True），其餘記 skipped，與測試中才發現連不上時的記錄方式相同。
+    開始並行下載前會呼叫一次 PROGRESS（先記完的筆數），GUI 從這裡起算速度"""
     log = path(logname + ".jsonl")
     want = {(t[0], t[1]) for t in tasks}
     prev = [json.loads(l) for l in open(log, encoding="utf-8") if l.strip()] if os.path.exists(log) else []
     seen = {(p["host"], p["video"]) for p in prev} & want
+    dead = {p["host"] for p in prev if skip_dead and p.get("err") and DEAD_ERR.search(p["err"])}
+    skipped = [0]
     todo = [t for t in tasks if (t[0], t[1]) not in seen]
     random.shuffle(todo)  # 打亂順序，降低時段波動與同家族 CDN 共用快取的順序偏差
     pre_resolve(sorted({t[0] for t in todo}))
+    pre = precheck(sorted({t[0] for t in todo} - dead), timeout) if skip_dead and todo else {}
+    dead |= set(pre)
     print(f"    已完成 {len(seen)}/{len(tasks)}，本次要跑 {len(todo)}"
           + (f"（時間預算剩 {left():.0f}s）" if DEADLINE else ""), flush=True)
     stop = [False]
     lock = threading.Lock()
+    inflight = {}   # (host, key) → 開始時間：心跳用，看得出是在等哪個節點逾時
     f = open(log, "a", encoding="utf-8")
+    print(f"    每 {HEARTBEAT}s 回報一次進度；連不上的節點要等逾時（每個 IP {timeout}s，一個網域可能有好幾個 IP）"
+          + ("；同一節點逾時／DNS 失敗／連線被拒後，其他影片直接跳過" if skip_dead else ""), flush=True)
+    # 已知連不上的節點（試連失敗、續跑前就失敗過）先一次記完，不進並行：不佔並行名額，
+    # GUI 用進度推算剩餘時間時，也不會被這些瞬間完成的筆數打亂（GUI 從下面這次 PROGRESS 起算速度）
+    rest = []
+    for t in todo:
+        if t[0] not in dead:
+            rest.append(t)
+            continue
+        e = pre.pop(t[0], None)
+        r = dict(st=None, err=e, precheck=True) if e else dict(st=None, err="skipped")
+        if not e: skipped[0] += 1
+        f.write(json.dumps(dict(host=t[0], video=t[1], **r), ensure_ascii=False) + "\n")
+        seen.add((t[0], t[1]))
+    f.flush()
+    todo = rest
+    if PROGRESS: PROGRESS(logname, len(seen), len(tasks))
     # 留一點餘裕給收尾中的連線（最長 timeout + 30s 截斷）
     margin = timeout + 35
 
@@ -346,16 +428,41 @@ def run_matrix(tasks, conc, nbytes, logname, timeout, cap=30):
         if stop[0] or (DEADLINE and time.time() > DEADLINE - margin):
             stop[0] = True
             return
-        r = fetch(t[2], nbytes, timeout=timeout, cap=cap)
         with lock:
+            skip = t[0] in dead
+            if not skip: inflight[(t[0], t[1])] = time.time()
+        if skip:
+            r = dict(st=None, err="skipped")
+        else:
+            r = fetch(t[2], nbytes, timeout=timeout, cap=cap)
+        with lock:
+            inflight.pop((t[0], t[1]), None)
+            if skip: skipped[0] += 1
+            elif skip_dead and r.get("err") and DEAD_ERR.search(r["err"]): dead.add(t[0])
             f.write(json.dumps(dict(host=t[0], video=t[1], **r), ensure_ascii=False) + "\n"); f.flush()
             seen.add((t[0], t[1]))
             if len(seen) % 100 == 0: print(f"    {len(seen)}/{len(tasks)}", flush=True)
             if PROGRESS: PROGRESS(logname, len(seen), len(tasks))
 
-    with ThreadPoolExecutor(conc) as ex:
-        list(ex.map(one, todo))
+    finished = threading.Event()
+
+    def heartbeat():
+        while not finished.wait(HEARTBEAT):
+            with lock:
+                n, running = len(seen), len(inflight)
+                old = min(inflight.items(), key=lambda x: x[1], default=None)
+            msg = f"    進度 {n}/{len(tasks)}；進行中 {running} 筆"
+            if old: msg += f"，等最久的是 {old[0][0]}（已 {time.time() - old[1]:.0f} 秒）"
+            if skipped[0]: msg += f"；已跳過 {skipped[0]} 筆（節點連不上）"
+            print(msg, flush=True)
+    threading.Thread(target=heartbeat, daemon=True).start()
+    try:
+        with ThreadPoolExecutor(conc) as ex:
+            list(ex.map(one, todo))
+    finally:
+        finished.set()
     f.close()
+    if skipped[0]: print(f"    跳過 {skipped[0]} 筆（同節點已逾時／DNS 失敗／連線被拒）", flush=True)
     if len(seen) < len(tasks):
         raise Partial(f"{logname} 未完成 {len(seen)}/{len(tasks)}，再執行一次續跑")
     rows = {}
@@ -369,11 +476,15 @@ def run_matrix(tasks, conc, nbytes, logname, timeout, cap=30):
 
 # ── 子指令 ────────────────────────────────────────────────────
 def cmd_env(country, args):
+    print("查詢 B 站登入狀態…", flush=True)
     login = login_status()
+    print("查詢出口 IP（ipinfo.io，最多 10 秒）…", flush=True)
     try:
         ip = json.load(urllib.request.urlopen("https://ipinfo.io/json", timeout=10))
     except Exception as e:
         ip = dict(err=str(e)[:80])
+        print(f"  查詢失敗：{ip['err']}", flush=True)
+    print("查詢 Google 看到的 DNS 解析器（nslookup，最多 10 秒）…", flush=True)
     txt = _nslookup_raw(["-type=TXT", "o-o.myaddr.l.google.com."])
     isp = setting(args, "isp_dns", None)
     keys = ["upos-sz-mirror08ct.bilivideo.com", "upos-sz-mirror08c.bilivideo.com", "upos-sz-mirrorhw.bilivideo.com",
@@ -381,6 +492,7 @@ def cmd_env(country, args):
             "upos-sz-mirrorcos.bilivideo.com", "upos-hz-mirrorakam.akamaized.net", "cn-hk-eq-01-09.bilivideo.com",
             "cn-jxnc-cmcc-bcache-06.bilivideo.com"]
     dns = {}
+    print(f"解析 {len(keys)} 個主要節點的 DNS（每個最多 10 秒）…", flush=True)
     for h in keys:
         d = dict(system=nslookup(h)[0], canonical=canonical(h))
         if isp: d["isp"] = nslookup(h, isp)[0]
@@ -388,26 +500,30 @@ def cmd_env(country, args):
         dns[h] = d
     rtt_targets = [("www.bilibili.com", 443), ("www.google.com", 443), ("8.8.8.8", 53), ("1.1.1.1", 53)]
     if isp: rtt_targets.append((isp, 53))
+    print(f"測基準延遲：{'、'.join(h for h, _ in rtt_targets)} 各連 5 次（每次最多 5 秒）…", flush=True)
+    rtt = {h: tcp_rtt(h, p) for h, p in rtt_targets}
+    print("查詢系統 DNS 伺服器…", flush=True)
+    sysdns = system_dns_server()
     data = dict(time=time.strftime("%Y-%m-%d %H:%M"), tz=time.strftime("%z"), country_arg=country,
                 exit=dict(ip=ip.get("ip"), country=ip.get("country"), org=ip.get("org"), city=ip.get("city"),
                           err=ip.get("err")),
-                login=login, system_dns=system_dns_server(), dns_override=DNS, isp_dns=isp,
-                resolver_txt=re.findall(r'"([^"]+)"', txt),
-                rtt_ms={h: tcp_rtt(h, p) for h, p in rtt_targets}, dns=dns)
-    chk = dns_check()
+                login=login, system_dns=sysdns, dns_override=DNS, isp_dns=isp,
+                resolver_txt=re.findall(r'"([^"]+)"', txt), rtt_ms=rtt, dns=dns)
+    chk = PRESET_DNS_CHECK or dns_check()
     data["dns_check"] = {k: chk[k] for k in ("resolvers", "ecs", "ecs_country", "dns_ok", "dns_verdict")}
     print(("DNS 檢查：OK，" if chk["dns_ok"] else "⚠ DNS 檢查：") + chk["dns_verdict"])
     data["network"] = netinfo.link_info(ip.get("org") or "")
     data["vpn_check"] = netinfo.PRESET_VPN or netinfo.vpn_check()
-    if data["vpn_check"].get("mobile") and not data["network"].get("kind_note"):
+    if data["vpn_check"].get("mobile") and not data["network"].get("kind_note") \
+            and not data["network"]["kind"].startswith("行動"):   # 已經判斷成行動網路就不用再註記
         data["network"]["kind_note"] = "ip-api 判斷為行動網路"
     print("VPN 檢查：" + ("⚠ " + "；".join(data["vpn_check"]["signals"]) if data["vpn_check"]["vpn"] else "未偵測到"))
-    if not netinfo.PRESET_BW: print("測總頻寬（Cloudflare，約 20 秒）…", flush=True)
+    if not netinfo.PRESET_BW: print("測總頻寬（speedtest.net，約 20 秒）…", flush=True)
     data["bandwidth"] = netinfo.PRESET_BW or netinfo.bandwidth()
     n, bw = data["network"], data["bandwidth"]
     print(f"網路類型：{n['kind']}" + (f"（{n['kind_note']}）" if n.get("kind_note") else "")
           + (f"；Wi-Fi {n['wifi']}" if n.get("wifi") else ""))
-    print(f"總頻寬：下載 {bw.get('down_mbps')} / 上傳 {bw.get('up_mbps')} Mbps，延遲 {bw.get('latency_ms')} ms"
+    print(f"總頻寬：下載 {bw.get('down_mbps')} Mbps，延遲 {bw.get('latency_ms')} ms"
           + (f"（{bw['err']}）" if bw.get("err") else ""))
     save("env.json", data)
     e = data["exit"]
@@ -461,6 +577,7 @@ def cmd_pick(country, args):
     seed = setting(args, "seed", int(time.strftime("%Y%m%d%H%M")))
     n = setting(args, "limit_videos", None) or 10
     lg = login_status()["login"]
+    print(f"從影片池挑影片：每支查詢影片資訊與播放網址（失敗的跳過，會印 skip），種子 {seed}…", flush=True)
     V.pick(path("pool.json"), path("videos.json"), seed, n_test=n, logged_in=lg)
     print(f"種子 {seed}" + ("" if lg else "（未登入：畫質 ≤480P）"))
 
@@ -476,28 +593,43 @@ def cmd_ceiling(country, args):
     pre_resolve(hosts)
     quick = setting(args, "quick", False)
     size = (2 if quick else 16) << 20
-    single = {h: fetch(swap(url, h), size, timeout=15) for h in hosts}
-    for h, r in single.items():
-        print(f"  單連線 {h:40} {r.get('mbps')} Mbps ttfb={r.get('ttfb')} {r.get('err') or ''}")
+    # 先篩掉連不上的節點；單連線最多量 10 秒：慢速線路（例如行動網路）下載 16MB 要很久，10 秒已足夠估速度
+    alive = reachable(url, hosts)
+    single = {}
+    for h in hosts:
+        if h not in alive:
+            single[h] = dict(st=None, err="unreachable")
+            continue
+        print(f"  單連線測速 {h}（下載 {size >> 20}MB，最多 10 秒）…", flush=True)
+        r = single[h] = fetch(swap(url, h), size, timeout=15, cap=10)
+        print(f"    失敗：{r['err']}，不列入計算" if r.get("err") else f"    {r['mbps']} Mbps ttfb={r['ttfb']} ms",
+              flush=True)
     ok = sorted([h for h, r in single.items() if not r["err"]], key=lambda h: -single[h]["mbps"])[:2]
     if not ok:
         raise Stop(2, "所有節點單連線都失敗，無法量頻寬上限（網路不通或 cookie/影片問題）")
-    res = {}
-    for n in ((4,) if quick else (4, 8, 16, 24)):
-        with ThreadPoolExecutor(n) as ex:
-            rs = list(ex.map(lambda i: fetch(swap(url, ok[i % len(ok)]), size, timeout=15), range(n)))
+    # 頻寬上限＝speedtest.net 量的總下載頻寬（env 步驟或 GUI 網路檢查頁已量過）。
+    # 不再對 B 站開 4／8／16／24 條並行連線：慢速線路上要跑好幾分鐘、吃掉近 1GB 流量
+    bw = (load("env.json").get("bandwidth") or {}) if has("env.json") else {}
+    if not bw.get("down_mbps"):
+        print("  網路檢查沒量到總頻寬，重新用 speedtest.net 測…", flush=True)
+        bw = netinfo.bandwidth()
+    ceil, src, res = bw.get("down_mbps"), "speedtest.net", None
+    if not ceil:  # speedtest.net 量不到時，退回對 B 站開 4 條並行連線
+        print("  speedtest.net 量不到，改對 B 站開 4 條連線同時下載（每條最多 10 秒）…", flush=True)
+        with ThreadPoolExecutor(4) as ex:
+            rs = list(ex.map(lambda i: fetch(swap(url, ok[i % len(ok)]), size, timeout=15, cap=10), range(4)))
         # 各連線自身速度加總（同時進行）；不用「總位元組 ÷ 總時間」，否則一條卡住的連線會拉低整體
-        res[n] = round(sum(r.get("total_mbps", 0) for r in rs if not r.get("err")), 1)
-        print(f"  {n:2} 連線合計 ≈ {res[n]} Mbps", flush=True)
-    ceil = max(res.values())
+        res = {4: round(sum(r.get("total_mbps", 0) for r in rs if not r.get("err")), 1)}
+        ceil, src = res[4], "bilibili-4conn"
+    print(f"  頻寬上限（{src}）≈ {ceil} Mbps", flush=True)
     single_med = statistics.median([r["mbps"] for r in single.values() if not r["err"]])
-    # 一條連線的典型速度：取「單連線中位數」與「4 連線時平均每條」較大者，
+    # 一條連線的典型速度：單連線中位數（有 4 連線結果時取它與平均每條的較大者），
     # 但最多算到 PER_CONN_CAP（8K 高碼率）：播放用不到更快的速度，超過的節點被抹平成同一級也沒關係
-    typical_raw = max(single_med, res[4] / 4)
+    typical_raw = max(single_med, res[4] / 4) if res else single_med
     typical = min(typical_raw, PER_CONN_CAP)
     auto = max(1, min(8, int(0.5 * ceil / typical))) if typical > 0 else 1
     conc = args.conc or auto
-    data = dict(time=time.strftime("%Y-%m-%d %H:%M"), video=v["bvid"], single=single, parallel=res, ceiling=ceil,
+    data = dict(time=time.strftime("%Y-%m-%d %H:%M"), video=v["bvid"], single=single, parallel=res, ceiling=ceil, ceiling_source=src,
                 single_median=round(single_med, 1), typical_per_conn_raw=round(typical_raw, 1),
                 typical_per_conn=round(typical, 1), conc_auto=auto, conc=conc)
     save("ceiling.json", data)
@@ -529,7 +661,8 @@ def cmd_stage1(country, args):
     urls = {v["bvid"]: stream_url(v) for v in load("videos.json")["screen"]}
     print(f"快篩：{len(hosts)} 節點 × {len(urls)} 支 × 2MB，並行 {conc}，逾時 {timeout}s")
     t0 = time.time()
-    rs = run_matrix([(h, k, swap(u, h)) for h in hosts for k, u in urls.items()], conc, 2 << 20, "stage1", timeout)
+    rs = run_matrix([(h, k, swap(u, h)) for h in hosts for k, u in urls.items()], conc, 2 << 20, "stage1", timeout,
+                    skip_dead=True)
     per = {}
     for h, k, r in rs: per.setdefault(h, {})[k] = r
     rows = []
@@ -833,7 +966,7 @@ def cmd_report(country, args):
         w("| VPN 檢查 | " + ("⚠ " + "；".join(vc.get("signals") or []) if vc.get("vpn") else "未偵測到 VPN／代理")
           + "（ip-api、本機網卡、時區） |")
     if bw:
-        w(f"| 總頻寬（{bw.get('source') or 'cloudflare'}） | 下載 {bw.get('down_mbps')} Mbps、上傳 {bw.get('up_mbps')} Mbps、HTTPS 請求延遲 "
+        w(f"| 總頻寬（{bw.get('source') or 'speedtest.net'}） | 下載 {bw.get('down_mbps')} Mbps、延遲 "
           f"{bw.get('latency_ms')} ms" + (f"（{bw['err']}）" if bw.get("err") else "") + " |")
     w(f"| 登入 | {'是（高畫質）' if env['login']['login'] else '否（≤480P）'} |")
     w(f"| 頻寬上限 | ≈ {ceil} Mbps（典型單連線 ≈ {ceil_d.get('typical_per_conn')} Mbps） |")
@@ -952,6 +1085,7 @@ def dns_check():
     GeoDNS 節點（阿里、Akamai…）會被分到「解析器所在地」的機器，而不是使用者所在地的機器，測速結果失真。
     做法：查 o-o.myaddr.l.google.com 的 TXT，得到「替我們向 Google 權威 DNS 查詢的解析器出口 IP」與 ECS 子網，
     再查它們的國家，與出口國家比對。"""
+    print("檢查 DNS 解析器是否在當地：查詢出口 IP 與解析器的所在地（ipinfo.io、nslookup，各最多 10 秒）…", flush=True)
     ex = _ipinfo()
     txt = re.findall(r'"([^"]+)"', _nslookup_raw(["-type=TXT", "o-o.myaddr.l.google.com."]))
     ecs = next((t.split()[-1] for t in txt if t.startswith("edns0-client-subnet")), None)

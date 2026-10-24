@@ -37,7 +37,9 @@ def api(url, retry=3):
         except urllib.error.HTTPError as e:
             if e.code != 412 or i == retry - 1:
                 raise
-            time.sleep(5 * (i + 1))  # 412 = 風控，稍等再試
+            wait = 5 * (i + 1)  # 412 = 風控，稍等再試
+            print(f"    B 站 API 回 412（風控），{wait} 秒後重試（第 {i + 2}/{retry} 次）：{url.split('?')[0]}", flush=True)
+            time.sleep(wait)
 
 
 _MIX = [46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49, 33, 9, 42, 19, 29, 28, 14, 39,
@@ -75,7 +77,8 @@ def wbi(base, params):
 
 
 def view(bvid):
-    return api(f"https://api.bilibili.com/x/web-interface/view?bvid={bvid}")["data"]
+    # 用 wbi 簽章版：未簽章的 /x/web-interface/view 對訪客常回 412 風控（每支重試 15 秒，pick 會卡十幾分鐘）
+    return api(wbi("https://api.bilibili.com/x/web-interface/wbi/view", dict(bvid=bvid)))["data"]
 
 
 def dash_streams(bvid, cid):

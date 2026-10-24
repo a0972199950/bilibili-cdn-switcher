@@ -17,8 +17,9 @@ This tool is made by the developer of the browser extension "{ext}". It measures
 WHAT IS COLLECTED (only if you click "Send" at the end)
 • Your public IP address, and the country, city and ISP/network name derived from it (via ipinfo.io).
 • Network type: wired / Wi-Fi / possibly mobile, plus Wi-Fi standard, signal strength and link rate. Your Wi-Fi name (SSID) is NOT collected.
-• General internet speed (download, upload, latency) measured against Cloudflare.
+• General internet speed (download speed and latency) measured against nearby Speedtest by Ookla (speedtest.net) servers.
 • Speed test results for Bilibili CDN servers (speed, response time, errors), the test videos used, and DNS resolver information.
+• The detailed log of the test (the same text as the "Details log" window: each step, how long it took, and any errors), used to diagnose problems.
 • App version, the language you chose, and the time of the test.
 • Your email address — only if you choose to join the prize draw.
 
@@ -37,7 +38,7 @@ HOW IT IS USED
 • Data is sent to the developer's Google account (Google Apps Script, Gmail, Google Drive / Sheets). It is not sold or shared with third parties.
 
 SERVICES THIS APP CONTACTS DURING THE TEST
-Bilibili, ipinfo.io and ip-api.com (VPN check), Cloudflare (speed.cloudflare.com) or Linode speed-test servers, Google Public DNS (dns.google), Google Apps Script (usage log, invite code check, and the report when you click "Send"), and the developer's Cloudflare Worker (list of current prize draws; nothing is sent).
+Bilibili, ipinfo.io and ip-api.com (VPN check), Speedtest by Ookla (speedtest.net) servers, Google Public DNS (dns.google), Google Apps Script (usage log, invite code check, and the report when you click "Send"), and the developer's Cloudflare Worker (list of current prize draws; nothing is sent).
 
 You can stop the test at any time; no test results are sent unless you click "Send". After a successful upload, the local copy of the results is deleted when you close the app. To have your data deleted, contact the developer via the extension's support page:
 {support}
@@ -175,6 +176,53 @@ S = {
     "st_stage2": {"zh-TW": "細測候選節點", "zh-CN": "精测候选节点", "en": "Testing candidate servers", "ja": "候補サーバーを詳細測定",
                   "ko": "후보 서버 정밀 측정"},
     "st_report": {"zh-TW": "產生報告", "zh-CN": "生成报告", "en": "Writing report", "ja": "レポート作成", "ko": "보고서 작성"},
+    # 測速頁每一步的說明（步驟名稱下面那行）
+    "sd_detect": {"zh-TW": "確認你所在的國家，以及 DNS 是否使用當地的伺服器。",
+                  "zh-CN": "确认你所在的国家，以及 DNS 是否使用当地的服务器。",
+                  "en": "Checking which country you're in and whether your DNS uses local servers.",
+                  "ja": "接続元の国と、DNS が現地のサーバーを使っているかを確認しています。",
+                  "ko": "접속 국가와 DNS가 현지 서버를 사용하는지 확인하고 있습니다."},
+    "sd_env": {"zh-TW": "記錄網路類型、DNS 與連到 B 站的延遲（總頻寬沿用網路檢查的結果）。",
+               "zh-CN": "记录网络类型、DNS 与连到 B 站的延迟（总带宽沿用网络检查的结果）。",
+               "en": "Recording network type, DNS and latency to Bilibili (bandwidth comes from the network check).",
+               "ja": "回線の種類、DNS、bilibili までの遅延を記録しています（帯域はネットワークチェックの結果を使用）。",
+               "ko": "네트워크 종류, DNS, bilibili까지의 지연을 기록하고 있습니다(대역폭은 네트워크 확인 결과 사용)."},
+    "sd_pool": {"zh-TW": "搜尋各種熱門程度、新舊不同的 B 站影片，建立測試用的影片池。",
+                "zh-CN": "搜索各种热门程度、新旧不同的 B 站视频，建立测试用的视频池。",
+                "en": "Searching Bilibili for videos of varying popularity and age to build a pool of test videos.",
+                "ja": "人気度や投稿時期の異なる bilibili 動画を検索し、テスト用の動画プールを作っています。",
+                "ko": "인기도와 업로드 시기가 다양한 bilibili 영상을 검색해 테스트용 영상 풀을 만들고 있습니다."},
+    "sd_pick": {"zh-TW": "從影片池挑出快篩、細測與冷門探測要用的影片。",
+                "zh-CN": "从视频池挑出快筛、精测与冷门探测要用的视频。",
+                "en": "Picking the videos used for screening, detailed tests and the less-popular check.",
+                "ja": "予備測定・詳細測定・人気の低い動画の確認に使う動画を選んでいます。",
+                "ko": "1차 측정, 정밀 측정, 비인기 영상 확인에 쓸 영상을 고르고 있습니다."},
+    "sd_ceiling": {"zh-TW": "對幾個主要節點各下載一段影片，量出單一連線的速度，決定之後同時測幾個節點。",
+                   "zh-CN": "对几个主要节点各下载一段视频，测出单一连接的速度，决定之后同时测几个节点。",
+                   "en": "Downloading a clip from a few major servers to measure single-connection speed and decide how many servers to test at once.",
+                   "ja": "主要なサーバーから動画を少しずつダウンロードして 1 接続あたりの速度を測り、同時に測るサーバー数を決めています。",
+                   "ko": "주요 서버 몇 곳에서 영상을 조금씩 내려받아 연결 1개의 속도를 재고, 동시에 측정할 서버 수를 정하고 있습니다."},
+    "sd_stage1": {"zh-TW": "對所有節點各下載 3 支熱門影片的開頭，挑出連得上、速度正常的節點。連不上的節點要等逾時，這一步最久。",
+                  "zh-CN": "对所有节点各下载 3 个热门视频的开头，挑出连得上、速度正常的节点。连不上的节点要等超时，这一步最久。",
+                  "en": "Downloading the start of 3 popular videos from every server to find the ones that work. Unreachable servers have to time out, so this step takes the longest.",
+                  "ja": "全サーバーから人気動画 3 本の冒頭をダウンロードし、つながって速度も正常なサーバーを選んでいます。つながらないサーバーはタイムアウトを待つため、最も時間がかかります。",
+                  "ko": "모든 서버에서 인기 영상 3개의 앞부분을 내려받아 연결되고 속도가 정상인 서버를 고르고 있습니다. 연결되지 않는 서버는 시간 초과를 기다려야 해서 가장 오래 걸립니다."},
+    "sd_probe": {"zh-TW": "用 1 支冷門影片確認通過的節點不是「只能播熱門影片」。",
+                 "zh-CN": "用 1 个冷门视频确认通过的节点不是“只能播热门视频”。",
+                 "en": "Using 1 less popular video to rule out servers that can only serve popular videos.",
+                 "ja": "人気の低い動画 1 本で、人気動画しか再生できないサーバーを除外しています。",
+                 "ko": "비인기 영상 1개로 인기 영상만 재생되는 서버를 걸러내고 있습니다."},
+    "sd_stage2": {"zh-TW": "對剩下的節點各下載 10 支影片，量出實際播放的速度並排出名次。",
+                  "zh-CN": "对剩下的节点各下载 10 个视频，测出实际播放的速度并排出名次。",
+                  "en": "Downloading 10 videos from each remaining server to measure real playback speed and rank them.",
+                  "ja": "残ったサーバーから動画 10 本をダウンロードし、実際の再生速度を測って順位を付けています。",
+                  "ko": "남은 서버에서 영상 10개를 내려받아 실제 재생 속도를 재고 순위를 매기고 있습니다."},
+    "sd_report": {"zh-TW": "整理排名，產生報告與建議的節點清單。",
+                  "zh-CN": "整理排名，生成报告与建议的节点清单。",
+                  "en": "Compiling the ranking, the report and the recommended server list.",
+                  "ja": "順位をまとめ、レポートとおすすめサーバーの一覧を作成しています。",
+                  "ko": "순위를 정리해 보고서와 추천 서버 목록을 만들고 있습니다."},
+    "log_btn": {"zh-TW": "詳細記錄", "zh-CN": "详细记录", "en": "Details log", "ja": "詳細ログ", "ko": "상세 기록"},
     "failed": {"zh-TW": "測速失敗", "zh-CN": "测速失败", "en": "Test failed", "ja": "テストに失敗しました", "ko": "테스트 실패"},
 
     # 第 5 頁：確認發送
@@ -196,11 +244,11 @@ S = {
     "no480": {"zh-TW": "否（≤480P）", "zh-CN": "否（≤480P）", "en": "no (≤480P)", "ja": "いいえ（480P 以下）",
               "ko": "아니요 (480P 이하)"},
     "none": {"zh-TW": "（未提供）", "zh-CN": "（未提供）", "en": "(not provided)", "ja": "（未入力）", "ko": "(미제공)"},
-    "send_q": {"zh-TW": "要把報告傳給作者嗎？將傳送上方資訊與完整測速結果（REPORT.md、summary.json），不含 B 站帳號資訊。",
-               "zh-CN": "要把报告发给作者吗？将发送上方信息与完整测速结果（REPORT.md、summary.json），不含 B 站账号信息。",
-               "en": "Send the report to the author? It includes the information above and the full results (REPORT.md, summary.json) — no Bilibili account info.",
-               "ja": "レポートを作者に送信しますか？上記の情報と全結果（REPORT.md、summary.json）が含まれます。Bilibili アカウント情報は含まれません。",
-               "ko": "보고서를 작성자에게 보낼까요? 위 정보와 전체 결과(REPORT.md, summary.json)가 포함되며 Bilibili 계정 정보는 포함되지 않습니다."},
+    "send_q": {"zh-TW": "要把報告傳給作者嗎？將傳送上方資訊與完整測速結果（REPORT.md、summary.json、詳細記錄），不含 B 站帳號資訊。",
+               "zh-CN": "要把报告发给作者吗？将发送上方信息与完整测速结果（REPORT.md、summary.json、详细记录），不含 B 站账号信息。",
+               "en": "Send the report to the author? It includes the information above and the full results (REPORT.md, summary.json, details log) — no Bilibili account info.",
+               "ja": "レポートを作者に送信しますか？上記の情報と全結果（REPORT.md、summary.json、詳細ログ）が含まれます。Bilibili アカウント情報は含まれません。",
+               "ko": "보고서를 작성자에게 보낼까요? 위 정보와 전체 결과(REPORT.md, summary.json, 상세 기록)가 포함되며 Bilibili 계정 정보는 포함되지 않습니다."},
     "send": {"zh-TW": "發送並建立自訂列表", "zh-CN": "发送并创建自定义列表", "en": "Send & build custom list",
              "ja": "送信してカスタムリストを作成", "ko": "보내고 사용자 지정 목록 만들기"},
     "dont_send": {"zh-TW": "不發送", "zh-CN": "不发送", "en": "Don't send", "ja": "送信しない", "ko": "보내지 않기"},
@@ -288,14 +336,13 @@ S.update({
     "check_title": {"zh-TW": "網路檢查", "zh-CN": "网络检查", "en": "Network check", "ja": "ネットワークチェック",
                     "ko": "네트워크 확인"},
     "check_desc": {
-        "zh-TW": "開始前先確認你的網路適合測速：下載速度至少 {min} Mbps，且沒有使用 VPN 或代理。約需 40 秒。",
-        "zh-CN": "开始前先确认你的网络适合测速：下载速度至少 {min} Mbps，且没有使用 VPN 或代理。约需 40 秒。",
-        "en": "First, let's make sure your connection is suitable: at least {min} Mbps download, and no VPN or proxy. Takes about 40 seconds.",
-        "ja": "開始前に回線を確認します：ダウンロード {min} Mbps 以上で、VPN やプロキシを使っていないこと。約 40 秒かかります。",
-        "ko": "시작 전에 네트워크를 확인합니다: 다운로드 {min} Mbps 이상, VPN·프록시 미사용. 약 40초 걸립니다."},
+        "zh-TW": "開始前先確認你的網路適合測速：下載速度至少 {min} Mbps，且沒有使用 VPN 或代理。約需 30 秒。",
+        "zh-CN": "开始前先确认你的网络适合测速：下载速度至少 {min} Mbps，且没有使用 VPN 或代理。约需 30 秒。",
+        "en": "First, let's make sure your connection is suitable: at least {min} Mbps download, and no VPN or proxy. Takes about 30 seconds.",
+        "ja": "開始前に回線を確認します：ダウンロード {min} Mbps 以上で、VPN やプロキシを使っていないこと。約 30 秒かかります。",
+        "ko": "시작 전에 네트워크를 확인합니다: 다운로드 {min} Mbps 이상, VPN·프록시 미사용. 약 30초 걸립니다."},
     "check_running": {"zh-TW": "檢查中…", "zh-CN": "检查中…", "en": "Checking…", "ja": "確認中…", "ko": "확인 중…"},
     "m_down": {"zh-TW": "下載", "zh-CN": "下载", "en": "Download", "ja": "ダウンロード", "ko": "다운로드"},
-    "m_up": {"zh-TW": "上傳", "zh-CN": "上传", "en": "Upload", "ja": "アップロード", "ko": "업로드"},
     "m_lat": {"zh-TW": "延遲", "zh-CN": "延迟", "en": "Latency", "ja": "遅延", "ko": "지연"},
     "m_vpn": {"zh-TW": "VPN／代理", "zh-CN": "VPN／代理", "en": "VPN / proxy", "ja": "VPN／プロキシ", "ko": "VPN/프록시"},
     "vpn_none": {"zh-TW": "未偵測到", "zh-CN": "未检测到", "en": "Not detected", "ja": "検出なし", "ko": "감지 안 됨"},
@@ -325,11 +372,11 @@ S.update({
                   "ja": "今回のテストは約 {min} 分かかる見込みです。終わるまでウィンドウを閉じないでください。",
                   "ko": "이번 테스트는 약 {min}분 걸릴 예정입니다. 끝날 때까지 창을 닫지 마세요."},
     "check_desc_free": {
-        "zh-TW": "先檢查你的網路狀況。你選的是單純測試，結果只做參考，不影響能否繼續。約需 40 秒。",
-        "zh-CN": "先检查你的网络状况。你选的是单纯测试，结果只做参考，不影响能否继续。约需 40 秒。",
-        "en": "First, let's check your connection. Since you chose to just test, the result is for reference only and won't stop you from continuing. Takes about 40 seconds.",
-        "ja": "まず回線を確認します。「テストのみ」を選んだため、結果は参考のみで、続行には影響しません。約 40 秒かかります。",
-        "ko": "먼저 네트워크를 확인합니다. \"테스트만\"을 선택하셨으므로 결과는 참고용이며 계속 진행에 영향을 주지 않습니다. 약 40초 걸립니다."},
+        "zh-TW": "先檢查你的網路狀況。你選的是單純測試，結果只做參考，不影響能否繼續。約需 30 秒。",
+        "zh-CN": "先检查你的网络状况。你选的是单纯测试，结果只做参考，不影响能否继续。约需 30 秒。",
+        "en": "First, let's check your connection. Since you chose to just test, the result is for reference only and won't stop you from continuing. Takes about 30 seconds.",
+        "ja": "まず回線を確認します。「テストのみ」を選んだため、結果は参考のみで、続行には影響しません。約 30 秒かかります。",
+        "ko": "먼저 네트워크를 확인합니다. \"테스트만\"을 선택하셨으므로 결과는 참고용이며 계속 진행에 영향을 주지 않습니다. 약 30초 걸립니다."},
     "warn_slow": {"zh-TW": "你的網速偏慢（下載 {down} Mbps；參加抽獎需要至少 {min} Mbps）。",
                   "zh-CN": "你的网速偏慢（下载 {down} Mbps；参加抽奖需要至少 {min} Mbps）。",
                   "en": "Your connection is on the slow side ({down} Mbps download; the prize draw requires at least {min} Mbps).",
@@ -387,8 +434,6 @@ S.update({
                          "en": "Once verified, {gift} will be sent to your inbox",
                          "ja": "確認後、{gift}をメールでお送りします", "ko": "확인 후 {gift}을(를) 이메일로 보내 드립니다"},
     "gift_word": {"zh-TW": "禮物卡", "zh-CN": "礼品卡", "en": "your gift card", "ja": "ギフトカード", "ko": "기프트 카드"},
-    "gift_word_v": {"zh-TW": "價值 {gift} 的禮物卡", "zh-CN": "价值 {gift} 的礼品卡", "en": "a {gift} gift card",
-                    "ja": "{gift} 相当のギフトカード", "ko": "{gift} 상당의 기프트 카드"},
     "thanks_unsent_title": {"zh-TW": "已完成測試", "zh-CN": "已完成测试", "en": "Test finished", "ja": "テスト完了",
                             "ko": "테스트 완료"},
 })

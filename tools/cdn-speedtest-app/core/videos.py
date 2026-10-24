@@ -82,6 +82,7 @@ def build_pool(path, deadline=None, quick=False, progress=None):
     if quick:
         todo = todo[4::25][:4]  # 測試用：抽幾組有結果機會較大的搜尋
     errs = 0
+    print(f"  影片池：要跑 {len(todo)} 組 B 站搜尋（每組間隔 1.2 秒，每 20 組回報一次）…", flush=True)
     for i, (key, kw, b, pg, mv) in enumerate(todo):
         if deadline and time.time() > deadline:
             save()

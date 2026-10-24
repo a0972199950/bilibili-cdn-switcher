@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # Bilibili CDN 測速（GUI 版）：給海外朋友雙擊執行。流程：
 #   1 入口：選語言（繁中／簡中／英／日／韓）、閱讀英文隱私聲明並勾選同意、（作者用）開發者測試模式藏在底部「進階設定 → 開發者選項」
-#   2 測速目的：單純測試／建立擴充「自訂節點列表」，或參加抽獎（填 email、必中獎邀請碼；依國家顯示禮物卡）
+#   2 測速目的：單純測試／建立擴充「自訂節點列表」，或參加抽獎（填 email、必中獎邀請碼；依國家顯示進行中的抽獎）
 #   3 網路檢查：頻寬與 VPN；只有參加抽獎才當門禁，單純測試只做參考
 #   4 B 站 App 掃 QR code 登入（必要，1080P 以上才準）
 #   5 自動測速（國家依出口 IP；DNS 不代表當地時改用 Google DoH 帶自己的 ECS），進度條，可停止並關閉
 #      測試模式：不測速，只跑 5 秒假進度，產生標示 TEST 的假報告
-#   6 結果摘要，確認後把 REPORT.md / summary.json / email 傳到作者的 Google Apps Script，
+#   6 結果摘要，確認後把 REPORT.md / summary.json / 詳細記錄（log）/ email 傳到作者的 Google Apps Script，
 #     並把建議的 10 個節點寫進瀏覽器擴充的「自訂節點列表」（extdetect.py）
 #   7 感謝頁（沒裝擴充時提示安裝後再按「建立自訂列表」）；關閉時刪掉已上傳的本機結果
 # 啟動時在背景檢查 GitHub Latest Release 有沒有新版 exe（updater.py）：還在入口頁就直接換新版重開，否則關閉時才換檔。
 # 同意隱私聲明後，安裝／執行／測速／發送等事件會送一筆使用紀錄（Apps Script action=log → Neon）。
-# 測速核心在 core/（speedtest.py / bili.py / videos.py / netinfo.py / nodes.json），從 /cdn-speedtest skill 複製出來、各自維護，不互相依賴。
+# 測速核心在 core/（speedtest.py / bili.py / videos.py / netinfo.py / nodes.json）。
 import json, os, queue, re, shutil, sys, threading, time, traceback, urllib.request, uuid, webbrowser
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.9.0"
+APP_VERSION = "1.9.1"
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
@@ -43,15 +43,6 @@ def load_config():
 
 CONFIG = load_config()
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
-
-
-def gift_for(country):
-    """config.json 的 gift_cards：{國家代碼: {vendor, amount}, "default": {...}}；沒設定回 None"""
-    g = CONFIG.get("gift_cards") or {}
-    c = g.get((country or "").upper()) or g.get("default") or {}
-    if c.get("vendor") or c.get("amount"):
-        return dict(country=(country or "").upper(), vendor=c.get("vendor") or "", amount=c.get("amount") or "")
-    return None
 
 
 class LogWriter:
@@ -94,6 +85,7 @@ WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5),
 # v2：只有抽獎 v2（禮物卡各自有面額，lottery_text.py 兩種格式都吃）；/v1/lotteries 只有 v1 的抽獎，留給舊版 exe。
 # 1.7.0（含）以前的 exe 是透過 Apps Script（action=lotteries）讀 lotteries.html，那條路保留給舊版用
 LOTTERY_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/lotteries"
+LOG_MAX = 500_000   # 隨報告送出的詳細記錄最多幾個字（只留最後這段）；一次測速約 20–40KB，Apps Script 整包上限 3MB
 
 
 def post_json(payload, timeout=90):
@@ -105,45 +97,46 @@ def post_json(payload, timeout=90):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
-PROBE_HOSTS = ("upos-sz-mirror08ct.bilivideo.com", "upos-sz-mirror08c.bilivideo.com", "upos-sz-mirrorhw.bilivideo.com")
+# 預估時間：各階段預估秒數加總。固定階段用 FIXED_SECS（2026-10 新加坡實測）；快篩／冷門探測／細測＝
+# 筆數 × 每筆秒數 ÷ 並行數。每筆秒數在快篩前用 ITEM_SECS（由舊公式「耗時 ≈ 1.25 × (7 + 105 ÷ 並行數) 分鐘、
+# 約 1900 筆」反推），快篩進行中改用快篩至今的實測 TTFB 與速度推算（Runner.item_secs）
+FIXED_SECS = dict(detect=5, env=20, pool=270, pick=20, ceiling=30, report=5)
+ITEM_SECS = 4.2
+# 以下比例與速度都取自 cdn-speedtest-results/ 歷史報告的中位數（2026-10，139 份）
+KEEP_RATIO = 0.34   # 快篩通過的節點比例（四分位 0.27–0.51）；快篩進行中改用至今的結果推估
+PROBE_PASS = 0.55   # 快篩通過的節點裡，冷門探測沒回 403、進細測的比例（四分位 0.43–0.72）
+# 典型單一連線速度（Mbps，網路檢查頁 B 站單連線實測的中位數；報告 ≥ 3 份的國家才列，其他國家用 default）。
+# 只用在測速開始前的預估並行數；實際並行數由第 5 步「量測頻寬上限」重新量
+TYPICAL_PER_CONN = dict(TW=92.5, HK=54.6, SG=35.5, JP=50.4, default=53.0)
+N_SCREEN, N_TEST = 3, 10   # 快篩、細測影片數（videos.pick 的 n_screen、n_test）
 
 
-def probe_per_conn():
-    """對幾個主要 B 站節點各量一次單一連線速度（8MB，訪客 480P 即可），回傳中位數 Mbps；失敗回 None。
-    約 5–20 秒。只打 popular + playurl（view 對訪客常回 412 風控），不重試，失敗就交給呼叫端用預設值"""
-    import statistics
-    import bili, speedtest as S
-    pop = bili.api("https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1", retry=1)["data"]["list"]
-    url = None
-    # 長片才有 8MB；有些熱門片會 -404（地區、付費），最多試 4 支
-    for v in [x for x in sorted(pop, key=lambda x: -(x.get("duration") or 0)) if x.get("cid")][:4]:
-        try:
-            r = bili.api(f"https://api.bilibili.com/x/player/playurl?bvid={v['bvid']}&cid={v['cid']}&fnval=4048",
-                         retry=1)
-        except Exception:
-            continue
-        ss = ((r.get("data") or {}).get("dash") or {}).get("video") or []
-        url = next((u for s in ss for u in [s.get("baseUrl", "")] + (s.get("backupUrl") or []) if "/upgcxcode/" in u),
-                   None)
-        if url: break
-    if not url:
-        return None
-    ok = [r["mbps"] for r in (S.fetch(S.swap(url, h), 8 << 20, timeout=6) for h in PROBE_HOSTS)
-          if not r.get("err") and r.get("mbps")]
-    return statistics.median(ok) if ok else None
-
-
-def estimate_minutes(down_mbps, per_conn_mbps=None):
-    """預估整個測速耗時（分鐘，取 5 的倍數）。
-    耗時主要取決於並行數（大部分時間花在等逾時的節點），並行數的算法與測速相同：
-    頻寬 × 0.5 ÷ 單一連線速度（最多算 8K 碼率上限 PER_CONN_CAP），限制在 1–8。實測校正：耗時 ≈ 7 + 105 ÷ 並行數
-    （並行 4 → 29 分、3 → 43 分、2／1 → 69–80 分）。量不到單一連線速度時就用上限值。
-    1.6.0 起細測不再只取前 80 名，進度權重總和由 100 變成 124（見 WEIGHTS），先整體乘 1.25，等有實測再校正。"""
+def est_conc(down_mbps, country=None):
+    """預估並行數，算法與測速相同：頻寬 × 0.5 ÷ 單一連線速度（最多算 8K 碼率上限 PER_CONN_CAP），限制在 1–8。
+    單一連線速度用該國的典型值 TYPICAL_PER_CONN"""
     import speedtest as S
-    per = min(per_conn_mbps or S.PER_CONN_CAP, S.PER_CONN_CAP)
-    conc = max(1, min(8, int(0.5 * (down_mbps or 50) / per)))
-    m = 1.25 * (7 + 105 / conc)
-    return int(min(150, max(20, 5 * round(m / 5))))
+    per = TYPICAL_PER_CONN.get((country or "").upper()) or TYPICAL_PER_CONN["default"]
+    return max(1, min(8, int(0.5 * (down_mbps or 50) / min(per, S.PER_CONN_CAP))))
+
+
+def plan_secs(conc, n_nodes, keep1=None, keep2=None, item_probe=ITEM_SECS, item2=ITEM_SECS):
+    """各階段預估秒數 {階段: 秒}。keep1＝快篩通過的節點數、keep2＝進細測的節點數（未知就用 KEEP_RATIO、PROBE_PASS 推）"""
+    keep1 = int(n_nodes * KEEP_RATIO) if keep1 is None else keep1
+    keep2 = int(keep1 * PROBE_PASS) if keep2 is None else keep2
+    return dict(FIXED_SECS, stage1=n_nodes * N_SCREEN * ITEM_SECS / conc, probe=keep1 * item_probe / conc,
+                stage2=keep2 * N_TEST * item2 / conc)
+
+
+def fmt_minutes(secs):
+    """顯示用的分鐘數：20 分鐘以內取整（無條件進位），以上取 5 的倍數"""
+    m = secs / 60
+    return max(1, -int(-m // 1)) if m <= 20 else int(5 * round(m / 5))
+
+
+def estimate_minutes(down_mbps, country=None):
+    """網路檢查頁顯示的預計分鐘數（測速開始後由實測一路修正，見 App.tick）"""
+    import bili
+    return fmt_minutes(sum(plan_secs(est_conc(down_mbps, country), len(bili.nodes())).values()))
 
 
 def cjk_wrap(text, font, width):
@@ -227,13 +220,41 @@ class Runner(threading.Thread):
             def __getattr__(self, k): return None
 
         a = Args()
-        S.PROGRESS = lambda name, i, n: self.q.put(("progress", name, i, n))
-        stage = lambda n: self.q.put(("stage", n))
+        last_plan = [0.0]
 
-        stage("detect")
-        chk = S.dns_check()
+        def progress(name, i, n):
+            self.q.put(("progress", name, i, n))
+            # 快篩進行中每 30 秒依至今的結果重算一次後面各步的預估（快篩跑完才算會差很多：細測預估要等 20 分鐘才修正）
+            if name == "stage1" and time.time() - last_plan[0] >= 30:
+                last_plan[0] = time.time()
+                self.send_plan(S)
+        S.PROGRESS = progress
+        names = [n for n, _ in WEIGHTS]
+        self.n_nodes = min(len(bili.nodes()), a.limit_nodes or 10 ** 9)
+        self.cc = None
+        self.secs = {}   # 各階段實際耗時（寫進 state.json，日後校正 FIXED_SECS／ITEM_SECS 用）
+
+        def step(name, fn):
+            i = names.index(name) + 1
+            print(f"══ {time.strftime('%H:%M:%S')}  {i}/{len(names)} {t('st_' + name, 'zh-TW')}：開始 ══")
+            self.q.put(("stage", name))
+            t0 = time.time()
+            fn()
+            self.secs[name] = round(time.time() - t0)
+            print(f"══ {i}/{len(names)} {t('st_' + name, 'zh-TW')}：完成，耗時 {self.secs[name]} 秒 ══")
+            self.send_plan(S)
+
+        def detect():
+            nonlocal chk
+            chk = S.dns_check()
+            # step() 結束時就會送第一次預估，要先知道國家（並行數依國家的典型單連線速度推）
+            self.cc = (chk["exit"].get("country") or "XX").upper()
+
+        chk = None
+        step("detect", detect)
         e = chk["exit"]
-        cc = (e.get("country") or "XX").upper()
+        S.PRESET_DNS_CHECK = None if e.get("err") else chk   # env 步驟直接沿用，不重查（查失敗就讓 env 再試一次）
+        cc = self.cc = (e.get("country") or "XX").upper()
         if not chk["dns_ok"]:
             S.DNS = "doh"  # 系統 DNS 不代表當地：改用 Google DoH，帶自己出口 IP 的 ECS
             S.set_doh_ecs(e.get("ip"))
@@ -247,10 +268,59 @@ class Runner(threading.Thread):
         for name, fn in (("env", S.cmd_env), ("pool", S.cmd_pool), ("pick", S.cmd_pick), ("ceiling", S.cmd_ceiling),
                          ("stage1", S.cmd_stage1), ("probe", S.cmd_probe), ("stage2", S.cmd_stage2),
                          ("report", S.cmd_report)):
-            stage(name)
-            fn(cc, a)
+            step(name, lambda fn=fn: fn(cc, a))
+        S.STATE["stage_secs"] = self.secs
+        print(f"總耗時 {sum(self.secs.values()) // 60} 分 {sum(self.secs.values()) % 60} 秒；各階段（秒）：{self.secs}")
         json.dump(S.STATE, open(os.path.join(S.OUT, "state.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
         self.q.put(("done", S.OUT))
+
+    def send_plan(self, S):
+        """依目前已知的資訊（實際並行數、快篩通過幾個節點、快篩量到的速度）重算各階段預估秒數 → GUI。
+        快篩還在跑時，用至今的結果推估：有結果的節點裡「目前全部成功」的比例 × 節點數 ≈ 會通過幾個"""
+        bw = self.check.get("bw") or {}
+        conc = S.STATE.get("conc") or est_conc(bw.get("down_mbps"), self.cc)
+        keep1 = keep2 = None
+        item_probe = item2 = ITEM_SECS
+        if S.OUT and S.has("stage1.json"):
+            keep1 = len(S.load("stage1.json")["keep"])
+            item_probe, item2 = self.item_secs(S, S.load("stage1.json")["keep"])
+        elif S.OUT and S.has("stage1.jsonl"):
+            per = {}
+            for r in self.stage1_rows(S):
+                per.setdefault(r["host"], []).append(not r.get("err") and (r.get("bytes") or 0) > 0)
+            if len(per) >= 20:   # 太少時比例不可靠，維持預設比例
+                ok = [h for h, v in per.items() if all(v)]
+                keep1 = round(self.n_nodes * len(ok) / len(per))
+                item_probe, item2 = self.item_secs(S, ok)
+        if S.OUT and S.has("probe.json"):
+            keep2 = len(S.load("probe.json")["keep"])
+        self.q.put(("plan", plan_secs(conc, self.n_nodes, keep1, keep2, item_probe, item2)))
+
+    @staticmethod
+    def stage1_rows(S):
+        out = []
+        try:
+            for x in open(S.path("stage1.jsonl"), encoding="utf-8"):
+                try:
+                    out.append(json.loads(x))
+                except ValueError:   # 空行、寫到一半的最後一行
+                    pass
+        except OSError:
+            pass
+        return out
+
+    @classmethod
+    def item_secs(cls, S, keep):
+        """由快篩實測推估冷門探測（1MB）、細測（4MB，每筆最多 STAGE2_CAP 秒）每筆秒數：TTFB + 下載時間"""
+        import statistics
+        keep = set(keep)
+        rs = cls.stage1_rows(S)
+        rs = [r for r in rs if r["host"] in keep and not r.get("err") and r.get("mbps") and r.get("ttfb") is not None]
+        if not rs:
+            return ITEM_SECS, ITEM_SECS
+        ttfb = statistics.mean(r["ttfb"] / 1000 for r in rs)
+        mbps = statistics.median(r["mbps"] for r in rs)
+        return ttfb + 8 / mbps, min(ttfb + 32 / mbps, S.STAGE2_CAP)
 
 
 class FakeRunner(threading.Thread):
@@ -271,7 +341,7 @@ class FakeRunner(threading.Thread):
         os.makedirs(out, exist_ok=True)
         sm = dict(test_mode=True, country=self.country, time=time.strftime("%Y-%m-%d %H:%M"),
                   env=dict(exit=dict(ip="0.0.0.0", country=self.country, city="TEST", org="TEST ISP"),
-                           network=dict(kind="Wi-Fi"), bandwidth=dict(down_mbps=123.4, up_mbps=45.6, latency_ms=20),
+                           network=dict(kind="Wi-Fi"), bandwidth=dict(down_mbps=123.4, latency_ms=20),
                            login=True),
                   ceiling=500.0, default="upos-sz-mirror08ct.bilivideo.com",
                   recommended=["upos-sz-mirror08ct.bilivideo.com", "upos-sz-estghw.bilivideo.com"],
@@ -331,6 +401,8 @@ class App(tk.Tk):
         for v in (self.email_var, self.invite_var):   # 改了 email 或邀請碼 → 先前的驗證結果作廢
             v.trace_add("write", lambda *_: self.on_invite_edit())
         self.est_min = None
+        self.plan = None          # 測速中各階段預估秒數（Runner 每完成一步就依實測重算一次）
+        self.log_lines = []       # 詳細記錄視窗的內容（含時間）
         self.country = None
         self.testing = False
         self.install_id, self.first_run = install_info()
@@ -714,7 +786,7 @@ class App(tk.Tk):
         grid = ttk.Frame(body)
         grid.pack(fill="x")
         self.metric = {}
-        for i, k in enumerate(("m_down", "m_up", "m_lat", "m_vpn")):
+        for i, k in enumerate(("m_vpn", "m_down", "m_lat")):   # VPN 最先出結果，排第一
             cell = tk.Frame(grid, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
             cell.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else self.px(8), 0))
             grid.columnconfigure(i, weight=1, uniform="m")
@@ -731,7 +803,11 @@ class App(tk.Tk):
         self.check_bar = ttk.Progressbar(body, mode="indeterminate", style="Accent.Horizontal.TProgressbar")
         self.check_bar.pack(fill="x", pady=(self.px(14), 0))
         self.check_bar.start(12)
+        # 目前在做什麼（最新一行記錄）：分得出是卡住還是在等
+        self.logline = ttk.Label(body, text="", style="Tiny.TLabel", wraplength=self.wrap())
+        self.logline.pack(side="bottom", anchor="w")
         ttk.Button(foot, text="←  " + self.T("back"), command=self.show_email).pack(side="left")
+        ttk.Button(foot, text="📄  " + self.T("log_btn"), command=self.show_log).pack(side="left", padx=(self.px(10), 0))
         self.check_next = ttk.Button(foot, text=self.T("next") + "  →", style="Accent.TButton", command=self.show_login)
         self.check_next.pack(side="right")
         self.check_next.state(["disabled"])
@@ -749,11 +825,6 @@ class App(tk.Tk):
             vpn = netinfo.vpn_check()
             self.q.put(("check_vpn", gen, vpn))
             bw = netinfo.bandwidth()
-            if bw.get("down_mbps"):
-                try:
-                    bw["bili_per_conn_mbps"] = probe_per_conn()
-                except Exception:
-                    bw["bili_per_conn_mbps"] = None
             self.q.put(("check_done", gen, vpn, bw))
         except Exception as e:
             self.q.put(("check_done", gen, None, dict(err=str(e)[:80])))
@@ -775,12 +846,11 @@ class App(tk.Tk):
         fmt = lambda x, u: "-" if x is None else f"{x:g} {u}"
         self.metric["m_down"].config(text=fmt(down, "Mbps"),
                                      fg=C["ok"] if (down or 0) >= self.min_down() else C["err"])
-        self.metric["m_up"].config(text=fmt(bw.get("up_mbps"), "Mbps"))
         self.metric["m_lat"].config(text=fmt(bw.get("latency_ms"), "ms"))
         if vpn is not None: self.on_check_vpn(gen, vpn)
         # 網速與 VPN 只有參加抽獎才當門禁；單純測試（多半只是想建立自己的節點列表，網路環境常常比較複雜）只提示
         lottery = self.join.get() == "lottery"
-        self.est_min = estimate_minutes(down, bw.get("bili_per_conn_mbps")) if down else None
+        self.est_min = estimate_minutes(down, self.country) if down else None
         eta = "\n" + self.T("check_eta", min=self.est_min) if self.est_min else ""
         if vpn is None or (down is None and bw.get("err")):
             msg, ok = self.T("check_err", err=bw.get("err") or "?"), False
@@ -802,8 +872,8 @@ class App(tk.Tk):
         self.check_msg.config(text=cjk_wrap(msg, self.fonts["body"], self.px(540)), wraplength=0)
         if can_go:
             self.check_next.state(["!disabled"])
-        if not ok:
-            self.check_retry.pack(side="left", padx=(self.px(10), 0))
+        # 每次檢查完都能手動重測（行動網路等的速度起伏大，量到偏低的時候常常再測一次就正常）
+        self.check_retry.pack(side="left", padx=(self.px(10), 0))
 
     # ── 頁 2：測速目的（單純測試／參加抽獎＋必中獎邀請碼） ───────────
     def show_email(self):
@@ -1157,14 +1227,17 @@ class App(tk.Tk):
         self.stop_login()
         body, foot = self.page(5)
         ttk.Label(body, text=self.T("test_title"), style="H1.TLabel").pack()
-        self.text(body, self.T("test_desc", min=self.est_min or "30–110"), style="Muted.TLabel", justify="center").pack(
-            pady=(self.px(6), 0))
+        self.desc = self.text(body, self.T("test_desc", min=self.est_min or "30–110"), style="Muted.TLabel",
+                              justify="center")
+        self.desc.pack(pady=(self.px(6), 0))
         info = ttk.Frame(body, style="Soft.TFrame", padding=(self.px(16), self.px(10)))
         info.pack(fill="x", pady=(self.px(18), self.px(22)))
         self.env_label = ttk.Label(info, text="…", style="Soft.TLabel", justify="center")
         self.env_label.pack()
         self.stage_label = ttk.Label(body, text="", style="H2.TLabel")
         self.stage_label.pack(anchor="w")
+        self.stage_desc = ttk.Label(body, text="", style="Muted.TLabel", wraplength=self.wrap())
+        self.stage_desc.pack(anchor="w", pady=(self.px(2), 0))
         self.bar = ttk.Progressbar(body, mode="determinate", maximum=1000, style="Accent.Horizontal.TProgressbar")
         self.bar.pack(fill="x", pady=(self.px(8), self.px(6)))
         row = ttk.Frame(body)
@@ -1178,11 +1251,13 @@ class App(tk.Tk):
         self.logline = ttk.Label(body, text="", style="Tiny.TLabel", wraplength=self.wrap())
         self.logline.pack(side="bottom", anchor="w")
         ttk.Button(foot, text="■  " + self.T("stop_close"), command=self.stop_and_close).pack(side="left")
+        ttk.Button(foot, text="📄  " + self.T("log_btn"), command=self.show_log).pack(side="left", padx=(self.px(10), 0))
         self.testing = True
         self.protocol("WM_DELETE_WINDOW", self.stop_and_close)
         self.log_event("guaranteed" if self.invite_ok_code() else "lottery" if self.lottery_email() else "free",
                        self.lottery_email())
-        self.t0, self.frac = time.time(), 0.0
+        self.t0, self.frac, self.desc_total = time.time(), 0.0, None
+        self.plan, self.cur_stage, self.stage_t0, self.cur_prog, self.prog0 = None, None, time.time(), None, None
         if self.test_mode.get():
             FakeRunner(self.q, self.country).start()
         else:
@@ -1203,32 +1278,118 @@ class App(tk.Tk):
         self.pct.config(text=f"{int(self.frac * 100)}%")
 
     def on_stage(self, name):
-        base, _ = self.stage_base(name)
-        self.set_frac(base)
+        self.cur_stage, self.stage_t0, self.cur_prog, self.prog0 = name, time.time(), None, None
+        if not self.plan:
+            self.set_frac(self.stage_base(name)[0])
         idx = [n for n, _ in WEIGHTS].index(name) + 1 if name in dict(WEIGHTS) else 0
         self.stage_label.config(text=f"{idx}/{len(WEIGHTS)}  {self.T('st_' + name)}")
+        self.stage_desc.config(text=cjk_wrap(self.T("sd_" + name), self.fonts["body"], self.wrap()), wraplength=0)
         self.detail.config(text="")
+        self.update_desc()
 
     def on_progress(self, name, i, n):
-        base, w = self.stage_base(name)
-        self.set_frac(base + w * (i / max(1, n)))
+        if name == self.cur_stage:
+            self.cur_prog = (i, n)
+            if self.prog0 is None:
+                self.prog0 = (time.time(), i)   # 速度從這一步第一次回報進度起算（快篩：試連、先記完連不上的節點之後）
+        if not self.plan:
+            base, w = self.stage_base(name)
+            self.set_frac(base + w * (i / max(1, n)))
         self.detail.config(text=f"{i} / {n}")
+
+    def on_plan(self, plan):
+        self.plan = plan
+        self.update_desc()
+
+    def rate(self):
+        """目前這步的實際速度（筆／秒）：從第一次回報進度起算，已完成 3% 以上且跑了 10 秒以上才算，否則 None"""
+        if not self.prog0 or not self.cur_prog: return None
+        (t0, i0), (i, n) = self.prog0, self.cur_prog
+        el, di = time.time() - t0, i - i0
+        return di / el if n and di >= max(3, (n - i0) * 0.03) and el > 10 else None
+
+    def remaining_secs(self):
+        """預估剩餘秒數：目前這步有實際速度（rate）就用它推算，否則用預估秒數扣掉已經過的時間；
+        再加上後面各步的預估秒數。還沒有預估回 None"""
+        if not self.plan or not self.cur_stage: return None
+        names = [n for n, _ in WEIGHTS]
+        r = self.rate()
+        if r:
+            i, n = self.cur_prog
+            left = (n - i) / r
+        else:
+            left = max(self.plan.get(self.cur_stage, 0) - (time.time() - self.stage_t0), 0)
+        after = names[names.index(self.cur_stage) + 1:] if self.cur_stage in names else []
+        return left + sum(self.plan.get(s, 0) for s in after)
+
+    def update_desc(self):
+        """標題下「預計約需 N 分鐘」改成最新預估的總時間（已經過 + 預估剩餘）。每秒由 tick 檢查，
+        但跟目前顯示的差 2 分鐘以上、且超過 10% 才改，免得數字一直跳"""
+        rem = self.remaining_secs()
+        if rem is None or not (hasattr(self, "desc") and self.desc.winfo_exists()): return
+        total, shown = time.time() - self.t0 + rem, self.desc_total
+        if shown is not None and abs(total - shown) < max(120, 0.1 * shown): return
+        if shown is not None and fmt_minutes(total) == fmt_minutes(shown): return   # 顯示出來一樣（20 分鐘以上取 5 的倍數）
+        if shown is not None and self.cur_stage in ("stage1", "probe", "stage2") and not self.rate():
+            # 這幾步剛開始時剩餘時間還是事前預估，幾秒後就改用實際速度推算；先不改標題，免得 25 → 30 → 25 來回跳
+            return
+        self.desc_total = total
+        # 寫進詳細記錄（會隨報告送出），事後對照預估與實際耗時
+        el = time.time() - self.t0
+        print(f"預計總時間：約 {fmt_minutes(total)} 分鐘" + (f"（原本約 {fmt_minutes(shown)} 分鐘）" if shown else "")
+              + f"；已經過 {int(el // 60)}:{int(el % 60):02d}，目前在「{t('st_' + self.cur_stage, 'zh-TW')}」", flush=True)
+        txt = self.T("test_desc", min=fmt_minutes(total))
+        self.desc.config(text=cjk_wrap(txt, self.fonts["body"], self.wrap()), wraplength=0)
 
     def on_env(self, d):
         self.env_label.config(text=f"📍 {d['country']} {d.get('city') or ''}　·　{d.get('org') or ''}\n"
                                    f"DNS：{self.T('dns_doh') if d.get('doh') else self.T('dns_sys')}")
 
     def on_log(self, line):
+        line = f"{time.strftime('%H:%M:%S')}  {line}"
+        self.log_lines.append(line)
         if hasattr(self, "logline") and self.logline.winfo_exists():
             self.logline.config(text=line[:160])
+        w = getattr(self, "log_text", None)
+        if w is not None and w.winfo_exists():
+            at_end = w.yview()[1] >= 0.999   # 使用者往上捲在看舊記錄時就不要自動捲到底
+            w.config(state="normal")
+            w.insert("end", line + "\n")
+            w.config(state="disabled")
+            if at_end: w.see("end")
+
+    def show_log(self):
+        """詳細記錄視窗：每一步的開始／完成與耗時、各階段的輸出（同 run.log），測速中持續更新"""
+        w = getattr(self, "log_win", None)
+        if w is not None and w.winfo_exists():
+            w.deiconify(); w.lift()
+            return
+        w = self.log_win = tk.Toplevel(self)
+        w.title(self.T("log_btn"))
+        w.geometry(f"{self.px(760)}x{self.px(480)}")
+        w.configure(bg=C["card"])
+        sb = ttk.Scrollbar(w)
+        sb.pack(side="right", fill="y")
+        t = self.log_text = tk.Text(w, wrap="word", font=self.fonts["small"], yscrollcommand=sb.set, bg=C["card"],
+                                    fg=C["text"], relief="flat", padx=self.px(10), pady=self.px(8))
+        t.pack(fill="both", expand=True)
+        sb.config(command=t.yview)
+        t.insert("end", "".join(x + "\n" for x in self.log_lines))
+        t.config(state="disabled")
+        t.see("end")
 
     def tick(self):
         if not (hasattr(self, "eta") and self.eta.winfo_exists()) or not self.testing: return
         el = time.time() - self.t0
         txt = f"⏱  {self.T('elapsed')} {int(el // 60)}:{int(el % 60):02d}"
-        if self.frac > 0.15:
+        rem = self.remaining_secs()
+        if rem is not None:
+            self.set_frac(el / max(1.0, el + rem))   # 有預估時進度條依時間走，與剩餘時間一致
+            txt += "　·　" + self.T("remaining", m=int(rem // 60) + 1)
+        elif self.frac > 0.15:
             txt += "　·　" + self.T("remaining", m=int(el * (1 - self.frac) / self.frac // 60) + 1)
         self.eta.config(text=txt)
+        self.update_desc()
         self.after(1000, self.tick)
 
     def stop_and_close(self):
@@ -1261,7 +1422,7 @@ class App(tk.Tk):
                 (self.T("f_isp"), e.get("org") or "-"),
                 (self.T("f_ip"), e.get("ip") or "-"),
                 (self.T("f_network"), (n.get("kind") or "-") + (f"（{n['kind_note']}）" if n.get("kind_note") else "")),
-                (self.T("f_bw"), f"↓ {bw.get('down_mbps')}  /  ↑ {bw.get('up_mbps')} Mbps"),
+                (self.T("f_bw"), f"↓ {bw.get('down_mbps')} Mbps"),
                 (self.T("f_login"), self.T("yes") if env.get("login") else self.T("no480")),
                 (self.T("f_email"), (email + "  ·  " + (self.T("join_invite") if self.invite_ok_code()
                                                          else self.T("join_lottery"))) if email else self.T("none")),
@@ -1361,10 +1522,13 @@ class App(tk.Tk):
                 token=CONFIG.get("token", ""), action="report", app_version=APP_VERSION, lang=self.lang,
                 test_mode=bool(self.test_mode.get()), email=email, no_compensation=bool(self.no_email.get()),
                 invite_code=self.invite_ok_code() if email else "",
-                gift=gift_for(sm["country"]), extension_url=CONFIG.get("extension_url") or EXT_URL_DEFAULT,
+                extension_url=CONFIG.get("extension_url") or EXT_URL_DEFAULT,
+                # 詳細記錄（同「📄 詳細記錄」視窗：含網路檢查頁、每步開始／完成與耗時），作者事後分析用；
+                # 只有測速時印出的訊息，不含 cookie、email
+                log="\n".join(self.log_lines)[-LOG_MAX:],
                 meta=dict(country=sm["country"], city=e.get("city"), isp=e.get("org"), ip=e.get("ip"),
                           network=(sm["env"].get("network") or {}).get("kind"), time=sm.get("time"),
-                          down_mbps=bw.get("down_mbps"), up_mbps=bw.get("up_mbps"), latency_ms=bw.get("latency_ms"),
+                          down_mbps=bw.get("down_mbps"), latency_ms=bw.get("latency_ms"),
                           ceiling=sm.get("ceiling"), default=sm.get("default"), login=sm["env"].get("login"),
                           n_nodes=self.n_nodes()),
                 text=self.summary_text,
@@ -1423,8 +1587,7 @@ class App(tk.Tk):
             self.text(body, self.T("thanks_lead", n=self.n_nodes(), country=country), justify="center").pack(
                 pady=(self.px(12), self.px(16)))
             if email:   # 參加抽獎才有後續步驟
-                g = gift_for(country)
-                gift = self.T("gift_word_v", gift=f"{g['vendor']} {g['amount']}".strip()) if g else self.T("gift_word")
+                gift = self.T("gift_word")
                 box = ttk.Frame(body, style="Soft.TFrame", padding=(self.px(18), self.px(14)))
                 box.pack(fill="x")
                 ttk.Label(box, text=self.T("thanks_next"), style="Soft.TLabel", font=self.fonts["h2"]).pack(anchor="w")

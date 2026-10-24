@@ -1,14 +1,16 @@
 /**
  * Bilibili CDN 測速報告接收端（Google Apps Script 網頁應用程式）。
  * 測速 app 測完後 POST JSON 到本網址，本腳本會：
- *   1. 把 REPORT.md / summary.json 當附件寄給「部署者自己」（主旨含報告編號 #xxxxxxxx，方便搜尋）
+ *   1. 把 REPORT.md / summary.json / run.log（詳細記錄，app 1.9.1 起）當附件寄給「部署者自己」（主旨含報告編號 #xxxxxxxx，方便搜尋）
  *   2. 另存一份到 Google 雲端硬碟資料夾「CDN SpeedTest Reports」
  *   3. 在試算表「CDN SpeedTest Log」新增一列（email、國家、ISP、頻寬、Gmail 連結、報告檔連結…）
  *   4. 若測試者留了 email，用部署者的 Gmail 寄一封確認信給測試者（依 app 語言；每日上限 DAILY_CONFIRM_LIMIT）
  *   5. 若帶了「必中獎邀請碼」：到 Neon 再驗證一次（未被作廢即有效），正式報告會累計使用次數
  * 另外提供 action=verify_invite：app 在「參加方式」頁即時驗證邀請碼與 email 是否相符（不需要自架伺服器）。
  *          action=log：app 的使用紀錄（安裝、執行、測速完成、發送…），寫進 Neon 的 app_events（npm run events:show 查看）。
- *          action=lotteries：進行中的抽獎（Neon 的 lotteries，npm run lottery:add 新增），app 在「測速目的」頁用 HTML 顯示。
+ *          action=lotteries：進行中的抽獎（Neon 的 v1 lotteries），1.7.0（含）以前的 app 在「測速目的」頁用 HTML 顯示；
+ *          新版 app 改讀 report worker 的 /v2/lotteries，這條路與 v1 資料表留給舊版 app，不要移除。
+ * 「禮物卡」欄（試算表）與確認信的面額只有舊版 app 送 gift 時才有；新版 app 不送（獎品以抽獎 v2 為準）。
  *
  * 設定：專案設定 → 指令碼屬性 → TOKEN（與 app 的 config.json 的 token 相同）。
  *       NEON_URL：Neon 的 Postgres 連線字串（postgresql://…），邀請碼功能用；設好後在編輯器執行 testNeon 確認連線。
@@ -217,6 +219,9 @@ function handleReport(body) {
   const report = Utilities.newBlob(String(body.report || ''), 'text/markdown', `${base}-REPORT.md`);
   const summary = Utilities.newBlob(JSON.stringify(body.summary || {}, null, 1), 'application/json',
                                     `${base}-summary.json`);
+  // 詳細記錄（app 1.9.1 起才有；舊版沒送就不附）
+  const log = body.log ? Utilities.newBlob(String(body.log), 'text/plain', `${base}-run.log`) : null;
+  const files = log ? [report, summary, log] : [report, summary];
   const subject = `[CDN 測速]${test ? '[TEST]' : ''}${guaranteed ? '[必中]' : ''} ${m.country || '?'} ${m.city || ''} ｜ ${m.isp || ''} ｜ ` +
                   `${m.network || ''} ｜ ${email || '無 email'} #${rid}`;
   const text = [
@@ -224,20 +229,20 @@ function handleReport(body) {
     '',
     `Email：${email || (body.no_compensation ? '（純測速，不參加抽獎）' : '（未提供）')}`,
     `參加方式：${join}${inviteNote ? `（邀請碼 ${inviteNote}）` : ''}`,
-    `禮物卡：${g || '（未設定）'}`,
     `IP：${m.ip || '-'}`,
     `測試時間：${m.time || '-'}`,
     `語言：${body.lang || '-'}　App 版本：${body.app_version || '-'}`,
     `報告編號：#${rid}`,
   ].join('\n');
   MailApp.sendEmail({ to: Session.getEffectiveUser().getEmail(), subject, body: text, name: 'CDN SpeedTest',
-                      attachments: [report, summary] });
+                      attachments: files });
 
   // 2) 雲端硬碟
   const it = DriveApp.getFoldersByName(FOLDER_NAME);
   const folder = it.hasNext() ? it.next() : DriveApp.createFolder(FOLDER_NAME);
   const rf = folder.createFile(report);
   folder.createFile(summary);
+  if (log) folder.createFile(log);
 
   // 4) 確認信給測試者
   let confirm = '';
