@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "依最新實測更新台灣的建議節點，台灣大哥大行動網路可選到更快的節點",
+        "zh_CN": "根据最新实测更新台湾的推荐节点，台湾大哥大移动网络可选到更快的节点",
+        "en": "Updated Taiwan's recommended nodes based on the latest tests, adding a faster option for Taiwan Mobile's mobile network",
+        "ja": "最新の実測をもとに台湾のおすすめノードを更新し、台湾大哥大（台湾モバイル）のモバイル回線向けに速いノードを追加",
+        "ko": "최신 실측을 바탕으로 대만 추천 노드를 업데이트해 대만 모바일(Taiwan Mobile) 모바일 네트워크에서 더 빠른 노드를 고를 수 있어요"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.7.0",
