@@ -8,10 +8,17 @@
 # p12 與密碼的備份在私人 repo 的 tools/cdn-speedtest-app/signing/。
 #
 # 用法：Actions › Speedtest Mac › Run workflow。產物 CDNSpeedTest-mac.zip 在該次 run 的 Artifacts。
+#   簽章後先送公證、把還沒 staple 的 zip（含 submission ID）存成 CDNSpeedTest-mac-unstapled，再等公證最多 4 小時。
+#   Apple 處理太久而逾時的話，再跑一次並填 resume_run_id＝那次的 run ID：不重新打包，接著等同一份送件，通過後 staple。
 name: Speedtest Mac
 
 on:
   workflow_dispatch:
+    inputs:
+      resume_run_id:
+        description: 接續之前逾時的 run（填 run ID；空白＝重新打包、簽章、送公證）
+        type: string
+        default: ""
 
 concurrency:
   group: speedtest-mac-${{ github.ref }}
@@ -20,13 +27,16 @@ concurrency:
 jobs:
   build:
     runs-on: macos-26
+    timeout-minutes: 300
     env:
+      RESUME_RUN_ID: ${{ inputs.resume_run_id }}
       PY_VERSION: "3.13.17"   # python.org universal2 安裝檔（自帶 Tk 8.6），見 build-mac.sh
       SIGN_IDENTITY: "Developer ID Application: Wei chung Hsieh (RN6N3K4U8J)"
     steps:
       - uses: actions/checkout@v4
 
       - name: 安裝 python.org Python ${{ env.PY_VERSION }}（universal2）
+        if: env.RESUME_RUN_ID == ''
         run: |
           set -euo pipefail
           pkg="$RUNNER_TEMP/python.pkg"
@@ -45,11 +55,18 @@ jobs:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         run: |
           set -euo pipefail
+          need=(ASC_ISSUER_ID ASC_KEY_ID ASC_KEY_P8)
+          [ -n "$RESUME_RUN_ID" ] || need+=(CDNST_CONFIG_JSON DEVID_P12_BASE64 DEVID_P12_PASSWORD)
           missing=0
-          for v in CDNST_CONFIG_JSON DEVID_P12_BASE64 DEVID_P12_PASSWORD ASC_ISSUER_ID ASC_KEY_ID ASC_KEY_P8; do
+          for v in "${need[@]}"; do
             [ -n "${!v}" ] || { echo "::error::repo secret $v 是空的或不存在"; missing=1; }
           done
           [ $missing = 0 ] || exit 1
+          key="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$key"
+          grep -q "BEGIN PRIVATE KEY" "$key" || { echo "::error::ASC_KEY_P8 看起來不是 .p8 檔內容"; exit 1; }
+          { echo "ASC_KEY_PATH=$key"; echo "ASC_KEY_ID=$ASC_KEY_ID"; echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"; } >> "$GITHUB_ENV"
+          [ -z "$RESUME_RUN_ID" ] || exit 0   # 接續之前的 run：不打包，不需要簽章憑證與 config.json
           printf '%s' "$CDNST_CONFIG_JSON" > tools/cdn-speedtest-app/config.json
 
           # 簽章憑證放進這次專用的暫時鑰匙圈，codesign 不會跳授權視窗
@@ -65,31 +82,73 @@ jobs:
           rm -f "$RUNNER_TEMP/devid.p12"
           security find-identity -v -p codesigning "$kc" | grep -q "$SIGN_IDENTITY" ||
             { echo "::error::p12 裡沒有 $SIGN_IDENTITY"; exit 1; }
-
-          key="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-          printf '%s\n' "$ASC_KEY_P8" > "$key"
-          grep -q "BEGIN PRIVATE KEY" "$key" || { echo "::error::ASC_KEY_P8 看起來不是 .p8 檔內容"; exit 1; }
-          { echo "KEYCHAIN=$kc"; echo "ASC_KEY_PATH=$key"; echo "ASC_KEY_ID=$ASC_KEY_ID"; echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"; } >> "$GITHUB_ENV"
+          echo "KEYCHAIN=$kc" >> "$GITHUB_ENV"
 
       - name: 打包並簽章
+        if: env.RESUME_RUN_ID == ''
         env:
           CDNST_SIGN_IDENTITY: ${{ env.SIGN_IDENTITY }}
         run: npm run package:mac
 
-      - name: 公證（notarytool）並 staple
+      - name: 最近的公證送件（被拒的印出原因）
+        run: |
+          set -euo pipefail
+          auth=(--key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
+          xcrun notarytool history "${auth[@]}" --output-format json | python3 -c '
+          import json, sys
+          for h in json.load(sys.stdin).get("history", [])[:8]:
+              print(h["id"], h["status"], h["createdDate"], h.get("name", ""))
+          ' | tee "$RUNNER_TEMP/history.txt"
+          awk '$2 == "Invalid" || $2 == "Rejected" { print $1 }' "$RUNNER_TEMP/history.txt" | head -3 |
+            while read -r id; do echo "== $id"; xcrun notarytool log "$id" "${auth[@]}" || true; done
+
+      - name: 送公證
+        if: env.RESUME_RUN_ID == ''
+        run: |
+          set -euo pipefail
+          out=$(xcrun notarytool submit release/CDNSpeedTest-mac.zip --key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" --output-format json)
+          echo "$out"
+          id=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          echo "$id" > release/notary-submission.txt
+          echo "公證 submission：\`$id\`（run $GITHUB_RUN_ID；逾時的話重跑並填 resume_run_id=$GITHUB_RUN_ID）" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 保存還沒 staple 的 zip（逾時可用 resume_run_id 接續）
+        if: env.RESUME_RUN_ID == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: CDNSpeedTest-mac-unstapled
+          path: |
+            release/CDNSpeedTest-mac.zip
+            release/notary-submission.txt
+          retention-days: 30
+
+      - name: 取回之前 run 的 zip
+        if: env.RESUME_RUN_ID != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: CDNSpeedTest-mac-unstapled
+          path: release
+          run-id: ${{ env.RESUME_RUN_ID }}
+          github-token: ${{ github.token }}
+
+      - name: 等公證結果並 staple
         run: |
           set -euo pipefail
           app=release/CDNSpeedTest.app
           zip=release/CDNSpeedTest-mac.zip
-          out=$(xcrun notarytool submit "$zip" --key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" \
-            --wait --timeout 30m --output-format json)
-          echo "$out"
-          id=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
-          status=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+          id=$(cat release/notary-submission.txt)
+          echo "submission $id"
+          auth=(--key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
+          xcrun notarytool wait "$id" "${auth[@]}" --timeout 4h ||
+            { echo "::error::公證還沒處理完（submission $id）：稍後再跑一次並填 resume_run_id=${RESUME_RUN_ID:-$GITHUB_RUN_ID}"; exit 1; }
+          status=$(xcrun notarytool info "$id" "${auth[@]}" --output-format json |
+            python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
           if [ "$status" != Accepted ]; then
-            xcrun notarytool log "$id" --key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID"
+            xcrun notarytool log "$id" "${auth[@]}"
             echo "::error::公證沒有通過（$status）"; exit 1
           fi
+          rm -rf "$app"; ditto -x -k "$zip" release/   # 用送公證的那一份 staple
           xcrun stapler staple "$app"
           xcrun stapler validate "$app"
           spctl -a -vvv -t exec "$app"

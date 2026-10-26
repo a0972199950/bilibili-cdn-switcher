@@ -76,7 +76,9 @@ npm run package:mac      # = bash tools/cdn-speedtest-app/build-mac.sh → relea
   實測不需要任何 entitlements）。
 - **正式版（簽章＋公證）**：Actions › **Speedtest Mac** › Run workflow（`.github/workflows/speedtest-mac.yml`）。macOS runner 裝 python.org
   Python → 從 secrets 還原 `config.json`、p12（暫時鑰匙圈）、ASC 金鑰 → `npm run package:mac`（Developer ID 簽章）→
-  `notarytool submit --wait` → `stapler staple` → 重新壓 zip，放在該次 run 的 Artifacts（`CDNSpeedTest-mac`）。
+  `notarytool submit`（先把還沒 staple 的 zip 存成 `CDNSpeedTest-mac-unstapled`）→ `notarytool wait`（最多 4 小時）→ `stapler staple` →
+  重新壓 zip，放在該次 run 的 Artifacts（`CDNSpeedTest-mac`）。Apple 處理太久逾時的話，重跑並填 `resume_run_id`＝那次的 run ID，
+  不重新打包、接著等同一份送件。
   secrets 與 p12 的來源見 workflow 開頭；p12 與密碼的備份在私人 repo 的 `tools/cdn-speedtest-app/signing/`。
 - 開發：`tools/cdn-speedtest-app/.venv/bin/python tools/cdn-speedtest-app/app.py`。
 
