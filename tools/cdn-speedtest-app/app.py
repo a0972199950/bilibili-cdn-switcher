@@ -18,6 +18,15 @@ from tkinter import ttk, messagebox
 
 APP_VERSION = "1.9.1"
 MAC = sys.platform == "darwin"
+if MAC:
+    # python.org 的 Mac 版 Python（打包用的）不讀系統鑰匙圈，預設 CA 檔也不存在，HTTPS 全部驗證失敗：改用 certifi 的 CA
+    import ssl
+    if not os.path.isfile(ssl.get_default_verify_paths().openssl_cafile or ""):
+        try:
+            import certifi
+            os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+        except ImportError:
+            pass
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
@@ -392,8 +401,10 @@ class App(tk.Tk):
         self.setup_fonts()
         self.setup_style()
         self.configure(bg=C["bg"])
-        self.geometry(f"{self.px(680)}x{self.px(760)}")
-        self.minsize(self.px(600), self.px(680))
+        # 螢幕矮（例如 768 高的 Mac）時縮短視窗，免得底部按鈕被 Dock／工作列擋住；內容會捲動
+        h = min(self.px(760), self.winfo_screenheight() - self.px(110))
+        self.geometry(f"{self.px(680)}x{h}+{max(0, (self.winfo_screenwidth() - self.px(680)) // 2)}+{self.px(30)}")
+        self.minsize(self.px(600), min(self.px(680), h))
         self.set_icon()
         self.q = queue.Queue()
         self.log = LogWriter(self.q)
