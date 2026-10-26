@@ -83,6 +83,12 @@
   "stGuideText": {
     "message": "Open a bilibili video and start playback, then click the extension icon and press \"Test node speeds\"."
   },
+  "stGuideTextIphone": {
+    "message": "Tap the page menu (≡) at the left of the address bar and choose \"Request Desktop Website\", open a bilibili video and start playback, then tap BiBoost in the page menu and press \"Test node speeds\"."
+  },
+  "stGuideTextIpad": {
+    "message": "Open a bilibili video and start playback, tap the Extensions icon in the address bar, choose BiBoost, then press \"Test node speeds\"."
+  },
   "stGuideBtn": {
     "message": "Go to a sample video"
   },
@@ -490,6 +496,9 @@
   },
   "autoDetectText": {
     "message": "Not sure which nodes are fast? The official speed test tool tests 300+ nodes and adds the 10 fastest to this list for you."
+  },
+  "autoDetectTextIos": {
+    "message": "Not sure which nodes are fast? Run the official speed test tool on a computer to test 300+ nodes, then scan the QR code it shows with this device to add the 10 fastest to this list."
   },
   "autoDetectBtn": {
     "message": "⚡ Auto-detect & add"

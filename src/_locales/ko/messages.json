@@ -83,6 +83,12 @@
   "stGuideText": {
     "message": "bilibili 영상을 열어 재생을 시작한 뒤, 확장 프로그램 아이콘을 눌러 「노드별 속도 테스트」를 누르세요."
   },
+  "stGuideTextIphone": {
+    "message": "주소창 왼쪽의 페이지 메뉴(≡)에서 「데스크탑 웹 사이트 요청」을 선택하고 bilibili 영상을 열어 재생한 뒤, 페이지 메뉴에서 BiBoost를 눌러 「노드별 속도 테스트」를 누르세요."
+  },
+  "stGuideTextIpad": {
+    "message": "bilibili 영상을 열어 재생을 시작한 뒤, 주소창의 확장 프로그램 아이콘에서 BiBoost를 선택하고 「노드별 속도 테스트」를 누르세요."
+  },
   "stGuideBtn": {
     "message": "샘플 영상으로 이동"
   },
@@ -490,6 +496,9 @@
   },
   "autoDetectText": {
     "message": "어떤 노드가 빠른지 모르겠나요? 공식 속도 테스트 도구가 300개 이상의 노드를 테스트해 가장 빠른 10개를 이 목록에 자동으로 추가합니다."
+  },
+  "autoDetectTextIos": {
+    "message": "어떤 노드가 빠른지 모르겠나요? 컴퓨터에서 공식 속도 테스트 도구로 300개 이상의 노드를 테스트한 뒤, 화면의 QR 코드를 이 기기로 스캔하면 가장 빠른 10개가 이 목록에 추가됩니다."
   },
   "autoDetectBtn": {
     "message": "⚡ 자동 감지 후 추가"

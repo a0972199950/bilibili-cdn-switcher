@@ -23,7 +23,7 @@ const STRINGS = {
     manage: "Manage Extensions",
     installed: "Installed",
     otherExt: "Other extension",
-    alwaysAllow: "Always Allow…",
+    alwaysAllow: "Always Allow",
     cancel: "Cancel",
     everySite: "Always Allow on Every Website",
     allowOneDay: "Allow for One Day",
@@ -33,13 +33,13 @@ const STRINGS = {
     safari: "Safari",
     extensions: "Extensions",
     allowExt: "Allow Extension",
-    sitePerm: "bilibili.com",
     allow: "Allow",
     general: "General",
     tabs: "Tabs",
     advanced: "Advanced",
     alwaysAllowSite: "Always Allow on This Website",
     openSafari: "Open bilibili in Safari",
+    openSettings: "Open BiBoost in Settings",
     openSafariSettings: "Quit and Open Safari Settings",
     ipad: {
       title: "Turn on the extension on iPad",
@@ -47,7 +47,7 @@ const STRINGS = {
         "Tap the button below to open bilibili.com in Safari.",
         "Tap the Extensions icon on the right of the address bar, then tap <b>Manage Extensions</b>.",
         "Turn on <b>BiBoost - Video Speedup</b>, then tap ✓ to finish.",
-        "Tap the Extensions icon again, tap <b>BiBoost</b>, choose <b>Always Allow…</b>, then <b>Always Allow on This Website</b>. Reload the page and you're done.",
+        "Tap the Extensions icon again, tap <b>BiBoost</b>, choose <b>Always Allow</b>. Reload the page and you're done.",
       ],
       alt: "You can also turn it on in <b>Settings › Apps › Safari › Extensions</b>.",
     },
@@ -56,7 +56,7 @@ const STRINGS = {
       steps: [
         "Open the <b>Settings</b> app and go to <b>Apps › Safari › Extensions</b>.",
         "Tap <b>BiBoost - Video Speedup</b> and turn on <b>Allow Extension</b>.",
-        "Under website permissions, set <b>bilibili.com</b> to <b>Allow</b>.",
+        "Under website permissions, set every bilibili site (<b>bilibili.com</b>, <b>m.bilibili.com</b> and so on) to <b>Allow</b>.",
         "Tap the button below to open bilibili.com in Safari. Reload the page and you're done.",
       ],
       alt: "On iOS 17 or earlier, the path is <b>Settings › Safari › Extensions</b>. You can also tap <b>Manage Extensions</b> in Safari's page menu.",
@@ -85,7 +85,7 @@ const STRINGS = {
     manage: "管理延伸功能",
     installed: "已安裝",
     otherExt: "其他延伸功能",
-    alwaysAllow: "永遠允許⋯",
+    alwaysAllow: "永遠允許",
     cancel: "取消",
     everySite: "一律在每個網站允許",
     allowOneDay: "允許一天",
@@ -95,13 +95,13 @@ const STRINGS = {
     safari: "Safari",
     extensions: "延伸功能",
     allowExt: "允許延伸功能",
-    sitePerm: "bilibili.com",
     allow: "允許",
     general: "一般",
     tabs: "標籤頁",
     advanced: "進階",
     alwaysAllowSite: "一律在此網站允許",
     openSafari: "用 Safari 開啟 bilibili",
+    openSettings: "在「設定」中開啟 BiBoost",
     openSafariSettings: "結束並開啟 Safari 設定",
     ipad: {
       title: "在 iPad 上開啟擴充功能",
@@ -109,7 +109,7 @@ const STRINGS = {
         "點下方按鈕，用 Safari 打開 bilibili.com。",
         "點網址列右側的延伸功能圖示，再點<b>「管理延伸功能」</b>。",
         "打開<b>「嗶速 - 海外影片加速」</b>的開關，點右上角的 ✓ 完成。",
-        "再點一次延伸功能圖示，點<b>「嗶速」</b>，選擇<b>「永遠允許⋯」</b>，再選<b>「一律在此網站允許」</b>。重新整理頁面就完成了。",
+        "再點一次延伸功能圖示，點<b>「嗶速」</b>，選擇<b>「永遠允許」</b>。重新整理頁面就完成了。",
       ],
       alt: "也可以到<b>「設定」›「App」›「Safari」›「延伸功能」</b>開啟。",
     },
@@ -118,7 +118,7 @@ const STRINGS = {
       steps: [
         "打開<b>「設定」</b>App，前往<b>「App」›「Safari」›「延伸功能」</b>。",
         "點<b>「嗶速 - 海外影片加速」</b>，打開<b>「允許延伸功能」</b>。",
-        "在下方的網站權限中，把<b>「bilibili.com」</b>設為<b>「允許」</b>。",
+        "在下方的網站權限中，把 bilibili 相關的網站（<b>「bilibili.com」</b>、<b>「m.bilibili.com」</b>等）都設為<b>「允許」</b>。",
         "點下方按鈕，用 Safari 打開 bilibili.com，重新整理頁面就完成了。",
       ],
       alt: "iOS 17 以前的路徑是<b>「設定」›「Safari」›「延伸功能」</b>。也可以在 Safari 網址列的頁面選單點<b>「管理延伸功能」</b>。",
@@ -147,7 +147,7 @@ const STRINGS = {
     manage: "管理扩展",
     installed: "已安装",
     otherExt: "其他扩展",
-    alwaysAllow: "始终允许…",
+    alwaysAllow: "始终允许",
     cancel: "取消",
     everySite: "在所有网站上始终允许",
     allowOneDay: "允许一天",
@@ -157,13 +157,13 @@ const STRINGS = {
     safari: "Safari浏览器",
     extensions: "扩展",
     allowExt: "允许扩展",
-    sitePerm: "bilibili.com",
     allow: "允许",
     general: "通用",
     tabs: "标签页",
     advanced: "高级",
     alwaysAllowSite: "在此网站上始终允许",
     openSafari: "用 Safari 打开 bilibili",
+    openSettings: "在“设置”中打开 BiBoost",
     openSafariSettings: "退出并打开 Safari 设置",
     ipad: {
       title: "在 iPad 上开启扩展",
@@ -171,7 +171,7 @@ const STRINGS = {
         "点下方按钮，用 Safari 打开 bilibili.com。",
         "点地址栏右侧的扩展图标，再点<b>“管理扩展”</b>。",
         "打开<b>“哔速 - 海外视频加速”</b>的开关，点右上角的 ✓ 完成。",
-        "再点一次扩展图标，点<b>“哔速”</b>，选择<b>“始终允许…”</b>，再选<b>“在此网站上始终允许”</b>。刷新页面就完成了。",
+        "再点一次扩展图标，点<b>“哔速”</b>，选择<b>“始终允许”</b>。刷新页面就完成了。",
       ],
       alt: "也可以到<b>“设置”›“App”›“Safari浏览器”›“扩展”</b>开启。",
     },
@@ -180,7 +180,7 @@ const STRINGS = {
       steps: [
         "打开<b>“设置”</b>App，前往<b>“App”›“Safari浏览器”›“扩展”</b>。",
         "点<b>“哔速 - 海外视频加速”</b>，打开<b>“允许扩展”</b>。",
-        "在下方的网站权限中，把<b>“bilibili.com”</b>设为<b>“允许”</b>。",
+        "在下方的网站权限中，把 bilibili 相关的网站（<b>“bilibili.com”</b>、<b>“m.bilibili.com”</b>等）都设为<b>“允许”</b>。",
         "点下方按钮，用 Safari 打开 bilibili.com，刷新页面就完成了。",
       ],
       alt: "iOS 17 及更早版本的路径是<b>“设置”›“Safari浏览器”›“扩展”</b>。也可以在 Safari 地址栏的页面菜单点<b>“管理扩展”</b>。",
@@ -218,7 +218,7 @@ function ipadSteps(s) {
     mock(s, urlbar(s)),
     mock(s, `${urlbar(s, { hlIcon: true })}<div class="m-menu"><div class="m-row hl">${EXT_ICON}<span>${s.manage}</span></div><div class="m-row dim"><span class="m-dot"></span><span>${s.otherExt}</span></div></div>`),
     mock(s, `<div class="m-sheet"><div class="m-sheet-title">${s.manage}<span class="m-done">✓</span></div><div class="m-label">${s.installed}</div><div class="m-row">${APP_ICON}<span class="grow">${s.name}</span>${toggle(true, true)}</div><div class="m-row dim"><span class="m-dot"></span><span class="grow">${s.otherExt}</span>${toggle(true)}</div></div>`),
-    mock(s, `<div class="m-alerts"><div class="m-alert"><div class="m-alert-title"><span>${s.askAccess}</span></div><div class="m-btn">${s.allowOneDay}</div><div class="m-btn hl">${s.alwaysAllow}</div><div class="m-btn">${s.cancel}</div></div><span class="m-arrow">→</span><div class="m-alert"><div class="m-btn hl">${s.alwaysAllowSite}</div><div class="m-btn">${s.everySite}</div><div class="m-btn">${s.cancel}</div></div></div>`),
+    mock(s, `<div class="m-alerts"><div class="m-alert"><div class="m-alert-title"><span>${s.askAccess}</span></div><div class="m-btn">${s.allowOneDay}</div><div class="m-btn hl">${s.alwaysAllow}</div><div class="m-btn">${s.cancel}</div></div></div>`), // iPadOS 26 起只剩一層對話框：「永遠允許」就是允許這個網站
   ];
 }
 
@@ -227,7 +227,7 @@ function iphoneSteps(s) {
   return [
     mock(s, `<div class="m-crumbs">${crumb}</div>`),
     mock(s, `<div class="m-sheet"><div class="m-sheet-title">${APP_ICON}<span>${s.name}</span></div><div class="m-row"><span class="grow">${s.allowExt}</span>${toggle(true, true)}</div></div>`),
-    mock(s, `<div class="m-sheet"><div class="m-row"><span class="grow">${s.sitePerm}</span><span class="m-value hl">${s.allow} ›</span></div></div>`),
+    mock(s, `<div class="m-sheet">${["bilibili.com", "m.bilibili.com"].map((d) => `<div class="m-row"><span class="grow">${d}</span><span class="m-value hl">${s.allow} ›</span></div>`).join("")}</div>`), // 一個網域一列，開過的子網域才會出現
     mock(s, urlbar(s)),
   ];
 }
@@ -241,13 +241,15 @@ function macSteps(s) {
   ];
 }
 
-// button：[第幾步（從 0 起算）, 按鈕 HTML]，按鈕放在提到它的那一步裡，不用捲到頁尾找
-function stepsList(texts, mocks, [buttonAt, button]) {
-  return `<ol class="steps">\n${texts.map((t, i) => `      <li><div class="step-text"><span class="num">${i + 1}</span><p>${t}</p></div>${mocks[i]}${i === buttonAt ? button : ""}</li>`).join("\n")}\n    </ol>`;
+// buttons：{ 第幾步（從 0 起算）: 按鈕 HTML }，按鈕放在提到它的那一步裡，不用捲到頁尾找
+function stepsList(texts, mocks, buttons) {
+  return `<ol class="steps">\n${texts.map((t, i) => `      <li><div class="step-text"><span class="num">${i + 1}</span><p>${t}</p></div>${mocks[i]}${buttons[i] || ""}</li>`).join("\n")}\n    </ol>`;
 }
 
 function page(s) {
   const safariButton = `<button class="primary open-safari" type="button">${s.openSafari}</button>`;
+  // 直接打開「設定」裡這個擴充的頁面：只有 iOS 26.2 以上有 API，Style.css 預設隱藏，Script.js 的 setCanOpenSettings 才顯示
+  const settingsButton = `<button class="primary open-extension-settings" type="button">${s.openSettings}</button>`;
   return `<!DOCTYPE html>
 <!-- 由 scripts/gen-safari-onboarding.mjs 產生，請改那支腳本，不要直接改這個檔 -->
 <html lang="${s.lang}">
@@ -270,13 +272,13 @@ function page(s) {
   <main>
   <section class="guide platform-ipad">
     <h2>${s.ipad.title}</h2>
-    ${stepsList(s.ipad.steps, ipadSteps(s), [0, safariButton])}
+    ${stepsList(s.ipad.steps, ipadSteps(s), { 0: safariButton })}
     <p class="alt">${s.ipad.alt}</p>
   </section>
 
   <section class="guide platform-iphone">
     <h2>${s.iphone.title}</h2>
-    ${stepsList(s.iphone.steps, iphoneSteps(s), [3, safariButton])}
+    ${stepsList(s.iphone.steps, iphoneSteps(s), { 0: settingsButton, 3: safariButton })}
     <p class="alt">${s.iphone.alt}</p>
   </section>
 
@@ -285,7 +287,7 @@ function page(s) {
     <p class="status state-unknown">${s.mac.stateUnknown}</p>
     <p class="status state-on">${s.mac.stateOn}</p>
     <p class="status state-off">${s.mac.stateOff}</p>
-    ${stepsList(s.mac.steps, macSteps(s), [0, `<button class="primary open-preferences" type="button">${s.openSafariSettings}</button>`])}
+    ${stepsList(s.mac.steps, macSteps(s), { 0: `<button class="primary open-preferences" type="button">${s.openSafariSettings}</button>` })}
   </section>
   </main>
 

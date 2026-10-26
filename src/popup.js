@@ -189,10 +189,17 @@ els.debug.textContent = t("debugInitial");
 setRichText(document.getElementById("autoSpeedSwitchHint"), t("autoSpeedSwitchHint"));
 document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwitchAllNote");
 
+// iPhone 的 popup 是整個螢幕寬的底部面板（見 popup.html 的 html.iphone）
+var IS_IPHONE = /iPhone|iPod/.test(navigator.userAgent);
+if (IS_IPHONE) document.documentElement.classList.add("iphone");
+
 // -------- 評分按鈕：Chrome / Edge 共用同一份 popup.js，只能靠 UA 分辨（detectBrowser，common.js）；沒有對應網址就不顯示 --------
 // 一律用不含 slug 的短網址：商店改名後 slug 會失效，靠 ID／slug 本身跳轉才不會壞。
 // Edge Add-ons 沒有 /reviews 這層（會 404），只能導到商品頁，讓使用者自己往下捲到評論區。
+// Safari 只放 Mac App Store；iOS 版還沒上架，iPhone / iPad 不顯示。
+// 要用 macappstore://：https 的商品頁只會打開 App Store 的介紹頁，action=write-review（直接開評論視窗）只有這個 scheme 才吃
 var STORE_REVIEW_URLS = {
+  safari: "macappstore://apps.apple.com/app/id6817181919?action=write-review",
   chrome: "https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch/reviews",
   edge: "https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp",
   firefox: "https://addons.mozilla.org/addon/bilibili-cdn-switcher/reviews"
@@ -213,6 +220,8 @@ document.getElementById("autoDetectBtn").textContent = t("autoDetectBtn");
 document.getElementById("autoDetectBtn").addEventListener("click", function () {
   openTab(withUtm(SPEEDTEST_DOC_URL, "custom_list"));
 });
+// iPhone / iPad 跑不了測速工具：改用說明「在電腦上測，再掃 QR code 加到這台裝置」的文字
+if (isIosSafari()) document.getElementById("autoDetectText").textContent = t("autoDetectTextIos");
 
 // 國家清單下方：「沒有你的國家？試試最接近的國家，或是{link}」，{link} 是切到自訂節點列表的按鈕
 (function renderCountryHint() {
@@ -502,10 +511,18 @@ var LOTTERY_SWAP_MS = 480; // 換則時「下面那張翻到上面」的動畫
   });
 })();
 
-var reviewUrl = STORE_REVIEW_URLS[detectBrowser()];
+var reviewUrl = isIosSafari() ? null : STORE_REVIEW_URLS[detectBrowser()];
 if (reviewUrl) {
   els.rateBtn.style.display = "";
-  els.rateBtn.addEventListener("click", function () { openTab(withUtm(reviewUrl, "rate")); });
+  els.rateBtn.addEventListener("click", function () {
+    // macappstore:// 由 App Store 接手，分頁本身不會載入任何東西，要把留下的空白分頁關掉；
+    // App Store 一搶走焦點 popup 就關了，計時器跟著消失，所以交給 background 開與關
+    if (reviewUrl.indexOf("macappstore:") === 0) {
+      chrome.runtime.sendMessage({ type: "CDN_SWITCHER_OPEN_HANDOFF_URL", url: reviewUrl });
+      return;
+    }
+    openTab(withUtm(reviewUrl, "rate"));
+  });
 }
 // 問題回報：一律由 background 開成獨立視窗（report.html），帶上目前分頁 id 讓回報頁能向 B 站頁面要此刻的快照；popup 隨即關閉
 els.feedbackBtn.style.display = "";
@@ -2038,7 +2055,8 @@ function onStLayoutResize() {
   stLayoutTimer = setTimeout(lockStLayout, 150);
 }
 function lockStLayout() {
-  window.removeEventListener("resize", onStLayoutResize);
+  // iPhone 的 popup 是可以上下拉的面板：拉高後可見高度會變，要一直跟著重鎖，不然下面留一大片空白
+  if (!IS_IPHONE) window.removeEventListener("resize", onStLayoutResize);
   // iPad Safari 的 popover 回報的 innerHeight 可能比實際可見高度小很多，鎖下去會把清單裁掉；量到不合理的值就維持 600px
   if (window.innerHeight < 300) return;
   document.documentElement.style.height = window.innerHeight + "px";
@@ -2046,6 +2064,7 @@ function lockStLayout() {
 function enterStLayout() {
   var html = document.documentElement;
   html.style.height = "";
+  html.classList.remove("innerScroll");
   html.classList.add("stMode");
   setStVisibleH();
   window.addEventListener("resize", onStLayoutResize);
@@ -2058,16 +2077,31 @@ function leaveStLayout() {
   document.documentElement.classList.remove("stMode");
   document.documentElement.style.height = "";
   document.documentElement.style.removeProperty("--st-visible-h");
+  fitInnerScroll();
 }
 
 // 整頁捲動條：原生的會把 popup 撐寬（見 popup.html 的 html 樣式），改畫一條浮在右緣的細捲動條。
 // 跟著捲動位置與內容高度更新，內容沒超出（或在測速頁，整頁鎖住不捲）時隱藏；拖曳滑塊可以捲動
+// macOS Safari：內容比 popup 高時，整頁（html）捲不動（滾輪、觸控板都沒反應，iOS 正常），下半部的設定點不到。
+// 改成 html 固定在可見高度、由 body 自己捲（html.innerScroll，見 popup.html）；內容放得下時拿掉，popup 照常依內容決定高度。
+// 測速頁有自己的版面（stMode），進去時先拿掉
+var INNER_SCROLL = detectBrowser() === "safari" && !isIosSafari();
+function fitInnerScroll() {
+  if (!INNER_SCROLL) return;
+  var html = document.documentElement;
+  var on = !html.classList.contains("stMode") && document.body.scrollHeight > window.innerHeight + 1;
+  if (on) html.style.setProperty("--inner-h", window.innerHeight + "px");
+  html.classList.toggle("innerScroll", on);
+}
 (function initPageScrollbar() {
-  var root = document.scrollingElement || document.documentElement;
+  var html = document.documentElement;
+  function scroller() { return html.classList.contains("innerScroll") ? document.body : (document.scrollingElement || html); }
   var bar = document.getElementById("pageScrollbar"), thumb = bar.firstElementChild;
   function update() {
+    fitInnerScroll();
+    var root = scroller();
     var view = root.clientHeight, total = root.scrollHeight;
-    var show = total > view + 1 && !document.documentElement.classList.contains("stMode");
+    var show = total > view + 1 && !html.classList.contains("stMode");
     bar.classList.toggle("show", show);
     if (!show) return;
     var track = bar.clientHeight;
@@ -2076,10 +2110,17 @@ function leaveStLayout() {
     thumb.style.top = (track - h) * root.scrollTop / (total - view) + "px";
   }
   window.addEventListener("scroll", update, { passive: true });
+  document.body.addEventListener("scroll", update, { passive: true }); // innerScroll 時捲的是 body，事件不會冒泡到 window
   window.addEventListener("resize", update);
-  if (typeof ResizeObserver === "function") new ResizeObserver(update).observe(document.body); // 內容長高／變矮（展開區塊、切換畫面）
+  if (typeof ResizeObserver === "function") {
+    var ro = new ResizeObserver(update);
+    ro.observe(document.body); // 內容長高／變矮（展開區塊、切換畫面）
+    // innerScroll 時 body 高度固定，要看裡面各區塊的大小才知道內容變了
+    if (INNER_SCROLL) Array.prototype.forEach.call(document.body.children, function (el) { ro.observe(el); });
+  }
   thumb.addEventListener("pointerdown", function (e) {
     e.preventDefault();
+    var root = scroller();
     var startY = e.clientY, startTop = root.scrollTop;
     var ratio = (root.scrollHeight - root.clientHeight) / Math.max(1, bar.clientHeight - thumb.offsetHeight);
     try { thumb.setPointerCapture(e.pointerId); } catch (err) {}
@@ -2099,8 +2140,16 @@ function leaveStLayout() {
 })();
 
 // 目前分頁沒有影片可測（不是 B 站分頁、不是影片頁、影片還沒載入）：測速清單換成操作示意動畫＋「前往範例影片」
+// 示意動畫依裝置三選一：電腦版瀏覽器（右上角擴充圖示）、iPhone（頁面選單切電腦版網站、再從頁面選單開擴充）、
+// iPad（網址列的延伸功能圖示）
+var ST_GUIDE_SCENE = !isIosSafari() ? "sgScDesk" : IS_IPHONE ? "sgScIphone" : "sgScIpad";
+// iPhone／iPad 的操作步驟不同（iPhone 要先切電腦版網站），說明文字跟著換
+if (ST_GUIDE_SCENE !== "sgScDesk") document.getElementById("stGuideText").textContent = t(ST_GUIDE_SCENE === "sgScIphone" ? "stGuideTextIphone" : "stGuideTextIpad");
 function showStGuide(on) {
   els.stGuide.style.display = on ? "" : "none";
+  if (on) els.stGuide.querySelectorAll(".sgScene").forEach(function (svg) {
+    svg.style.display = svg.classList.contains(ST_GUIDE_SCENE) ? "" : "none";
+  });
   els.stList.style.display = on ? "none" : "";
 }
 

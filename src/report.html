@@ -47,6 +47,10 @@
       border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; outline: none;
     }
     textarea { min-height: 110px; max-height: 320px; resize: vertical; }
+    /* iPhone / iPad Safari 對字級小於 16px 的輸入框，focus 時會把整頁放大（版面跟著偏一邊、要手動縮回）；-webkit-touch-callout 只有 iOS 支援 */
+    @supports (-webkit-touch-callout: none) {
+      textarea, input[type=text], input[type=email] { font-size: 16px; }
+    }
     textarea:focus, input[type=text]:focus, input[type=email]:focus { border-color: var(--accent); }
     ::placeholder { color: var(--placeholder); }
     .diag { margin-top: 14px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--code-bg); }

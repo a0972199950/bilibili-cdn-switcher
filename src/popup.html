@@ -125,6 +125,23 @@
       display: none; /* 不支援 scrollbar-width 的舊版 Safari */
     }
 
+    /* macOS Safari：內容超過 popup 高度時 html 捲不動，改由 body 捲（popup.js 的 fitInnerScroll；--inner-h＝可見高度）。
+       body 的原生捲動條一樣隱藏，用浮動的 #pageScrollbar */
+    html.innerScroll {
+      height: var(--inner-h);
+      overflow: hidden;
+    }
+
+    html.innerScroll body {
+      height: calc(100% - 28px); /* 扣掉 body 上下 padding，同 html.stMode body */
+      overflow-y: auto;
+      scrollbar-width: none;
+    }
+
+    html.innerScroll body::-webkit-scrollbar {
+      display: none;
+    }
+
     /* 頁內其他會捲動的區塊（測速清單、下拉選單、公告卡片…）：改成細的捲動條，顏色跟 #pageScrollbar 一致。
        這些在 popup 裡面，不會撐寬 popup，用原生的就好（Safari 不支援 scrollbar-color，但 macOS／iOS 原本就是細的浮動捲動條）。
        選擇器權重是 0，html 自己的 scrollbar-width: none 會蓋過這裡 */
@@ -191,6 +208,19 @@
       color: var(--text);
       /* 明亮主題頂端的粉色細條（同 CDNSpeedTest 標題下的分隔線）；用 inset 陰影畫在 padding 裡，不影響版面高度 */
       box-shadow: inset 0 3px 0 var(--top-bar);
+    }
+
+    /* iPhone 的 popup 是整個螢幕寬的底部面板，body 固定 320px 會貼在左邊：改成跟著面板寬度（html.iphone，popup.js 依 UA 加）。
+       iPad 的 popover 寬度由內容決定，不能用 auto，維持 320px；面板比 popup 寬時置中。
+       Chrome／Firefox／Edge 與 Mac 的 popup 寬度就是內容寬度（348px），不受影響 */
+    html.iphone body {
+      width: auto;
+    }
+
+    @media (min-width: 370px) {
+      body {
+        margin: 0 auto;
+      }
     }
 
     /* 日文：依詞組換行（Chrome / Edge 119+ 的 auto-phrase），避免把「経過」「再読み込み」之類的詞拆開；
@@ -1308,8 +1338,9 @@
 
     .stRow .stMetrics {
       display: flex;
+      flex-wrap: wrap; /* 兩段放不下（例如「持續觀看：落後 …ms 跟得上」較長的語言）就換行，不要超出 popup 被切掉 */
       justify-content: space-between;
-      gap: 8px;
+      column-gap: 8px;
       margin-top: 2px;
       font-size: 11px;
       line-height: 1.6;
@@ -1677,6 +1708,11 @@
       margin: 4px 0 0;
     }
 
+    /* iPhone 的 popup 是底部面板，預設只拉到半高：場景照寬度放大會比可見高度還高、下半截要捲才看得到，限制高度（viewBox 會等比縮小、置中） */
+    html.iphone .sgScene {
+      max-height: 200px;
+    }
+
     .sgFrame { fill: var(--raised); stroke: var(--border); }
     .sgSoft { fill: var(--line); }
     .sgField { fill: var(--bg); }
@@ -1794,6 +1830,151 @@
       .sgCursor { transform: translate(206px, 78px); }
       .sgPlay, .sgDim { opacity: 0; }
       .sgProg { transform: scaleX(.6); }
+    }
+
+    /* iPhone 場景（12 秒一輪）：手指點 ≡ → 「要求電腦版網站」→ 頁面換成電腦版 → 點播放器 → 再點 ≡ → BiBoost →
+       底部彈出 popup → 點測速 → 長條長出來。iPad 場景（10 秒一輪，節奏同電腦版）：點播放器 → 延伸功能圖示 → BiBoost → 測速 */
+    .sgIM, .sgID, .sgIPlay, .sgIProg, .sgIMenu, .sgIPop, .sgIBar,
+    .sgPPlay, .sgPProg, .sgPMenu, .sgPPop, .sgPBar, .sgFingerIn {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .sgIRowHi, .sgPRowHi { fill: var(--hover-bg); }
+    .sgIFinger { animation: sgIFinger 12s ease-in-out infinite; }
+    .sgIFingerIn { animation: sgIPress 12s linear infinite; }
+    .sgIRip1 { animation: sgIRip1 12s ease-out infinite; }
+    .sgIRip2 { animation: sgIRip2 12s ease-out infinite; }
+    .sgIRip3 { animation: sgIRip3 12s ease-out infinite; }
+    .sgIRip4 { animation: sgIRip4 12s ease-out infinite; }
+    .sgIRip5 { animation: sgIRip5 12s ease-out infinite; }
+    .sgIRip6 { animation: sgIRip6 12s ease-out infinite; }
+    .sgIM { animation: sgIM 12s ease-out infinite; }
+    .sgID { animation: sgID 12s ease-out infinite; }
+    .sgIPlay { animation: sgIPlay 12s ease-out infinite; }
+    .sgIDim { animation: sgIDim 12s ease-out infinite; }
+    .sgIProg { transform-origin: left center; animation: sgIProg 12s linear infinite; }
+    .sgIMenu { transform-origin: center bottom; opacity: 0; }
+    .sgIMenu1 { animation: sgIMenu1 12s ease-out infinite; }
+    .sgIMenu2 { animation: sgIMenu2 12s ease-out infinite; }
+    .sgIPop { transform-origin: center bottom; animation: sgIPop 12s ease-out infinite; }
+    .sgIBtnHi { fill: var(--hover-bg); opacity: 0; animation: sgIBtnHi 12s linear infinite; }
+    .sgIBar { transform-origin: left center; animation: 12s ease-out infinite; }
+    .sgIBar1 { fill: var(--q-4k); animation-name: sgIBar1; }
+    .sgIBar2 { fill: var(--q-1080); animation-name: sgIBar2; }
+    .sgIBar3 { fill: var(--q-720); animation-name: sgIBar3; }
+    .sgIBar4 { fill: var(--q-low); animation-name: sgIBar4; }
+
+    @keyframes sgIFinger {
+      0%, 4% { transform: translate(130px, 178px); opacity: 0; }
+      6% { opacity: 1; }
+      10%, 12% { transform: translate(109.5px, 163px); }
+      18%, 20% { transform: translate(128px, 144.5px); }
+      29%, 32% { transform: translate(117px, 36.5px); }
+      41%, 44% { transform: translate(109.5px, 163px); }
+      49%, 52% { transform: translate(128px, 134px); }
+      61%, 88% { transform: translate(129px, 120.5px); opacity: 1; }
+      93% { transform: translate(129px, 120.5px); opacity: 0; }
+      100% { transform: translate(130px, 178px); opacity: 0; }
+    }
+    @keyframes sgIPress {
+      0%, 10.5%, 12%, 18.5%, 20%, 30.5%, 32%, 42.5%, 44%, 50.5%, 52%, 62.5%, 64%, 100% { transform: scale(1); }
+      11%, 19%, 31%, 43%, 51%, 63% { transform: scale(.75); }
+    }
+    @keyframes sgIRip1 { 0%, 11% { opacity: 0; transform: scale(.3); } 11.8% { opacity: .9; transform: scale(.5); } 17%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIRip2 { 0%, 19% { opacity: 0; transform: scale(.3); } 19.8% { opacity: .9; transform: scale(.5); } 25%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIRip3 { 0%, 31% { opacity: 0; transform: scale(.3); } 31.8% { opacity: .9; transform: scale(.5); } 37%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIRip4 { 0%, 43% { opacity: 0; transform: scale(.3); } 43.8% { opacity: .9; transform: scale(.5); } 49%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIRip5 { 0%, 51% { opacity: 0; transform: scale(.3); } 51.8% { opacity: .9; transform: scale(.5); } 57%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIRip6 { 0%, 63% { opacity: 0; transform: scale(.3); } 63.8% { opacity: .9; transform: scale(.5); } 69%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgIMenu1 {
+      0%, 11.5% { opacity: 0; transform: scale(.9); }
+      13%, 19.5% { opacity: 1; transform: scale(1); }
+      21%, 100% { opacity: 0; transform: scale(.9); }
+    }
+    @keyframes sgIMenu2 {
+      0%, 43.5% { opacity: 0; transform: scale(.9); }
+      45%, 51.5% { opacity: 1; transform: scale(1); }
+      53%, 100% { opacity: 0; transform: scale(.9); }
+    }
+    @keyframes sgIM { 0%, 20% { opacity: 1; } 23%, 95% { opacity: 0; } 98%, 100% { opacity: 1; } }
+    @keyframes sgID { 0%, 21% { opacity: 0; } 24%, 94% { opacity: 1; } 97%, 100% { opacity: 0; } }
+    @keyframes sgIPlay {
+      0%, 31.5% { opacity: 1; transform: scale(1); }
+      36%, 96% { opacity: 0; transform: scale(1.4); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes sgIDim { 0%, 31.5% { opacity: .5; } 37%, 96% { opacity: 0; } 100% { opacity: .5; } }
+    @keyframes sgIProg { 0%, 32% { transform: scaleX(0); } 92% { transform: scaleX(.9); } 97%, 100% { transform: scaleX(0); } }
+    @keyframes sgIPop {
+      0%, 52% { opacity: 0; transform: translateY(30px); }
+      56%, 90% { opacity: 1; transform: translateY(0); }
+      95%, 100% { opacity: 0; transform: translateY(30px); }
+    }
+    @keyframes sgIBtnHi { 0%, 63% { opacity: 0; } 64%, 68% { opacity: 1; } 76%, 100% { opacity: 0; } }
+    @keyframes sgIBar1 { 0%, 66% { transform: scaleX(0); } 75%, 100% { transform: scaleX(1); } }
+    @keyframes sgIBar2 { 0%, 69% { transform: scaleX(0); } 78%, 100% { transform: scaleX(1); } }
+    @keyframes sgIBar3 { 0%, 72% { transform: scaleX(0); } 81%, 100% { transform: scaleX(1); } }
+    @keyframes sgIBar4 { 0%, 75% { transform: scaleX(0); } 84%, 100% { transform: scaleX(1); } }
+
+    .sgPFinger { animation: sgPFinger 10s ease-in-out infinite; }
+    .sgPFingerIn { animation: sgPPress 10s linear infinite; }
+    .sgPRip1 { animation: sgRip1 10s ease-out infinite; }
+    .sgPRip2 { animation: sgRip2 10s ease-out infinite; }
+    .sgPRip3 { animation: sgPRip3 10s ease-out infinite; }
+    .sgPRip4 { animation: sgPRip4 10s ease-out infinite; }
+    .sgPPlay { animation: sgPlay 10s ease-out infinite; }
+    .sgPDim { animation: sgDim 10s ease-out infinite; }
+    .sgPProg { transform-origin: left center; animation: sgProg 10s linear infinite; }
+    .sgPMenu { transform-origin: center top; animation: sgPMenu 10s ease-out infinite; }
+    .sgPPop { transform-origin: center top; animation: sgPPop 10s ease-out infinite; }
+    .sgPBtnHi { fill: var(--hover-bg); opacity: 0; animation: sgPBtnHi 10s linear infinite; }
+    .sgPBar { transform-origin: left center; animation: 10s ease-out infinite; }
+    .sgPBar1 { fill: var(--q-4k); animation-name: sgPBar1; }
+    .sgPBar2 { fill: var(--q-1080); animation-name: sgPBar2; }
+    .sgPBar3 { fill: var(--q-720); animation-name: sgPBar3; }
+    .sgPBar4 { fill: var(--q-low); animation-name: sgPBar4; }
+
+    @keyframes sgPFinger {
+      0%, 4% { transform: translate(60px, 160px); opacity: 0; }
+      6% { opacity: 1; }
+      14%, 18% { transform: translate(89px, 84px); }
+      32%, 37% { transform: translate(159px, 19px); }
+      43%, 47% { transform: translate(152px, 35px); }
+      55%, 88% { transform: translate(168px, 84px); opacity: 1; }
+      93% { transform: translate(168px, 84px); opacity: 0; }
+      100% { transform: translate(60px, 160px); opacity: 0; }
+    }
+    @keyframes sgPPress {
+      0%, 14.5%, 16.5%, 34.5%, 36.5%, 44.5%, 46.5%, 56.5%, 58.5%, 100% { transform: scale(1); }
+      15.5%, 35.5%, 45.5%, 57.5% { transform: scale(.75); }
+    }
+    @keyframes sgPRip3 { 0%, 45% { opacity: 0; transform: scale(.3); } 46% { opacity: .9; transform: scale(.5); } 52%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgPRip4 { 0%, 57% { opacity: 0; transform: scale(.3); } 58% { opacity: .9; transform: scale(.5); } 64%, 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes sgPMenu {
+      0%, 36% { opacity: 0; transform: scale(.9); }
+      38.5%, 46% { opacity: 1; transform: scale(1); }
+      48%, 100% { opacity: 0; transform: scale(.9); }
+    }
+    @keyframes sgPPop {
+      0%, 46.5% { opacity: 0; transform: scale(.6); }
+      50%, 89% { opacity: 1; transform: scale(1); }
+      95%, 100% { opacity: 0; transform: scale(.6); }
+    }
+    @keyframes sgPBtnHi { 0%, 57% { opacity: 0; } 58.5%, 62% { opacity: 1; } 70%, 100% { opacity: 0; } }
+    @keyframes sgPBar1 { 0%, 60% { transform: scaleX(0); } 70%, 100% { transform: scaleX(1); } }
+    @keyframes sgPBar2 { 0%, 63% { transform: scaleX(0); } 74%, 100% { transform: scaleX(1); } }
+    @keyframes sgPBar3 { 0%, 66% { transform: scaleX(0); } 78%, 100% { transform: scaleX(1); } }
+    @keyframes sgPBar4 { 0%, 69% { transform: scaleX(0); } 82%, 100% { transform: scaleX(1); } }
+
+    /* 不要動畫時停在最後一格：電腦版網站、在播、popup 開著、結果都出來了、手指停在測速按鈕上 */
+    @media (prefers-reduced-motion: reduce) {
+      .sgIFinger, .sgIFingerIn, .sgIM, .sgID, .sgIPlay, .sgIDim, .sgIProg, .sgIMenu1, .sgIMenu2, .sgIPop, .sgIBtnHi, .sgIBar,
+      .sgPFinger, .sgPFingerIn, .sgPPlay, .sgPDim, .sgPProg, .sgPMenu, .sgPPop, .sgPBtnHi, .sgPBar,
+      .sgIRip1, .sgIRip2, .sgIRip3, .sgIRip4, .sgIRip5, .sgIRip6, .sgPRip1, .sgPRip2, .sgPRip3, .sgPRip4 { animation: none; }
+      .sgIFinger { transform: translate(129px, 120.5px); }
+      .sgPFinger { transform: translate(168px, 84px); }
+      .sgIM, .sgIPlay, .sgIDim, .sgIMenu, .sgPPlay, .sgPDim, .sgPMenu { opacity: 0; }
+      .sgIProg, .sgPProg { transform: scaleX(.6); }
     }
 
     .stRow {
@@ -2556,7 +2737,8 @@
       <div class="stCard">
         <div class="stCardTitle" id="stGuideTitle"></div>
         <p class="stCardText" id="stGuideText"></p>
-        <svg class="sgScene" viewBox="0 0 260 160" aria-hidden="true">
+        <!-- 電腦版瀏覽器（右上角擴充圖示）；iPhone、iPad 各有一套場景，popup.js 的 showStGuide 依裝置只顯示一套 -->
+        <svg class="sgScene sgScDesk" viewBox="0 0 260 160" aria-hidden="true">
           <defs>
             <!-- 不能共用 #optimizing 的 optBg：那塊平常是 display:none，裡面的漸層畫不出來 -->
             <linearGradient id="sgIconBg" x1="0" y1="0" x2="1" y2="1">
@@ -2643,6 +2825,269 @@
           <g class="sgCursor">
             <g class="sgCursorIn">
               <path d="M0 0 L0 13 L3.5 9.8 L6 15 L8.2 14 L5.8 8.9 L10.5 8.9 Z" fill="#fff" stroke="#18191c" stroke-width="1" stroke-linejoin="round" />
+            </g>
+          </g>
+        </svg>
+        <!-- iPhone：頁面選單（網址列左邊的 ≡）切成電腦版網站 → 點播放器開始播 → 再開頁面選單點 BiBoost → 底部彈出 popup → 點測速 -->
+        <svg class="sgScene sgScIphone" viewBox="0 0 260 180" aria-hidden="true" style="display:none">
+          <defs>
+            <linearGradient id="sgIconBgI" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="rgb(255,138,176)" />
+              <stop offset="100%" stop-color="rgb(235,90,140)" />
+            </linearGradient>
+            <clipPath id="sgScrI"><rect x="84" y="6" width="92" height="168" rx="10" /></clipPath>
+            <clipPath id="sgPlrI"><rect x="88" y="20" width="58" height="33" rx="2" /></clipPath>
+          </defs>
+          <rect class="sgFrame" x="80" y="2" width="100" height="176" rx="14" />
+          <g clip-path="url(#sgScrI)">
+            <rect x="84" y="6" width="92" height="168" fill="var(--raised)" />
+            <!-- 手機版 B 站：只有「下載 App」與影片清單，沒有播放器 -->
+            <g class="sgIM">
+              <rect x="88" y="12" width="18" height="5" rx="2.5" fill="#fb7299" />
+              <rect x="148" y="11" width="24" height="8" rx="4" fill="#fb7299" />
+              <rect class="sgSoft" x="88" y="26" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="132" y="26" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="88" y="53" width="34" height="3" rx="1.5" />
+              <rect class="sgSoft" x="132" y="53" width="30" height="3" rx="1.5" />
+              <rect class="sgSoft" x="88" y="63" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="132" y="63" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="88" y="90" width="30" height="3" rx="1.5" />
+              <rect class="sgSoft" x="132" y="90" width="34" height="3" rx="1.5" />
+              <rect class="sgSoft" x="88" y="100" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="132" y="100" width="40" height="24" rx="2" />
+              <rect class="sgSoft" x="88" y="127" width="34" height="3" rx="1.5" />
+              <rect class="sgSoft" x="132" y="127" width="28" height="3" rx="1.5" />
+              <rect x="110" y="136" width="40" height="9" rx="4.5" fill="#fb7299" />
+            </g>
+            <!-- 電腦版網站：縮小的影片頁（播放器、標題、右側推薦）-->
+            <g class="sgID">
+              <rect x="88" y="11" width="10" height="3" rx="1.5" fill="#00aeec" />
+              <rect class="sgSoft" x="116" y="11" width="28" height="3" rx="1.5" />
+              <g clip-path="url(#sgPlrI)">
+                <rect x="88" y="20" width="58" height="33" fill="#1f2329" />
+                <circle cx="136" cy="28" r="3.5" fill="#ffd166" />
+                <polygon points="88,53 88,44 101,37 115,46 126,40 146,50 146,53" fill="#2ec4b6" />
+                <polygon points="88,53 88,49 105,43 122,50 137,45 146,48 146,53" fill="#1a936f" />
+                <rect class="sgIDim" x="88" y="20" width="58" height="33" fill="#000" opacity=".5" />
+                <rect x="90" y="50.5" width="54" height="1.2" rx=".6" fill="rgba(255,255,255,.35)" />
+                <rect class="sgIProg" x="90" y="50.5" width="54" height="1.2" rx=".6" fill="#fb7299" />
+              </g>
+              <g class="sgIPlay">
+                <circle cx="117" cy="36.5" r="6" fill="rgba(255,255,255,.92)" />
+                <polygon points="115.3,33.5 115.3,39.5 120.3,36.5" fill="#fb7299" />
+              </g>
+              <rect class="sgSoft" x="88" y="57" width="44" height="2.5" rx="1.25" />
+              <rect class="sgSoft" x="88" y="62" width="30" height="2.5" rx="1.25" />
+              <rect class="sgSoft" x="149" y="20" width="10" height="6" rx="1" />
+              <rect class="sgSoft" x="161" y="21" width="11" height="1.6" rx=".8" />
+              <rect class="sgSoft" x="149" y="29" width="10" height="6" rx="1" />
+              <rect class="sgSoft" x="161" y="30" width="11" height="1.6" rx=".8" />
+              <rect class="sgSoft" x="149" y="38" width="10" height="6" rx="1" />
+              <rect class="sgSoft" x="161" y="39" width="11" height="1.6" rx=".8" />
+              <rect class="sgSoft" x="149" y="47" width="10" height="6" rx="1" />
+              <rect class="sgSoft" x="161" y="48" width="11" height="1.6" rx=".8" />
+              <rect class="sgSoft" x="88" y="72" width="60" height="2.5" rx="1.25" />
+              <rect class="sgSoft" x="88" y="78" width="48" height="2.5" rx="1.25" />
+              <rect class="sgSoft" x="88" y="84" width="54" height="2.5" rx="1.25" />
+            </g>
+            <!-- 下方網址列：返回、（≡ 頁面選單＋網址＋重新整理）、分頁 -->
+            <circle class="sgFrame" cx="93" cy="163" r="6" />
+            <rect class="sgFrame" x="102" y="157" width="56" height="12" rx="6" />
+            <line x1="107" y1="160.6" x2="112" y2="160.6" stroke="var(--muted)" stroke-width="1" stroke-linecap="round" />
+            <line x1="107" y1="163" x2="112" y2="163" stroke="var(--muted)" stroke-width="1" stroke-linecap="round" />
+            <line x1="107" y1="165.4" x2="112" y2="165.4" stroke="var(--muted)" stroke-width="1" stroke-linecap="round" />
+            <rect x="117" y="161.8" width="26" height="2.4" rx="1.2" fill="var(--muted)" />
+            <circle cx="151" cy="163" r="2.2" fill="none" stroke="var(--muted)" stroke-width="1" />
+            <circle class="sgFrame" cx="167" cy="163" r="6" />
+            <!-- 頁面選單（跟實際一樣 BiBoost 在「要求電腦版網站」上面）：第一次點螢幕圖示那列（要求電腦版網站），第二次點 BiBoost -->
+            <g class="sgIMenu sgIMenu1">
+              <rect x="92" y="98" width="78" height="56" rx="7" fill="rgba(0,0,0,.12)" />
+              <rect class="sgFrame" x="90" y="96" width="78" height="56" rx="7" />
+              <rect class="sgSoft" x="95" y="101" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="102.3" width="40" height="2.4" rx="1.2" />
+              <rect class="sgSoft" x="95" y="111" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="112.3" width="34" height="2.4" rx="1.2" />
+              <rect class="sgSoft" x="95" y="121" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="122.3" width="44" height="2.4" rx="1.2" />
+              <rect class="sgSoft" x="95" y="131" width="6" height="6" rx="1.3" /><rect class="sgSoft" x="104" y="132.8" width="36" height="2.4" rx="1.2" />
+              <rect class="sgIRowHi" x="92" y="139.5" width="74" height="10" rx="3" />
+              <rect x="95" y="141.8" width="6.5" height="4.4" rx=".8" fill="none" stroke="var(--text)" stroke-width=".9" />
+              <line x1="96.5" y1="147.4" x2="100" y2="147.4" stroke="var(--text)" stroke-width=".9" stroke-linecap="round" />
+              <rect x="104" y="143.3" width="46" height="2.4" rx="1.2" fill="var(--muted)" />
+            </g>
+            <g class="sgIMenu sgIMenu2">
+              <rect x="92" y="98" width="78" height="56" rx="7" fill="rgba(0,0,0,.12)" />
+              <rect class="sgFrame" x="90" y="96" width="78" height="56" rx="7" />
+              <rect class="sgSoft" x="95" y="101" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="102.3" width="40" height="2.4" rx="1.2" />
+              <rect class="sgSoft" x="95" y="111" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="112.3" width="34" height="2.4" rx="1.2" />
+              <rect class="sgSoft" x="95" y="121" width="5" height="5" rx="1" /><rect class="sgSoft" x="104" y="122.3" width="44" height="2.4" rx="1.2" />
+              <rect class="sgIRowHi" x="92" y="129" width="74" height="10" rx="3" />
+              <g transform="translate(95,131.5) scale(0.01172)">
+              <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sgIconBgI)" />
+              <g fill="white">
+                <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+                <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+              </g>
+            </g>
+              <rect x="104" y="132.8" width="36" height="2.4" rx="1.2" fill="var(--muted)" />
+              <rect x="95" y="141.8" width="6.5" height="4.4" rx=".8" fill="none" stroke="var(--placeholder)" stroke-width=".9" />
+              <rect class="sgSoft" x="104" y="143.3" width="46" height="2.4" rx="1.2" />
+            </g>
+            <!-- 擴充 popup：iPhone 從底部彈出的面板 -->
+            <g class="sgIPop">
+              <rect class="sgFrame" x="84" y="72" width="92" height="104" rx="10" />
+              <g transform="translate(90,78) scale(0.01367)">
+              <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sgIconBgI)" />
+              <g fill="white">
+                <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+                <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+              </g>
+            </g>
+              <rect class="sgSoft" x="100" y="80.3" width="36" height="2.6" rx="1.3" />
+              <circle cx="168" cy="81.5" r="4" fill="#0a84ff" />
+              <polyline points="166.2,81.6 167.5,83 170,80.2" fill="none" stroke="#fff" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round" />
+              <rect class="sgSoft" x="90" y="93" width="36" height="3" rx="1.5" />
+              <rect x="154" y="91" width="14" height="7" rx="3.5" fill="var(--primary)" />
+              <circle cx="164.5" cy="94.5" r="2.6" fill="#fff" />
+              <rect class="sgOutline" x="90" y="102" width="78" height="9" rx="2.5" />
+              <rect class="sgFrame" x="90" y="115" width="78" height="11" rx="3" />
+              <rect class="sgIBtnHi" x="90" y="115" width="78" height="11" rx="3" />
+              <circle cx="98" cy="120.2" r="2.1" fill="none" stroke="var(--text)" stroke-width=".9" />
+              <line x1="99.6" y1="121.8" x2="101.2" y2="123.4" stroke="var(--text)" stroke-width=".9" stroke-linecap="round" />
+              <rect x="105" y="119" width="44" height="3" rx="1.5" fill="var(--muted)" />
+              <rect class="sgSoft" x="90" y="133" width="14" height="3" rx="1.5" />
+              <rect class="sgIBar sgIBar1" x="108" y="133" width="60" height="3" rx="1.5" />
+              <rect class="sgSoft" x="90" y="141" width="14" height="3" rx="1.5" />
+              <rect class="sgIBar sgIBar2" x="108" y="141" width="48" height="3" rx="1.5" />
+              <rect class="sgSoft" x="90" y="149" width="14" height="3" rx="1.5" />
+              <rect class="sgIBar sgIBar3" x="108" y="149" width="34" height="3" rx="1.5" />
+              <rect class="sgSoft" x="90" y="157" width="14" height="3" rx="1.5" />
+              <rect class="sgIBar sgIBar4" x="108" y="157" width="18" height="3" rx="1.5" />
+            </g>
+          </g>
+          <!-- 點擊的漣漪：≡、要求電腦版網站、播放器、≡、BiBoost、測速按鈕 -->
+          <circle class="sgRip sgIRip1" cx="109.5" cy="163" r="7" />
+          <circle class="sgRip sgIRip2" cx="128" cy="144.5" r="7" />
+          <circle class="sgRip sgIRip3" cx="117" cy="36.5" r="7" />
+          <circle class="sgRip sgIRip4" cx="109.5" cy="163" r="7" />
+          <circle class="sgRip sgIRip5" cx="128" cy="134" r="7" />
+          <circle class="sgRip sgIRip6" cx="129" cy="120.5" r="7" />
+          <!-- 手指：觸控點在原點，外層 g 平移、內層 g 做按下的縮放 -->
+          <g class="sgFinger sgIFinger">
+            <g class="sgFingerIn sgIFingerIn">
+              <circle r="5" fill="rgba(24,25,28,.32)" stroke="#fff" stroke-width="1.2" />
+            </g>
+          </g>
+        </svg>
+        <!-- iPad：點播放器開始播 → 網址列右邊的延伸功能圖示 → 選單點 BiBoost → popup 彈出 → 點測速 -->
+        <svg class="sgScene sgScIpad" viewBox="0 0 260 170" aria-hidden="true" style="display:none">
+          <defs>
+            <linearGradient id="sgIconBgP" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="rgb(255,138,176)" />
+              <stop offset="100%" stop-color="rgb(235,90,140)" />
+            </linearGradient>
+            <clipPath id="sgPlrP"><rect x="14" y="42" width="150" height="84" rx="4" /></clipPath>
+          </defs>
+          <rect class="sgFrame" x="2" y="2" width="256" height="166" rx="12" />
+          <rect x="7" y="7" width="246" height="156" rx="6" fill="var(--raised)" stroke="var(--line)" />
+          <!-- Safari 上方：側邊欄、返回、網址列（BiBoost 圖示、延伸功能圖示、重新整理）、分享／新分頁／分頁 -->
+          <circle class="sgFrame" cx="18" cy="19" r="5" />
+          <circle class="sgFrame" cx="31" cy="19" r="5" />
+          <rect class="sgFrame" x="78" y="13" width="104" height="12" rx="6" />
+          <rect x="105" y="17.8" width="30" height="2.4" rx="1.2" fill="var(--muted)" />
+          <g transform="translate(146,16) scale(0.01172)">
+              <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sgIconBgP)" />
+              <g fill="white">
+                <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+                <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+              </g>
+            </g>
+          <path d="M156.5 16.4 h4.2 a.8 .8 0 0 1 .8 .8 v.9 h.7 a.9 .9 0 0 1 0 1.8 h-.7 v1 a.8 .8 0 0 1 -.8 .8 h-4.2 z" fill="none" stroke="var(--muted)" stroke-width=".8" stroke-linejoin="round" />
+          <circle cx="172" cy="19" r="2.2" fill="none" stroke="var(--muted)" stroke-width=".9" />
+          <circle class="sgFrame" cx="216" cy="19" r="5" />
+          <circle class="sgFrame" cx="229" cy="19" r="5" />
+          <circle class="sgFrame" cx="242" cy="19" r="5" />
+          <line x1="7" y1="29" x2="253" y2="29" stroke="var(--line)" />
+          <!-- B 站影片頁 -->
+          <rect x="14" y="33" width="16" height="5" rx="2.5" fill="#00aeec" />
+          <rect class="sgField" x="96" y="32" width="56" height="7" rx="3.5" />
+          <g clip-path="url(#sgPlrP)">
+            <rect x="14" y="42" width="150" height="84" fill="#1f2329" />
+            <circle cx="136" cy="62" r="8" fill="#ffd166" />
+            <polygon points="14,126 14,102 48,82 82,106 112,90 164,116 164,126" fill="#2ec4b6" />
+            <polygon points="14,126 14,115 60,98 104,117 142,104 164,112 164,126" fill="#1a936f" />
+            <rect class="sgPDim" x="14" y="42" width="150" height="84" fill="#000" opacity=".5" />
+            <rect x="20" y="119" width="138" height="2.5" rx="1.25" fill="rgba(255,255,255,.35)" />
+            <rect class="sgPProg" x="20" y="119" width="138" height="2.5" rx="1.25" fill="#fb7299" />
+          </g>
+          <g class="sgPPlay">
+            <circle cx="89" cy="84" r="11" fill="rgba(255,255,255,.92)" />
+            <polygon points="86,78.5 86,89.5 95,84" fill="#fb7299" />
+          </g>
+          <rect class="sgSoft" x="14" y="133" width="110" height="5" rx="2.5" />
+          <rect class="sgSoft" x="14" y="143" width="72" height="4.5" rx="2.25" />
+          <rect class="sgSoft" x="14" y="152" width="90" height="4" rx="2" />
+          <rect class="sgSoft" x="172" y="42" width="26" height="16" rx="2" />
+          <rect class="sgSoft" x="202" y="44" width="42" height="4" rx="2" />
+          <rect class="sgSoft" x="202" y="51" width="28" height="4" rx="2" />
+          <rect class="sgSoft" x="172" y="64" width="26" height="16" rx="2" />
+          <rect class="sgSoft" x="202" y="66" width="42" height="4" rx="2" />
+          <rect class="sgSoft" x="202" y="73" width="28" height="4" rx="2" />
+          <rect class="sgSoft" x="172" y="86" width="26" height="16" rx="2" />
+          <rect class="sgSoft" x="202" y="88" width="42" height="4" rx="2" />
+          <rect class="sgSoft" x="202" y="95" width="28" height="4" rx="2" />
+          <rect class="sgSoft" x="172" y="108" width="26" height="16" rx="2" />
+          <rect class="sgSoft" x="202" y="110" width="42" height="4" rx="2" />
+          <rect class="sgSoft" x="202" y="117" width="28" height="4" rx="2" />
+          <!-- 延伸功能選單：第一列是 BiBoost -->
+          <g class="sgPMenu">
+            <rect x="124" y="30" width="76" height="36" rx="6" fill="rgba(0,0,0,.12)" />
+            <rect class="sgFrame" x="122" y="28" width="76" height="36" rx="6" />
+            <rect class="sgPRowHi" x="124" y="30" width="72" height="10" rx="3" />
+            <g transform="translate(127,32) scale(0.01172)">
+              <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="url(#sgIconBgP)" />
+              <g fill="white">
+                <polygon points="92,140 320,140 320,82 420,166 320,250 320,192 92,192" />
+                <polygon points="420,320 192,320 192,262 92,346 192,430 192,372 420,372" />
+              </g>
+            </g>
+            <rect x="137" y="33.8" width="42" height="2.4" rx="1.2" fill="var(--muted)" />
+            <path d="M127.5 43.4 h4.2 a.8 .8 0 0 1 .8 .8 v.9 h.7 a.9 .9 0 0 1 0 1.8 h-.7 v1 a.8 .8 0 0 1 -.8 .8 h-4.2 z" fill="none" stroke="var(--placeholder)" stroke-width=".8" stroke-linejoin="round" />
+            <rect class="sgSoft" x="137" y="44.8" width="38" height="2.4" rx="1.2" />
+            <rect class="sgSoft" x="137" y="55.8" width="30" height="2.4" rx="1.2" />
+          </g>
+          <!-- 擴充 popup（跟電腦版同一個樣子）-->
+          <g transform="translate(-38,6)">
+            <g class="sgPPop">
+              <rect x="162" y="24" width="92" height="104" rx="6" fill="rgba(0,0,0,.12)" />
+              <rect class="sgFrame" x="160" y="22" width="92" height="104" rx="6" />
+              <rect x="168" y="30" width="8" height="8" rx="2" fill="#fb7299" />
+              <rect class="sgSoft" x="180" y="32" width="40" height="4" rx="2" />
+              <rect class="sgSoft" x="168" y="45" width="48" height="4" rx="2" />
+              <rect x="228" y="43" width="16" height="8" rx="4" fill="var(--primary)" />
+              <circle cx="240" cy="47" r="3" fill="#fff" />
+              <rect class="sgOutline" x="168" y="57" width="76" height="10" rx="3" />
+              <rect class="sgFrame" x="168" y="72" width="76" height="12" rx="3" />
+              <rect class="sgPBtnHi" x="168" y="72" width="76" height="12" rx="3" />
+              <circle cx="177" cy="77.5" r="2.4" fill="none" stroke="var(--text)" stroke-width="1" />
+              <line x1="178.8" y1="79.3" x2="180.6" y2="81.1" stroke="var(--text)" stroke-width="1" stroke-linecap="round" />
+              <rect x="185" y="76.3" width="50" height="3.4" rx="1.7" fill="var(--muted)" />
+              <rect class="sgSoft" x="168" y="93" width="16" height="3.5" rx="1.75" />
+              <rect class="sgPBar sgPBar1" x="188" y="93" width="56" height="3.5" rx="1.75" />
+              <rect class="sgSoft" x="168" y="101" width="16" height="3.5" rx="1.75" />
+              <rect class="sgPBar sgPBar2" x="188" y="101" width="44" height="3.5" rx="1.75" />
+              <rect class="sgSoft" x="168" y="109" width="16" height="3.5" rx="1.75" />
+              <rect class="sgPBar sgPBar3" x="188" y="109" width="30" height="3.5" rx="1.75" />
+              <rect class="sgSoft" x="168" y="117" width="16" height="3.5" rx="1.75" />
+              <rect class="sgPBar sgPBar4" x="188" y="117" width="16" height="3.5" rx="1.75" />
+            </g>
+          </g>
+          <!-- 點擊的漣漪：播放器、延伸功能圖示、BiBoost、測速按鈕 -->
+          <circle class="sgRip sgPRip1" cx="89" cy="84" r="9" />
+          <circle class="sgRip sgPRip2" cx="159" cy="19" r="7" />
+          <circle class="sgRip sgPRip3" cx="152" cy="35" r="7" />
+          <circle class="sgRip sgPRip4" cx="168" cy="84" r="9" />
+          <!-- 手指：觸控點在原點，外層 g 平移、內層 g 做按下的縮放 -->
+          <g class="sgFinger sgPFinger">
+            <g class="sgFingerIn sgPFingerIn">
+              <circle r="5" fill="rgba(24,25,28,.32)" stroke="#fff" stroke-width="1.2" />
             </g>
           </g>
         </svg>

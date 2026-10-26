@@ -146,6 +146,15 @@ button.primary {
     cursor: pointer;
 }
 
+/* 只有 iOS 26.2 以上才有 API 直接打開「設定」裡的擴充頁面（見 Script.js 的 setCanOpenSettings） */
+button.open-extension-settings {
+    display: none;
+}
+
+body.can-open-settings button.open-extension-settings {
+    display: block;
+}
+
 button.primary:active {
     opacity: .8;
 }

@@ -9,6 +9,7 @@ import WebKit
 
 #if os(iOS)
 import UIKit
+import SafariServices
 typealias PlatformViewController = UIViewController
 #elseif os(macOS)
 import Cocoa
@@ -37,6 +38,10 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         // 引導頁依裝置顯示 iPhone／iPad 各自的步驟
         let device = UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
         webView.evaluateJavaScript("show('\(device)')")
+        // iOS 26.2 起可以直接打開「設定」裡這個擴充的頁面；更舊的系統沒有公開 API，引導頁只留文字步驟
+        if #available(iOS 26.2, *) {
+            webView.evaluateJavaScript("setCanOpenSettings(true)")
+        }
 #elseif os(macOS)
         webView.evaluateJavaScript("show('mac')")
 
@@ -63,6 +68,12 @@ class ViewController: PlatformViewController, WKNavigationDelegate, WKScriptMess
         }
 
 #if os(iOS)
+        if action == "open-extension-settings" {
+            if #available(iOS 26.2, *) {
+                SFSafariSettings.openExtensionsSettings(forIdentifiers: [extensionBundleIdentifier]) { _ in }
+            }
+            return
+        }
         if action != "open-safari" {
             return
         }

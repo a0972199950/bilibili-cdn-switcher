@@ -275,13 +275,15 @@
       fixed ? "position:fixed" : "position:absolute",
       fixed ? "top:15%" : "top:24px",
       "left:50%", "transform:translateX(-50%)", "z-index:999999",
-      "display:flex", "align-items:center", "gap:10px", "max-width:85%", "box-sizing:border-box",
+      // 放不下就讓按钮换到下一行：手机版页面（m.bilibili.com）播放器很窄，不换行时文字会被挤成一行一两个字、「关闭」被切掉
+      "display:flex", "flex-wrap:wrap", "align-items:center", "gap:10px", "max-width:85%", "box-sizing:border-box",
       "font:13px/1.6 " + TOAST_FONT, "color:#fff",
       "background:rgba(0,0,0,.78)", "padding:8px 14px", "border-radius:8px",
       "box-shadow:0 2px 10px rgba(0,0,0,.35)", "opacity:1", "transition:opacity .4s",
       (hasButton ? "pointer-events:auto" : "pointer-events:none")
     ].join(";");
     var span = document.createElement("span");
+    span.style.cssText = "flex:1 1 160px;min-width:0";
     span.textContent = text;
     toastEl.appendChild(span);
     if (opts.actionText && opts.onAction) {
@@ -506,6 +508,10 @@
       // 有资料在动、但只有几 kB/s 的「细水长流」：不算在补缓冲（见下方 lastSampleAt 那段）
       var trickling = now - lastSampleAt < 5000 && debug.speedBps < TRICKLE_BPS;
       if (v && v.ended) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
+      // 手机版（m.bilibili.com）与 iPhone 的嵌入播放器（player.bilibili.com 会转到 /blackboard/webplayer/mbplayer.html）
+      // 的 video 是 preload=metadata：只抓了 metadata、使用者还没按播放（readyState 1、paused、没有前向缓冲），
+      // 照下面的规则会被当成卡住，实测一开页面就误跳「皆无法播放」。还没播放过（played 是空的）的暂停不算卡
+      if (IS_MOBILE_PLAYER && (!v || (v.paused && !v.played.length))) { stallState.lastTime = -1; stallState.stuckSince = null; return; }
       if (!v || v.readyState === 0) {
         // 没有 video / 还没有任何媒体资料：通常是还没开始（或 player.reload() 过渡），
         // 不算卡；但 starving 时代表初载就遇到死线路，照样累计；细水长流的话一直拿不到能播的资料，宽限 20 秒后照样累计
@@ -589,6 +595,7 @@
   //  - 直播开关随时动态判断（liveActive），不像一般影片那样要靠「载入当下」决定是否安装 hook，
   //    所以改线路/开关都不需要整页重载。
   var IS_LIVE_PAGE = location.hostname === "live.bilibili.com";
+  var IS_MOBILE_PLAYER = location.hostname === "m.bilibili.com" || /^\/blackboard\/webplayer\//.test(location.pathname);
   var LIVE_ROUTES = ["ov", "ovb", "cn", "cnb"];
   var LIVE_PATH_RE = /\/live-bvc\//i;
   var LIVE_HOST_RE = /^((?:[a-z0-9]+--)?)(ov|cn)-gotcha(\d+)(b?)(\.[a-z0-9.-]+)$/i;

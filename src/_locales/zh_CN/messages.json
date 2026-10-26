@@ -83,6 +83,12 @@
   "stGuideText": {
     "message": "打开一部 B 站视频并开始播放，再点扩展图标按「测试各节点速度」。"
   },
+  "stGuideTextIphone": {
+    "message": "先点地址栏左边的页面菜单 ≡，选“请求桌面网站”，再打开一部 B 站视频并开始播放，然后从页面菜单点 BiBoost，按「测试各节点速度」。"
+  },
+  "stGuideTextIpad": {
+    "message": "打开一部 B 站视频并开始播放，点地址栏的扩展图标，选 BiBoost，再按「测试各节点速度」。"
+  },
   "stGuideBtn": {
     "message": "前往示例视频"
   },
@@ -490,6 +496,9 @@
   },
   "autoDetectText": {
     "message": "不知道哪些节点快？官方测速工具会测遍 300 多个节点，自动把最快的 10 个加入列表。"
+  },
+  "autoDetectTextIos": {
+    "message": "不知道哪些节点快？在电脑上用官方测速工具测遍 300 多个节点，测完用这台设备扫描画面上的二维码，就会把最快的 10 个加入列表。"
   },
   "autoDetectBtn": {
     "message": "⚡ 自动检测并加入"

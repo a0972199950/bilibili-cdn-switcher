@@ -83,6 +83,12 @@
   "stGuideText": {
     "message": "打開一部 B 站影片並開始播放，再點擴充圖示按「測試各節點速度」。"
   },
+  "stGuideTextIphone": {
+    "message": "先點網址列左邊的頁面選單 ≡，選「要求電腦版網站」，再打開一部 B 站影片並開始播放，然後從頁面選單點 BiBoost，按「測試各節點速度」。"
+  },
+  "stGuideTextIpad": {
+    "message": "打開一部 B 站影片並開始播放，點網址列的延伸功能圖示，選 BiBoost，再按「測試各節點速度」。"
+  },
   "stGuideBtn": {
     "message": "前往範例影片"
   },
@@ -490,6 +496,9 @@
   },
   "autoDetectText": {
     "message": "不知道哪些節點快？官方測速工具會測遍 300 多個節點，自動把最快的 10 個加入列表。"
+  },
+  "autoDetectTextIos": {
+    "message": "不知道哪些節點快？在電腦上用官方測速工具測遍 300 多個節點，測完用這台裝置掃描畫面上的 QR code，就會把最快的 10 個加入列表。"
   },
   "autoDetectBtn": {
     "message": "⚡ 自動偵測並加入"

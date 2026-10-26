@@ -128,6 +128,14 @@ function openExtWindow(url, width, height) {
   chrome.tabs.create({ url: url });
 }
 
+// 交給其他 App 處理的網址（Mac App Store 的評論頁 macappstore://）：分頁本身不會載入任何東西，
+// 系統接手後把留下的空白分頁關掉（popup 的「給我 5 星鼓勵」用）
+function openHandoffUrl(url) {
+  chrome.tabs.create({ url: url }, function (tab) {
+    if (tab) setTimeout(function () { chrome.tabs.remove(tab.id, function () { void chrome.runtime.lastError; }); }, 2000);
+  });
+}
+
 chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (!msg || !msg.type) return;
   var tabId = sender && sender.tab ? sender.tab.id : (msg.tab != null ? msg.tab : null);
@@ -147,6 +155,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
     return true;
   }
   if (msg.type === "CDN_SWITCHER_OPEN_ANNOUNCEMENT_WINDOW") { openAnnouncementWindow(msg.id); sendResponse({ ok: true }); return true; }
+  if (msg.type === "CDN_SWITCHER_OPEN_HANDOFF_URL" && /^macappstore:/.test(msg.url || "")) { openHandoffUrl(msg.url); sendResponse({ ok: true }); return true; }
   if (msg.type === "CDN_SWITCHER_OPEN_REPORT_WINDOW") { openReportWindow(msg.tab != null ? msg.tab : tabId); sendResponse({ ok: true }); return true; }
 });
 

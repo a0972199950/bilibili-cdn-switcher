@@ -43,6 +43,10 @@ function detectBrowser() {
   if (ua.indexOf("Chrome/") !== -1) return "chrome";
   return "safari";
 }
+// iPhone / iPad Safari: neither can run the speed test tool. iPadOS Safari reports a Mac UA, so touch support tells them apart
+function isIosSafari() {
+  return detectBrowser() === "safari" && (/iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.maxTouchPoints > 1);
+}
 function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
 
 // ---- formatting ----

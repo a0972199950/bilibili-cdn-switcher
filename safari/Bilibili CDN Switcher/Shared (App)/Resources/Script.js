@@ -14,12 +14,21 @@ function show(platform, enabled) {
     }
 }
 
+// iOS 26.2 以上（ViewController.swift 判斷）：顯示直接打開「設定」裡擴充頁面的按鈕
+function setCanOpenSettings(on) {
+    document.body.classList.toggle("can-open-settings", on);
+}
+
 function post(action) {
     webkit.messageHandlers.controller.postMessage(action);
 }
 
 for (const button of document.querySelectorAll("button.open-preferences")) {
     button.addEventListener("click", () => post("open-preferences"));
+}
+
+for (const button of document.querySelectorAll("button.open-extension-settings")) {
+    button.addEventListener("click", () => post("open-extension-settings"));
 }
 
 for (const button of document.querySelectorAll("button.open-safari")) {

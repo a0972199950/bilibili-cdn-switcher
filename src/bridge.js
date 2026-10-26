@@ -132,6 +132,8 @@
     if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
   }
   importFromHash();
+  // 已經停在 B 站頁面時再開匯入網址（例如 iPad 掃 QR code 開在同一個分頁），只換 hash、頁面不會重新載入，靠 hashchange 接
+  window.addEventListener("hashchange", importFromHash);
 
   // chrome.storage 变更 → 重新推送
   try {

@@ -84,6 +84,7 @@ function notes(version) {
     "| 檔案 · File | 說明 · Description |",
     "| --- | --- |",
     "| `CDNSpeedTest.exe` | CDN 測速工具（Windows 10/11），測完可自動建立擴充的「自訂節點列表」· CDN speed test tool for Windows |",
+    "| `CDNSpeedTest-mac.zip` | CDN 測速工具 Mac 版（macOS 11 以上，Apple 晶片／Intel，已通過 Apple 公證）· CDN speed test tool for Mac (notarized) |",
     "| `bilibili-cdn-switcher-chrome.zip` | Chrome 離線安裝：解壓縮 → `chrome://extensions` 開「開發人員模式」→「載入未封裝項目」· Unzip, then *Load unpacked* in developer mode |",
     "| `bilibili-cdn-switcher-edge.zip` | Edge 離線安裝：解壓縮 → `edge://extensions` 開「開發人員模式」→「載入解壓縮」· Unzip, then *Load unpacked* in developer mode |",
     "| `bilibili-cdn-switcher-firefox.zip` | Firefox：未經 Mozilla 簽署，只能在 `about:debugging` 暫時載入（重開瀏覽器就消失）· Unsigned; load as a temporary add-on in `about:debugging` |",
