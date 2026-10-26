@@ -958,7 +958,8 @@ def cmd_report(country, args):
     n, bw = env.get("network") or {}, env.get("bandwidth") or {}
     if n:
         wf = n.get("wifi") or {}
-        wtxt = (f"；{wf.get('radio') or ''} 訊號 {wf.get('signal_pct')}%，連線速率 {wf.get('rx_mbps')}/{wf.get('tx_mbps')} Mbps"
+        rate = "/".join(str(v) for v in (wf.get("rx_mbps"), wf.get("tx_mbps")) if v is not None)   # Mac 只有傳送速率
+        wtxt = (f"；{wf.get('radio') or ''} 訊號 {wf.get('signal_pct')}%，連線速率 {rate or '?'} Mbps"
                 if wf else "")
         w(f"| 網路類型 | {n.get('kind')}{wtxt}" + (f"；{n['kind_note']}" if n.get("kind_note") else "") + " |")
     vc = env.get("vpn_check") or {}

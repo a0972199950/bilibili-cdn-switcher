@@ -5,9 +5,12 @@
 # 執行中的 exe 不能覆寫但可以改名，所以用改名換檔；.old.exe 由新版啟動時刪掉。
 # 任何一步失敗（沒網路、資料夾不能寫、被防毒擋）都安靜跳過，照用目前版本。
 # 只在打包後的 exe 生效；測試時可用環境變數 CDNSPEEDTEST_UPDATE_URL 指到別的 CDNSpeedTest.json。
+# Mac 版（.app）不自動換檔（簽章、Gatekeeper、App 可能放在不能寫的位置）：只用 check_only() 比版本，
+# 有新版時由 app.py 在入口頁顯示下載連結（MAC_DOWNLOAD_URL）。
 import hashlib, json, os, subprocess, sys, time, urllib.parse, urllib.request
 
 MANIFEST_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/releases/latest/download/CDNSpeedTest.json"
+MAC_DOWNLOAD_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/releases/latest/download/CDNSpeedTest-mac.zip"
 UA = {"User-Agent": "Mozilla/5.0 cdn-speedtest-updater"}
 
 
@@ -26,6 +29,20 @@ def _paths():
 
 def enabled():
     return getattr(sys, "frozen", False) and os.name == "nt"
+
+
+def check_only(current):
+    """Mac 版：Latest 的版本比自己新就回傳新版號，否則（或失敗）回傳 None。只在打包後的 .app 生效"""
+    if not (getattr(sys, "frozen", False) and sys.platform == "darwin"): return None
+    url = os.environ.get("CDNSPEEDTEST_UPDATE_URL") or MANIFEST_URL
+    try:
+        m = json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=15))
+        if _ver(m.get("version")) > _ver(current):
+            print(f"[更新] 有新版 v{m.get('version')}，Mac 版不自動更新，入口頁顯示下載連結")
+            return m.get("version")
+    except Exception as e:
+        print(f"[更新] 檢查失敗，略過：{str(e)[:120]}")
+    return None
 
 
 def cleanup():

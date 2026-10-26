@@ -65,8 +65,26 @@ def _windows_link():
     return dict(kind=kind, adapter=a.get("InterfaceDescription"), link_speed=a.get("LinkSpeed"), wifi=wifi)
 
 
+def _mac_wifi(adapter):
+    """Mac 的 Wi-Fi 規格（system_profiler，不取 SSID）。訊號強度換算成跟 Windows netsh 一樣的百分比：2 × (dBm + 100)"""
+    try:
+        d = json.loads(run(["system_profiler", "-json", "SPAirPortDataType"], timeout=20) or "{}")
+        ifs = [i for x in d.get("SPAirPortDataType") or [] for i in x.get("spairport_airport_interfaces") or []]
+        cur = next((i.get("spairport_current_network_information") for i in ifs if i.get("_name") == adapter), None)
+    except Exception:
+        return None
+    if not cur: return None
+    sig = re.match(r"\s*(-?\d+)\s*dBm", str(cur.get("spairport_signal_noise") or ""))
+    ch = re.match(r"\s*(\d+)", str(cur.get("spairport_network_channel") or ""))
+    rate = cur.get("spairport_network_rate")
+    return dict(radio=cur.get("spairport_network_phymode"),
+                signal_pct=max(0, min(100, 2 * (int(sig.group(1)) + 100))) if sig else None,
+                rx_mbps=None, tx_mbps=float(rate) if isinstance(rate, (int, float)) else None,
+                channel=int(ch.group(1)) if ch else None)
+
+
 def _unix_link():
-    kind, adapter = "未知", None
+    kind, adapter, wifi = "未知", None, None
     if sys.platform == "darwin":
         dev = re.search(r"interface:\s*(\S+)", run(["route", "-n", "get", "default"]))
         adapter = dev.group(1) if dev else None
@@ -75,13 +93,15 @@ def _unix_link():
             if adapter and f"Device: {adapter}" in blk:
                 kind = "Wi-Fi" if "Wi-Fi" in blk else "有線" if "Ethernet" in blk or "LAN" in blk else \
                     "行動網路（手機分享）" if "iPhone" in blk else "未知"
+        if kind == "Wi-Fi":
+            wifi = _mac_wifi(adapter)
     else:
         m = re.search(r"dev\s+(\S+)", run(["ip", "route", "show", "default"]))
         adapter = m.group(1) if m else None
         if adapter:
             kind = "Wi-Fi" if os.path.exists(f"/sys/class/net/{adapter}/wireless") else \
                 "行動網路" if re.match(r"wwan|usb|rmnet", adapter) else "有線"
-    return dict(kind=kind, adapter=adapter, link_speed=None, wifi=None)
+    return dict(kind=kind, adapter=adapter, link_speed=None, wifi=wifi)
 
 
 def link_info(isp_org=""):
@@ -106,9 +126,33 @@ VPN_ADAPTER = re.compile(r"WireGuard|OpenVPN|TAP-Windows|TAP-Win32|Wintun|\bTUN\
                          r"Hamachi|SoftEther|Juniper|SonicWall|Check Point", re.I)
 
 
+MAC_VPN_IF = re.compile(r"^(utun|ipsec|ppp|tun|tap|wg)\d*$")
+
+
+def _mac_vpn_adapters():
+    """Mac：外網流量走的網卡是 VPN 類（utun、ipsec、ppp…）。macOS 平常就有好幾張 utun（iCloud 等系統服務用），
+    所以只看預設路由與 OpenVPN/WireGuard 常用的 0/1 + 128.0/1 路由實際走哪張，不看網卡存不存在；
+    另外 scutil --nc 列出的系統 VPN 服務（IKEv2、L2TP、IPSec、App 建的 VPN 設定）已連線也算"""
+    out, ifs = [], []
+    m = re.search(r"interface:\s*(\S+)", run(["route", "-n", "get", "default"]))
+    if m: ifs.append(m.group(1))
+    for line in run(["netstat", "-rn", "-f", "inet"]).splitlines():
+        f = line.split()
+        if len(f) >= 4 and f[0] in ("0/1", "128.0/1", "0.0.0.0/1", "128.0.0.0/1"):
+            ifs.append(f[3])
+    out += [f"{i}（預設路由）" for i in dict.fromkeys(ifs) if MAC_VPN_IF.match(i)]
+    for line in run(["scutil", "--nc", "list"]).splitlines():
+        if "(Connected)" in line:
+            name = re.search(r'"([^"]+)"', line)
+            out.append(f"{name.group(1) if name else 'VPN'}（系統 VPN 設定）")
+    return out
+
+
 def _local_vpn_adapters():
     """預設路由（0.0.0.0/0、OpenVPN/WireGuard 常用的 0.0.0.0/1 + 128.0.0.0/1）走的網卡中，名稱像 VPN 的。
-    只支援 Windows；其他系統回傳 []"""
+    支援 Windows 與 Mac；其他系統回傳 []"""
+    if sys.platform == "darwin":
+        return _mac_vpn_adapters()
     if os.name != "nt":
         return []
     ps = ("Get-NetRoute -AddressFamily IPv4 -ErrorAction SilentlyContinue | "
