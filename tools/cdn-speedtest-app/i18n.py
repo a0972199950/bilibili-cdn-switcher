@@ -68,6 +68,9 @@ S = {
                  "en": "Updating to v{v}. The app will reopen automatically…",
                  "ja": "v{v} に更新しています。完了すると自動で再起動します…",
                  "ko": "v{v}(으)로 업데이트하는 중입니다. 완료되면 자동으로 다시 열립니다…"},
+    "update_avail": {"zh-TW": "有新版 v{v}，按這裡下載", "zh-CN": "有新版本 v{v}，点这里下载",
+                     "en": "Version {v} is available. Click to download", "ja": "新しいバージョン v{v} があります。ここからダウンロード",
+                     "ko": "새 버전 v{v}이(가) 있습니다. 여기를 눌러 다운로드하세요"},
     "next": {"zh-TW": "下一步", "zh-CN": "下一步", "en": "Next", "ja": "次へ", "ko": "다음"},
     "back": {"zh-TW": "上一步", "zh-CN": "上一步", "en": "Back", "ja": "戻る", "ko": "이전"},
     "close": {"zh-TW": "關閉", "zh-CN": "关闭", "en": "Close", "ja": "閉じる", "ko": "닫기"},
@@ -321,6 +324,14 @@ S = {
                    "ko": "또는 다음 서버를 확장 프로그램의 \"사용자 지정 노드 목록\"에 직접 추가하세요:"},
     "copy_all": {"zh-TW": "全部複製", "zh-CN": "全部复制", "en": "Copy all", "ja": "すべてコピー", "ko": "모두 복사"},
     "copied": {"zh-TW": "已複製", "zh-CN": "已复制", "en": "Copied", "ja": "コピーしました", "ko": "복사됨"},
+    "safari_hint": {
+        "zh-TW": "Safari：如果剛開啟的 B 站頁面上方沒有出現節點已加入的提示，請到 Safari「設定 → 延伸功能」勾選 BiBoost，並允許它在 bilibili.com 上使用，再按下方按鈕重新匯入。",
+        "zh-CN": "Safari：如果刚打开的 B 站页面上方没有出现节点已加入的提示，请到 Safari「设置 → 扩展」勾选 BiBoost，并允许它在 bilibili.com 上使用，再点下方按钮重新导入。",
+        "en": "Safari: if the Bilibili page that just opened didn't show a message that the servers were added, open Safari Settings → Extensions, turn on BiBoost and allow it on bilibili.com, then click the button below to import again.",
+        "ja": "Safari：開いた Bilibili のページ上部にサーバー追加のメッセージが出ない場合は、Safari の「設定 → 機能拡張」で BiBoost をオンにし、bilibili.com での使用を許可してから、下のボタンでもう一度インポートしてください。",
+        "ko": "Safari: 방금 열린 Bilibili 페이지 위쪽에 서버가 추가되었다는 알림이 없다면 Safari \"설정 → 확장 프로그램\"에서 BiBoost를 켜고 bilibili.com에서 사용하도록 허용한 뒤 아래 버튼을 눌러 다시 가져오세요."},
+    "safari_retry": {"zh-TW": "在 Safari 重新匯入", "zh-CN": "在 Safari 重新导入", "en": "Import again in Safari",
+                     "ja": "Safari でもう一度インポート", "ko": "Safari에서 다시 가져오기"},
     "build_list": {"zh-TW": "建立自訂列表", "zh-CN": "创建自定义列表", "en": "Build custom list",
                    "ja": "カスタムリストを作成", "ko": "사용자 지정 목록 만들기"},
     "ext_built": {"zh-TW": "已在瀏覽器開啟 B 站，節點已加入「自訂節點列表」。",
@@ -446,7 +457,19 @@ def t(key, lang, **kw):
 
 
 def default_lang():
-    """依 Windows 介面語言預選；其他系統看 locale"""
+    """依 Windows 介面語言預選；Mac 看系統偏好語言（從 Finder 開 .app 時沒有 LANG，locale 是空的）；其他系統看 locale"""
+    import sys
+    if sys.platform == "darwin":
+        try:
+            import re, subprocess
+            out = subprocess.run(["defaults", "read", "-g", "AppleLanguages"], capture_output=True, text=True,
+                                 timeout=5).stdout
+            first = (re.findall(r'"?([A-Za-z]{2}[\w-]*)"?', out) or [""])[0].lower()
+            if first.startswith("zh"):
+                return "zh-TW" if "hant" in first or first.endswith(("-tw", "-hk", "-mo")) else "zh-CN"
+            return {"ja": "ja", "ko": "ko"}.get(first[:2], "en")
+        except Exception:
+            return "en"
     try:
         import ctypes
         lid = ctypes.windll.kernel32.GetUserDefaultUILanguage()

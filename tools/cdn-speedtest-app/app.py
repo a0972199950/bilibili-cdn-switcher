@@ -17,6 +17,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 APP_VERSION = "1.9.1"
+MAC = sys.platform == "darwin"
 HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, os.path.join(HERE, "core"))
@@ -160,8 +161,11 @@ def norm_code(c):
 
 
 def install_info():
-    """這台電腦的隨機 ID（第一次執行時產生，存在 %LOCALAPPDATA%\\CDNSpeedTest），回傳 (ID, 是否第一次執行)"""
-    d = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "CDNSpeedTest")
+    """這台電腦的隨機 ID（第一次執行時產生，存在 %LOCALAPPDATA%\\CDNSpeedTest；Mac 是 ~/Library/Application Support），
+    回傳 (ID, 是否第一次執行)"""
+    base = os.path.expanduser("~/Library/Application Support") if MAC else \
+        os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    d = os.path.join(base, "CDNSpeedTest")
     p = os.path.join(d, "install.json")
     try:
         with open(p, encoding="utf-8") as f:
@@ -369,6 +373,12 @@ C = dict(bg="#F4F5F7", card="#FFFFFF", text="#18191C", muted="#61666D", line="#E
          accent_dark="#E85C86", accent_soft="#FFECF1", link="#00AEEC", ok="#2BA471", err="#D93025")
 FAMILY = {"zh-TW": "Microsoft JhengHei UI", "zh-CN": "Microsoft YaHei UI", "ja": "Yu Gothic UI",
           "ko": "Malgun Gothic", "en": "Segoe UI"}
+if MAC:
+    FAMILY = {"zh-TW": "PingFang TC", "zh-CN": "PingFang SC", "ja": "Hiragino Sans", "ko": "Apple SD Gothic Neo",
+              "en": "Helvetica Neue"}
+# Tk 的字級單位是 point：Windows 1pt = 96/72 px，Mac 1pt = 1px，Mac 不放大的話整個介面字太小
+FONT_K = 1.25 if MAC else 1
+MONO = "Menlo" if MAC else "Consolas"
 STEPS = 7
 
 
@@ -410,12 +420,17 @@ class App(tk.Tk):
         self.lottery_loading = False
         self.lottery_shown, self.lottery_idx, self.lottery_sliding = [], 0, False   # 「測速目的」頁 carousel：列出的抽獎、顯示中的是第幾個、是否正在滑動
         self.add_ext = tk.BooleanVar(value=True)             # 發送後把建議節點加入擴充的自訂節點列表
-        self.ext_vars = {b: tk.BooleanVar(value=(b == "Chrome")) for b in extdetect.BROWSERS}
+        # 預設勾 Chrome；Mac 有裝 Safari 版擴充（BiBoost）時改勾 Safari
+        default_b = "Safari" if MAC and extdetect.safari_installs() else "Chrome"
+        self.ext_vars = {b: tk.BooleanVar(value=(b == default_b)) for b in extdetect.BROWSERS}
         self.ext_results = {}       # 各瀏覽器建立自訂節點列表的結果：ok / missing / outdated（感謝頁用）
         self.left_entry = False     # 按過入口頁的「下一步」：之後下載好的新版留到關閉程式時才換
         self.update_file = None     # 已下載、驗證過的新版 exe
+        self.update_avail = None    # Mac：Latest 有比較新的版本（入口頁顯示下載連結）
         self.protocol("WM_DELETE_WINDOW", self.quit_app)
         self.bind_all("<MouseWheel>", self.on_wheel)
+        if MAC:   # ⌘Q／選單的「結束」跟按 ✕ 一樣（測速中會先問、感謝頁會清掉已上傳的結果）
+            self.createcommand("tk::mac::Quit", lambda: self.tk.eval(self.protocol("WM_DELETE_WINDOW")))
         self.after(100, self.pump)
         self.show_entry()
         threading.Thread(target=self.update_worker, daemon=True).start()
@@ -426,9 +441,17 @@ class App(tk.Tk):
 
     # ── 自我更新（updater.py） ─────────────────────────────
     def update_worker(self):
+        if MAC:   # Mac 版不自動換檔，只在入口頁顯示下載連結
+            v = updater.check_only(APP_VERSION)
+            if v: self.q.put(("update_avail", v))
+            return
         updater.cleanup()
         r = updater.check_and_download(APP_VERSION)
         if r: self.q.put(("update_ready", *r))
+
+    def on_update_avail(self, ver):
+        self.update_avail = ver
+        if not self.left_entry: self.show_entry()
 
     def on_update_ready(self, ver, path):
         self.update_file = path
@@ -455,14 +478,14 @@ class App(tk.Tk):
 
     def setup_fonts(self):
         import tkinter.font as tkfont
-        fam = FAMILY.get(self.lang, "Segoe UI") if os.name == "nt" else "Helvetica"
+        fam = FAMILY.get(self.lang, FAMILY["en"]) if os.name == "nt" or MAC else "Helvetica"
         spec = dict(body=(11, "normal"), small=(9, "normal"), h1=(18, "bold"), h2=(12, "bold"), brand=(12, "bold"),
                     hero=(24, "bold"), tiny=(8, "normal"))
         for k, (size, weight) in spec.items():  # 單位是 point：DPI aware 後 Tk 會依縮放自動換算
             if k in self.fonts:
-                self.fonts[k].configure(family=fam, size=size, weight=weight)
+                self.fonts[k].configure(family=fam, size=round(size * FONT_K), weight=weight)
             else:
-                self.fonts[k] = tkfont.Font(self, family=fam, size=size, weight=weight)
+                self.fonts[k] = tkfont.Font(self, family=fam, size=round(size * FONT_K), weight=weight)
         if hasattr(self, "style"):
             self.apply_font_styles()
 
@@ -739,6 +762,10 @@ class App(tk.Tk):
         box.config(state="disabled")
 
         self.store_links(body).pack(anchor="w", pady=(0, self.px(10)))
+        if self.update_avail:
+            ttk.Button(body, text="⬆ " + self.T("update_avail", v=self.update_avail), style="Link.TButton",
+                       cursor="hand2", width=0, command=lambda: webbrowser.open(updater.MAC_DOWNLOAD_URL)).pack(
+                anchor="w", pady=(0, self.px(6)))
 
         nxt = ttk.Button(foot, text=self.T("next") + "  →", style="Accent.TButton", command=self.entry_next)
         upd = lambda: nxt.state(["!disabled"] if self.agree.get() else ["disabled"])
@@ -972,7 +999,7 @@ class App(tk.Tk):
             hf = HtmlFrame(stage, messages_enabled=False, horizontal_scrollbar=False, vertical_scrollbar="auto",
                            on_link_click=webbrowser.open)
             hf.load_html(f"<html><body style=\"margin:10px 14px;font-family:'{FAMILY.get(self.lang, 'Segoe UI')}';"
-                         f"font-size:10pt;color:{C['text']};background:{C['accent_soft']}\">" + h + "</body></html>")
+                         f"font-size:{round(10 * FONT_K)}pt;color:{C['text']};background:{C['accent_soft']}\">" + h + "</body></html>")
             hf.place(relx=0 if i == 0 else 1, y=0, relwidth=1, relheight=1)
             self.lottery_pages.append(hf)
         if len(items) > 1:
@@ -1613,6 +1640,16 @@ class App(tk.Tk):
         for w in self.ext_area.winfo_children():
             w.destroy()
         failed = {b: st for b, st in self.ext_results.items() if st != "ok"}
+        if self.ext_results.get("Safari") == "ok":
+            # Safari 讀不到擴充有沒有啟用、有沒有允許 bilibili.com：開了網址就提醒怎麼確認，附重新匯入的按鈕
+            sbox = tk.Frame(self.ext_area, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
+            sbox.pack(fill="x", pady=(self.px(14), 0))
+            tk.Label(sbox, text=cjk_wrap("🧭  " + self.T("safari_hint"), self.fonts["body"], self.px(520)),
+                     bg="#FAFBFC", fg=C["text"], font=self.fonts["body"], justify="left").pack(
+                anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
+            ttk.Button(sbox, text=self.T("safari_retry"), style="Small.TButton",
+                       command=lambda: self.build_custom_list("Safari")).pack(anchor="e", padx=self.px(14),
+                                                                             pady=(0, self.px(10)))
         if not failed:
             if retried:
                 box = tk.Frame(self.ext_area, bg="#E7F6EE", highlightbackground=C["ok"], highlightthickness=1)
@@ -1655,7 +1692,7 @@ class App(tk.Tk):
         lst = tk.Frame(man, bg="#FAFBFC")
         lst.pack(fill="x", padx=(self.px(14), self.px(6)), pady=(0, self.px(8)))
         tx = tk.Text(lst, height=min(5, len(hosts)), wrap="none", relief="flat", bg="#FAFBFC", fg=C["text"],
-                     font=("Consolas", 9), padx=0, pady=0, highlightthickness=0)
+                     font=(MONO, round(9 * FONT_K)), padx=0, pady=0, highlightthickness=0)
         tx.insert("1.0", "\n".join(f"{i:>2}. {h}" for i, h in enumerate(hosts, 1)))
         tx.config(state="disabled")
         if len(hosts) > 5:
