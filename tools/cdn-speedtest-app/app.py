@@ -16,7 +16,7 @@ import json, os, queue, re, shutil, subprocess, sys, threading, time, traceback,
 import tkinter as tk
 from tkinter import ttk, messagebox
 
-APP_VERSION = "1.9.1"
+APP_VERSION = "1.10.0"
 MAC = sys.platform == "darwin"
 if MAC:
     # python.org 的 Mac 版 Python（打包用的）不讀系統鑰匙圈，預設 CA 檔也不存在，HTTPS 全部驗證失敗：改用 certifi 的 CA

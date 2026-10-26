@@ -1,37 +1,42 @@
 {
-  "unreleased": [
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "依最新實測更新台灣的建議節點，台灣大哥大行動網路可選到更快的節點",
-        "zh_CN": "根据最新实测更新台湾的推荐节点，台湾大哥大移动网络可选到更快的节点",
-        "en": "Updated Taiwan's recommended nodes based on the latest tests, adding a faster option for Taiwan Mobile's mobile network",
-        "ja": "最新の実測をもとに台湾のおすすめノードを更新し、台湾大哥大（台湾モバイル）のモバイル回線向けに速いノードを追加",
-        "ko": "최신 실측을 바탕으로 대만 추천 노드를 업데이트해 대만 모바일(Taiwan Mobile) 모바일 네트워크에서 더 빠른 노드를 고를 수 있어요"
-      }
-    },
-    {
-      "type": "fix",
-      "text": {
-        "zh_TW": "修正 Safari 上設定頁無法捲動、iPhone 畫面沒有填滿，以及手機版網頁一開影片就誤跳「無法順利播放」提示",
-        "zh_CN": "修正 Safari 上设置页无法滚动、iPhone 画面没有铺满，以及手机版网页一打开视频就误弹「无法顺利播放」提示",
-        "en": "Fixed the settings page not scrolling in Safari, the layout not filling the screen on iPhone, and a false \"playback isn't smooth\" prompt on the mobile site",
-        "ja": "Safari で設定画面がスクロールできない問題、iPhone で画面いっぱいに表示されない問題、モバイル版サイトで動画を開くと「再生がスムーズでない」と誤表示される問題を修正",
-        "ko": "Safari에서 설정 화면이 스크롤되지 않던 문제, iPhone에서 화면을 꽉 채우지 않던 문제, 모바일 사이트에서 영상을 열면 \"재생이 원활하지 않다\"는 알림이 잘못 뜨던 문제를 고쳤어요"
-      }
-    },
-    {
-      "type": "feature",
-      "text": {
-        "zh_TW": "Mac 版 Safari 加入「給我 5 星鼓勵」按鈕；iPhone 的 App 可一鍵打開擴充設定",
-        "zh_CN": "Mac 版 Safari 加入「给我 5 星鼓励」按钮；iPhone 的 App 可一键打开扩展设置",
-        "en": "Added a \"Rate 5 stars\" button to Safari on Mac; the iPhone app can now open the extension's settings in one tap",
-        "ja": "Mac 版 Safari に「星 5 つで応援」ボタンを追加。iPhone のアプリから拡張機能の設定をワンタップで開けるようになりました",
-        "ko": "Mac용 Safari에 \"별 5개로 응원\" 버튼을 추가했어요. iPhone 앱에서 확장 프로그램 설정을 한 번에 열 수 있어요"
-      }
-    }
-  ],
+  "unreleased": [],
   "releases": [
+    {
+      "version": "2.8.0",
+      "date": "2026-10-26",
+      "entries": [
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "依最新實測更新台灣的建議節點，台灣大哥大行動網路可選到更快的節點",
+            "zh_CN": "根据最新实测更新台湾的推荐节点，台湾大哥大移动网络可选到更快的节点",
+            "en": "Updated Taiwan's recommended nodes based on the latest tests, adding a faster option for Taiwan Mobile's mobile network",
+            "ja": "最新の実測をもとに台湾のおすすめノードを更新し、台湾大哥大（台湾モバイル）のモバイル回線向けに速いノードを追加",
+            "ko": "최신 실측을 바탕으로 대만 추천 노드를 업데이트해 대만 모바일(Taiwan Mobile) 모바일 네트워크에서 더 빠른 노드를 고를 수 있어요"
+          }
+        },
+        {
+          "type": "fix",
+          "text": {
+            "zh_TW": "修正 Safari 上設定頁無法捲動、iPhone 畫面沒有填滿，以及手機版網頁一開影片就誤跳「無法順利播放」提示",
+            "zh_CN": "修正 Safari 上设置页无法滚动、iPhone 画面没有铺满，以及手机版网页一打开视频就误弹「无法顺利播放」提示",
+            "en": "Fixed the settings page not scrolling in Safari, the layout not filling the screen on iPhone, and a false \"playback isn't smooth\" prompt on the mobile site",
+            "ja": "Safari で設定画面がスクロールできない問題、iPhone で画面いっぱいに表示されない問題、モバイル版サイトで動画を開くと「再生がスムーズでない」と誤表示される問題を修正",
+            "ko": "Safari에서 설정 화면이 스크롤되지 않던 문제, iPhone에서 화면을 꽉 채우지 않던 문제, 모바일 사이트에서 영상을 열면 \"재생이 원활하지 않다\"는 알림이 잘못 뜨던 문제를 고쳤어요"
+          }
+        },
+        {
+          "type": "feature",
+          "text": {
+            "zh_TW": "Mac 版 Safari 加入「給我 5 星鼓勵」按鈕；iPhone 的 App 可一鍵打開擴充設定",
+            "zh_CN": "Mac 版 Safari 加入「给我 5 星鼓励」按钮；iPhone 的 App 可一键打开扩展设置",
+            "en": "Added a \"Rate 5 stars\" button to Safari on Mac; the iPhone app can now open the extension's settings in one tap",
+            "ja": "Mac 版 Safari に「星 5 つで応援」ボタンを追加。iPhone のアプリから拡張機能の設定をワンタップで開けるようになりました",
+            "ko": "Mac용 Safari에 \"별 5개로 응원\" 버튼을 추가했어요. iPhone 앱에서 확장 프로그램 설정을 한 번에 열 수 있어요"
+          }
+        }
+      ]
+    },
     {
       "version": "2.7.0",
       "date": "2026-10-22",
