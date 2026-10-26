@@ -52,7 +52,9 @@ https://www.bilibili.com/#cdnsw-import=1.<host>,<host>,…
   有沒有允許 bilibili.com，外部程式讀不到（設定檔受系統保護），所以感謝頁一律提示怎麼確認，並附「在 Safari 重新匯入」按鈕。
   有裝 BiBoost 時，發送頁預設勾 Safari；商店連結是 Mac App Store。
 - **Chrome／Edge／Firefox**：設定檔在 `~/Library/Application Support/`（`Google/Chrome`、`Microsoft Edge`、`Firefox/Profiles`），
-  偵測規則同 Windows；用 `open -n -b <bundle ID> --args --profile-directory=<設定檔> <網址>` 開啟（Firefox 不帶設定檔）。
+  偵測規則同 Windows。瀏覽器沒開著時用 `open -b <bundle ID> --args --profile-directory=<設定檔> <網址>` 啟動；
+  **已經開著時 `--profile-directory` 交不給執行中的瀏覽器**（`open -n` 或直接執行執行檔，網址都會被丟掉），只能用
+  `open -b <bundle ID> <網址>` 開在目前使用中的設定檔，所以 Mac 上 Chrome／Edge 只對一個設定檔匯入。Firefox 用 `open -b`（預設設定檔）。
 - **VPN 偵測**：預設路由、`0/1`＋`128.0/1` 路由實際走的網卡是 `utun`／`ipsec`／`ppp`／`tun`／`tap`／`wg`，或 `scutil --nc list`
   有已連線的 VPN 服務。macOS 平常就有好幾張 utun（iCloud 等），所以只看路由，不看網卡存不存在。Wi-Fi 規格讀 `system_profiler`（不取 SSID）。
 - **自我更新**：不自動換檔，只在入口頁顯示「有新版，按這裡下載」（`updater.check_only`，連到 Latest 的 `CDNSpeedTest-mac.zip`）。

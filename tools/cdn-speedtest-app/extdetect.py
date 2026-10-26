@@ -70,6 +70,17 @@ def mac_app(bundle):
     return None
 
 
+def mac_running(bundle):
+    """Mac：這個 bundle ID 的 App 是否正在執行（用 App 的執行檔名稱找行程）"""
+    app = mac_app(bundle)
+    name = mac_app_info(app).get("CFBundleExecutable") if app else None
+    if not name: return False
+    try:
+        return subprocess.run(["pgrep", "-x", name], capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
 def mac_app_info(path):
     try:
         with open(os.path.join(path, "Contents", "Info.plist"), "rb") as f:
@@ -159,12 +170,17 @@ def import_hosts(browser, hosts):
     if not exe or (MAC and not mac_app(exe)):
         return "missing"
     opened = 0
-    for x in (found[:1] if browser in ("Firefox", "Safari") else found):   # Firefox 只開預設設定檔
+    targets = found[:1] if browser in ("Firefox", "Safari") else found   # Firefox 只開預設設定檔
+    if MAC and browser in ("Chrome", "Edge"):
+        # Mac 上 Chromium 已經開著時，--profile-directory 交不給執行中的瀏覽器（open -n 或直接執行都一樣，網址會被丟掉），
+        # 只能用 open -b 開在目前使用中的設定檔；沒開著才能指定設定檔啟動
+        running = mac_running(exe)
+        targets = targets[:1]
+    for x in targets:
         try:
             if MAC:
-                # -b：用 bundle ID 指定 App；Chromium 系要 -n 才會把 --args 交給瀏覽器（已開著時轉給既有的視窗）
-                args = ["open", "-n", "-b", exe, "--args", f"--profile-directory={x['profile']}", url] \
-                    if browser in ("Chrome", "Edge") else ["open", "-b", exe, url]
+                args = ["open", "-b", exe, "--args", f"--profile-directory={x['profile']}", url] \
+                    if browser in ("Chrome", "Edge") and not running else ["open", "-b", exe, url]
                 if subprocess.run(args, capture_output=True, timeout=30).returncode != 0:
                     continue
             elif browser == "Firefox":
