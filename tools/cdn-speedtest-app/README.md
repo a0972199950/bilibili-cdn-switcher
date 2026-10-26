@@ -1,6 +1,6 @@
 # Bilibili CDN 測速（GUI 版，給海外朋友用）
 
-雙擊 `CDNSpeedTest.exe`，流程：
+Windows 雙擊 `CDNSpeedTest.exe`；Mac 解壓 `CDNSpeedTest-mac.zip`，打開 `CDNSpeedTest.app`（見下方「Mac 版」）。流程：
 
 1. **入口**：選語言（繁中／簡中／英文／日文／韓文，預設依 Windows 介面語言）；閱讀英文隱私聲明；下方是「擴充功能【名稱】線上應用程式商店」與 Chrome ∙ Firefox ∙ Edge 三個商店連結（名稱用該語言的商店名稱，擴充沒有的語言用英文）；**勾選同意才能下一步**；「開發者測試模式」給作者自己用，藏在左下角「進階設定 → 開發者選項」第二層選單裡，免得一般使用者誤點。按下一步時送出使用紀錄（見下方「使用紀錄」）。
 2. **測速目的**（兩個選項）：
@@ -42,6 +42,36 @@ https://www.bilibili.com/#cdnsw-import=1.<host>,<host>,…
 - **版本**：商店版要 ≥ `extdetect.MIN_VERSION`（**1.7.0**，第一個有匯入功能的版本；擴充實際發布的版本號不同的話要改這裡）。比較舊的當作「版本太舊」，提示更新。
 - **開啟方式**：Chromium 系用該瀏覽器執行檔加 `--profile-directory=<設定檔>`（裝在哪個設定檔就開在哪個）；Firefox 用 `-new-tab`（預設設定檔）。執行檔位置查登錄檔 App Paths。
 - **擴充端**：`bridge.js`（B 站頁面頂層 frame）讀到 hash 就清掉網址上的 hash，交給 `background.js`；background **只收 `cdn-list.json` 裡有的節點**（網址任何網站都能做出來，這樣別人沒辦法藉此把影片導到自己的網域），已在列表裡的不重複加，新的接在原本列表後面；使用者已經選了「自訂節點列表」但列表原本是空的，就直接改用第一個。頁面上方會跳出結果提示。
+
+## Mac 版
+
+同一份程式碼，Mac 上的差異：
+
+- **Safari**：擴充包在 App「BiBoost - Video Speedup」（bundle ID `com.johnh.bilibili-cdn-switcher`）裡。有裝這個 App 就算有裝擴充，
+  版本用 App 的 `CFBundleShortVersionString`；用 `open -b com.apple.Safari <匯入網址>` 開啟。Safari 有沒有啟用擴充、
+  有沒有允許 bilibili.com，外部程式讀不到（設定檔受系統保護），所以感謝頁一律提示怎麼確認，並附「在 Safari 重新匯入」按鈕。
+  有裝 BiBoost 時，發送頁預設勾 Safari；商店連結是 Mac App Store。
+- **Chrome／Edge／Firefox**：設定檔在 `~/Library/Application Support/`（`Google/Chrome`、`Microsoft Edge`、`Firefox/Profiles`），
+  偵測規則同 Windows；用 `open -n -b <bundle ID> --args --profile-directory=<設定檔> <網址>` 開啟（Firefox 不帶設定檔）。
+- **VPN 偵測**：預設路由、`0/1`＋`128.0/1` 路由實際走的網卡是 `utun`／`ipsec`／`ppp`／`tun`／`tap`／`wg`，或 `scutil --nc list`
+  有已連線的 VPN 服務。macOS 平常就有好幾張 utun（iCloud 等），所以只看路由，不看網卡存不存在。Wi-Fi 規格讀 `system_profiler`（不取 SSID）。
+- **自我更新**：不自動換檔，只在入口頁顯示「有新版，按這裡下載」（`updater.check_only`，連到 Latest 的 `CDNSpeedTest-mac.zip`）。
+- **其他**：字型用 PingFang／Hiragino／Apple SD Gothic Neo，字級 ×1.25（Mac 的 Tk 1pt = 1px）；預設語言讀 `AppleLanguages`；
+  `install.json` 在 `~/Library/Application Support/CDNSpeedTest/`；報告一樣在 `~/Documents/CDN-SpeedTest/`（第一次會跳「存取文件檔案夾」的系統詢問）。
+
+**打包**（要在 Mac 上跑）：
+
+```bash
+npm run package:mac      # = bash tools/cdn-speedtest-app/build-mac.sh → release/CDNSpeedTest-mac.zip（內含 CDNSpeedTest.app）
+```
+
+- 要裝 [python.org](https://www.python.org/downloads/macos/) 的 Python 3.13 **universal2** 安裝檔（自帶 Tk 8.6）。Homebrew 的 Python 只有本機架構，
+  Tk 9 也載不動 tkinterweb 的 Tkhtml。`PYTHON=<路徑>` 可指定其他 Python。
+- 產出 Intel／Apple Silicon 通用的 .app：PyPI 上 Pillow、Tkhtml 只有分開的 arm64／x86_64 wheel，腳本會各下載一份、用 `lipo` 合併後再打包。
+  驗證 Intel 那半：`arch -x86_64 release/CDNSpeedTest.app/Contents/MacOS/CDNSpeedTest`（要先裝 Rosetta）。
+- 目前只有 ad-hoc 簽章：朋友第一次開要**右鍵 →「打開」**（或 `xattr -dr com.apple.quarantine CDNSpeedTest.app`）。
+  正式發布要 Developer ID 簽章＋公證（之後在 GitHub Actions 的 macOS runner 做）。
+- 開發：`tools/cdn-speedtest-app/.venv/bin/python tools/cdn-speedtest-app/app.py`。
 
 ## 抽獎公告（Neon）
 
