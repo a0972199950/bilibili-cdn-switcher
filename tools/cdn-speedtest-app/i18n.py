@@ -322,6 +322,17 @@ S = {
                    "en": "Or add these servers to the extension's \"Custom node list\" yourself:",
                    "ja": "または、次のサーバーを拡張機能の「カスタムノードリスト」に手動で追加してください：",
                    "ko": "또는 다음 서버를 확장 프로그램의 \"사용자 지정 노드 목록\"에 직접 추가하세요:"},
+    "phone_title": {"zh-TW": "加到 iPhone / iPad", "zh-CN": "添加到 iPhone / iPad", "en": "Add to iPhone / iPad",
+                    "ja": "iPhone / iPad に追加", "ko": "iPhone / iPad에 추가"},
+    "phone_desc": {
+        "zh-TW": "用 iPhone / iPad 的相機掃描 QR code，再用 Safari 開啟，節點就會加入 Safari 版擴充（BiBoost）的「自訂節點列表」。需要先安裝並啟用 BiBoost。",
+        "zh-CN": "用 iPhone / iPad 的相机扫描二维码，再用 Safari 打开，节点就会加入 Safari 版扩展（BiBoost）的「自定义节点列表」。需要先安装并启用 BiBoost。",
+        "en": "Scan the QR code with your iPhone / iPad camera and open it in Safari. The servers will be added to the \"Custom node list\" of the Safari extension (BiBoost). BiBoost must be installed and turned on first.",
+        "ja": "iPhone / iPad のカメラで QR コードを読み取り、Safari で開くと、Safari 版拡張機能（BiBoost）の「カスタムノードリスト」にサーバーが追加されます。先に BiBoost をインストールして有効にしてください。",
+        "ko": "iPhone / iPad 카메라로 QR 코드를 스캔한 뒤 Safari로 열면 Safari 확장 프로그램(BiBoost)의 \"사용자 지정 노드 목록\"에 서버가 추가됩니다. 먼저 BiBoost를 설치하고 켜 주세요."},
+    "copy_url": {"zh-TW": "複製網址", "zh-CN": "复制网址", "en": "Copy link", "ja": "リンクをコピー", "ko": "링크 복사"},
+    "airdrop": {"zh-TW": "用 AirDrop 傳送", "zh-CN": "用 AirDrop 发送", "en": "Send with AirDrop", "ja": "AirDrop で送信",
+                "ko": "AirDrop으로 보내기"},
     "copy_all": {"zh-TW": "全部複製", "zh-CN": "全部复制", "en": "Copy all", "ja": "すべてコピー", "ko": "모두 복사"},
     "copied": {"zh-TW": "已複製", "zh-CN": "已复制", "en": "Copied", "ja": "コピーしました", "ko": "복사됨"},
     "safari_hint": {

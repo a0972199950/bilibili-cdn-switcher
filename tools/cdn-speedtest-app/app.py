@@ -12,7 +12,7 @@
 # 啟動時在背景檢查 GitHub Latest Release 有沒有新版 exe（updater.py）：還在入口頁就直接換新版重開，否則關閉時才換檔。
 # 同意隱私聲明後，安裝／執行／測速／發送等事件會送一筆使用紀錄（Apps Script action=log → Neon）。
 # 測速核心在 core/（speedtest.py / bili.py / videos.py / netinfo.py / nodes.json）。
-import json, os, queue, re, shutil, sys, threading, time, traceback, urllib.request, uuid, webbrowser
+import json, os, queue, re, shutil, subprocess, sys, threading, time, traceback, urllib.request, uuid, webbrowser
 import tkinter as tk
 from tkinter import ttk, messagebox
 
@@ -1661,6 +1661,7 @@ class App(tk.Tk):
             self.text(body, "🧹  " + self.T("thanks_cleaned"), style="Muted.TLabel", justify="center").pack(
                 side="bottom", pady=(self.px(8), 0))
             self.render_ext_area(retried=False)
+            self.phone_import_box(body)
         else:
             self.text(body, self.T("thanks_not_sent", path=self.out_dir), style="Muted.TLabel", justify="center").pack(
                 pady=(self.px(14), 0))
@@ -1738,6 +1739,67 @@ class App(tk.Tk):
         ttk.Button(sbox, text=self.T("safari_retry"), style="Small.TButton",
                    command=lambda: self.build_custom_list("Safari")).pack(anchor="e", padx=self.px(14),
                                                                          pady=(0, self.px(10)))
+
+    def phone_import_box(self, parent):
+        """「加到 iPhone / iPad」：匯入網址的 QR code（用相機掃描、Safari 開啟，由 Safari 版擴充匯入）＋複製網址；
+        Mac 另有「用 AirDrop 傳送」。iPhone 開 www 會被轉到 m.bilibili.com，hash 會跟著保留，擴充在 m 站一樣匯入"""
+        hosts = self.custom_hosts()
+        if not hosts: return
+        url = extdetect.IMPORT_URL + ",".join(hosts)
+        bg = "#FAFBFC"
+        box = tk.Frame(parent, bg=bg, highlightbackground=C["line"], highlightthickness=1)
+        box.pack(fill="x", pady=(self.px(10), 0))
+        tk.Label(box, text="📱  " + self.T("phone_title"), bg=bg, fg=C["text"], font=self.fonts["h2"]).pack(
+            anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
+        row = tk.Frame(box, bg=bg)
+        row.pack(fill="x", padx=self.px(14), pady=(0, self.px(12)))
+        import qrcode
+        qr = qrcode.QRCode(border=2, error_correction=qrcode.constants.ERROR_CORRECT_L)
+        qr.add_data(url)
+        qr.make(fit=True)
+        m = qr.get_matrix()
+        cell = max(2, self.px(150) // len(m))
+        size = cell * len(m)
+        cv = tk.Canvas(row, width=size, height=size, bg="white", highlightthickness=0)
+        for y, r in enumerate(m):
+            for x, v in enumerate(r):
+                if v: cv.create_rectangle(x * cell, y * cell, (x + 1) * cell, (y + 1) * cell, fill="black", outline="")
+        cv.pack(side="left", anchor="n")
+        right = tk.Frame(row, bg=bg)
+        right.pack(side="left", fill="x", expand=True, padx=(self.px(14), 0))
+        tk.Label(right, text=cjk_wrap(self.T("phone_desc"), self.fonts["body"], self.px(330)), bg=bg, fg=C["text"],
+                 font=self.fonts["body"], justify="left").pack(anchor="w")
+        btns = tk.Frame(right, bg=bg)
+        btns.pack(anchor="w", pady=(self.px(10), 0))
+        cb = ttk.Button(btns, text=self.T("copy_url"), style="Small.TButton")
+
+        def copy():
+            self.clipboard_clear()
+            self.clipboard_append(url)
+            cb.config(text="✓ " + self.T("copied"))
+            self.after(1500, lambda: cb.winfo_exists() and cb.config(text=self.T("copy_url")))
+        cb.config(command=copy)
+        cb.pack(side="left")
+        if MAC:
+            ttk.Button(btns, text=self.T("airdrop"), style="Small.TButton",
+                       command=lambda: self.airdrop(url)).pack(side="left", padx=(self.px(8), 0))
+
+    def airdrop(self, url):
+        """Mac：用系統的 AirDrop 分享視窗傳網址（NSSharingService，透過 osascript 的 JavaScript ObjC bridge，不需要 pyobjc）。
+        分享視窗跟著 osascript 行程，留 5 分鐘讓使用者選裝置；失敗就安靜略過（還有 QR code 與複製網址）"""
+        js = ("ObjC.import('AppKit');function run(a){var app=$.NSApplication.sharedApplication;"
+              "app.setActivationPolicy($.NSApplicationActivationPolicyAccessory);"
+              "var s=$.NSSharingService.sharingServiceNamed('com.apple.share.AirDrop.send');"
+              "var it=$.NSArray.arrayWithObject($.NSURL.URLWithString(a[0]));"
+              "if(!s||s.isNil()||!s.canPerformWithItems(it))return 'unavailable';"
+              "app.activateIgnoringOtherApps(true);s.performWithItems(it);"
+              "$.NSRunLoop.currentRunLoop.runUntilDate($.NSDate.dateWithTimeIntervalSinceNow(300));return 'shown';}")
+        try:
+            subprocess.Popen(["osascript", "-l", "JavaScript", "-e", js, url], stdout=subprocess.DEVNULL,
+                             stderr=subprocess.DEVNULL, start_new_session=True)
+            print("[AirDrop] 開啟分享視窗")
+        except OSError as e:
+            print(f"[AirDrop] 無法開啟：{e}")
 
     def copy_hosts(self, hosts, btn):
         self.clipboard_clear()
