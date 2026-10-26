@@ -3,7 +3,10 @@
 # 用法：bash tools/cdn-speedtest-app/build-mac.sh
 # 需要：python.org 的 Python 3.13 universal2 安裝檔（自帶 Tk 8.6；Homebrew 的 Python 只有本機架構、Tk 9 跑不動 tkinterweb），
 #       config.json（複製 config.example.json，填入 Apps Script 網址與 token）。可用環境變數 PYTHON 指定其他 Python。
-# 簽章：只做 ad-hoc 簽章，朋友第一次開要按右鍵 →「打開」。正式發布要 Developer ID 簽章＋公證（之後在 GitHub Actions 做）。
+# 簽章：預設 ad-hoc，朋友第一次開要按右鍵 →「打開」。設了 CDNST_SIGN_IDENTITY（例如 "Developer ID Application: …"）時
+#       改用 Developer ID 由內而外簽章（hardened runtime＋timestamp）。實測 arm64、x86_64（Rosetta）都不需要任何
+#       entitlements（Tkhtml、Pillow、HTTPS、子程序都正常），所以不加；之後加了用到 JIT／ctypes callback 的套件再補。
+#       之後要公證（.github/workflows/speedtest-mac.yml：notarytool submit → stapler staple → 重新壓 zip）。
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
@@ -48,7 +51,6 @@ for arch in arm64 x86_64; do for w in "$whl/$arch-whl"/*.whl; do unzip -qo "$w" 
   [ -f "$whl/x86_64/$f" ] || { echo "x86_64 wheel 缺少 $f" >&2; exit 1; }
   lipo -create "$whl/arm64/$f" "$whl/x86_64/$f" -output "$site/$f"
 done
-"$vpy" -m pip uninstall -q -y delocate 2>/dev/null || true
 
 rm -rf "$app" "$zip"
 "$vpy" -m PyInstaller --noconfirm --clean --windowed --onedir --target-arch universal2 --name CDNSpeedTest \
@@ -68,6 +70,18 @@ plutil -replace CFBundleVersion -string "$ver" "$plist"
 plutil -replace CFBundleDisplayName -string "CDN SpeedTest" "$plist"
 plutil -replace LSMinimumSystemVersion -string "11.0" "$plist"
 plutil -replace NSHighResolutionCapable -bool true "$plist"
-codesign --force --deep --sign - "$app"   # 改了 Info.plist，重新 ad-hoc 簽章
+if [ -n "${CDNST_SIGN_IDENTITY:-}" ]; then
+  # 由內而外：先簽 App 裡每個 Mach-O（.so、.dylib、Python 等，不含主程式），最後簽整個 App（主程式＋Info.plist）
+  sign=(codesign --force --options runtime --timestamp --sign "$CDNST_SIGN_IDENTITY")
+  main="$app/Contents/MacOS/CDNSpeedTest"
+  find "$app/Contents" -type f ! -path "$main" -print0 | while IFS= read -r -d '' f; do
+    if file -b "$f" | grep -q 'Mach-O'; then "${sign[@]}" "$f"; fi
+  done
+  find "$app/Contents" -type d -name '*.framework' -print0 | while IFS= read -r -d '' f; do "${sign[@]}" "$f"; done
+  "${sign[@]}" "$app"
+  codesign --verify --strict --deep "$app"
+else
+  codesign --force --deep --sign - "$app"   # 改了 Info.plist，重新 ad-hoc 簽章
+fi
 ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
 echo "完成：${zip}（v${ver}，$(du -h "$zip" | cut -f1)）"

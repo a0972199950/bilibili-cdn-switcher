@@ -71,8 +71,13 @@ npm run package:mac      # = bash tools/cdn-speedtest-app/build-mac.sh → relea
   Tk 9 也載不動 tkinterweb 的 Tkhtml。`PYTHON=<路徑>` 可指定其他 Python。
 - 產出 Intel／Apple Silicon 通用的 .app：PyPI 上 Pillow、Tkhtml 只有分開的 arm64／x86_64 wheel，腳本會各下載一份、用 `lipo` 合併後再打包。
   驗證 Intel 那半：`arch -x86_64 release/CDNSpeedTest.app/Contents/MacOS/CDNSpeedTest`（要先裝 Rosetta）。
-- 目前只有 ad-hoc 簽章：朋友第一次開要**右鍵 →「打開」**（或 `xattr -dr com.apple.quarantine CDNSpeedTest.app`）。
-  正式發布要 Developer ID 簽章＋公證（之後在 GitHub Actions 的 macOS runner 做）。
+- 本機預設只有 ad-hoc 簽章：朋友第一次開要**右鍵 →「打開」**（或 `xattr -dr com.apple.quarantine CDNSpeedTest.app`）。
+  設了 `CDNST_SIGN_IDENTITY="Developer ID Application: …"` 時改用 Developer ID 由內而外簽章（hardened runtime＋timestamp，
+  實測不需要任何 entitlements）。
+- **正式版（簽章＋公證）**：Actions › **Speedtest Mac** › Run workflow（`.github/workflows/speedtest-mac.yml`）。macOS runner 裝 python.org
+  Python → 從 secrets 還原 `config.json`、p12（暫時鑰匙圈）、ASC 金鑰 → `npm run package:mac`（Developer ID 簽章）→
+  `notarytool submit --wait` → `stapler staple` → 重新壓 zip，放在該次 run 的 Artifacts（`CDNSpeedTest-mac`）。
+  secrets 與 p12 的來源見 workflow 開頭；p12 與密碼的備份在私人 repo 的 `tools/cdn-speedtest-app/signing/`。
 - 開發：`tools/cdn-speedtest-app/.venv/bin/python tools/cdn-speedtest-app/app.py`。
 
 ## 抽獎公告（Neon）

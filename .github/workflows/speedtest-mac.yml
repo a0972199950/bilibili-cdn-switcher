@@ -1,0 +1,112 @@
+# Mac 版測速 App：打包 universal2 .app → Developer ID 簽章 → Apple 公證 → staple → zip，放在 Artifacts。
+#
+# 需要的 repo secrets（Settings › Secrets and variables › Actions）：
+#   DEVID_P12_BASE64    Developer ID Application 憑證＋私鑰（＋G2 中繼憑證）的 p12，base64（openssl pkcs12 -export -legacy）
+#   DEVID_P12_PASSWORD  p12 的密碼
+#   CDNST_CONFIG_JSON   tools/cdn-speedtest-app/config.json 的內容（Apps Script 網址與 token，會被包進 App）
+#   ASC_ISSUER_ID / ASC_KEY_ID / ASC_KEY_P8   公證用的 App Store Connect API 金鑰（跟 safari-appstore.yml 共用）
+# p12 與密碼的備份在私人 repo 的 tools/cdn-speedtest-app/signing/。
+#
+# 用法：Actions › Speedtest Mac › Run workflow。產物 CDNSpeedTest-mac.zip 在該次 run 的 Artifacts。
+name: Speedtest Mac
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: speedtest-mac-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-26
+    env:
+      PY_VERSION: "3.13.17"   # python.org universal2 安裝檔（自帶 Tk 8.6），見 build-mac.sh
+      SIGN_IDENTITY: "Developer ID Application: Wei chung Hsieh (RN6N3K4U8J)"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安裝 python.org Python ${{ env.PY_VERSION }}（universal2）
+        run: |
+          set -euo pipefail
+          pkg="$RUNNER_TEMP/python.pkg"
+          curl -fsSL -o "$pkg" "https://www.python.org/ftp/python/$PY_VERSION/python-$PY_VERSION-macos11.pkg"
+          pkgutil --check-signature "$pkg" | grep -q "Developer ID Installer: Python Software Foundation"
+          sudo installer -pkg "$pkg" -target /
+          echo "PYTHON=/Library/Frameworks/Python.framework/Versions/${PY_VERSION%.*}/bin/python${PY_VERSION%.*}" >> "$GITHUB_ENV"
+
+      - name: 還原 config.json 與金鑰
+        env:
+          CDNST_CONFIG_JSON: ${{ secrets.CDNST_CONFIG_JSON }}
+          DEVID_P12_BASE64: ${{ secrets.DEVID_P12_BASE64 }}
+          DEVID_P12_PASSWORD: ${{ secrets.DEVID_P12_PASSWORD }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for v in CDNST_CONFIG_JSON DEVID_P12_BASE64 DEVID_P12_PASSWORD ASC_ISSUER_ID ASC_KEY_ID ASC_KEY_P8; do
+            [ -n "${!v}" ] || { echo "::error::repo secret $v 是空的或不存在"; missing=1; }
+          done
+          [ $missing = 0 ] || exit 1
+          printf '%s' "$CDNST_CONFIG_JSON" > tools/cdn-speedtest-app/config.json
+
+          # 簽章憑證放進這次專用的暫時鑰匙圈，codesign 不會跳授權視窗
+          kc="$RUNNER_TEMP/signing.keychain-db"
+          kcpass="$(openssl rand -hex 16)"
+          printf '%s' "$DEVID_P12_BASE64" | base64 -D > "$RUNNER_TEMP/devid.p12"
+          security create-keychain -p "$kcpass" "$kc"
+          security set-keychain-settings -lut 3600 "$kc"
+          security unlock-keychain -p "$kcpass" "$kc"
+          security import "$RUNNER_TEMP/devid.p12" -k "$kc" -P "$DEVID_P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$kcpass" "$kc" > /dev/null
+          security list-keychains -d user -s "$kc" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/devid.p12"
+          security find-identity -v -p codesigning "$kc" | grep -q "$SIGN_IDENTITY" ||
+            { echo "::error::p12 裡沒有 $SIGN_IDENTITY"; exit 1; }
+
+          key="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$key"
+          grep -q "BEGIN PRIVATE KEY" "$key" || { echo "::error::ASC_KEY_P8 看起來不是 .p8 檔內容"; exit 1; }
+          { echo "KEYCHAIN=$kc"; echo "ASC_KEY_PATH=$key"; echo "ASC_KEY_ID=$ASC_KEY_ID"; echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"; } >> "$GITHUB_ENV"
+
+      - name: 打包並簽章
+        env:
+          CDNST_SIGN_IDENTITY: ${{ env.SIGN_IDENTITY }}
+        run: npm run package:mac
+
+      - name: 公證（notarytool）並 staple
+        run: |
+          set -euo pipefail
+          app=release/CDNSpeedTest.app
+          zip=release/CDNSpeedTest-mac.zip
+          out=$(xcrun notarytool submit "$zip" --key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" \
+            --wait --timeout 30m --output-format json)
+          echo "$out"
+          id=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+          status=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
+          if [ "$status" != Accepted ]; then
+            xcrun notarytool log "$id" --key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID"
+            echo "::error::公證沒有通過（$status）"; exit 1
+          fi
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          spctl -a -vvv -t exec "$app"
+          # staple 把公證票附在 App 裡，要重新壓 zip（使用者離線第一次打開也不會被 Gatekeeper 擋）
+          rm -f "$zip"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
+          ver=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")
+          echo "### CDNSpeedTest v$ver：已簽章、公證並 staple（submission $id）" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CDNSpeedTest-mac
+          path: release/CDNSpeedTest-mac.zip
+          retention-days: 30
+
+      - name: 清除金鑰與設定
+        if: always()
+        run: |
+          [ -n "${KEYCHAIN:-}" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -f "$RUNNER_TEMP"/AuthKey_*.p8 "$RUNNER_TEMP/devid.p12" tools/cdn-speedtest-app/config.json

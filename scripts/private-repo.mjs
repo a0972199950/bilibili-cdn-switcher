@@ -33,6 +33,7 @@ const PRIVATE_PATHS = [
   ".env.local",
   "tools/report-worker/.dev.vars",
   "tools/cdn-speedtest-app/config.json",
+  "tools/cdn-speedtest-app/signing", // Mac 版測速 App 的 Developer ID 簽章憑證（p12＋密碼）
 ];
 // 執行期產物，就算在私人路徑底下也不備份
 const JUNK_NAMES = new Set(["__pycache__", ".venv", "node_modules", ".next", ".DS_Store", "Thumbs.db", "desktop.ini"]);
