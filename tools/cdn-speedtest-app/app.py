@@ -1227,6 +1227,19 @@ class App(tk.Tk):
     def login_worker(self, gen):
         from qrlogin import QRLogin, SUCCESS, EXPIRED, SCANNED_WAIT_CONFIRM
         alive = lambda: self.login_alive and self.login_gen == gen
+        # 開發用：從原始碼執行且設了 CDNST_DEV_COOKIE_FILE 時，沿用檔案裡的登入、登入成功後寫回（chmod 600）。
+        # 檔案放 repo 外，內容不印出；打包後的 App 一律不讀不寫，cookie 只留在記憶體
+        dev = None if getattr(sys, "frozen", False) else os.environ.get("CDNST_DEV_COOKIE_FILE")
+        if dev:
+            try:
+                with open(dev, encoding="utf-8") as f:
+                    saved = f.read().strip()
+                if saved:
+                    print("[開發] 沿用 CDNST_DEV_COOKIE_FILE 的 B 站登入（檔案刪掉就會改回掃 QR code）")
+                    self.q.put(("login_ok", gen, saved))
+                    return
+            except OSError:
+                pass
         while alive():
             try:
                 ql = QRLogin()
@@ -1236,7 +1249,16 @@ class App(tk.Tk):
                     code = ql.poll()
                     if not alive(): return
                     if code == SUCCESS:
-                        self.q.put(("login_ok", gen, ql.cookie()))
+                        cookie = ql.cookie()
+                        if dev:
+                            try:
+                                fd = os.open(dev, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+                                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                                    f.write(cookie)
+                                os.chmod(dev, 0o600)
+                            except OSError:
+                                pass
+                        self.q.put(("login_ok", gen, cookie))
                         return
                     if code == SCANNED_WAIT_CONFIRM:
                         self.q.put(("login_msg", gen, "qr_scanned"))
@@ -1650,67 +1672,72 @@ class App(tk.Tk):
         還沒裝／版本太舊的瀏覽器各列一行並附安裝（更新）按鈕，中間放「建立自訂列表」重試"""
         for w in self.ext_area.winfo_children():
             w.destroy()
-        failed = {b: st for b, st in self.ext_results.items() if st != "ok"}
-        if self.ext_results.get("Safari") == "ok":
-            # Safari 讀不到擴充有沒有啟用、有沒有允許 bilibili.com：開了網址就提醒怎麼確認，附重新匯入的按鈕
-            sbox = tk.Frame(self.ext_area, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
-            sbox.pack(fill="x", pady=(self.px(14), 0))
-            tk.Label(sbox, text=cjk_wrap("🧭  " + self.T("safari_hint"), self.fonts["body"], self.px(520)),
-                     bg="#FAFBFC", fg=C["text"], font=self.fonts["body"], justify="left").pack(
-                anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
-            ttk.Button(sbox, text=self.T("safari_retry"), style="Small.TButton",
-                       command=lambda: self.build_custom_list("Safari")).pack(anchor="e", padx=self.px(14),
-                                                                             pady=(0, self.px(10)))
-        if not failed:
-            if retried:
-                box = tk.Frame(self.ext_area, bg="#E7F6EE", highlightbackground=C["ok"], highlightthickness=1)
-                box.pack(fill="x", pady=(self.px(14), 0))
-                tk.Label(box, text=cjk_wrap("✓  " + self.T("ext_built"), self.fonts["body"], self.px(520)),
-                         bg="#E7F6EE", fg=C["ok"], font=self.fonts["body"], justify="left").pack(
-                    anchor="w", padx=self.px(14), pady=self.px(10))
-            return
-        bg, fg = "#FFF4E5", "#9A5B00"
-        box = tk.Frame(self.ext_area, bg=bg)
-        box.pack(fill="x", pady=(self.px(14), 0))
-        tk.Label(box, text=cjk_wrap("⚠  " + self.T("ext_missing_list"), self.fonts["body"], self.px(520)), bg=bg, fg=fg,
-                 font=self.fonts["body"], justify="left").pack(anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
-        for b, st in failed.items():
-            row = tk.Frame(box, bg=bg)
-            row.pack(fill="x", padx=(self.px(36), self.px(14)), pady=self.px(2))
-            if st == "outdated":
-                vers = ", ".join(sorted({x["version"] for x in extdetect.detect(b)[1]})) or "?"
-                msg, btn = self.T("ext_st_outdated", ver=vers), self.T("update")
-            else:
-                msg, btn = self.T("ext_st_missing"), self.T("install")
-            tk.Label(row, text=f"{b}：{msg}", bg=bg, fg=C["text"], font=self.fonts["body"]).pack(side="left")
-            ttk.Button(row, text=btn, style="Small.TButton",
-                       command=lambda b=b: webbrowser.open(self.store_url(b))).pack(side="right")
-        ttk.Button(box, text="🧩  " + self.T("build_list"), style="Accent.TButton", command=self.retry_build).pack(
-            pady=(self.px(10), self.px(12)))
-        # 或是手動加：列出建議的 10 個節點（兩欄、可選取），附「全部複製」（擴充的輸入框可以一次貼上多個）
-        hosts = self.custom_hosts()
-        if not hosts: return
-        man = tk.Frame(self.ext_area, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
-        man.pack(fill="x", pady=(self.px(10), 0))
-        top = tk.Frame(man, bg="#FAFBFC")
-        top.pack(fill="x", padx=self.px(14), pady=(self.px(8), self.px(4)))
-        cb = ttk.Button(top, text=self.T("copy_all"), style="Small.TButton")
-        cb.config(command=lambda: self.copy_hosts(hosts, cb))
-        cb.pack(side="right")
-        tk.Label(top, text=cjk_wrap(self.T("manual_add"), self.fonts["body"], self.px(400)), bg="#FAFBFC",
-                 fg=C["text"], font=self.fonts["body"], justify="left").pack(side="left", anchor="w")
-        # 一行一個往下列，最多顯示 5 行，其餘用自己的捲軸（滾輪在清單上捲的是清單）
-        lst = tk.Frame(man, bg="#FAFBFC")
-        lst.pack(fill="x", padx=(self.px(14), self.px(6)), pady=(0, self.px(8)))
-        tx = tk.Text(lst, height=min(5, len(hosts)), wrap="none", relief="flat", bg="#FAFBFC", fg=C["text"],
-                     font=(MONO, round(9 * FONT_K)), padx=0, pady=0, highlightthickness=0)
-        tx.insert("1.0", "\n".join(f"{i:>2}. {h}" for i, h in enumerate(hosts, 1)))
-        tx.config(state="disabled")
-        if len(hosts) > 5:
-            sb = ttk.Scrollbar(lst, orient="vertical", command=tx.yview)
-            tx.configure(yscrollcommand=sb.set)
-            sb.pack(side="right", fill="y")
-        tx.pack(side="left", fill="x", expand=True)
+        try:
+            failed = {b: st for b, st in self.ext_results.items() if st != "ok"}
+            if not failed:
+                if retried:
+                    box = tk.Frame(self.ext_area, bg="#E7F6EE", highlightbackground=C["ok"], highlightthickness=1)
+                    box.pack(fill="x", pady=(self.px(14), 0))
+                    tk.Label(box, text=cjk_wrap("✓  " + self.T("ext_built"), self.fonts["body"], self.px(520)),
+                             bg="#E7F6EE", fg=C["ok"], font=self.fonts["body"], justify="left").pack(
+                        anchor="w", padx=self.px(14), pady=self.px(10))
+                return
+            bg, fg = "#FFF4E5", "#9A5B00"
+            box = tk.Frame(self.ext_area, bg=bg)
+            box.pack(fill="x", pady=(self.px(14), 0))
+            tk.Label(box, text=cjk_wrap("⚠  " + self.T("ext_missing_list"), self.fonts["body"], self.px(520)), bg=bg, fg=fg,
+                     font=self.fonts["body"], justify="left").pack(anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
+            for b, st in failed.items():
+                row = tk.Frame(box, bg=bg)
+                row.pack(fill="x", padx=(self.px(36), self.px(14)), pady=self.px(2))
+                if st == "outdated":
+                    vers = ", ".join(sorted({x["version"] for x in extdetect.detect(b)[1]})) or "?"
+                    msg, btn = self.T("ext_st_outdated", ver=vers), self.T("update")
+                else:
+                    msg, btn = self.T("ext_st_missing"), self.T("install")
+                tk.Label(row, text=f"{b}：{msg}", bg=bg, fg=C["text"], font=self.fonts["body"]).pack(side="left")
+                ttk.Button(row, text=btn, style="Small.TButton",
+                           command=lambda b=b: webbrowser.open(self.store_url(b))).pack(side="right")
+            ttk.Button(box, text="🧩  " + self.T("build_list"), style="Accent.TButton", command=self.retry_build).pack(
+                pady=(self.px(10), self.px(12)))
+            # 或是手動加：列出建議的 10 個節點（兩欄、可選取），附「全部複製」（擴充的輸入框可以一次貼上多個）
+            hosts = self.custom_hosts()
+            if not hosts: return
+            man = tk.Frame(self.ext_area, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
+            man.pack(fill="x", pady=(self.px(10), 0))
+            top = tk.Frame(man, bg="#FAFBFC")
+            top.pack(fill="x", padx=self.px(14), pady=(self.px(8), self.px(4)))
+            cb = ttk.Button(top, text=self.T("copy_all"), style="Small.TButton")
+            cb.config(command=lambda: self.copy_hosts(hosts, cb))
+            cb.pack(side="right")
+            tk.Label(top, text=cjk_wrap(self.T("manual_add"), self.fonts["body"], self.px(400)), bg="#FAFBFC",
+                     fg=C["text"], font=self.fonts["body"], justify="left").pack(side="left", anchor="w")
+            # 一行一個往下列，最多顯示 5 行，其餘用自己的捲軸（滾輪在清單上捲的是清單）
+            lst = tk.Frame(man, bg="#FAFBFC")
+            lst.pack(fill="x", padx=(self.px(14), self.px(6)), pady=(0, self.px(8)))
+            tx = tk.Text(lst, height=min(5, len(hosts)), wrap="none", relief="flat", bg="#FAFBFC", fg=C["text"],
+                         font=(MONO, round(9 * FONT_K)), padx=0, pady=0, highlightthickness=0)
+            tx.insert("1.0", "\n".join(f"{i:>2}. {h}" for i, h in enumerate(hosts, 1)))
+            tx.config(state="disabled")
+            if len(hosts) > 5:
+                sb = ttk.Scrollbar(lst, orient="vertical", command=tx.yview)
+                tx.configure(yscrollcommand=sb.set)
+                sb.pack(side="right", fill="y")
+            tx.pack(side="left", fill="x", expand=True)
+        finally:   # Safari 的提示框排在最後（瀏覽器的順序 Safari 也在最後）
+            if self.ext_results.get("Safari") == "ok":
+                self.safari_hint_box()
+
+    def safari_hint_box(self):
+        """Safari 讀不到擴充有沒有啟用、有沒有允許 bilibili.com：開了網址就提醒怎麼確認，附重新匯入的按鈕"""
+        sbox = tk.Frame(self.ext_area, bg="#FAFBFC", highlightbackground=C["line"], highlightthickness=1)
+        sbox.pack(fill="x", pady=(self.px(14), 0))
+        tk.Label(sbox, text=cjk_wrap("🧭  " + self.T("safari_hint"), self.fonts["body"], self.px(520)),
+                 bg="#FAFBFC", fg=C["text"], font=self.fonts["body"], justify="left").pack(
+            anchor="w", padx=self.px(14), pady=(self.px(10), self.px(4)))
+        ttk.Button(sbox, text=self.T("safari_retry"), style="Small.TButton",
+                   command=lambda: self.build_custom_list("Safari")).pack(anchor="e", padx=self.px(14),
+                                                                         pady=(0, self.px(10)))
 
     def copy_hosts(self, hosts, btn):
         self.clipboard_clear()

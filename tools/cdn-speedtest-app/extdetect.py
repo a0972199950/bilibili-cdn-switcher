@@ -14,7 +14,7 @@ STORE_IDS = {"dfaddcffoondcendifiljhdbdagebgch",   # Chrome 線上應用程式�
              "dllallgilijcacpdemjafegibdafcbdp"}   # Edge 附加元件
 GECKO_ID = "bilibili-cdn-switcher@a0972199950.github.io"
 MIN_VERSION = (1, 7, 0)   # 第一個有「自訂節點列表」匯入功能的擴充版本
-BROWSERS = ("Safari", "Chrome", "Firefox", "Edge") if MAC else ("Chrome", "Firefox", "Edge")   # GUI 讓使用者勾選的瀏覽器
+BROWSERS = ("Chrome", "Firefox", "Edge", "Safari") if MAC else ("Chrome", "Firefox", "Edge")   # GUI 讓使用者勾選的瀏覽器
 # (瀏覽器, Windows：%LOCALAPPDATA% 下的設定檔資料夾, Windows 執行檔, Mac：~/Library/Application Support 下的設定檔資料夾,
 #  Mac：App 的 bundle ID)
 CHROMIUM = [("Chrome", r"Google\Chrome\User Data", "chrome.exe", "Google/Chrome", "com.google.Chrome"),
