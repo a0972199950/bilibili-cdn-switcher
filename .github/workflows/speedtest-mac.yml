@@ -111,10 +111,11 @@ jobs:
           echo "$out"
           id=$(echo "$out" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
           echo "$id" > release/notary-submission.txt
-          echo "公證 submission：\`$id\`（run $GITHUB_RUN_ID；逾時的話重跑並填 resume_run_id=$GITHUB_RUN_ID）" >> "$GITHUB_STEP_SUMMARY"
+          echo "公證 submission：\`$id\`（run ${GITHUB_RUN_ID}；逾時的話重跑並填 resume_run_id=${GITHUB_RUN_ID}）" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 保存還沒 staple 的 zip（逾時可用 resume_run_id 接續）
-        if: env.RESUME_RUN_ID == ''
+        # 送件那一步後面出錯也要存：已送出的就是這一份 binary，之後只能拿它 staple
+        if: ${{ !cancelled() && env.RESUME_RUN_ID == '' && hashFiles('release/CDNSpeedTest-mac.zip') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: CDNSpeedTest-mac-unstapled
@@ -141,12 +142,12 @@ jobs:
           echo "submission $id"
           auth=(--key "$ASC_KEY_PATH" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
           xcrun notarytool wait "$id" "${auth[@]}" --timeout 4h ||
-            { echo "::error::公證還沒處理完（submission $id）：稍後再跑一次並填 resume_run_id=${RESUME_RUN_ID:-$GITHUB_RUN_ID}"; exit 1; }
+            { echo "::error::公證還沒處理完（submission ${id}）：稍後再跑一次並填 resume_run_id=${RESUME_RUN_ID:-$GITHUB_RUN_ID}"; exit 1; }
           status=$(xcrun notarytool info "$id" "${auth[@]}" --output-format json |
             python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])')
           if [ "$status" != Accepted ]; then
             xcrun notarytool log "$id" "${auth[@]}"
-            echo "::error::公證沒有通過（$status）"; exit 1
+            echo "::error::公證沒有通過（${status}）"; exit 1
           fi
           rm -rf "$app"; ditto -x -k "$zip" release/   # 用送公證的那一份 staple
           xcrun stapler staple "$app"
@@ -156,7 +157,7 @@ jobs:
           rm -f "$zip"
           ditto -c -k --sequesterRsrc --keepParent "$app" "$zip"
           ver=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app/Contents/Info.plist")
-          echo "### CDNSpeedTest v$ver：已簽章、公證並 staple（submission $id）" >> "$GITHUB_STEP_SUMMARY"
+          echo "### CDNSpeedTest v${ver}：已簽章、公證並 staple（submission ${id}）" >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
