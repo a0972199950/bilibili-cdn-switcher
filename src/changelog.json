@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "fix",
+      "text": {
+        "zh_TW": "依最新實測更新澳門的預設節點",
+        "zh_CN": "根据最新实测更新澳门的默认节点",
+        "en": "Updated Macau's default node based on the latest tests",
+        "ja": "最新の実測をもとにマカオのデフォルトノードを更新",
+        "ko": "최신 실측을 바탕으로 마카오 기본 노드를 업데이트했어요"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.8.0",
