@@ -6,7 +6,7 @@
 
 ### 海外から Web 版 bilibili をもっとスムーズに見るための Chrome / Firefox / Edge / Safari 拡張機能
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Safari（Mac App Store）](https://apps.apple.com/app/id6817181919?mt=12)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ja) ｜ [Safari（Mac）](https://apps.apple.com/jp/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_ja) ｜ [Safari（iPhone／iPad）](https://apps.apple.com/jp/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_ja_ios)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 <div align="center">
 
-![拡張機能のポップアップ](readme-ja-main.png)
+<img src="readme-ja-main.png" alt="Chrome ウェブストアの BiBoost のページ" width="640">
 
 </div>
 
@@ -36,7 +36,7 @@ bilibili が標準で割り当てる CDN は、海外ユーザーにとって遠
 
 | 機能 | 説明 |
 |:--|:--|
-| 🚀 **地域ごとの最速ノード** | お住まいの国で実測して最速だった CDN を既定で使用（台湾／シンガポールで実測済み、ほかの国も順次追加中）。インストールするだけで使えます |
+| 🚀 **地域ごとの最速ノード** | お住まいの国で実測して最速だった CDN を既定で使用（台湾、香港、マカオ、シンガポール、日本、オーストラリア、アメリカ、イギリス、スペイン、ロシアで実測済み、ほかの国も順次追加中）。インストールするだけで使えます |
 | 🌐 **ほかの CDN ノード** | Alibaba Cloud／Tencent Cloud／Huawei Cloud／Akamai／各種海外ノード…… 地域に合わせて自由に切り替え可能 |
 | ✏️ **カスタムノードリスト** | 「リスト」と排他の別モード。CDN ホストをいくつでも追加でき、速度テストと並べ替えにも対応。公式ツール **CDNSpeedTest**（Windows）で見つけたおすすめノードもここに自動で追加されます |
 | 🛑 **オフ** | 動画とライブにそれぞれ「オフ」があり、CDN の選択に介入せず bilibili 本来の動作のままにします |

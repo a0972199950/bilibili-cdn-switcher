@@ -6,7 +6,7 @@
 
 ### 讓海外用戶看網頁版 B 站更順的 Chrome / Firefox / Edge / Safari 擴充
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Safari（Mac App Store）](https://apps.apple.com/app/id6817181919?mt=12)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Safari（Mac）](https://apps.apple.com/tw/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_zhtw) ｜ [Safari（iPhone／iPad）](https://apps.apple.com/tw/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_zhtw_ios)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 <div align="center">
 
-![擴充功能彈出視窗](readme-zhtw-main.png)
+<img src="readme-zhtw-main.png" alt="Chrome 線上應用程式商店的嗶速頁面" width="640">
 
 </div>
 
@@ -36,7 +36,7 @@ B 站預設分配的取流節點對海外使用者常常繞路、不夠快。這
 
 | 功能 | 說明 |
 |:--|:--|
-| 🚀 **所在地區最優節點** | 預設換成你所在國家實測最快的 CDN（已實測台灣／新加坡，其他國家陸續上線），開箱即用；安裝後或切換國家時，第一支影片會在背景測速一次並換成最快的節點 |
+| 🚀 **所在地區最優節點** | 預設換成你所在國家實測最快的 CDN（已實測台灣、香港、澳門、新加坡、日本、澳洲、美國、英國、西班牙、俄羅斯，其他國家陸續上線），開箱即用 |
 | 🌐 **其他 CDN 節點** | 阿里雲／騰訊雲／華為雲／Akamai／各海外節點…，依所在地區自由比較切換 |
 | ✏️ **自訂節點列表** | 跟「清單選擇」互斥的另一個模式：可加入多個任意 CDN host，同樣支援測速與排序；官方測速工具 **CDNSpeedTest**（Windows）測完會把推薦節點自動加進來 |
 | 🛑 **關閉** | 影片／直播各有獨立的「關閉」選項：不介入 CDN 選線、完全維持 B 站官方原始邏輯 |

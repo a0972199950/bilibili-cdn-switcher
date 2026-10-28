@@ -6,7 +6,7 @@
 
 ### A Chrome / Firefox / Edge / Safari extension for smoother bilibili web playback for overseas viewers
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Safari (Mac App Store)](https://apps.apple.com/app/id6817181919?mt=12)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Safari (Mac)](https://apps.apple.com/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_en) ｜ [Safari (iPhone / iPad)](https://apps.apple.com/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_en_ios)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 <div align="center">
 
-![Extension popup](./docs/readme-en-main.png)
+<img src="./docs/readme-en-main.png" alt="BiBoost on the Chrome Web Store" width="640">
 
 </div>
 
@@ -36,7 +36,7 @@ Bilibili's default CDN assignment often routes overseas users through slow, roun
 
 | Feature | Description |
 |:--|:--|
-| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (tested in Taiwan / Singapore, more countries coming soon), works out of the box; after installing or switching country, the first video you play runs a one-time background speed test and switches to the fastest node |
+| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (hand-tested in Taiwan, Hong Kong, Macau, Singapore, Japan, Australia, the US, the UK, Spain and Russia, more coming), works out of the box |
 | 🌐 **Other CDN nodes** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / various overseas nodes…, freely switchable based on your region |
 | ✏️ **Custom node list** | A mode mutually exclusive with "choose from list": add as many CDN hosts as you like, with speed test and sorting; the official **CDNSpeedTest** tool (Windows) adds its recommended nodes here automatically |
 | 🛑 **Off** | Video and live each have their own "Off" option: CDN selection is left alone and bilibili's original behavior is kept |

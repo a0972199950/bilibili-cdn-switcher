@@ -6,7 +6,7 @@
 
 ### 让海外用户看网页版 B 站更顺的 Chrome / Firefox / Edge / Safari 扩充
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Safari（Mac App Store）](https://apps.apple.com/app/id6817181919?mt=12)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhcn) ｜ [Safari（Mac）](https://apps.apple.com/us/app/id6817181919?platform=mac&l=zh-Hans-CN&pt=129529980&ct=github_readme_zhcn) ｜ [Safari（iPhone／iPad）](https://apps.apple.com/us/app/id6817181919?platform=iphone&l=zh-Hans-CN&pt=129529980&ct=github_readme_zhcn_ios)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 <div align="center">
 
-![扩展弹出窗口](readme-zhcn-main.png)
+<img src="readme-zhcn-main.png" alt="Chrome 应用商店的哔速页面" width="640">
 
 </div>
 
@@ -36,7 +36,7 @@ B 站预设分配的取流节点对海外使用者常常绕路、不够快。这
 
 | 功能 | 说明 |
 |:--|:--|
-| 🚀 **所在地区最优节点** | 预设换成你所在国家实测最快的 CDN（已实测台湾／新加坡，其他国家陆续上线），开箱即用；安装后或切换国家时，第一支视频会在后台测速一次并换成最快的节点 |
+| 🚀 **所在地区最优节点** | 预设换成你所在国家实测最快的 CDN（已实测台湾、香港、澳门、新加坡、日本、澳大利亚、美国、英国、西班牙、俄罗斯，其他国家陆续上线），开箱即用 |
 | 🌐 **其他 CDN 节点** | 阿里云／腾讯云／华为云／Akamai／各海外节点…，依所在地区自由比较切换 |
 | ✏️ **自定义节点列表** | 跟「清单选择」互斥的另一个模式：可加入多个任意 CDN host，同样支持测速与排序；官方测速工具 **CDNSpeedTest**（Windows）测完会把推荐节点自动加进来 |
 | 🛑 **关闭** | 视频／直播各有独立的「关闭」选项：不介入 CDN 选线、完全维持 B 站官方原始逻辑 |

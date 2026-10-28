@@ -6,7 +6,7 @@
 
 ### 해외에서 웹 bilibili를 더 매끄럽게 보기 위한 Chrome / Firefox / Edge / Safari 확장 프로그램
 
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Safari(Mac App Store)](https://apps.apple.com/app/id6817181919?mt=12)
+### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Safari(Mac)](https://apps.apple.com/kr/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_ko) ｜ [Safari(iPhone / iPad)](https://apps.apple.com/kr/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_ko_ios)
 
 </div>
 
@@ -14,7 +14,7 @@
 
 <div align="center">
 
-![확장 프로그램 팝업](readme-ko-main.png)
+<img src="readme-ko-main.png" alt="Chrome 웹 스토어의 BiBoost 페이지" width="640">
 
 </div>
 
@@ -36,7 +36,7 @@ bilibili가 기본으로 배정하는 CDN은 해외 사용자에게 느리고 �
 
 | 기능 | 설명 |
 |:--|:--|
-| 🚀 **지역별 최적 노드** | 사용자 국가에서 실측해 가장 빨랐던 CDN을 기본으로 사용(대만/싱가포르에서 실측 완료, 다른 국가도 순차 추가 중). 설치하면 바로 사용할 수 있습니다 |
+| 🚀 **지역별 최적 노드** | 사용자 국가에서 실측해 가장 빨랐던 CDN을 기본으로 사용(대만, 홍콩, 마카오, 싱가포르, 일본, 호주, 미국, 영국, 스페인, 러시아에서 실측 완료, 다른 국가도 순차 추가 중). 설치하면 바로 사용할 수 있습니다 |
 | 🌐 **다른 CDN 노드** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / 각종 해외 노드… 지역에 맞게 자유롭게 전환 가능 |
 | ✏️ **사용자 지정 노드 목록** | 「목록」과 상호 배타적인 별도 모드. CDN 호스트를 원하는 만큼 추가할 수 있고 속도 테스트와 정렬도 지원합니다. 공식 도구 **CDNSpeedTest**(Windows)가 찾은 추천 노드도 여기에 자동으로 추가됩니다 |
 | 🛑 **끄기** | 영상과 라이브에 각각 「끄기」가 있으며, CDN 선택에 개입하지 않고 bilibili 원래 동작을 그대로 유지합니다 |
