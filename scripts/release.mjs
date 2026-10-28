@@ -79,8 +79,10 @@ function notes(version) {
     "## 下載 · Downloads", "",
     "一般使用者請從商店安裝擴充（會自動更新）：[Chrome](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch) · " +
       "[Firefox](https://addons.mozilla.org/addon/bilibili-cdn-switcher/) · " +
-      "[Edge](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp)。",
-    "Most users should install the extension from a store (auto-updates). The files below are for offline install.", "",
+      "[Edge](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp) · " +
+      "Safari [Mac](https://apps.apple.com/app/id6817181919?platform=mac&pt=129529980&ct=github_release) / " +
+      "[iPhone・iPad](https://apps.apple.com/app/id6817181919?platform=iphone&pt=129529980&ct=github_release_ios)。",
+    "Most users should install the extension from a store (auto-updates). Safari is App Store only, so there is no offline package for it. The files below are for offline install.", "",
     "| 檔案 · File | 說明 · Description |",
     "| --- | --- |",
     "| `CDNSpeedTest.exe` | CDN 測速工具（Windows 10/11），測完可自動建立擴充的「自訂節點列表」· CDN speed test tool for Windows |",
