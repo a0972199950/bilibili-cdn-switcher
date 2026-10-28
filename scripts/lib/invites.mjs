@@ -1,7 +1,8 @@
 // 必中獎參加人（Neon 的 invite_codes，CLI 是 scripts/invite.mjs）的後台邏輯：列表、審核、寄信、記錄獎品已寄出、作廢／恢復邀請碼、新增邀請碼。
 //   · 一組邀請碼一列：同一個人用同一組碼送了好幾份報告也只算一列，報告數、最新一份報告（國家、ISP、有沒有歸檔）從試算表彙整
 //     （試算表的「參加方式」是 Apps Script 依伺服器端驗證寫的：只算「必中獎」的列；驗證失敗的記成「抽獎」，不算在這裡）
-//   · 審核（review）：pending 待確認／valid 有效／invalid 無效，給人判斷用；有沒有歸檔（排除 VPN／無效／重複）只是參考
+//   · 審核（review）：pending 待確認／valid 有效／invalid 無效。/collect-speedtest-mail 收完信會跑 autoReview（npm run invite:review）
+//     依歸檔結果自動判定（review_auto＝true）；在後台手動改過的不再自動改
 //   · 寄信：草稿依報告國家的語言（謝謝參加 → 報告確認有效、對某業者的測速結果會幫助同業者 → 回信從禮物卡清單選一種 → 幾天內寄出），
 //     在後台確認、修改後才由使用者按寄出（speedtest-reports.mjs 的 sendGmail），寄出時間記在 mailed_at
 //   · 獎品已寄出（prize_sent_at、prize_note）：照規則同時作廢邀請碼（之後不能再用）
@@ -9,7 +10,9 @@
 //     用 CLI（scripts/invite.mjs）產生的沒有綁定，寄信時禮物卡要自己填
 // 作廢只影響之後的驗證與送報告（Apps Script 讀 revoked_at），資料保留。錯誤一律丟 LotteryError（訊息給人看的中文）。
 import crypto from "node:crypto";
-import { LotteryError, sql } from "./lotteries.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { LotteryError, ROOT, sql } from "./lotteries.mjs";
 import {
   archivedRids, cjkPad, extName, fillText, ispLabel, mailLang, money, sendGmail, sheetEntries,
 } from "./speedtest-reports.mjs";
@@ -36,6 +39,7 @@ function ensureTable() {
     await sql(`alter table invite_codes
       add column if not exists review text not null default 'pending',
       add column if not exists review_note text,
+      add column if not exists review_auto boolean not null default false,
       add column if not exists mailed_at timestamptz,
       add column if not exists mail_thread_id text,
       add column if not exists prize_sent_at timestamptz,
@@ -65,21 +69,33 @@ export async function listInvites() {
     if (!archivedBy.has(e.country)) archivedBy.set(e.country, archivedRids(e.country));
     return archivedBy.get(e.country).has(e.rid);
   };
+  const rejected = rejectedReports();
   const lotteries = await boundLotteries();
   const rows = codes.map((r) => {
     const all = (byCode.get(r.code) || []).sort((a, b) => b.receivedAt - a.receivedAt);
     const real = all.filter((e) => !e.test).map((e) => ({
       rid: e.rid, receivedAt: e.receivedAt, country: e.country, isp: e.isp, ispLabel: ispLabel(e.country, e.isp), archived: archived(e),
+      rejected: rejected[e.rid] ? { kind: rejected[e.rid].kind, why: rejected[e.rid].why } : null,   // 收信時被排除的原因
     }));
     return {
       code: r.code, email: r.email, createdAt: ms(r.created_at), revokedAt: ms(r.revoked_at), lastVerifiedAt: ms(r.last_verified_at),
-      review: r.review, reviewNote: r.review_note || "", mailedAt: ms(r.mailed_at), prizeSentAt: ms(r.prize_sent_at), prizeNote: r.prize_note || "",
+      review: r.review, reviewNote: r.review_note || "", reviewAuto: r.review_auto, mailedAt: ms(r.mailed_at), prizeSentAt: ms(r.prize_sent_at), prizeNote: r.prize_note || "",
       reports: entries ? real : null, testReports: all.length - real.length,
       reportCount: r.report_count,   // Apps Script 記的正式報告數（試算表讀不到時參考）
       lottery: lotteries.get(r.lottery_v2_id) || null,   // 參加的抽獎（產生邀請碼時綁定的）；null＝沒綁定（CLI 產生的）
     };
   });
   return { rows, sheetError };
+}
+
+// /collect-speedtest-mail 排除的報告（cdn-speedtest-results/_rejected.json）：rid → { base, kind（vpn／invalid／dup）, why, at }
+// （寫在這裡、不放 speedtest-reports.mjs，免得後台要重開）
+function rejectedReports() {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(ROOT, "cdn-speedtest-results", "_rejected.json"), "utf8"));
+  } catch {
+    return {};
+  }
 }
 
 // 抽獎 v2 的 id → { id, title（繁中，沒有就任一語言）, country, currency, giftCards: [{ name, amount }] }
@@ -126,7 +142,32 @@ export async function createInvite(email, lotteryId) {
 export async function setReview(code, review, note = "") {
   if (!REVIEWS[review]) throw new LotteryError("審核狀態要是 pending／valid／invalid");
   await getInvite(code);
-  await sql("update invite_codes set review = $2, review_note = $3 where code = $1", [normCode(code), review, String(note || "").trim() || null]);
+  await sql("update invite_codes set review = $2, review_note = $3, review_auto = false where code = $1",
+            [normCode(code), review, String(note || "").trim() || null]);
+}
+
+// 自動審核：只動「自動判定過的」與「待確認且沒寫備註的」（人工審核過的不動）。
+//   有一份正式報告已歸檔 → 有效；正式報告全都因 VPN／無效被排除 → 無效（備註寫原因）；
+//   其他（還沒收信、只有重複送出）→ 待確認。回傳有改的 [{ code, email, from, to, note }]；dry：只算不寫
+export async function autoReview({ dry = false } = {}) {
+  const { rows, sheetError } = await listInvites();
+  if (sheetError) throw new LotteryError(sheetError);
+  const changes = [];
+  for (const r of rows) {
+    if (!r.reviewAuto && !(r.review === "pending" && !r.reviewNote)) continue;
+    const ok = r.reports.find((x) => x.archived);
+    const bad = r.reports.filter((x) => !x.archived && x.rejected && x.rejected.kind !== "dup");
+    let review = "pending", note = "";
+    if (ok) [review, note] = ["valid", `自動：報告 #${ok.rid} 已歸檔`];
+    else if (r.reports.length && bad.length === r.reports.length) {
+      [review, note] = ["invalid", `自動：${bad.map((x) => `#${x.rid} ${x.rejected.why}`).join("；")}`];
+    }
+    if (review === r.review && note === r.reviewNote) continue;
+    if (!dry) await sql("update invite_codes set review = $2, review_note = $3, review_auto = $4 where code = $1",
+                        [r.code, review, note || null, review !== "pending"]);
+    changes.push({ code: r.code, email: r.email, from: r.review, to: review, note });
+  }
+  return changes;
 }
 
 // 作廢（之後不能再驗證、送報告）／恢復

@@ -16,6 +16,7 @@
     "invite:create": "node scripts/invite.mjs create",
     "invite:delete": "node scripts/invite.mjs delete",
     "invite:show": "node scripts/invite.mjs show",
+    "invite:review": "node scripts/invite.mjs review",
     "events:show": "node scripts/events.mjs show",
     "lottery:add": "node scripts/lottery.mjs add",
     "lottery:update": "node scripts/lottery.mjs update",

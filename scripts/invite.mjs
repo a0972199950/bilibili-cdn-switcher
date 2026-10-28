@@ -2,6 +2,7 @@
 //   npm run invite:create -- a@x.com b@y.com     每個 email 產生一組邀請碼並印出
 //   npm run invite:delete -- K7QM3XPA H4RT9WCE   把這些邀請碼標記為已失效（資料保留）
 //   npm run invite:show                          列出每組 email ↔ 邀請碼與有效狀態
+//   npm run invite:review [-- --dry]             依本機歸檔自動審核（--dry 只印會改什麼）（/collect-speedtest-mail 收完信後跑，見 scripts/lib/invites.mjs 的 autoReview）
 //
 // 規則：邀請碼綁定 email（同一個 email 可以有多組）。有效期間可以無限次驗證、送報告（包括自己測試），
 // 直到確定發出獎品後用 invite:delete 標記失效。Apps Script（指令碼屬性 NEON_URL）只讀取狀態並記錄使用紀錄。
@@ -112,6 +113,20 @@ async function show() {
   console.log(`共 ${rows.length} 組（有效 ${valid}、已失效 ${rows.length - valid}）`);
 }
 
+// 自動審核：只動自動判定過的與待確認且沒寫備註的，印出有改的
+async function review(dry) {
+  const { autoReview, REVIEWS } = await import("./lib/invites.mjs");
+  let changes;
+  try {
+    changes = await autoReview({ dry });
+  } catch (e) {
+    console.error(`自動審核失敗：${e.message}`);
+    process.exit(1);
+  }
+  for (const c of changes) console.log(`${c.code}  ${c.email}  ${REVIEWS[c.from]} → ${REVIEWS[c.to]}${c.note ? `（${c.note}）` : ""}`);
+  console.log(`自動審核：${dry ? "（預覽）會改" : "改了"} ${changes.length} 組`);
+}
+
 const [cmd, ...args] = process.argv.slice(2);
 if (!DB_URL) {
   console.error("找不到 DATABASE_URL（.env.local 或環境變數）");
@@ -121,7 +136,8 @@ await ensureTable();
 if (cmd === "create") await create(args);
 else if (cmd === "delete") await revoke(args);
 else if (cmd === "show") await show();
+else if (cmd === "review") await review(args.includes("--dry"));
 else {
-  console.error("用法：invite.mjs create|delete|show");
+  console.error("用法：invite.mjs create|delete|show|review");
   process.exit(1);
 }
