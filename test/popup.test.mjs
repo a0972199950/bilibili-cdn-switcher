@@ -429,20 +429,48 @@ describe("announcement bar filtering", () => {
 });
 
 describe("donate button", () => {
-  // jsdom 的 User-Agent 會被 detectBrowser 當成 Safari；這裡先換成指定瀏覽器的再載入 popup
-  async function bootAs(ua) {
-    const env = createEnv({ htmlFile: "popup.html", storage: { zoneCheckedAt: Date.now(), countryAutoDone: true } });
+  const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36";
+  const CONFIG_API = "https://api.biboost.app/v1/donate/config";
+  // jsdom 的 User-Agent 會被 detectBrowser 當成 Safari；這裡先換成指定瀏覽器的再載入 popup。
+  // config：GET /v1/donate/config 的回應（null＝連不上）；storage：預先放進 storage.local 的東西
+  async function bootAs(ua, { config = null, storage = {} } = {}) {
+    const env = createEnv({ htmlFile: "popup.html", storage: { zoneCheckedAt: Date.now(), countryAutoDone: true, ...storage } });
     Object.defineProperty(env.window.navigator, "userAgent", { value: ua, configurable: true });
-    env.fetchHandler = () => { throw new TypeError("Failed to fetch"); };
+    env.fetchHandler = (url) => {
+      if (url === CONFIG_API && config) return { ok: true, status: 200, json: () => Promise.resolve(config) };
+      throw new TypeError("Failed to fetch");
+    };
     ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
     await env.settle(20);
     return env;
   }
   test("shown next to the 5-star button in Chrome", async () => {
-    const env = await bootAs("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36");
+    const env = await bootAs(CHROME_UA);
     const btn = env.document.getElementById("donateBtn");
     assert.equal(btn.style.display, "");
     assert.notEqual(btn.parentNode.style.display, "none");
+    env.close();
+  });
+  test("hidden once the admin pauses donations, and the answer is cached", async () => {
+    const env = await bootAs(CHROME_UA, { config: { ok: true, enabled: false } });
+    const btn = env.document.getElementById("donateBtn");
+    assert.equal(btn.style.display, "none");
+    assert.equal(btn.parentNode.style.display, "", "the 5-star button keeps the row");
+    const stored = env.storage.donateConfig;
+    assert.equal(stored.enabled, false);
+    assert.equal(stored.api, "https://api.biboost.app");
+    env.close();
+  });
+  test("a fresh cached pause hides the button without asking the API again", async () => {
+    const env = await bootAs(CHROME_UA, { storage: { donateConfig: { api: "https://api.biboost.app", at: Date.now(), enabled: false } } });
+    assert.equal(env.document.getElementById("donateBtn").style.display, "none");
+    assert.ok(!env.fetchCalls.some((c) => c.url === CONFIG_API));
+    env.close();
+  });
+  test("stays visible when the config API is down (default on)", async () => {
+    const env = await bootAs(CHROME_UA);
+    assert.ok(env.fetchCalls.some((c) => c.url === CONFIG_API));
+    assert.equal(env.document.getElementById("donateBtn").style.display, "");
     env.close();
   });
   test("hidden in Safari (App Store rules: no external payment)", async () => {

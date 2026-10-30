@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate, rateHit, usdRates, recordDonation, recordFee } from "../tools/report-worker/src/donate.js";
+import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate, rateHit, usdRates, recordDonation, recordFee, donateEnabled } from "../tools/report-worker/src/donate.js";
 import { createEnv } from "./helpers/load.mjs";
 
 const ok = { v: 1, donorId: "0123456789abcdef0123456789abcdef", name: "老王", avatar: { style: 3 }, amount: 100, currency: "TWD" };
@@ -161,15 +161,66 @@ describe("report worker: donate", () => {
     assert.ok(!db.log.some((l) => /^insert into/.test(l.q)), "nothing written");
   });
 
+  // 後台「贊助管理」的開關（settings.donate_enabled）。Node 沒有 Cloudflare 的 caches，換成什麼都不存的假快取
+  const noCache = { default: { match: async () => undefined, put: async () => {}, delete: async () => {} } };
+  const flagDb = (value) => ({
+    neonSql: async (env, q) => {
+      if (/from settings/.test(q)) {
+        if (value === "missing") throw new Error('neon_400 {"code":"42P01","message":"relation \"settings\" does not exist"}');
+        return value === undefined ? [] : [{ value }];
+      }
+      return [];
+    },
+  });
+  const helpers = (db) => ({
+    ...db, CACHE_S: 60, CORS: {},
+    json: (status, obj) => new Response(JSON.stringify(obj), { status }),
+    fail: (status, error) => new Response(JSON.stringify({ ok: false, error }), { status }),
+  });
+
+  test("donate flag: on unless the admin turned it off (no table / no row = on)", async () => {
+    assert.equal(await donateEnabled({}, flagDb(false)), false);
+    assert.equal(await donateEnabled({}, flagDb(true)), true);
+    assert.equal(await donateEnabled({}, flagDb(undefined)), true);
+    assert.equal(await donateEnabled({}, flagDb("missing")), true);
+  });
+
+  test("GET /v1/donate/config answers the flag for the popup", async () => {
+    const real = globalThis.caches;
+    globalThis.caches = noCache;
+    try {
+      const url = new URL("https://api.biboost.app/v1/donate/config");
+      const res = await handleDonate(new Request(url), { DATABASE_URL: "postgres://x" }, { waitUntil() {} }, url, helpers(flagDb(false)));
+      assert.equal(res.status, 200);
+      assert.deepEqual(await res.json(), { ok: true, enabled: false });
+      assert.match(res.headers.get("Cache-Control"), /max-age=60/);
+    } finally { globalThis.caches = real; }
+  });
+
+  test("checkout is refused while donations are paused (Stripe is never called)", async () => {
+    const real = globalThis.fetch;
+    let stripeCalled = false;
+    globalThis.fetch = async () => { stripeCalled = true; throw new Error("should not call Stripe"); };
+    try {
+      const url = new URL("https://api.biboost.app/v1/donate/checkout");
+      const req = new Request(url, { method: "POST", body: JSON.stringify({ ...ok, currency: "USD", amount: 3 }) });
+      const res = await handleDonate(req, { DATABASE_URL: "postgres://x", STRIPE_SECRET_KEY: "sk_test" }, { waitUntil() {} }, url, helpers(flagDb(false)));
+      assert.equal(res.status, 403);
+      assert.equal((await res.json()).error, "disabled");
+      assert.ok(!stripeCalled);
+    } finally { globalThis.fetch = real; }
+  });
+
   test("fee backfill converts the SGD balance transaction to USD and only fills an empty fee", async () => {
     const real = globalThis.fetch;
     globalThis.fetch = async () => { throw new Error("offline"); }; // 固定匯率：1 SGD = 0.78 USD
     const log = [];
     try {
-      await recordFee({}, { neonSql: async (env, q, p) => { log.push({ q, p }); return []; } }, "pi_9", { id: "txn_1", currency: "sgd", fee: 60, net: 440, exchange_rate: null });
+      await recordFee({}, { neonSql: async (env, q, p) => { log.push({ q, p }); return []; } }, "pi_9", { id: "txn_1", currency: "sgd", fee: 60, net: 440, exchange_rate: null, available_on: 1793400000 });
     } finally { globalThis.fetch = real; }
     assert.equal(log.length, 1);
     assert.match(log[0].q, /fee_usd is null/);
     assert.ok(Math.abs(log[0].p[1] - 0.6 * 0.78) < 1e-9 && Math.abs(log[0].p[2] - 4.4 * 0.78) < 1e-9);
+    assert.equal(log[0].p[6], 1793400000, "available_on is kept for the admin's 已入帳 status");
   });
 });

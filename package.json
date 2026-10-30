@@ -38,7 +38,8 @@
     "worker:opens": "node tools/report-worker/opens.mjs",
     "site:build": "node scripts/build-site.mjs",
     "site:deploy": "node scripts/build-site.mjs && npx wrangler deploy --config tools/site/wrangler.toml",
-    "admin": "npm --prefix admin run dev"
+    "admin": "npm --prefix admin run dev",
+    "admin:hash": "node scripts/admin-hash.mjs"
   },
   "devDependencies": {
     "jsdom": "^27.0.1",

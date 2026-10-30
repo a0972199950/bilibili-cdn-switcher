@@ -1,8 +1,13 @@
-# 公開網站 https://biboost.app（只有靜態檔案，沒有程式）：目前是贊助頁 /donate，首頁導過去。
-# 檔案由 npm run site:build 從 src/ 產生到 public/；部署：npm run site:deploy
+# 公開網站 https://biboost.app：贊助頁 /donate（首頁導過去）與雲端後台 /admin。
+# 靜態檔案由 npm run site:build 從 src/ 與 admin/ 產生到 public/；部署：npm run site:deploy
+# 只有 run_worker_first 的路徑會先跑 src/index.js（後台 API、後台頁面的安全標頭、贊助開關），其他直接回靜態檔案。
+# secrets 見 src/index.js 開頭。
 # 跟問題回報的 bcs-report worker 分開：網站怎麼改都不會動到 api.biboost.app 與已發布擴充用的 API
 name = "biboost-site"
+main = "src/index.js"
 compatibility_date = "2026-01-01"
+# scripts/lib 用到 node:fs、node:path 等（雲端用不到的功能才會真的呼叫），也靠 process.env 讀 DATABASE_URL
+compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 routes = [
   { pattern = "biboost.app", custom_domain = true }
@@ -10,5 +15,12 @@ routes = [
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
 html_handling = "drop-trailing-slash"
 not_found_handling = "404-page"
+run_worker_first = ["/admin", "/admin/*", "/donate", "/donate.html"]
+
+# 後台登入失敗的限流（跟 report worker 共用 namespace，key 開頭 adm:）
+[[kv_namespaces]]
+binding = "RATE_KV"
+id = "e6adf184d971421581d54c062d13a55a"

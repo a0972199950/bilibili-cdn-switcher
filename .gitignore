@@ -38,6 +38,7 @@ release/
 
 # Cloudflare Worker 本機密鑰 / 暫存
 tools/report-worker/.dev.vars
+tools/site/.dev.vars
 # Mac 版測速 App 的 Developer ID 簽章憑證（p12＋密碼），只進私人 repo
 tools/cdn-speedtest-app/signing/
 tools/report-worker/.wrangler/

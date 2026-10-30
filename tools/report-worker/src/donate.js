@@ -1,6 +1,8 @@
 /**
  * 贊助（擴充的 src/donate.html）：乾爹排行榜與 Stripe 結帳。資料表見 scripts/lib/donations.mjs（npm run donations:setup 建）。
- *  - GET  /v1/donors                 排行榜：同一個 pid 的已付款贊助合併、依美金累計排序，邊緣快取 CACHE_S 秒
+ *  - GET  /v1/donors                 排行榜：同一個 pid 的已付款贊助合併、依美金累計排序，邊緣快取 CACHE_S 秒；enabled＝贊助開關
+ *  - GET  /v1/donate/config          { ok, enabled }：後台「贊助管理」的開關（Neon 的 settings.donate_enabled，見 scripts/lib/settings.mjs），
+ *                                    popup 依它顯示「贊助我一杯咖啡」；關掉時贊助頁只剩排行榜、結帳回 403 disabled。邊緣快取 CACHE_S 秒
  *  - GET  /v1/donors/<pid>/avatar    上傳的頭像圖片
  *  - POST /v1/donors/profile        已上榜的人事後改名稱／頭像
  *  - POST /v1/donate/checkout        建付款頁，回 { ok, url }；先記一筆 donation_intents（名稱、頭像、金額、語言、email…）。
@@ -51,6 +53,7 @@ function randId() {
 export async function handleDonate(request, env, ctx, url, h) {
   const path = url.pathname, m = request.method;
   if (m === "GET" && path === "/v1/donors") return donors(request, env, ctx, h);
+  if (m === "GET" && path === "/v1/donate/config") return donateConfig(request, env, ctx, h);
   const av = /^\/v1\/donors\/([0-9a-f]{16})\/avatar$/.exec(path);
   if (m === "GET" && av) return donorAvatar(env, av[1], h);
   if (m === "POST" && path === "/v1/donate/checkout") return checkout(request, env, h);
@@ -63,8 +66,33 @@ export async function handleDonate(request, env, ctx, url, h) {
   return h.fail(404, "not_found");
 }
 
+// ---------------- 贊助開關 ----------------
+// 沒有 settings 表、沒有這一列＝開啟（預設開）
+export async function donateEnabled(env, h) {
+  try {
+    const rows = await h.neonSql(env, "select value from settings where key = 'donate_enabled'");
+    return !rows.length || rows[0].value !== false;
+  } catch (e) {
+    if (/^neon_4\d\d [\s\S]*(42P01|does not exist)/.test(String(e.message))) return true;
+    throw e;
+  }
+}
+async function donateConfig(request, env, ctx, h) {
+  const key = new Request(new URL("/v1/donate/config", request.url).toString());
+  const hit = await caches.default.match(key);
+  if (hit) return hit;
+  if (!env.DATABASE_URL) return h.fail(503, "not_configured");
+  let enabled;
+  try { enabled = await donateEnabled(env, h); } catch (e) { return h.fail(502, "db"); }
+  const res = new Response(JSON.stringify({ ok: true, enabled }), {
+    headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${h.CACHE_S}`, ...h.CORS }
+  });
+  ctx.waitUntil(caches.default.put(key, res.clone()));
+  return res;
+}
+
 // ---------------- 排行榜 ----------------
-// { ok, items: [{ pid, pids?（email 合併進來的其他 pid）, name, avatar: { style } | { url }, usd, count }], donors }；不上榜（hidden）的人不列但算進人數。總金額不公開。
+// { ok, items: [{ pid, pids?（email 合併進來的其他 pid）, name, avatar: { style } | { url }, usd, count }], donors, enabled（贊助開關） }；不上榜（hidden）的人不列但算進人數。總金額不公開。
 // 同額時先達到的在前（擴充預估名次也是這樣算）。上傳的頭像給網址另外抓，?v= 是頭像更新時間，換頭像後網址跟著變
 function donorsKey(request) { return new Request(new URL("/v1/donors", request.url).toString()); }
 function clientIp(request) { return request.headers.get("CF-Connecting-IP") || "0.0.0.0"; }
@@ -87,28 +115,29 @@ async function donors(request, env, ctx, h) {
   const hit = fresh ? null : await cache.match(donorsKey(request));
   if (hit) return hit;
   if (!env.DATABASE_URL) return h.fail(503, "not_configured");
-  let rows, totals;
+  let rows, totals, enabled;
   try {
-    [rows, totals] = await Promise.all([
+    [rows, totals, enabled] = await Promise.all([
       h.neonSql(env, `select d.pid, d.name, d.avatar_style, d.avatar_image is not null as has_image,
           (select array_agg(a.pid) from donor_aliases a where a.canonical = d.pid) as aliases,
           (extract(epoch from d.updated_at) * 1000)::float8 as updated_ms, sum(x.usd)::float8 as usd, count(*)::int as count
         from donations x join donors d using (pid)
         where x.status = 'paid' and not d.hidden
         group by d.pid order by usd desc, max(x.paid_at) limit ${DONORS_LIMIT}`),
-      h.neonSql(env, "select count(distinct pid)::int as donors from donations where status = 'paid'")
+      h.neonSql(env, "select count(distinct pid)::int as donors from donations where status = 'paid'"),
+      donateEnabled(env, h)
     ]);
   } catch (e) {
     // 資料表還沒建（npm run donations:setup）就當作還沒有人贊助；其他錯誤（帳密錯、SQL 錯）照實回 502，不快取空的排行榜
     if (!/^neon_4\d\d [\s\S]*(42P01|does not exist)/.test(String(e.message))) return h.fail(502, "db");
-    rows = []; totals = [{ donors: 0 }];
+    rows = []; totals = [{ donors: 0 }]; enabled = true;
   }
   const origin = new URL(request.url).origin;
   const items = rows.map((r) => ({
     pid: r.pid, pids: r.aliases || undefined, name: r.name || "", usd: Math.round(r.usd * 100) / 100, count: r.count,
     avatar: r.has_image ? { url: `${origin}/v1/donors/${r.pid}/avatar?v=${Math.round(r.updated_ms)}` } : { style: r.avatar_style }
   }));
-  const res = new Response(JSON.stringify({ ok: true, items, donors: totals[0].donors }), {
+  const res = new Response(JSON.stringify({ ok: true, items, donors: totals[0].donors, enabled }), {
     headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${h.CACHE_S}`, ...h.CORS }
   });
   ctx.waitUntil(cache.put(donorsKey(request), res.clone()));
@@ -178,6 +207,7 @@ async function checkout(request, env, h) {
   // 新台幣只有設好綠界 secrets 才走綠界（目前沒申請，spec/donate.md ⑧），否則跟其他幣別一樣走 Stripe；擴充端的 ECPAY_ON 要跟著改
   const provider = p.currency === "TWD" && ecpayReady(env) ? "ecpay" : "stripe";
   if (provider === "stripe" && !env.STRIPE_SECRET_KEY) return h.fail(503, "not_configured");
+  try { if (!(await donateEnabled(env, h))) return h.fail(403, "disabled"); } catch (e) { return h.fail(502, "db"); }
   if (!(await rateHit(env, "dn:" + clientIp(request), CHECKOUT_LIMIT))) return h.fail(429, "rate_limited");
   const pid = await pidOf(p.donorId);
   const id = randId();
@@ -359,15 +389,16 @@ async function intentIsMine(env, h, paymentIntentId) {
   const intentId = pi.metadata && pi.metadata.intent;
   return !!intentId && (await h.neonSql(env, "select 1 from donation_intents where id = $1", [intentId])).length > 0;
 }
-// 手續費、實收換成美金補進那筆贊助（balance transaction 是結算幣別的最小單位，新加坡帳戶是 SGD）
+// 手續費、實收換成美金補進那筆贊助（balance transaction 是結算幣別的最小單位，新加坡帳戶是 SGD）；
+// available_on（秒）＝款項進可用餘額的時間，後台「贊助管理」用它分「已收款」「已入帳」
 export async function recordFee(env, h, paymentIntentId, bt) {
   const rates = await usdRates();
   const cur = String(bt.currency || "sgd").toUpperCase();
   if (!rates[cur]) throw new Error("fx_" + cur);
   await h.neonSql(env, `update donations set fee_usd = $2, net_usd = $3,
-      raw = coalesce(raw, '{}'::jsonb) || jsonb_build_object('balance_transaction', $4::text, 'settlement', $5::text, 'exchange_rate', $6::numeric)
+      raw = coalesce(raw, '{}'::jsonb) || jsonb_build_object('balance_transaction', $4::text, 'settlement', $5::text, 'exchange_rate', $6::numeric, 'available_on', $7::bigint)
     where provider = 'stripe' and provider_ref = $1 and fee_usd is null`,
-    [paymentIntentId, bt.fee / 100 / rates[cur], bt.net / 100 / rates[cur], bt.id || null, cur, bt.exchange_rate == null ? null : bt.exchange_rate]);
+    [paymentIntentId, bt.fee / 100 / rates[cur], bt.net / 100 / rates[cur], bt.id || null, cur, bt.exchange_rate == null ? null : bt.exchange_rate, bt.available_on || null]);
 }
 // 回 false＝不是這個環境建的結帳（查不到 intent）：正式與測試環境的 worker 可能接到同一個 Stripe 帳戶的通知，只記自己的
 async function recordPaid(env, session, h) {
@@ -380,6 +411,8 @@ async function recordPaid(env, session, h) {
   const pi = await stripe(env, "GET", `/payment_intents/${session.payment_intent}?expand[]=latest_charge.balance_transaction`);
   const charge = pi.latest_charge || {};
   const bt = charge.balance_transaction || {};
+  // 後台顯示用：卡片的錢包（apple_pay、google_pay、link…）與發卡組織；method 只有 card
+  const card = (charge.payment_method_details && charge.payment_method_details.card) || {};
   const cur = String(session.currency || "").toUpperCase();
   const stripeDec = CURRENCIES[cur] ? CURRENCIES[cur].stripe : 2;
   const amount = session.amount_total / 10 ** stripeDec;
@@ -394,7 +427,11 @@ async function recordPaid(env, session, h) {
     country: (charge.billing_details && charge.billing_details.address && charge.billing_details.address.country) || it.country || null,
     email: (session.customer_details && session.customer_details.email) || null, paidAt: session.created || Math.floor(Date.now() / 1000),
     status: charge.disputed ? "disputed" : charge.refunded ? "refunded" : "paid",
-    raw: { session: session.id, balance_transaction: bt.id || null, settlement: btCur, exchange_rate: bt.exchange_rate || null }
+    raw: {
+      session: session.id, balance_transaction: bt.id || null, settlement: btCur, exchange_rate: bt.exchange_rate || null,
+      available_on: bt.available_on || null, livemode: session.livemode === true,
+      wallet: (card.wallet && card.wallet.type) || null, card_brand: card.brand || null
+    }
   });
   return true;
 }

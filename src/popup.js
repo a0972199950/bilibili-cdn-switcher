@@ -516,24 +516,57 @@ if (reviewUrl) {
 // 已開放（DONATE_DEV_ONLY = false）：商店版接正式的 api.biboost.app，本機載入的開發版接測試環境（donate.js 依 installType 決定）。
 // 要暫時收起來時改回 true：只剩開發版看得到，且開假資料（donate.html?mock，見 donate.js 的 mockBoard）；
 // management.getSelf 不需要 management 權限。
-// Safari 版包在 App Store 的 App 裡，App Store 審核規定不能導去外部付款，所以不顯示（見 spec/donate.md 的商店規範）
+// Safari 版包在 App Store 的 App 裡，App Store 審核規定不能導去外部付款，所以不顯示（見 spec/donate.md 的商店規範），也不受下面的開關影響。
+// 後台「贊助管理」可以暫停贊助：GET <API>/v1/donate/config → { ok, enabled }（report worker，邊緣快取 1 分鐘）。
+// storage.local.donateConfig = { api, at, enabled } 快取 DONATE_CFG_TTL_MS：開 popup 先照快取決定（沒有快取＝顯示，預設開），過期再背景更新，
+// 暫停後最慢約 16 分鐘按鈕收起來。商店版問正式的 api.biboost.app，本機載入的開發版問測試環境（同 donate.js）
 var DONATE_DEV_ONLY = false;
-function showDonateBtn(dev) {
-  els.donateBtn.style.display = "";
-  els.rateBtn.parentNode.style.display = "";
+var DONATE_CFG_API = { prod: "https://api.biboost.app", dev: "https://api-staging.biboost.app" };
+var DONATE_CFG_TTL_MS = 15 * 60 * 1000;
+function bindDonateBtn(dev) {
   els.donateBtn.addEventListener("click", function () {
     openTab(chrome.runtime.getURL("donate.html" + (dev ? "?mock" : "")));
     window.close();
   });
 }
+// 兩顆都沒顯示（iPhone / iPad Safari、暫停贊助且沒有評分連結）時整列收起來，不然空的一列會多佔一個間距
+function syncRateRow() {
+  els.rateBtn.parentNode.style.display = els.rateBtn.style.display === "none" && els.donateBtn.style.display === "none" ? "none" : "";
+}
+function setDonateVisible(on) {
+  els.donateBtn.style.display = on ? "" : "none";
+  syncRateRow();
+}
+function loadDonateConfig(cb) {
+  new Promise(function (resolve) {
+    try { chrome.management.getSelf(function (self) { resolve(!!self && self.installType === "development"); }); } catch (e) { resolve(false); }
+  }).then(function (dev) {
+    var api = dev ? DONATE_CFG_API.dev : DONATE_CFG_API.prod;
+    chrome.storage.local.get({ donateConfig: null }, function (s) {
+      var c = s.donateConfig && s.donateConfig.api === api ? s.donateConfig : null;
+      if (c) cb(c.enabled !== false);
+      if (c && Date.now() - c.at < DONATE_CFG_TTL_MS) return;
+      fetch(api + "/v1/donate/config", { credentials: "omit", cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok || typeof j.enabled !== "boolean") return;
+          chrome.storage.local.set({ donateConfig: { api: api, at: Date.now(), enabled: j.enabled } });
+          cb(j.enabled);
+        })
+        .catch(function () {});
+    });
+  });
+}
 if (detectBrowser() !== "safari") {
-  if (!DONATE_DEV_ONLY) showDonateBtn(false);
-  else if (chrome.management && chrome.management.getSelf) {
-    chrome.management.getSelf(function (self) { if (self && self.installType === "development") showDonateBtn(true); });
+  if (!DONATE_DEV_ONLY) {
+    bindDonateBtn(false);
+    setDonateVisible(true);
+    loadDonateConfig(setDonateVisible);
+  } else if (chrome.management && chrome.management.getSelf) {
+    chrome.management.getSelf(function (self) { if (self && self.installType === "development") { bindDonateBtn(true); setDonateVisible(true); } });
   }
 }
-// 兩顆都沒顯示（iPhone / iPad Safari、還沒開放贊助的商店版且沒有評分連結）時整列收起來，不然空的一列會多佔一個間距
-if (els.rateBtn.style.display === "none" && els.donateBtn.style.display === "none") els.rateBtn.parentNode.style.display = "none";
+syncRateRow();
 // 問題回報：一律由 background 開成獨立視窗（report.html），帶上目前分頁 id 讓回報頁能向 B 站頁面要此刻的快照；popup 隨即關閉
 els.feedbackBtn.style.display = "";
 els.feedbackBtn.addEventListener("click", function () {

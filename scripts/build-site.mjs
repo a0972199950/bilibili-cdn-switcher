@@ -1,9 +1,11 @@
 // 公開網站 https://biboost.app 的檔案：把擴充的贊助頁（src/donate.html 與它用到的 js、語系、圖示）複製到 tools/site/public/，
 // 前面加上 tools/site/web-shim.js（用 localStorage 模擬擴充 API）。贊助頁只維護 src/ 那一份。
+// 雲端後台 /admin：admin/（私人 repo）打包（vite build）後複製到 public/admin/；沒有 admin/（只有公開 repo）就略過，部署後 /admin 會不見
 //   npm run site:build    只產生檔案
 //   npm run site:deploy   產生後部署（tools/site/wrangler.toml，網域 biboost.app）
 import fs from "node:fs";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -34,4 +36,12 @@ fs.writeFileSync(path.join(OUT, "index.html"), `<!doctype html><html><head><meta
 <meta http-equiv="refresh" content="0; url=/donate"><link rel="canonical" href="https://biboost.app/donate"></head>
 <body><a href="/donate">BiBoost</a></body></html>
 `);
+const ADMIN = path.join(ROOT, "admin");
+if (fs.existsSync(path.join(ADMIN, "package.json"))) {
+  const r = spawnSync("npm", ["--prefix", ADMIN, "run", "build"], { stdio: "inherit", shell: process.platform === "win32" });
+  if (r.status !== 0) throw new Error("admin/ 打包失敗");
+  fs.cpSync(path.join(ADMIN, "dist"), path.join(OUT, "admin"), { recursive: true });
+} else {
+  console.warn("⚠ 找不到 admin/（私人 repo，npm run private:setup）：這次沒有雲端後台，部署後 biboost.app/admin 會不見");
+}
 console.log("site → " + path.relative(ROOT, OUT));

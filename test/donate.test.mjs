@@ -235,4 +235,18 @@ describe("profile", () => {
   });
 });
 
+describe("paused by the admin", () => {
+  test("enabled: false hides the give panel and keeps only the board", async () => {
+    const env = await boot({ board: { ok: true, items: [item("aaaa000000000001", 10)], enabled: false }, query: "#give" });
+    assert.ok(env.document.body.classList.contains("giveOff"));
+    assert.equal(env.document.body.getAttribute("data-tab"), "board");
+    env.close();
+  });
+  test("a normal board keeps the give panel", async () => {
+    const env = await boot({ board: { ok: true, items: [], enabled: true } });
+    assert.ok(!env.document.body.classList.contains("giveOff"));
+    env.close();
+  });
+});
+
 after(() => closeAll());

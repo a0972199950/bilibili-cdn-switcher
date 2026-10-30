@@ -134,6 +134,11 @@
       .narrowHide { display: none; }
     }
 
+    /* ---------- 後台暫停贊助（/v1/donors 回 enabled: false）：只剩排行榜 ---------- */
+    body.giveOff .layout { grid-template-columns: minmax(0, 1fr); max-width: 760px; }
+    body.giveOff .give, body.giveOff .tabs, body.giveOff .stickyCta, body.giveOff #meBtn { display: none !important; }
+    @media (max-width: 900px) { body.giveOff .layout { padding-bottom: 40px; } }
+
     /* ---------- 按鈕 ---------- */
     .btn { border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 600; cursor: pointer; }
     .btn.primary { background: var(--primary); color: var(--primary-text); }

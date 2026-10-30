@@ -5,7 +5,7 @@
 //   · 用使用者自己的 Gmail 寄純文字信
 // Google 用 google-workspace MCP 登入時存的 OAuth 憑證（~/.google_workspace_mcp/credentials/<email>.json，
 // 含 spreadsheets、drive、gmail.send 權限）換 access token，不另外設定。錯誤一律丟 LotteryError（訊息給人看的中文）。
-// 注意：本機後台用相對路徑 import 這支，改了這支要重開 admin 的 dev server（見 admin/lib/repo.js）
+// 注意：本機後台（admin/server.mjs）載入後不會重新讀這支，改了要重開 npm run admin
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

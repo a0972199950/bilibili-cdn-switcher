@@ -152,4 +152,5 @@ Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再�
 
 - `https://bcs-report.bilibili-cdn-switcher-tools.workers.dev`：**不能關**。已發布的擴充（公告、抽獎、問題回報）與 CDN 測速工具 exe 都寫死這個網址（`wrangler.toml` 的 `workers_dev = true`）。
 - `https://api.biboost.app`：同一個 worker 的正式網域（`routes` 的 custom domain），贊助功能用這個；Stripe webhook 也指到這裡。
-- 公開網站 `https://biboost.app`（贊助頁網頁版 `/donate`）是另一個只有靜態檔案的 worker：`tools/site/`，`npm run site:deploy`。
+- 公開網站 `https://biboost.app`（贊助頁網頁版 `/donate`、雲端後台 `/admin`）是另一個 worker：`tools/site/`，`npm run site:deploy`。
+- 後台「贊助管理」的開關（Neon 的 `settings.donate_enabled`）：`GET /v1/donate/config` 回 `{ ok, enabled }` 給 popup，`/v1/donors` 也帶 `enabled`，關掉時結帳回 403 `disabled`。

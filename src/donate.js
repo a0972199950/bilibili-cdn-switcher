@@ -409,6 +409,11 @@ function mockBoard() {
   }
   return { ok: true, items: items, donors: items.length };
 }
+// 後台「贊助管理」暫停贊助時（/v1/donors 的 enabled: false、結帳回 disabled）收起贊助入口，只留排行榜（樣式見 donate.html 的 body.giveOff）
+function setGiveOff(off) {
+  document.body.classList.toggle("giveOff", off);
+  if (off) setTab("board");
+}
 // fresh：略過 worker 的 1 分鐘邊緣快取直接讀資料庫（付款後確認上榜用；worker 有限次數）
 function fetchBoard(fresh) {
   if (MOCK !== null) return Promise.resolve(mockBoard());
@@ -428,6 +433,7 @@ function loadBoard(done, fresh) {
         .map(function (it) { return { pid: it.pid, pids: Array.isArray(it.pids) ? it.pids : [], name: Array.from(String(it.name || "")).slice(0, NAME_MAX).join(""), avatar: it.avatar || {}, usd: Number(it.usd), count: Number(it.count) || 1 }; });
       board.donors = Number(j.donors) || board.items.length;
       board.loaded = true;
+      setGiveOff(j.enabled === false);
       prefillFromBoard();
       renderBoard();
       if (typeof done === "function") done(true);
@@ -815,6 +821,7 @@ $("payBtn").addEventListener("click", function () {
   })
     .then(function (r) { return r.json(); })
     .then(function (j) {
+      if (j && j.error === "disabled") { setGiveOff(true); return; }
       if (!j || !j.ok || !/^https:\/\//.test(j.url || "")) throw new Error("bad");
       openTab(j.url);
       showNotice("donateCheckoutOpened", true);

@@ -8,7 +8,7 @@
 // 那則公告多掛上 v2（lottery_id 與 lottery_v2_id 都有），公告 id 不變。
 // 抽出中獎人（drawWinners，抽獎結束後才能抽）：參加者來自測速報告的 Google 試算表「CDN SpeedTest Log」（Apps Script 寫的），
 // 依抽獎設定篩選、再對照本機歸檔（cdn-speedtest-results/，/collect-speedtest-mail 排除了 VPN、無效、重複），結果存在 lotteries_v2.draw。
-// 本機後台 admin/ 的「抽獎 v2」用這一份。錯誤一律丟 LotteryError（訊息給人看的中文）。
+// 後台（admin/，經過 admin-api.mjs）的「抽獎 v2」用這一份。錯誤一律丟 LotteryError（訊息給人看的中文）。
 //
 // metadata（後台表單）：
 //   { title: { 語言: 文字 }, country: "HK", start: "2026-10-01", end: "2026-10-30", currency: "HKD",
@@ -22,7 +22,7 @@ import {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const NOTE_MAX = 20000;
 
-// 建表在 lotteries.mjs；v2 之後才加的欄位放這裡（這支後台會即時重新載入，lotteries.mjs 改了要重開 dev server）
+// 建表在 lotteries.mjs；v2 之後才加的欄位放這裡
 let v2Ready = null;
 function ensureTable() {
   v2Ready ||= (async () => {
