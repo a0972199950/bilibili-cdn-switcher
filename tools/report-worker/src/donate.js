@@ -67,16 +67,23 @@ export async function handleDonate(request, env, ctx, url, h) {
 // { ok, items: [{ pid, pids?（email 合併進來的其他 pid）, name, avatar: { style } | { url }, usd, count }], donors }；不上榜（hidden）的人不列但算進人數。總金額不公開。
 // 同額時先達到的在前（擴充預估名次也是這樣算）。上傳的頭像給網址另外抓，?v= 是頭像更新時間，換頭像後網址跟著變
 function donorsKey(request) { return new Request(new URL("/v1/donors", request.url).toString()); }
+function clientIp(request) { return request.headers.get("CF-Connecting-IP") || "0.0.0.0"; }
+// 同一個 IP 在 CHECKOUT_WINDOW_S 內的次數（KV）：沒超過 limit 就記一次、回 true。
+// KV 出錯（同一個 key 一秒內寫兩次、超過每日寫入額度）就放行：限流壞掉不該擋住付款
+export async function rateHit(env, key, limit) {
+  if (!env.RATE_KV) return true;
+  try {
+    const n = Number((await env.RATE_KV.get(key)) || 0);
+    if (n >= limit) return false;
+    await env.RATE_KV.put(key, String(n + 1), { expirationTtl: CHECKOUT_WINDOW_S });
+  } catch (e) { /* 放行 */ }
+  return true;
+}
 // ?fresh=1：略過快取直接讀資料庫（擴充付款後確認自己上榜），結果照樣寫回這個節點的快取
 async function donors(request, env, ctx, h) {
   const cache = caches.default;
   let fresh = new URL(request.url).searchParams.has("fresh");
-  if (fresh && env.RATE_KV) {
-    const key = "df:" + (request.headers.get("CF-Connecting-IP") || "0.0.0.0");
-    const n = Number((await env.RATE_KV.get(key)) || 0);
-    if (n >= FRESH_LIMIT) fresh = false;
-    else await env.RATE_KV.put(key, String(n + 1), { expirationTtl: CHECKOUT_WINDOW_S });
-  }
+  if (fresh && !(await rateHit(env, "df:" + clientIp(request), FRESH_LIMIT))) fresh = false;
   const hit = fresh ? null : await cache.match(donorsKey(request));
   if (hit) return hit;
   if (!env.DATABASE_URL) return h.fail(503, "not_configured");
@@ -92,8 +99,8 @@ async function donors(request, env, ctx, h) {
       h.neonSql(env, "select count(distinct pid)::int as donors from donations where status = 'paid'")
     ]);
   } catch (e) {
-    // 資料表還沒建（npm run donations:setup）就當作還沒有人贊助
-    if (!/neon_4/.test(String(e.message))) return h.fail(502, "db");
+    // 資料表還沒建（npm run donations:setup）就當作還沒有人贊助；其他錯誤（帳密錯、SQL 錯）照實回 502，不快取空的排行榜
+    if (!/^neon_4\d\d [\s\S]*(42P01|does not exist)/.test(String(e.message))) return h.fail(502, "db");
     rows = []; totals = [{ donors: 0 }];
   }
   const origin = new URL(request.url).origin;
@@ -171,13 +178,7 @@ async function checkout(request, env, h) {
   // 新台幣只有設好綠界 secrets 才走綠界（目前沒申請，spec/donate.md ⑧），否則跟其他幣別一樣走 Stripe；擴充端的 ECPAY_ON 要跟著改
   const provider = p.currency === "TWD" && ecpayReady(env) ? "ecpay" : "stripe";
   if (provider === "stripe" && !env.STRIPE_SECRET_KEY) return h.fail(503, "not_configured");
-  const ip = request.headers.get("CF-Connecting-IP") || "0.0.0.0";
-  if (env.RATE_KV) {
-    const key = "dn:" + ip;
-    const n = Number((await env.RATE_KV.get(key)) || 0);
-    if (n >= CHECKOUT_LIMIT) return h.fail(429, "rate_limited");
-    await env.RATE_KV.put(key, String(n + 1), { expirationTtl: CHECKOUT_WINDOW_S });
-  }
+  if (!(await rateHit(env, "dn:" + clientIp(request), CHECKOUT_LIMIT))) return h.fail(429, "rate_limited");
   const pid = await pidOf(p.donorId);
   const id = randId();
   const lang = STRIPE_LOCALES[p.lang] ? p.lang : "en";
@@ -303,12 +304,16 @@ export async function verifyStripe(env, header, body) {
   const hex = Array.from(mac, (b) => b.toString(16).padStart(2, "0")).join("");
   return sigs.some((s) => s.length === hex.length && [...s].reduce((d, ch, i) => d | (ch.charCodeAt(0) ^ hex.charCodeAt(i)), 0) === 0);
 }
-// 1 USD = rates[幣別]
-async function usdRates() {
-  const r = await fetch("https://open.er-api.com/v6/latest/USD", { cf: { cacheTtl: 3600 } });
-  const j = await r.json();
-  if (!j || j.result !== "success" || !j.rates) throw new Error("fx");
-  return j.rates;
+// 1 USD = rates[幣別]。匯率 API 掛了就用 CURRENCIES 的固定匯率：付款已經完成，一定要記下來（誤差只影響排名用的美金換算）
+export async function usdRates() {
+  try {
+    const r = await fetch("https://open.er-api.com/v6/latest/USD", { cf: { cacheTtl: 3600 } });
+    const j = r.ok ? await r.json() : null;
+    if (j && j.result === "success" && j.rates) return j.rates;
+  } catch (e) { /* 用固定匯率 */ }
+  const fixed = {};
+  for (const [code, c] of Object.entries(CURRENCIES)) fixed[code] = 1 / c.usd;
+  return fixed;
 }
 async function stripeWebhook(request, env, ctx, h) {
   if (!env.STRIPE_WEBHOOK_SECRET || !env.STRIPE_SECRET_KEY || !env.DATABASE_URL) return h.fail(503, "not_configured");
@@ -319,10 +324,12 @@ async function stripeWebhook(request, env, ctx, h) {
   try {
     if ((ev.type === "checkout.session.completed" && obj.payment_status === "paid") || ev.type === "checkout.session.async_payment_succeeded") {
       await recordPaid(env, obj, h);
-    } else if (ev.type === "charge.refunded" && obj.refunded) {
-      await h.neonSql(env, "update donations set status = 'refunded' where provider = 'stripe' and provider_ref = $1", [obj.payment_intent]);
-    } else if (ev.type === "charge.dispute.created") {
-      await h.neonSql(env, "update donations set status = 'disputed' where provider = 'stripe' and provider_ref = $1", [obj.payment_intent]);
+    } else if ((ev.type === "charge.refunded" && obj.refunded) || ev.type === "charge.dispute.created") {
+      // Stripe 不保證事件順序：這筆付款還沒記進來（付款通知晚到或還在重試）就回 500 讓 Stripe 稍後重送，
+      // 不然狀態改不到，之後付款記進來會一直是 paid。recordPaid 也會看 charge 的退款／拒付狀態
+      const status = ev.type === "charge.refunded" ? "refunded" : "disputed";
+      const rows = await h.neonSql(env, "update donations set status = $2 where provider = 'stripe' and provider_ref = $1 returning id", [obj.payment_intent, status]);
+      if (!rows.length) throw new Error("not_recorded_yet");
     } else return h.json(200, { ok: true, ignored: ev.type });
   } catch (e) {
     return h.fail(500, String(e.message || e)); // Stripe 會重送
@@ -353,25 +360,29 @@ async function recordPaid(env, session, h) {
     method: (charge.payment_method_details && charge.payment_method_details.type) || null,
     country: (charge.billing_details && charge.billing_details.address && charge.billing_details.address.country) || it.country || null,
     email: (session.customer_details && session.customer_details.email) || null, paidAt: session.created || Math.floor(Date.now() / 1000),
+    status: charge.disputed ? "disputed" : charge.refunded ? "refunded" : "paid",
     raw: { session: session.id, balance_transaction: bt.id || null, settlement: btCur, exchange_rate: bt.exchange_rate || null }
   });
 }
 
 // 同一位贊助者：donorId 換了（換電腦、沒開同步）但付款 email 相同 → 自動合併成一個人。
-// donor_aliases 記「這個 pid 其實是哪一位」（canonical）；排行榜、改名稱頭像都先換成 canonical。
+// donor_aliases 記「這個 pid 其實是哪一位」（canonical）；排行榜加總、擴充認「你」都看 canonical。
+// 付款 email 沒有驗證過（誰都能填別人的 email），所以合併只把金額算到那位身上，不改那位的名稱頭像，
+// 改名稱頭像（updateProfile）也只認本人的 pid，不認別名
 async function canonicalPid(env, h, pid) {
   const rows = await h.neonSql(env, "select canonical from donor_aliases where pid = $1", [pid]);
   return rows.length ? rows[0].canonical : pid;
 }
-// 金流無關的記帳：d = { pid, intent, provider, ref, amount, currency, usd, feeUsd, netUsd, fxRate, method, country, email, paidAt（秒）, raw }
-async function recordDonation(env, h, d) {
+// 金流無關的記帳：d = { pid, intent, provider, ref, amount, currency, usd, feeUsd, netUsd, fxRate, method, country, email, paidAt（秒）, status?, raw }
+export async function recordDonation(env, h, d) {
   const it = d.intent || {};
   const email = d.email ? String(d.email).trim().toLowerCase() : null;
   let pid = await canonicalPid(env, h, d.pid);
+  let merged = false;
   if (email) {
     const same = await h.neonSql(env, "select pid from donors where email = $1 and pid <> $2 order by created_at limit 1", [email, pid]);
     if (same.length) {
-      // 已經有一位用這個 email 的贊助者：這個 pid（與它底下的別名、贊助紀錄）併過去，名稱頭像用這次送來的
+      // 已經有一位用這個 email 的贊助者：這個 pid（與它底下的別名、贊助紀錄）併過去，名稱頭像維持那位原本的
       const target = same[0].pid;
       await h.neonSql(env, "update donations set pid = $2 where pid = $1", [pid, target]);
       await h.neonSql(env, "update donor_aliases set canonical = $2 where canonical = $1", [pid, target]);
@@ -379,18 +390,25 @@ async function recordDonation(env, h, d) {
       if (d.pid !== pid) await h.neonSql(env, "insert into donor_aliases (pid, canonical) values ($1, $2) on conflict (pid) do update set canonical = excluded.canonical", [d.pid, target]);
       await h.neonSql(env, "delete from donors where pid = $1", [pid]);
       pid = target;
+      merged = true;
     }
   }
-  await h.neonSql(env, `insert into donors (pid, name, avatar_style, avatar_image, email) values ($1, $2, $3, $4, $5)
-    on conflict (pid) do update set name = excluded.name, avatar_style = excluded.avatar_style, avatar_image = excluded.avatar_image,
-      email = coalesce(donors.email, excluded.email), updated_at = now()`,
-    [pid, it.name || "", it.avatar_style == null && !it.avatar_image ? 0 : it.avatar_style, it.avatar_image || null, email]);
-  await h.neonSql(env, `insert into donations (pid, intent_id, provider, provider_ref, amount, currency, usd, fee_usd, net_usd, fx_rate, method,
+  const style = it.avatar_style == null && !it.avatar_image ? 0 : it.avatar_style;
+  // 第一次贊助：用這筆的名稱頭像建立（已經有的不動，下面再決定要不要更新）
+  const created = await h.neonSql(env, `insert into donors (pid, name, avatar_style, avatar_image, email) values ($1, $2, $3, $4, $5)
+    on conflict (pid) do nothing returning pid`, [pid, it.name || "", style, it.avatar_image || null, email]);
+  const inserted = await h.neonSql(env, `insert into donations (pid, intent_id, provider, provider_ref, status, amount, currency, usd, fee_usd, net_usd, fx_rate, method,
       country, lang, browser, ext_version, payer_email, paid_at, raw)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, to_timestamp($17), $18)
-    on conflict (provider, provider_ref) do nothing`,
-    [pid, it.id || null, d.provider, d.ref, d.amount, d.currency, d.usd, d.feeUsd, d.netUsd, d.fxRate, d.method, d.country,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, to_timestamp($18), $19)
+    on conflict (provider, provider_ref) do nothing returning id`,
+    [pid, it.id || null, d.provider, d.ref, d.status || "paid", d.amount, d.currency, d.usd, d.feeUsd, d.netUsd, d.fxRate, d.method, d.country,
       it.lang || null, it.browser || null, it.ext_version || null, email, d.paidAt, JSON.stringify(d.raw || {})]);
+  if (created.length || !inserted.length || merged) return;
+  // 已經在榜上的人又贊助一次：名稱頭像換成這次的。重送的通知在上面就被擋掉（inserted 是空的）；
+  // 晚到的通知（非同步付款、超商約兩天後）不能蓋掉之後在贊助頁改過的名稱頭像：只在這筆 intent 比上次更新還新時才換
+  await h.neonSql(env, `update donors set name = $2, avatar_style = $3, avatar_image = $4, email = coalesce(email, $5), updated_at = now()
+    where pid = $1 and ($6::timestamptz is null or updated_at <= $6::timestamptz)`,
+    [pid, it.name || "", style, it.avatar_image || null, email, it.created_at || null]);
 }
 
 // ---------------- 事後改名稱／頭像 ----------------
@@ -402,17 +420,12 @@ async function updateProfile(request, env, ctx, h) {
   try { p = JSON.parse(await request.text()); } catch (e) { return h.fail(400, "bad_json"); }
   const bad = checkProfile(p);
   if (bad) return h.fail(400, bad);
-  const ip = request.headers.get("CF-Connecting-IP") || "0.0.0.0";
-  if (env.RATE_KV) {
-    const key = "dp:" + ip;
-    const n = Number((await env.RATE_KV.get(key)) || 0);
-    if (n >= PROFILE_LIMIT) return h.fail(429, "rate_limited");
-    await env.RATE_KV.put(key, String(n + 1), { expirationTtl: CHECKOUT_WINDOW_S });
-  }
+  if (!(await rateHit(env, "dp:" + clientIp(request), PROFILE_LIMIT))) return h.fail(429, "rate_limited");
   const av = p.avatar || {};
   let rows;
   try {
-    const pid = await canonicalPid(env, h, await pidOf(p.donorId));
+    // 只認本人的 pid：email 合併進來的別名不能改那位的名稱頭像（付款 email 沒驗證過，見 recordDonation）
+    const pid = await pidOf(p.donorId);
     rows = await h.neonSql(env, "update donors set name = $2, avatar_style = $3, avatar_image = $4, updated_at = now() where pid = $1 returning pid",
       [pid, p.name.trim(), av.image ? null : av.style, av.image || null]);
   } catch (e) { return h.fail(502, "db"); }

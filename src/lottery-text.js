@@ -143,7 +143,7 @@
     };
   }
 
-  window.LotteryText = { compose: compose, countryName: countryName }; // countryName：贊助頁（donate.js）的付款地區選單也用
+  window.LotteryText = { compose: compose };
 
   // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
   if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {

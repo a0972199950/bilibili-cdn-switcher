@@ -66,7 +66,8 @@ var TIERS = [{ min: 100, cls: "t4", key: "donateTier4" }, { min: 50, cls: "t3", 
 
 var lang = uiLangTag();
 var board = { loaded: false, failed: false, items: [], donors: 0 };
-var me = { donorId: "", pid: "", name: "", style: 0, image: "", email: "" }; // style：0–9 預設頭像、"image"＝上傳的頭像
+// style：0–9 預設頭像、"image"＝上傳的頭像；imageSaved＝已經送上排行榜的那張上傳頭像的雜湊（排行榜只給網址，比不出是不是同一張）
+var me = { donorId: "", pid: "", name: "", style: 0, image: "", email: "", imageSaved: 0 };
 var currency = "USD";
 
 // ---------------- 格式 ----------------
@@ -449,6 +450,7 @@ function loadIdentity() {
           me.name = String(p.name || "").slice(0, NAME_MAX);
           me.image = typeof p.image === "string" && /^data:image\//.test(p.image) ? p.image : "";
           me.email = typeof p.email === "string" ? p.email : "";
+          me.imageSaved = Number(p.imageSaved) || 0;
           me.style = p.style === "image" && me.image ? "image" : (Number(p.style) >= 0 && Number(p.style) < AVATAR_STYLES ? Number(p.style) : 0);
           me.saved = true;
         }
@@ -470,7 +472,7 @@ function prefillFromBoard() {
 }
 function saveProfile() {
   me.saved = true;
-  chrome.storage.local.set({ donateProfile: { name: me.name, style: me.style, image: me.image, email: me.email } });
+  chrome.storage.local.set({ donateProfile: { name: me.name, style: me.style, image: me.image, email: me.email, imageSaved: me.imageSaved } });
 }
 
 // ---------------- 贊助表單：幣別、金額 ----------------
@@ -673,11 +675,13 @@ function renderProfile() {
 }
 // 已經上榜的人：名稱、頭像改了之後按「更新排行榜上的名稱與頭像」才送出（不用再贊助一次）
 function renderProfileSave() {
-  var onBoard = myIndex() >= 0;
-  $("profileSave").classList.toggle("hidden", !onBoard);
-  if (!onBoard) return;
-  var it = board.items[myIndex()], av = it.avatar || {};
-  var same = it.name === me.name && (me.style === "image" ? false : !av.url && Number(av.style) === me.style);
+  // 只有本人的那一列能改（email 合併進來的別名不行，worker 也只認本人的 pid）
+  var i = myIndex(), it = i >= 0 ? board.items[i] : null;
+  var own = !!it && it.pid === me.pid;
+  $("profileSave").classList.toggle("hidden", !own);
+  if (!own) return;
+  var av = it.avatar || {};
+  var same = it.name === me.name && (me.style === "image" ? !!av.url && me.imageSaved === hashStr(me.image) : !av.url && Number(av.style) === me.style);
   $("profileSaveBtn").disabled = same;
   $("profileSaveBtn").textContent = t(same ? "donateProfileSaved" : "donateProfileSave");
 }
@@ -688,6 +692,7 @@ $("profileSaveBtn").addEventListener("click", function () {
     var it = board.items[myIndex()];
     it.name = me.name;
     it.avatar = me.style === "image" ? { url: me.image } : { style: me.style };
+    if (me.style === "image") { me.imageSaved = hashStr(me.image); saveProfile(); }
     renderBoard();
   };
   if (MOCK !== null) { done(); return; }
@@ -803,6 +808,8 @@ $("payBtn").addEventListener("click", function () {
       showNotice("donateCheckoutOpened", true);
       awaitingPayment = { count: myIndex() < 0 ? 0 : board.items[myIndex()].count, at: Date.now() };
       savePending(awaitingPayment);
+      // 付款成功後排行榜就是這張上傳的頭像
+      if (me.style === "image") { me.imageSaved = hashStr(me.image); saveProfile(); }
     })
     .catch(function () { showNotice("donateCheckoutFailed"); })
     .then(function () { btn.disabled = false; });

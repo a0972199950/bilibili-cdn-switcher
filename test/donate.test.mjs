@@ -14,7 +14,7 @@ async function boot({ storage = {}, board = { ok: true, items: [] }, query = "" 
     if (board === 404) return { ok: false, status: 404, json: () => Promise.resolve({}) };
     return { ok: true, status: 200, json: () => Promise.resolve(board) };
   };
-  ["i18n.js", "common.js", "lottery-text.js", "donate.js"].forEach((f) => env.load(f));
+  ["i18n.js", "common.js", "donate.js"].forEach((f) => env.load(f));
   await env.settle(30);
   return env;
 }

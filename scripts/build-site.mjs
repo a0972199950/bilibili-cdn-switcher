@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "src");
 const OUT = path.join(ROOT, "tools/site/public");
-const FILES = ["donate.js", "common.js", "i18n.js", "lottery-text.js", "logo128.png"];
+const FILES = ["donate.js", "common.js", "i18n.js", "logo128.png"];
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });

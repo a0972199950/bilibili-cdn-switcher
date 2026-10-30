@@ -134,7 +134,12 @@ async function neonSql(env, query, params = []) {
     headers: { "Content-Type": "application/json", "Neon-Connection-String": env.DATABASE_URL },
     body: JSON.stringify({ query, params })
   });
-  if (!r.ok) throw new Error("neon_" + r.status);
+  if (!r.ok) {
+    // 錯誤訊息帶上 Neon 回的內容（例如 relation "donations" does not exist），呼叫端才分得出是哪種錯
+    let detail = "";
+    try { detail = (await r.text()).slice(0, 300); } catch (e) { /* 讀不到就算了 */ }
+    throw new Error("neon_" + r.status + " " + detail);
+  }
   return (await r.json()).rows || [];
 }
 

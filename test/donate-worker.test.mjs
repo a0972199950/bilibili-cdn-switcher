@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate } from "../tools/report-worker/src/donate.js";
+import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate, rateHit, usdRates, recordDonation } from "../tools/report-worker/src/donate.js";
 import { createEnv } from "./helpers/load.mjs";
 
 const ok = { v: 1, donorId: "0123456789abcdef0123456789abcdef", name: "老王", avatar: { style: 3 }, amount: 100, currency: "TWD" };
@@ -21,7 +21,7 @@ describe("report worker: donate", () => {
 
   test("minimums match the extension", async () => {
     const env = createEnv({ htmlFile: "donate.html", url: "chrome-extension://bcs-test/donate.html" });
-    ["i18n.js", "common.js", "lottery-text.js", "donate.js"].forEach((f) => env.load(f));
+    ["i18n.js", "common.js", "donate.js"].forEach((f) => env.load(f));
     await env.settle(30);
     const ext = env.internals("donate").CURRENCIES;
     for (const [code, c] of Object.entries(ext)) {
@@ -83,5 +83,66 @@ describe("report worker: donate", () => {
     const cancel = await page("/v1/donate/cancel?lang=en&back=" + encodeURIComponent(back));
     assert.ok(cancel.includes(`href="${back}?cancel=1"`) && !cancel.includes(`id="auto"`));
     assert.ok(!(await page("/v1/donate/thanks?lang=zh-TW&back=" + encodeURIComponent("https://evil.example/"))).includes(`class="back"`));
+  });
+
+  test("rate limiter counts per key and lets requests through when KV fails", async () => {
+    const store = new Map();
+    const kv = { get: async (k) => store.get(k) ?? null, put: async (k, v) => { store.set(k, v); } };
+    assert.equal(await rateHit({ RATE_KV: kv }, "t:1", 2), true);
+    assert.equal(await rateHit({ RATE_KV: kv }, "t:1", 2), true);
+    assert.equal(await rateHit({ RATE_KV: kv }, "t:1", 2), false);
+    const broken = { get: async () => { throw new Error("kv down"); }, put: async () => { throw new Error("kv down"); } };
+    assert.equal(await rateHit({ RATE_KV: broken }, "t:2", 1), true);
+    assert.equal(await rateHit({}, "t:3", 0), true, "no KV bound");
+  });
+
+  test("FX API down: falls back to the fixed rates instead of losing a paid donation", async () => {
+    const real = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error("offline"); };
+    try {
+      const r = await usdRates();
+      assert.ok(Math.abs(r.TWD - 1 / 0.0308) < 1e-9 && Math.abs(r.SGD - 1 / 0.78) < 1e-9 && r.USD === 1);
+    } finally { globalThis.fetch = real; }
+  });
+
+  // 假的 Neon：只認 recordDonation 會下的幾種 SQL，記下每一句
+  function fakeDb({ donors = {}, aliases = {}, donations = new Set() } = {}) {
+    const log = [];
+    const neonSql = async (env, q, p = []) => {
+      log.push({ q: q.replace(/\s+/g, " ").trim(), p });
+      if (/^select canonical from donor_aliases/.test(q)) return aliases[p[0]] ? [{ canonical: aliases[p[0]] }] : [];
+      if (/^select pid from donors where email/.test(q)) return Object.entries(donors).filter(([pid, d]) => d.email === p[0] && pid !== p[1]).map(([pid]) => ({ pid }));
+      if (/^insert into donors/.test(q)) { if (donors[p[0]]) return []; donors[p[0]] = { name: p[1], email: p[4] }; return [{ pid: p[0] }]; }
+      if (/^insert into donations/.test(q)) { if (donations.has(p[3])) return []; donations.add(p[3]); return [{ id: 1 }]; }
+      if (/^update donors set name/.test(q)) { if (donors[p[0]]) donors[p[0]].name = p[1]; return []; }
+      if (/^delete from donors/.test(q)) { delete donors[p[0]]; return []; }
+      return [];
+    };
+    return { h: { neonSql }, log, donors, donations };
+  }
+  const paid = (over) => ({ pid: "newpid", intent: { name: "attacker", avatar_style: 1, created_at: "2026-10-30T00:00:00Z" }, provider: "stripe", ref: "pi_1",
+    amount: 2, currency: "SGD", usd: 1.5, paidAt: 1793360000, ...over });
+
+  test("email merge adds the amount to the existing donor but never takes over their name or avatar", async () => {
+    const db = fakeDb({ donors: { victim: { name: "Top donor", email: "v@example.com" } } });
+    await recordDonation({}, db.h, paid({ email: "V@example.com" }));
+    assert.equal(db.donors.victim.name, "Top donor");
+    assert.ok(!db.log.some((l) => /^update donors set name/.test(l.q)), "no profile overwrite after a merge");
+    const don = db.log.find((l) => /^insert into donations/.test(l.q));
+    assert.equal(don.p[0], "victim", "the tip is counted for the existing donor");
+  });
+
+  test("a redelivered payment notification does not touch the profile again", async () => {
+    const db = fakeDb({ donors: { me: { name: "Renamed later" } }, donations: new Set(["pi_old"]) });
+    await recordDonation({}, db.h, paid({ pid: "me", ref: "pi_old" }));
+    assert.equal(db.donors.me.name, "Renamed later");
+    assert.ok(!db.log.some((l) => /^update donors set name/.test(l.q)));
+  });
+
+  test("a refund recorded before the payment keeps the refunded status", async () => {
+    const db = fakeDb();
+    await recordDonation({}, db.h, paid({ pid: "p2", ref: "pi_2", status: "refunded" }));
+    const don = db.log.find((l) => /^insert into donations/.test(l.q));
+    assert.equal(don.p[4], "refunded");
   });
 });
