@@ -7,7 +7,7 @@
  *                                    新台幣走綠界（ECPay 全方位金流 AIO，個人一般賣家：只收台幣、只收台灣發行的卡），其他幣別走 Stripe（新加坡帳戶）
  *  - GET  /v1/donate/ecpay/go/<id>   自動送出表單到綠界付款頁（綠界只收 form POST，擴充開的分頁先到這裡）
  *  - POST /v1/donate/webhook/ecpay   綠界付款結果通知（ReturnURL）：驗 CheckMacValue，RtnCode=1 記進 donations，回 1|OK
- *  - POST /v1/donate/webhook/stripe  Stripe webhook：付款成功記進 donations（含手續費、實收、匯率、付款方式），退款／爭議改狀態
+ *  - POST /v1/donate/webhook/stripe  Stripe webhook：付款成功記進 donations（含匯率、付款方式；手續費、實收有的話一起記，沒有就等 charge.updated 補），退款／爭議改狀態
  *  - GET  /v1/donate/thanks、/v1/donate/cancel   付款完成／取消後 Stripe 導回的頁面
  * secrets：ECPAY_MERCHANT_ID、ECPAY_HASH_KEY、ECPAY_HASH_IV（vars 的 ECPAY_STAGE = "1" 時打綠界測試環境）；STRIPE_SECRET_KEY、STRIPE_WEBHOOK_SECRET。
  * 沒設的那一邊結帳回 503 not_configured（擴充顯示「付款頁開啟失敗」）。
@@ -331,18 +331,43 @@ async function stripeWebhook(request, env, ctx, h) {
       const rows = await h.neonSql(env, "update donations set status = $2 where provider = 'stripe' and provider_ref = $1 returning id", [obj.payment_intent, status]);
       if (!rows.length) {
         // 別的環境（同一個 Stripe 帳戶接了兩個 worker）的付款：這邊沒有它的結帳紀錄，不用等
-        const pi = await stripe(env, "GET", `/payment_intents/${obj.payment_intent}`);
-        const intentId = pi.metadata && pi.metadata.intent;
-        const mine = intentId ? await h.neonSql(env, "select 1 from donation_intents where id = $1", [intentId]) : [];
-        if (!mine.length) return h.json(200, { ok: true, ignored: "other_env" });
+        if (!(await intentIsMine(env, h, obj.payment_intent))) return h.json(200, { ok: true, ignored: "other_env" });
         throw new Error("not_recorded_yet");
       }
+    } else if (ev.type === "charge.updated") {
+      // 手續費：付款通知當下 Stripe 常常還沒產生 balance transaction（非同步入帳），手續費、實收先是空的；
+      // 之後 Stripe 送 charge.updated 帶上它，這時補記。charge.updated 很常見（例如寄收據），沒有要補的就略過
+      if (!obj.balance_transaction) return h.json(200, { ok: true, ignored: "no_balance_transaction" });
+      const pending = await h.neonSql(env, "select fee_usd is null as missing from donations where provider = 'stripe' and provider_ref = $1", [obj.payment_intent]);
+      if (!pending.length) {
+        if (!(await intentIsMine(env, h, obj.payment_intent))) return h.json(200, { ok: true, ignored: "other_env" });
+        throw new Error("not_recorded_yet"); // 付款還沒記進來：讓 Stripe 稍後重送
+      }
+      if (!pending[0].missing) return h.json(200, { ok: true, ignored: "fee_already_recorded" });
+      const btId = typeof obj.balance_transaction === "string" ? obj.balance_transaction : obj.balance_transaction.id;
+      await recordFee(env, h, obj.payment_intent, await stripe(env, "GET", `/balance_transactions/${btId}`));
     } else return h.json(200, { ok: true, ignored: ev.type });
   } catch (e) {
     return h.fail(500, String(e.message || e)); // Stripe 會重送
   }
   ctx.waitUntil(caches.default.delete(donorsKey(request))); // 這個邊緣節點的排行榜快取先清掉，其他節點最慢 CACHE_S 秒
   return h.json(200, { ok: true });
+}
+// 這筆 PaymentIntent 是不是這個環境建的結帳（metadata.intent 在這邊的 donation_intents 裡）
+async function intentIsMine(env, h, paymentIntentId) {
+  const pi = await stripe(env, "GET", `/payment_intents/${paymentIntentId}`);
+  const intentId = pi.metadata && pi.metadata.intent;
+  return !!intentId && (await h.neonSql(env, "select 1 from donation_intents where id = $1", [intentId])).length > 0;
+}
+// 手續費、實收換成美金補進那筆贊助（balance transaction 是結算幣別的最小單位，新加坡帳戶是 SGD）
+export async function recordFee(env, h, paymentIntentId, bt) {
+  const rates = await usdRates();
+  const cur = String(bt.currency || "sgd").toUpperCase();
+  if (!rates[cur]) throw new Error("fx_" + cur);
+  await h.neonSql(env, `update donations set fee_usd = $2, net_usd = $3,
+      raw = coalesce(raw, '{}'::jsonb) || jsonb_build_object('balance_transaction', $4::text, 'settlement', $5::text, 'exchange_rate', $6::numeric)
+    where provider = 'stripe' and provider_ref = $1 and fee_usd is null`,
+    [paymentIntentId, bt.fee / 100 / rates[cur], bt.net / 100 / rates[cur], bt.id || null, cur, bt.exchange_rate == null ? null : bt.exchange_rate]);
 }
 // 回 false＝不是這個環境建的結帳（查不到 intent）：正式與測試環境的 worker 可能接到同一個 Stripe 帳戶的通知，只記自己的
 async function recordPaid(env, session, h) {

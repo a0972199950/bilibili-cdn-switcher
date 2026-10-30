@@ -513,11 +513,11 @@ if (reviewUrl) {
   });
 }
 // 贊助：在新分頁開 donate.html（先顯示乾爹排行榜），跟一般擴充的設定頁一樣是個網址，可以加書籤、重新整理。
-// 還沒開放：只在本機載入的開發版（chrome://extensions「載入未封裝項目」、Firefox 暫時載入）顯示，商店版看不到；
-// management.getSelf 不需要 management 權限。開放時把 DONATE_DEV_ONLY 改成 false。
-// 金流與排行榜後端還沒部署，開發版先開假資料（donate.html?mock，見 donate.js 的 mockBoard）。
+// 已開放（DONATE_DEV_ONLY = false）：商店版接正式的 api.biboost.app，本機載入的開發版接測試環境（donate.js 依 installType 決定）。
+// 要暫時收起來時改回 true：只剩開發版看得到，且開假資料（donate.html?mock，見 donate.js 的 mockBoard）；
+// management.getSelf 不需要 management 權限。
 // Safari 版包在 App Store 的 App 裡，App Store 審核規定不能導去外部付款，所以不顯示（見 spec/donate.md 的商店規範）
-var DONATE_DEV_ONLY = true;
+var DONATE_DEV_ONLY = false;
 function showDonateBtn(dev) {
   els.donateBtn.style.display = "";
   els.rateBtn.parentNode.style.display = "";
@@ -533,7 +533,7 @@ if (detectBrowser() !== "safari") {
   }
 }
 // 兩顆都沒顯示（iPhone / iPad Safari、還沒開放贊助的商店版且沒有評分連結）時整列收起來，不然空的一列會多佔一個間距
-if (els.rateBtn.style.display === "none") els.rateBtn.parentNode.style.display = "none";
+if (els.rateBtn.style.display === "none" && els.donateBtn.style.display === "none") els.rateBtn.parentNode.style.display = "none";
 // 問題回報：一律由 background 開成獨立視窗（report.html），帶上目前分頁 id 讓回報頁能向 B 站頁面要此刻的快照；popup 隨即關閉
 els.feedbackBtn.style.display = "";
 els.feedbackBtn.addEventListener("click", function () {

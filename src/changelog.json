@@ -1,6 +1,16 @@
 {
   "unreleased": [
     {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增「贊助我一杯咖啡」與乾爹排行榜：贊助後可以用自己的名稱和頭像上榜",
+        "zh_CN": "新增「请我喝杯咖啡」与金主爸爸排行榜：赞助后可以用自己的名称和头像上榜",
+        "en": "Added \"Buy me a coffee\" and the Top Patrons leaderboard: tip to show up on the board with your own name and avatar",
+        "ja": "「コーヒーをおごる」と石油王ランキングを追加。支援すると自分の名前とアイコンでランキングに載ります",
+        "ko": "'커피 한 잔 후원하기'와 회장님 랭킹을 추가했어요. 후원하면 내 이름과 아바타로 랭킹에 올라가요"
+      }
+    },
+    {
       "type": "fix",
       "text": {
         "zh_TW": "依最新實測更新澳門的預設節點",

@@ -1,7 +1,7 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate, rateHit, usdRates, recordDonation } from "../tools/report-worker/src/donate.js";
+import { checkInput, verifyStripe, pidOf, ecpayCheckMac, isBackUrl, handleDonate, rateHit, usdRates, recordDonation, recordFee } from "../tools/report-worker/src/donate.js";
 import { createEnv } from "./helpers/load.mjs";
 
 const ok = { v: 1, donorId: "0123456789abcdef0123456789abcdef", name: "老王", avatar: { style: 3 }, amount: 100, currency: "TWD" };
@@ -159,5 +159,17 @@ describe("report worker: donate", () => {
     assert.equal(res.status, 200);
     assert.equal((await res.json()).ignored, "other_env");
     assert.ok(!db.log.some((l) => /^insert into/.test(l.q)), "nothing written");
+  });
+
+  test("fee backfill converts the SGD balance transaction to USD and only fills an empty fee", async () => {
+    const real = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error("offline"); }; // 固定匯率：1 SGD = 0.78 USD
+    const log = [];
+    try {
+      await recordFee({}, { neonSql: async (env, q, p) => { log.push({ q, p }); return []; } }, "pi_9", { id: "txn_1", currency: "sgd", fee: 60, net: 440, exchange_rate: null });
+    } finally { globalThis.fetch = real; }
+    assert.equal(log.length, 1);
+    assert.match(log[0].q, /fee_usd is null/);
+    assert.ok(Math.abs(log[0].p[1] - 0.6 * 0.78) < 1e-9 && Math.abs(log[0].p[2] - 4.4 * 0.78) < 1e-9);
   });
 });

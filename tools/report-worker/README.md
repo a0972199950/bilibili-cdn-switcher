@@ -132,7 +132,8 @@ npm run worker:deploy
   排行榜那一筆多一個 `pids` 陣列，擴充用它認出「你」。
 - 其他幣別走 **Stripe**：驗 `Stripe-Signature`（`STRIPE_WEBHOOK_SECRET`），`checkout.session.completed`（已付款）／`checkout.session.async_payment_succeeded`
   寫進 `donations`（`provider_ref` = PaymentIntent，重送不會重複），讀 balance transaction 取手續費、實收（SGD）；美金換算用付款當下 open.er-api.com 的匯率。
-  `charge.refunded` → `refunded`、`charge.dispute.created` → `disputed`（都不算進排行榜）。Stripe 後台的 webhook 要勾這四個事件。
+  `charge.refunded` → `refunded`、`charge.dispute.created` → `disputed`（都不算進排行榜）。付款當下手續費常常還沒算出來，
+  `charge.updated` 帶上 balance transaction 時再補記手續費、實收。Stripe 後台的 webhook 要勾這五個事件；查不到這個環境結帳紀錄的通知會略過（正式與測試環境共用一個 Stripe 帳戶時）。
 - `GET /v1/donate/thanks`、`/v1/donate/cancel`：付款完成／取消後導回的頁面（五語，`?lang=`）。
 
 secrets：`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`（測試時在 wrangler.toml 的 `[vars]` 加 `ECPAY_STAGE = "1"`，用綠界公開的測試商店 3002607）、
