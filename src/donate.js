@@ -68,7 +68,7 @@ function providerOf(cur) { return ECPAY_ON && cur === "TWD" ? "ecpay" : "stripe"
 // 綠界：信用卡（限台灣發行）、Apple Pay、超商條碼／代碼（金額 NT$150 起，worker 的 ECPAY_CVS_MIN）
 var METHODS = {
   ecpay: ["card_tw", "applepay", "cvs"],
-  ALL: ["card", "applepay", "googlepay"],
+  ALL: ["googlepay", "applepay", "card"],
   SGD: ["paynow", "grabpay", "alipay", "wechat"], CNY: ["alipay", "wechat"], USD: ["alipay"], KRW: ["naverpay", "payco", "samsungpay"]
 };
 var METHOD_LABELS = { applepay: "Apple Pay", googlepay: "Google Pay", paynow: "PayNow", grabpay: "GrabPay", alipay: "Alipay", wechat: "WeChat Pay", naverpay: "Naver Pay", payco: "PAYCO", samsungpay: "Samsung Pay" };
