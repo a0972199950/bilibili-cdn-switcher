@@ -198,7 +198,7 @@ async function checkout(request, env, h) {
         success_url: `${origin}/v1/donate/thanks?lang=${encodeURIComponent(lang)}${back}`,
         cancel_url: `${origin}/v1/donate/cancel?lang=${encodeURIComponent(lang)}${back}`
       });
-    } catch (e) { return h.fail(502, "stripe"); }
+    } catch (e) { console.error("checkout: " + e.message); return h.fail(502, "stripe"); } // 細節看 wrangler tail（只有狀態碼與錯誤代碼）
     url = session.url;
   } else {
     url = `${origin}/v1/donate/ecpay/go/${id}`; // 綠界的 MerchantTradeNo 就是 intent id 去掉底線（英數字 20 碼）
