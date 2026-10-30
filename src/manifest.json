@@ -29,6 +29,16 @@
       "128": "icons/icon128.png"
     }
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "donate.html"
+      ],
+      "matches": [
+        "https://api.biboost.app/*"
+      ]
+    }
+  ],
   "content_scripts": [
     {
       "matches": [

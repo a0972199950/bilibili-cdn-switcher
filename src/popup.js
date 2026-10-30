@@ -81,6 +81,7 @@ var els = {
   speedtestView: document.getElementById("speedtestView"),
   speedtestBtn: document.getElementById("speedtestBtn"),
   rateBtn: document.getElementById("rateBtn"),
+  donateBtn: document.getElementById("donateBtn"),
   feedbackBtn: document.getElementById("feedbackBtn"),
   stBackBtn: document.getElementById("stBackBtn"),
   stRetestBtn: document.getElementById("stRetestBtn"),
@@ -98,7 +99,7 @@ document.documentElement.lang = uiLanguage();
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["modeOffLabel", "modeOffLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["liveModeListLabel", "liveModePrefLabel"], ["liveModeOffLabel", "modeOffLabel"], ["liveSpeedtestBtn", "liveSpeedtestBtnLabel"],
   ["videoOffHint", "modeOffHintVideo"], ["liveOffHint", "modeOffHintLive"],
-  ["rateBtn", "rateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
+  ["rateBtn", "rateBtnLabel"], ["donateBtn", "donateBtnLabel"], ["feedbackBtn", "feedbackBtnLabel"],
   ["showDebugLabel", "showDebugLabel"], ["debugSectionLabel", "debugSectionLabel"], ["stBackBtn", "stBackBtn"],
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stStopBtn", "stStopBtn"], ["stHintLeave", "stHintLeave"],
   ["liveRouteRowLabel", "liveRouteRowLabel"],
@@ -112,20 +113,6 @@ document.documentElement.lang = uiLanguage();
   ["customAddBtn", "customAddBtn"], ["customClearBtn", "customClearBtn"], ["resetAllBtn", "resetAllBtn"],
   ["wnSubtitle", "whatsNewSubtitle"], ["wnClose", "whatsNewClose"]
 ].forEach(function (pair) { document.getElementById(pair[0]).textContent = t(pair[1]); });
-// 逐段解析 <b>…</b> 建 DOM 节点，避免用 innerHTML 塞入语系字串（addons-linter 会挡动态 innerHTML）
-function setRichText(el, str) {
-  el.textContent = "";
-  var re = /<b>(.*?)<\/b>/g;
-  var lastIndex = 0, m;
-  while ((m = re.exec(str)) !== null) {
-    if (m.index > lastIndex) el.appendChild(document.createTextNode(str.slice(lastIndex, m.index)));
-    var b = document.createElement("b");
-    b.textContent = m[1];
-    el.appendChild(b);
-    lastIndex = re.lastIndex;
-  }
-  if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
-}
 // -------- 介面語言（進階設定第一項）--------
 // 選項存 localStorage（i18n.js 開頭同步讀）＋ chrome.storage.local 的 uiLang / uiMsgs（bridge.js 的頁內提示用，uiMsgs 為 null = 跟隨瀏覽器）。
 // 切換後整個 popup 重載，並記一個 sessionStorage 旗標，重載完回到進階設定頁
@@ -148,6 +135,7 @@ uiLangSelect.addEventListener("change", function () {
 });
 // localStorage 被清掉、與 storage 對不上時，以 storage 為準重載一次
 chrome.storage.local.get({ uiLang: "auto" }, function (items) {
+  if (window.uiLangFromUrl) return; // 測試用的 ?lang= 本來就跟設定不同，比對了會無限重載
   var v = items.uiLang;
   if (v === uiLangPref || (v !== "auto" && UI_LANGS.indexOf(v) < 0)) return;
   setUiLangPref(v);
@@ -524,6 +512,28 @@ if (reviewUrl) {
     openTab(withUtm(reviewUrl, "rate"));
   });
 }
+// 贊助：在新分頁開 donate.html（先顯示乾爹排行榜），跟一般擴充的設定頁一樣是個網址，可以加書籤、重新整理。
+// 還沒開放：只在本機載入的開發版（chrome://extensions「載入未封裝項目」、Firefox 暫時載入）顯示，商店版看不到；
+// management.getSelf 不需要 management 權限。開放時把 DONATE_DEV_ONLY 改成 false。
+// 金流與排行榜後端還沒部署，開發版先開假資料（donate.html?mock，見 donate.js 的 mockBoard）。
+// Safari 版包在 App Store 的 App 裡，App Store 審核規定不能導去外部付款，所以不顯示（見 spec/donate.md 的商店規範）
+var DONATE_DEV_ONLY = true;
+function showDonateBtn(dev) {
+  els.donateBtn.style.display = "";
+  els.rateBtn.parentNode.style.display = "";
+  els.donateBtn.addEventListener("click", function () {
+    openTab(chrome.runtime.getURL("donate.html" + (dev ? "?mock" : "")));
+    window.close();
+  });
+}
+if (detectBrowser() !== "safari") {
+  if (!DONATE_DEV_ONLY) showDonateBtn(false);
+  else if (chrome.management && chrome.management.getSelf) {
+    chrome.management.getSelf(function (self) { if (self && self.installType === "development") showDonateBtn(true); });
+  }
+}
+// 兩顆都沒顯示（iPhone / iPad Safari、還沒開放贊助的商店版且沒有評分連結）時整列收起來，不然空的一列會多佔一個間距
+if (els.rateBtn.style.display === "none") els.rateBtn.parentNode.style.display = "none";
 // 問題回報：一律由 background 開成獨立視窗（report.html），帶上目前分頁 id 讓回報頁能向 B 站頁面要此刻的快照；popup 隨即關閉
 els.feedbackBtn.style.display = "";
 els.feedbackBtn.addEventListener("click", function () {

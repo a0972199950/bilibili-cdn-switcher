@@ -13,9 +13,12 @@
  *    一般公告是後台寫的各語言前綴／標題／HTML
  *  - /v2/lotteries、/v2/announcements：新版擴充與 exe 用。抽獎只來自抽獎 v2（Neon 的 lotteries_v2，見 scripts/lib/lotteries-v2.mjs：
  *    每張禮物卡各自的面額、備註 HTML），v1 只來自 lotteries，兩邊各自獨立（v2 建的抽獎舊版看不到）
+ *  - /v1/donors、/v1/donate/*：擴充贊助頁（src/donate.html）的乾爹排行榜與 Stripe 結帳，見 donate.js
  * 公告 API（/v1、/v2/announcements）每被下載一次，在 Workers Analytics Engine 記一筆「國家 × 瀏覽器 × 路徑」（countOpen），
  * 用來看各國實際打開 popup 的比例；不記 IP、User-Agent 或任何能識別個人的資料。查詢：npm run worker:opens（opens.mjs）。
  */
+import { handleDonate } from "./donate.js";
+
 const MAX_BODY = 256 * 1024;
 const MAX_DESC = 4000;
 const RATE_LIMIT = 5; // 同一來源 IP 10 分鐘內最多幾筆
@@ -256,6 +259,7 @@ export default {
       countOpen(request, env, url.pathname);
       return announcements(request, env, ctx, true);
     }
+    if (/^\/v1\/(donors|donate)(\/|$)/.test(url.pathname)) return handleDonate(request, env, ctx, url, { json, fail, neonSql, CORS, CACHE_S: LOTTERY_CACHE_S });
     if (request.method !== "POST" || url.pathname !== "/v1/report") return fail(404, "not_found");
     if (request.headers.get("X-BCS-Token") !== env.REPORT_TOKEN) return fail(401, "bad_token");
     const len = Number(request.headers.get("content-length") || 0);

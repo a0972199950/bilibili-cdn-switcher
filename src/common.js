@@ -47,6 +47,20 @@ function detectBrowser() {
 function isIosSafari() {
   return detectBrowser() === "safari" && (/iPhone|iPad|iPod/.test(navigator.userAgent) || navigator.maxTouchPoints > 1);
 }
+// Builds <b>…</b> in a localized string as DOM nodes instead of innerHTML (addons-linter rejects dynamic innerHTML)
+function setRichText(el, str) {
+  el.textContent = "";
+  var re = /<b>(.*?)<\/b>/g;
+  var lastIndex = 0, m;
+  while ((m = re.exec(str)) !== null) {
+    if (m.index > lastIndex) el.appendChild(document.createTextNode(str.slice(lastIndex, m.index)));
+    var b = document.createElement("b");
+    b.textContent = m[1];
+    el.appendChild(b);
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < str.length) el.appendChild(document.createTextNode(str.slice(lastIndex)));
+}
 function openTab(url) { try { chrome.tabs.create({ url: url }); } catch (e) { window.open(url, "_blank"); } }
 
 // ---- formatting ----

@@ -2,7 +2,7 @@
 
 **B 站 CDN 線路重排（Bilibili CDN Switcher）**
 
-最後更新 / Last updated：2026-10-23
+最後更新 / Last updated：2026-10-29
 
 ---
 
@@ -56,6 +56,15 @@
 - 回報問題（非功能許願）時附上的診斷資料：擴充版本與設定、瀏覽器與作業系統、時區與網路類型、你的 **IP 位址、ISP 與省份**（取自上述 B 站 zone API）、目前與最近 10 分鐘內看過的 bilibili 影片／直播間 ID、使用的 CDN 節點、下載速度、緩衝與卡頓情形、自動切換紀錄、以及這 10 分鐘內你在擴充上的操作（切換節點、國家、開關、測速）
 
 送出前，表單上會完整顯示將要附上的診斷資料，你可以逐字檢視；「功能許願」不會附上診斷資料。Firefox 使用者第一次送出問題回報時，Firefox 會另外詢問是否允許擴充功能收集上述資料，你也可以隨時在附加元件管理頁的「權限與資料」撤銷。公開 issue 上只會出現描述與去識別化的摘要（版本、瀏覽器、國家、節點），**不會**出現 IP、ISP、聯絡方式或影片 ID；完整診斷資料只有作者看得到，僅用於排查該筆回報，處理完畢後刪除。除了上方「公告」所述的國家層級下載次數之外，接收端不會另外記錄任何存取紀錄。
+
+### 贊助與乾爹排行榜
+
+彈出視窗的「贊助我一杯咖啡」會開啟贊助視窗（Safari 版沒有這個功能）。
+
+- 開啟時會從作者架設的接收端（`https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/donors`）下載排行榜，這是單純的下載（GET），**不帶 Cookie、不附任何資料**。
+- 擴充會產生一組隨機的贊助者 ID，存在瀏覽器的 `chrome.storage.sync`（登入同一個瀏覽器帳號、開啟同步的裝置會共用；不支援同步時存在本機），你填的上榜名稱與選的頭像存在本機 `chrome.storage.local`。
+- **只有在你按下付款時**，才會把贊助者 ID、上榜名稱、頭像（預設頭像的編號，或你上傳、縮成 128×128 的圖片）、金額、幣別、介面語言、瀏覽器種類與擴充版本，以 HTTPS 傳送到上述接收端，由它向 Stripe 建立付款頁並記錄在作者的資料庫（Neon）。付款在 Stripe 的頁面完成，擴充與作者**拿不到你的卡號或帳戶資料**；Stripe 會通知作者付款結果（金額、手續費、付款方式、付款時間、你在 Stripe 填的 email），一併記錄，用於排行榜與對帳。
+- 排行榜**公開**顯示上榜名稱、頭像、換算成美金的累計金額與次數；贊助者 ID 本身不會公開（只公開它的雜湊值）。名稱留白會顯示為匿名。不雅的名稱或頭像，作者可能將其撤下。
 
 ### 政策異動
 
@@ -117,6 +126,15 @@ The announcement bar on the popup's main screen, and the announcement window it 
 - For problem reports (not feature requests), attached diagnostics: extension version and settings, browser and OS, time zone and connection type, your **IP address, ISP and province** (from the bilibili zone API above), the IDs of the bilibili videos / live rooms viewed now and within the last 10 minutes, the CDN node in use, download speed, buffering and stall state, auto-switch history, and your actions in the extension during those 10 minutes (node, country and toggle changes, speed tests)
 
 The full diagnostics are shown on the form before sending so you can review them word by word; feature requests carry no diagnostics. On Firefox, the first time you send a problem report Firefox will additionally ask whether to allow the extension to collect the data above; you can revoke this at any time under "Permissions and data" in the Add-ons Manager. The public issue contains only your description and a de-identified summary (version, browser, country, node) — **never** your IP, ISP, contact or video IDs. The full diagnostics are visible to the author only, used solely to investigate that report, and deleted once it is resolved. Apart from the country-level announcement download counts described above, the endpoint keeps no access logs.
+
+### Tips and the supporter leaderboard
+
+"Buy me a coffee" in the popup opens a support window (not available in the Safari version).
+
+- When opened, it downloads the leaderboard from the author's endpoint (`https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/donors`). This is a plain download (GET) **with no cookies and no data attached**.
+- The extension creates a random supporter ID stored in the browser's `chrome.storage.sync` (shared by devices signed in to the same browser account with sync on; stored locally if sync is unavailable). The name and avatar you choose for the board are stored locally in `chrome.storage.local`.
+- **Only when you press pay** are your supporter ID, display name, avatar (the number of a preset avatar, or the image you upload, resized to 128×128), amount, currency, interface language, browser type and extension version sent over HTTPS to the endpoint above, which creates a Stripe payment page and records it in the author's database (Neon). Payment is completed on Stripe's page; the extension and the author **never see your card or account details**. Stripe notifies the author of the result (amount, fees, payment method, payment time and the email you entered at Stripe), which is recorded for the leaderboard and bookkeeping.
+- The leaderboard **publicly** shows your display name, avatar, and total amount (in USD) and number of tips; the supporter ID itself is never shown (only a hash of it). A blank name is shown as anonymous. The author may remove inappropriate names or avatars.
 
 ### Changes to this policy
 

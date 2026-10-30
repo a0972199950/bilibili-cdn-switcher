@@ -44,6 +44,9 @@
   "rateBtnLabel": {
     "message": "⭐ Like it? Rate 5 stars"
   },
+  "donateBtnLabel": {
+    "message": "☕ Buy me a coffee"
+  },
   "feedbackBtnLabel": {
     "message": "🐛 Report a bug / Request a feature"
   },
@@ -634,5 +637,233 @@
   },
   "lotteryNote": {
     "message": "Notes"
+  },
+  "donateTitle": {
+    "message": "Support · Top Patrons"
+  },
+  "donateBoardTitle": {
+    "message": "Top Patrons"
+  },
+  "donateBoardSub": {
+    "message": "BiBoost is free forever with no ads, kept alive by patrons like you. Every tip is converted to USD and ranked!"
+  },
+  "donateStatDonors": {
+    "message": "patrons"
+  },
+  "donateTabBoard": {
+    "message": "👑 Top Patrons"
+  },
+  "donateTabGive": {
+    "message": "☕ Support"
+  },
+  "donateGiveTitle": {
+    "message": "☕ Buy me a coffee"
+  },
+  "donateGiveSub": {
+    "message": "BiBoost is maintained by one indie developer after work. Your support keeps the updates coming and helps test nodes in more countries!"
+  },
+  "donateStepAmount": {
+    "message": "Choose an amount"
+  },
+  "donateStepProfile": {
+    "message": "Name & avatar on the board"
+  },
+  "donateNameNote": {
+    "message": "Shown publicly on the board; remembered on this device for next time"
+  },
+  "donatePreviewLabel": {
+    "message": "Preview"
+  },
+  "donateStepPay": {
+    "message": "Available payment methods"
+  },
+  "donateFine": {
+    "message": "Tips are voluntary gifts, don't unlock any features, put you on the board as soon as you pay, and are non-refundable. If you were charged twice or the wrong amount, contact us via \"Report a bug\" and we'll refund it. Payments go to the developer personally, not to Google, Microsoft or Mozilla. Amounts are converted to USD at the rate at payment time, and repeat tips from the same person are combined. If you switch computers or clear browser data, sign in to the same browser account with sync on to keep your spot on the board."
+  },
+  "donateCta": {
+    "message": "☕ Get on the board"
+  },
+  "donateBoardNote": {
+    "message": "Ranked by all-time total; repeat support from the same person counts as one entry."
+  },
+  "donateAnonymous": {
+    "message": "Anonymous patron"
+  },
+  "donateTier0": {
+    "message": "Patron"
+  },
+  "donateTier1": {
+    "message": "Silver Patron"
+  },
+  "donateTier2": {
+    "message": "Gold Patron"
+  },
+  "donateTier3": {
+    "message": "Diamond Patron"
+  },
+  "donateTier4": {
+    "message": "Legendary Patron"
+  },
+  "donateTimes": {
+    "message": " · {n}×"
+  },
+  "donateVacant": {
+    "message": "Up for grabs"
+  },
+  "donateVacantSub": {
+    "message": "Could be you"
+  },
+  "donateYou": {
+    "message": "You"
+  },
+  "donateBoardFailed": {
+    "message": "Couldn't load the leaderboard."
+  },
+  "donateRetry": {
+    "message": "Retry"
+  },
+  "donateLoading": {
+    "message": "Loading…"
+  },
+  "donateMeKeepBtn": {
+    "message": "Defend the crown"
+  },
+  "donateMeFirst": {
+    "message": "You're the <b>#1 patron</b>! {usd} in total, <b>{gap}</b> ahead of #2. Defend your crown!"
+  },
+  "donateMeFirstAlone": {
+    "message": "You're the <b>#1 patron</b> with {usd} in total, unrivaled so far."
+  },
+  "donateMeOvertakeBtn": {
+    "message": "Overtake now"
+  },
+  "donateMeRank": {
+    "message": "You're <b>#{rank}</b> ({usd}). Just <b>{gap}</b> more to overtake #{above} “{name}”!"
+  },
+  "donateMeJoinBtn": {
+    "message": "Join the board"
+  },
+  "donateMeFewDonors": {
+    "message": "Only {n} patron(s) so far: from <b>{min}</b> you go straight onto the podium!"
+  },
+  "donateMeNoDonors": {
+    "message": "No one has chipped in yet. Be the <b>very first patron</b>!"
+  },
+  "donateMePodium": {
+    "message": "Get on the board from just <b>{min}</b>! Go over <b>{gap}</b> in total to reach the top-3 podium."
+  },
+  "donateCups": {
+    "message": "{n} cup(s)"
+  },
+  "donateAmountEmpty": {
+    "message": "Enter an amount (minimum {min})"
+  },
+  "donateAmountMin": {
+    "message": "Minimum {min}: smaller amounts would be mostly eaten by payment fees"
+  },
+  "donateAmountMax": {
+    "message": "Up to about {max} at a time. Too many zeros?"
+  },
+  "donateAmountDecimals": {
+    "message": "Too many decimal places for this currency"
+  },
+  "donateAmountOk": {
+    "message": "About <b>{usd}</b> · you'll be ranked <b>#{rank}</b> (minimum {min})"
+  },
+  "donateAmountOkUsd": {
+    "message": "You'll be ranked <b>#{rank}</b> (minimum {min})"
+  },
+  "donatePayBtnIdle": {
+    "message": "☕ Continue to payment"
+  },
+  "donatePayBtn": {
+    "message": "☕ Support with {amount}"
+  },
+  "donateMethodCard": {
+    "message": "Credit / debit card"
+  },
+  "donateAvatarStyle": {
+    "message": "Avatar style {n}"
+  },
+  "donateAvatarMine": {
+    "message": "My uploaded avatar"
+  },
+  "donateAvatarUpload": {
+    "message": "Upload"
+  },
+  "donateCheckoutOpened": {
+    "message": "The payment page opened in a new tab. You'll be brought back here when you're done."
+  },
+  "donateConfirming": {
+    "message": "Confirming your payment. The board will update in a few seconds…"
+  },
+  "donateConfirmSlow": {
+    "message": "We haven't received the result of this payment yet. If you've paid, refresh this page in a little while."
+  },
+  "donateCheckoutFailed": {
+    "message": "Couldn't open the payment page. Please try again later."
+  },
+  "donateMethodsNote": {
+    "message": "Depends on the currency; you'll pick one on the next page"
+  },
+  "donateUsdLocal": {
+    "message": "{local} (about {usd})"
+  },
+  "donateNextTier": {
+    "message": "After this, <b>{gap}</b> more to reach “{tier}”"
+  },
+  "donateTierLegendLabel": {
+    "message": "Your title levels up as your total grows:"
+  },
+  "donateCurrencyLabel": {
+    "message": "Currency"
+  },
+  "donateCurrencySearch": {
+    "message": "Search currency (name or code)"
+  },
+  "donateCurrencyNone": {
+    "message": "No matching currency"
+  },
+  "donateContact": {
+    "message": "Contact the developer"
+  },
+  "donateContactCopy": {
+    "message": "Copy"
+  },
+  "donateContactCopied": {
+    "message": "Copied"
+  },
+  "donateAmountPlaceholder": {
+    "message": "Minimum {min}"
+  },
+  "donateThanks": {
+    "message": "🎉 Thank you for your support! You're now <b>#{rank}</b>."
+  },
+  "donateProfileSave": {
+    "message": "Update my name & avatar on the board"
+  },
+  "donateProfileSaved": {
+    "message": "The board already shows this name & avatar"
+  },
+  "donateProfileFailed": {
+    "message": "Couldn't update your name and avatar. Please try again later."
+  },
+  "donateMethodCardTw": {
+    "message": "Credit card (Taiwan-issued only)"
+  },
+  "donateMethodCvs": {
+    "message": "Convenience store payment (from NT$150)"
+  },
+  "donateMethodsNoteTw": {
+    "message": "Cards issued outside Taiwan: please pick another currency. You'll choose a method on the next page"
+  },
+  "donateEmailLabel": {
+    "message": "Email (optional)"
+  },
+  "donateEmailNote": {
+    "message": "If you fill it in, tips from another computer or browser will still add up to your existing spot. Only used to recognize you; never shown."
+  },
+  "donateEmailBad": {
+    "message": "That email doesn't look right"
   }
 }

@@ -4,11 +4,18 @@
 #   REPORT_TOKEN  與 src/report.js 的 REPORT_TOKEN 相同的固定字串（弱驗證，擋無差別掃描）
 #   MAIL_URL      Apps Script「回報表單同步 issue」專案 Mailer.gs web app 的 /exec 網址（由作者 Gmail 寄確認信）
 #   MAIL_SECRET   與該 Apps Script 內 SECRET 相同的字串
-#   DATABASE_URL  Neon 的 Postgres 連線字串（同 .env.local），GET /v1/lotteries 讀抽獎用
+#   DATABASE_URL  Neon 的 Postgres 連線字串（同 .env.local），GET /v1/lotteries 讀抽獎、贊助排行榜用
+#   ECPAY_MERCHANT_ID、ECPAY_HASH_KEY、ECPAY_HASH_IV  贊助結帳：新台幣（綠界；測試環境在 [vars] 加 ECPAY_STAGE = "1"）
+#   STRIPE_SECRET_KEY、STRIPE_WEBHOOK_SECRET  贊助結帳：其他幣別（Stripe）與 webhook（src/donate.js；沒設的那邊結帳回 503）
 name = "bcs-report"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
+# workers.dev 網址不能關：已發布的擴充（公告、抽獎、問題回報）與 CDN 測速工具 exe 都寫死這個網址。
+# 正式網域另外掛 api.biboost.app（同一份程式；部署時 Cloudflare 自動建 DNS 與憑證），新的功能（贊助）用這個
 workers_dev = true
+routes = [
+  { pattern = "api.biboost.app", custom_domain = true }
+]
 
 [vars]
 LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
