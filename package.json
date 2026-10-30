@@ -33,6 +33,7 @@
     "private:pull": "node scripts/private-repo.mjs pull",
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
+    "worker:deploy:staging": "wrangler deploy --config tools/report-worker/wrangler.toml --env staging",
     "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml",
     "worker:opens": "node tools/report-worker/opens.mjs",
     "site:build": "node scripts/build-site.mjs",

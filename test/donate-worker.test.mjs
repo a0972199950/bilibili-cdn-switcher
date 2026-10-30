@@ -145,4 +145,19 @@ describe("report worker: donate", () => {
     const don = db.log.find((l) => /^insert into donations/.test(l.q));
     assert.equal(don.p[4], "refunded");
   });
+
+  test("a paid event from another environment (no intent here) is ignored, not recorded", async () => {
+    const env = { STRIPE_WEBHOOK_SECRET: "whsec_test", STRIPE_SECRET_KEY: "sk_test_x", DATABASE_URL: "postgresql://u:p@ep-x.neon.tech/db" };
+    const body = JSON.stringify({ type: "checkout.session.completed", data: { object: { payment_status: "paid", metadata: { intent: "di_000000000000000000" }, client_reference_id: "someone" } } });
+    const t = Math.floor(Date.now() / 1000);
+    const sig = crypto.createHmac("sha256", env.STRIPE_WEBHOOK_SECRET).update(`${t}.${body}`).digest("hex");
+    const db = fakeDb();
+    const url = new URL("https://w.dev/v1/donate/webhook/stripe");
+    const req = new Request(url, { method: "POST", body, headers: { "Stripe-Signature": `t=${t},v1=${sig}` } });
+    const h = { ...db.h, json: (s, o) => new Response(JSON.stringify(o), { status: s }), fail: (s, e) => new Response(JSON.stringify({ ok: false, error: e }), { status: s }) };
+    const res = await handleDonate(req, env, { waitUntil() {} }, url, h);
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).ignored, "other_env");
+    assert.ok(!db.log.some((l) => /^insert into/.test(l.q)), "nothing written");
+  });
 });

@@ -29,3 +29,26 @@ dataset = "bcs_announce_opens"
 [[kv_namespaces]]
 binding = "RATE_KV"
 id = "e6adf184d971421581d54c062d13a55a"
+
+# 測試環境 api-staging.biboost.app（npm run worker:deploy:staging）：贊助接 Stripe 沙盒、Neon 的 staging 分支，
+# 本機載入的開發版擴充用它（src/donate.js），正式的 api.biboost.app 用正式金鑰。secrets 另外設（--env staging）：
+#   DATABASE_URL（Neon staging 分支）、STRIPE_SECRET_KEY（沙盒）、STRIPE_WEBHOOK_SECRET（沙盒指到 api-staging 的 webhook）
+[env.staging]
+name = "bcs-report-staging"
+workers_dev = false
+routes = [
+  { pattern = "api-staging.biboost.app", custom_domain = true }
+]
+
+[env.staging.vars]
+LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
+ISSUES_REPO = "a0972199950/bilibili-cdn-switcher"
+
+# 測試環境的公告下載次數另外記，不混進正式的統計
+[[env.staging.analytics_engine_datasets]]
+binding = "OPENS"
+dataset = "bcs_announce_opens_staging"
+
+[[env.staging.kv_namespaces]]
+binding = "RATE_KV"
+id = "e6adf184d971421581d54c062d13a55a"

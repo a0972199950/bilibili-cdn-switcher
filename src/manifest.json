@@ -35,7 +35,8 @@
         "donate.html"
       ],
       "matches": [
-        "https://api.biboost.app/*"
+        "https://api.biboost.app/*",
+        "https://api-staging.biboost.app/*"
       ]
     }
   ],

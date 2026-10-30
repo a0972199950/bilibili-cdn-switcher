@@ -323,13 +323,20 @@ async function stripeWebhook(request, env, ctx, h) {
   const obj = ev.data && ev.data.object;
   try {
     if ((ev.type === "checkout.session.completed" && obj.payment_status === "paid") || ev.type === "checkout.session.async_payment_succeeded") {
-      await recordPaid(env, obj, h);
+      if (!(await recordPaid(env, obj, h))) return h.json(200, { ok: true, ignored: "other_env" });
     } else if ((ev.type === "charge.refunded" && obj.refunded) || ev.type === "charge.dispute.created") {
       // Stripe 不保證事件順序：這筆付款還沒記進來（付款通知晚到或還在重試）就回 500 讓 Stripe 稍後重送，
       // 不然狀態改不到，之後付款記進來會一直是 paid。recordPaid 也會看 charge 的退款／拒付狀態
       const status = ev.type === "charge.refunded" ? "refunded" : "disputed";
       const rows = await h.neonSql(env, "update donations set status = $2 where provider = 'stripe' and provider_ref = $1 returning id", [obj.payment_intent, status]);
-      if (!rows.length) throw new Error("not_recorded_yet");
+      if (!rows.length) {
+        // 別的環境（同一個 Stripe 帳戶接了兩個 worker）的付款：這邊沒有它的結帳紀錄，不用等
+        const pi = await stripe(env, "GET", `/payment_intents/${obj.payment_intent}`);
+        const intentId = pi.metadata && pi.metadata.intent;
+        const mine = intentId ? await h.neonSql(env, "select 1 from donation_intents where id = $1", [intentId]) : [];
+        if (!mine.length) return h.json(200, { ok: true, ignored: "other_env" });
+        throw new Error("not_recorded_yet");
+      }
     } else return h.json(200, { ok: true, ignored: ev.type });
   } catch (e) {
     return h.fail(500, String(e.message || e)); // Stripe 會重送
@@ -337,12 +344,13 @@ async function stripeWebhook(request, env, ctx, h) {
   ctx.waitUntil(caches.default.delete(donorsKey(request))); // 這個邊緣節點的排行榜快取先清掉，其他節點最慢 CACHE_S 秒
   return h.json(200, { ok: true });
 }
+// 回 false＝不是這個環境建的結帳（查不到 intent）：正式與測試環境的 worker 可能接到同一個 Stripe 帳戶的通知，只記自己的
 async function recordPaid(env, session, h) {
   const intentId = session.metadata && session.metadata.intent;
   const intents = intentId ? await h.neonSql(env, "select * from donation_intents where id = $1", [intentId]) : [];
-  const it = intents[0] || {};
-  const pid = it.pid || session.client_reference_id;
-  if (!pid) throw new Error("no_pid");
+  const it = intents[0];
+  if (!it) return false;
+  const pid = it.pid;
   // 手續費、實收、匯率在 balance transaction（結算幣別，新加坡帳戶是 SGD）；付款方式在 charge
   const pi = await stripe(env, "GET", `/payment_intents/${session.payment_intent}?expand[]=latest_charge.balance_transaction`);
   const charge = pi.latest_charge || {};
@@ -363,6 +371,7 @@ async function recordPaid(env, session, h) {
     status: charge.disputed ? "disputed" : charge.refunded ? "refunded" : "paid",
     raw: { session: session.id, balance_transaction: bt.id || null, settlement: btCur, exchange_rate: bt.exchange_rate || null }
   });
+  return true;
 }
 
 // 同一位贊助者：donorId 換了（換電腦、沒開同步）但付款 email 相同 → 自動合併成一個人。

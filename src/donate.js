@@ -7,7 +7,19 @@
  *    排行榜只公開它的雜湊（pid），donorId 本身只在付款時送給後端。名稱與頭像存 storage.local 的 donateProfile，下次自動帶入
  *  - 沒上傳頭像的人，用名稱產生的 10 種預設角色頭像（avatarSvg）讓他挑；排行榜上只存「第幾種」，各端依名稱自己畫
  */
-var DONATE_API = "https://api.biboost.app"; // report worker 的正式網域（同一個 worker 的 workers.dev 網址留給已發布的舊功能）
+// report worker：商店版與網站版用正式的 api.biboost.app（Stripe 正式帳戶）；本機載入的開發版用測試環境 api-staging.biboost.app
+// （Stripe 沙盒＋Neon staging 分支，怎麼測都不會出現在真的排行榜上）。management.getSelf 不需要權限；網站版沒有它，用正式的
+var DONATE_API_PROD = "https://api.biboost.app";
+var DONATE_API_STAGING = "https://api-staging.biboost.app";
+var DONATE_API = DONATE_API_PROD;
+var apiReady = new Promise(function (resolve) {
+  try {
+    chrome.management.getSelf(function (self) {
+      if (self && self.installType === "development") DONATE_API = DONATE_API_STAGING;
+      resolve();
+    });
+  } catch (e) { resolve(); }
+});
 var NAME_MAX = 20;
 var AVATAR_STYLES = 10;
 var AVATAR_PX = 128; // 上傳的頭像縮成 128×128（正方形置中裁切）
@@ -400,7 +412,7 @@ function mockBoard() {
 // fresh：略過 worker 的 1 分鐘邊緣快取直接讀資料庫（付款後確認上榜用；worker 有限次數）
 function fetchBoard(fresh) {
   if (MOCK !== null) return Promise.resolve(mockBoard());
-  return fetch(DONATE_API + "/v1/donors" + (fresh ? "?fresh=1" : ""), { credentials: "omit", cache: "no-store" })
+  return apiReady.then(function () { return fetch(DONATE_API + "/v1/donors" + (fresh ? "?fresh=1" : ""), { credentials: "omit", cache: "no-store" }); })
     .then(function (r) {
       if (r.status === 404) return { ok: true, items: [] };
       return r.json();
@@ -913,6 +925,7 @@ function firstLoad() {
   });
 }
 if (MOCK !== null) document.body.appendChild(el("div", "mockBadge", "MOCK DATA"));
+else apiReady.then(function () { if (DONATE_API === DONATE_API_STAGING) document.body.appendChild(el("div", "mockBadge", "SANDBOX")); });
 buildCurrencySelect();
 renderTierLegend();
 chrome.storage.local.get({ detectedCountry: "" }, function (s) {
