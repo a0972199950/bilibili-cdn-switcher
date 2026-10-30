@@ -100,14 +100,14 @@ function knownIsps(country) {
 }
 
 // 報告裡的 ISP（「AS38841 kbro CO. Ltd.」）→ 給人看的名稱：有給業者名單（抽獎限定的業者）時用名單裡的名稱（「凱擘」），
-// 否則用 isp-share.json 的名稱，都對不到就拿原字串去掉 AS 編號
+// 否則用 isp-share.json 的名稱（去掉市占是估的「（估計）」標註，會寫進信裡），都對不到就拿原字串去掉 AS 編號
 export function ispLabel(country, raw, names = []) {
   const s = norm(raw);
   const hitIn = (patterns) => patterns.some((p) => p && s.includes(norm(p)));
   const set = names.length ? ispMatcher(country, names).map.find((m) => hitIn(m.patterns)) : null;
   if (set) return set.name;
   const known = knownIsps(country).find((i) => hitIn(i.match));
-  return known ? known.name : String(raw).replace(/^AS\d+\s+/i, "").trim();
+  return known ? known.name.replace(/\s*[（(]估計[)）]\s*$/, "") : String(raw).replace(/^AS\d+\s+/i, "").trim();
 }
 
 export function ispMatcher(country, names) {
@@ -125,11 +125,12 @@ export function ispMatcher(country, names) {
 }
 
 // ── 寫信 ─────────────────────────────────────────────────────────────────────────────────────
-// 信的語言依國家（台港澳繁中、中新馬簡中、日、韓，其他英文）
-const COUNTRY_LANG = { TW: "zh-TW", HK: "zh-TW", MO: "zh-TW", CN: "zh-CN", SG: "zh-CN", MY: "zh-CN", JP: "ja", KR: "ko" };
+// 信的語言依國家（香港廣東話、台澳繁中、中新馬簡中、日、韓，其他英文）
+const COUNTRY_LANG = { TW: "zh-TW", HK: "zh-HK", MO: "zh-TW", CN: "zh-CN", SG: "zh-CN", MY: "zh-CN", JP: "ja", KR: "ko" };
 export const mailLang = (country) => COUNTRY_LANG[country] || "en";
-export const MAIL_LANGS = ["zh-TW", "zh-CN", "en", "ja", "ko"];
-const LOCALE_DIR = { "zh-TW": "zh_TW", "zh-CN": "zh_CN", en: "en", ja: "ja", ko: "ko" };
+// zh-HK：廣東話（書面粵語），只用在寄信，擴充名稱與抽獎標題沿用繁中
+export const MAIL_LANGS = ["zh-TW", "zh-HK", "zh-CN", "en", "ja", "ko"];
+const LOCALE_DIR = { "zh-TW": "zh_TW", "zh-HK": "zh_TW", "zh-CN": "zh_CN", en: "en", ja: "ja", ko: "ko" };
 export const fillText = (tpl, v) => tpl.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 
 // 擴充在這個語言的名稱（_locales 的 extName）
@@ -141,9 +142,9 @@ export function extName(lang) {
   }
 }
 
-// { 語言: 文字 } 依 語言 → en → zh-TW → 任一種 取一種
+// { 語言: 文字 } 依 語言 → en → zh-TW → 任一種 取一種（zh-HK 先退到 zh-TW）
 export function pickText(map, lang) {
-  for (const k of [lang, "en", "zh-TW", ...Object.keys(map || {})]) if (map?.[k]) return map[k];
+  for (const k of [lang, ...(lang === "zh-HK" ? ["zh-TW"] : []), "en", "zh-TW", ...Object.keys(map || {})]) if (map?.[k]) return map[k];
   return "";
 }
 

@@ -18,6 +18,11 @@
     "invite:show": "node scripts/invite.mjs show",
     "invite:review": "node scripts/invite.mjs review",
     "events:show": "node scripts/events.mjs show",
+    "donations:setup": "node scripts/donations.mjs setup",
+    "donations:show": "node scripts/donations.mjs show",
+    "donations:hide": "node scripts/donations.mjs hide",
+    "donations:unhide": "node scripts/donations.mjs unhide",
+    "donations:refund": "node scripts/donations.mjs refund",
     "lottery:add": "node scripts/lottery.mjs add",
     "lottery:update": "node scripts/lottery.mjs update",
     "lottery:preview": "node scripts/lottery.mjs preview",
@@ -28,8 +33,11 @@
     "private:pull": "node scripts/private-repo.mjs pull",
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "worker:deploy": "wrangler deploy --config tools/report-worker/wrangler.toml",
+    "worker:deploy:staging": "wrangler deploy --config tools/report-worker/wrangler.toml --env staging",
     "worker:dev": "wrangler dev --config tools/report-worker/wrangler.toml",
     "worker:opens": "node tools/report-worker/opens.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "site:deploy": "node scripts/build-site.mjs && npx wrangler deploy --config tools/site/wrangler.toml",
     "admin": "npm --prefix admin run dev"
   },
   "devDependencies": {

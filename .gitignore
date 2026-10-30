@@ -61,3 +61,5 @@ promotions/
 
 # 本機後台（Next.js，只在 localhost 跑、不部署），只進私人 repo
 /admin/
+tools/site/public/
+tools/site/.wrangler/

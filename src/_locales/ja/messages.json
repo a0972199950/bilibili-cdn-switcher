@@ -42,7 +42,10 @@
     "message": "🔍 各ノードの速度をテスト"
   },
   "rateBtnLabel": {
-    "message": "⭐ 気に入ったら星 5 つで応援"
+    "message": "⭐ 星 5 つで応援"
+  },
+  "donateBtnLabel": {
+    "message": "☕ コーヒーをおごる"
   },
   "feedbackBtnLabel": {
     "message": "🐛 不具合の報告・機能のリクエスト"
@@ -634,5 +637,233 @@
   },
   "lotteryNote": {
     "message": "備考"
+  },
+  "donateTitle": {
+    "message": "支援・石油王ランキング"
+  },
+  "donateBoardTitle": {
+    "message": "石油王ランキング"
+  },
+  "donateBoardSub": {
+    "message": "BiBoost は広告なしで永久無料。支えてくれるのは石油王の皆さんです。支援額は米ドルに換算してランキングに載ります！"
+  },
+  "donateStatDonors": {
+    "message": "人の石油王"
+  },
+  "donateTabBoard": {
+    "message": "👑 石油王ランキング"
+  },
+  "donateTabGive": {
+    "message": "☕ 支援する"
+  },
+  "donateGiveTitle": {
+    "message": "☕ コーヒーをおごる"
+  },
+  "donateGiveSub": {
+    "message": "BiBoost は個人開発者が仕事の後に開発しています。支援が更新と、より多くの国のノード検証の励みになります！"
+  },
+  "donateStepAmount": {
+    "message": "金額を選ぶ"
+  },
+  "donateStepProfile": {
+    "message": "ランキングの名前とアイコン"
+  },
+  "donateNameNote": {
+    "message": "ランキングに公開されます。この端末に保存され、次回は自動入力されます"
+  },
+  "donatePreviewLabel": {
+    "message": "プレビュー"
+  },
+  "donateStepPay": {
+    "message": "使える支払い方法"
+  },
+  "donateFine": {
+    "message": "支援は任意の贈与で、機能が解放されることはありません。支払い完了と同時にランキングに載り、返金はできません。二重請求や金額の誤りがあった場合は「不具合の報告」からご連絡いただければ返金します。受取人は開発者本人で、Google・Microsoft・Mozilla ではありません。金額は支払い時のレートで米ドルに換算してランキングし、同じ人の複数回の支援は合算されます。同じブラウザアカウントで同期していれば、パソコンを替えてもランキングの枠は引き継がれます。"
+  },
+  "donateCta": {
+    "message": "☕ ランキングに載る"
+  },
+  "donateBoardNote": {
+    "message": "累計金額順（期間なし）。同じ人の複数回の支援は 1 件にまとめて表示します。"
+  },
+  "donateAnonymous": {
+    "message": "匿名の石油王"
+  },
+  "donateTier0": {
+    "message": "石油王"
+  },
+  "donateTier1": {
+    "message": "シルバー石油王"
+  },
+  "donateTier2": {
+    "message": "ゴールド石油王"
+  },
+  "donateTier3": {
+    "message": "ダイヤ石油王"
+  },
+  "donateTier4": {
+    "message": "伝説の石油王"
+  },
+  "donateTimes": {
+    "message": " ・{n} 回"
+  },
+  "donateVacant": {
+    "message": "空席"
+  },
+  "donateVacantSub": {
+    "message": "あなたの席かも"
+  },
+  "donateYou": {
+    "message": "あなた"
+  },
+  "donateBoardFailed": {
+    "message": "ランキングを読み込めませんでした。"
+  },
+  "donateRetry": {
+    "message": "再試行"
+  },
+  "donateLoading": {
+    "message": "読み込み中…"
+  },
+  "donateMeKeepBtn": {
+    "message": "王座を守る"
+  },
+  "donateMeFirst": {
+    "message": "あなたが<b>ランキング 1 位の石油王</b>！累計 {usd}、2 位との差は <b>{gap}</b>。王座を守り抜こう！"
+  },
+  "donateMeFirstAlone": {
+    "message": "あなたが<b>ランキング 1 位の石油王</b>！累計 {usd}、今のところ敵なしです。"
+  },
+  "donateMeOvertakeBtn": {
+    "message": "今すぐ追い抜く"
+  },
+  "donateMeRank": {
+    "message": "現在 <b>{rank} 位</b>（{usd}）。あと <b>{gap}</b> で {above} 位「{name}」を追い抜けます！"
+  },
+  "donateMeJoinBtn": {
+    "message": "ランキングに載る"
+  },
+  "donateMeFewDonors": {
+    "message": "石油王はまだ {n} 人。<b>{min}</b> から表彰台に上がれます！"
+  },
+  "donateMeNoDonors": {
+    "message": "まだ誰も支援していません。<b>最初の石油王</b>になろう！"
+  },
+  "donateMePodium": {
+    "message": "<b>{min}</b> からランキングに載れます！累計 <b>{gap}</b> を超えるとトップ 3 の表彰台へ。"
+  },
+  "donateCups": {
+    "message": "{n} 杯"
+  },
+  "donateAmountEmpty": {
+    "message": "金額を入力してください（最低 {min}）"
+  },
+  "donateAmountMin": {
+    "message": "最低 {min}：少額だと決済手数料でほとんど残りません"
+  },
+  "donateAmountMax": {
+    "message": "1 回あたり約 {max} までです。0 が多すぎませんか？"
+  },
+  "donateAmountDecimals": {
+    "message": "この通貨では小数点以下の桁数が多すぎます"
+  },
+  "donateAmountOk": {
+    "message": "約 <b>{usd}</b>・支援後は <b>{rank} 位</b>になります（最低 {min}）"
+  },
+  "donateAmountOkUsd": {
+    "message": "支援後は <b>{rank} 位</b>になります（最低 {min}）"
+  },
+  "donatePayBtnIdle": {
+    "message": "☕ 支払いへ進む"
+  },
+  "donatePayBtn": {
+    "message": "☕ {amount} で支援する"
+  },
+  "donateMethodCard": {
+    "message": "クレジット／デビットカード"
+  },
+  "donateAvatarStyle": {
+    "message": "アイコン {n}"
+  },
+  "donateAvatarMine": {
+    "message": "アップロードした画像"
+  },
+  "donateAvatarUpload": {
+    "message": "画像を選ぶ"
+  },
+  "donateCheckoutOpened": {
+    "message": "支払いページを新しいタブで開きました。支払いが終わると自動でここに戻ります。"
+  },
+  "donateConfirming": {
+    "message": "支払いを確認しています。数秒でランキングが更新されます…"
+  },
+  "donateConfirmSlow": {
+    "message": "まだ支払い結果が届いていません。支払い済みの場合は、少し待ってからこのページを再読み込みしてください。"
+  },
+  "donateCheckoutFailed": {
+    "message": "支払いページを開けませんでした。しばらくしてからもう一度お試しください。"
+  },
+  "donateMethodsNote": {
+    "message": "通貨によって変わります。実際の選択は次の支払いページで行います"
+  },
+  "donateUsdLocal": {
+    "message": "{local}（約 {usd}）"
+  },
+  "donateNextTier": {
+    "message": "今回の支援後、あと <b>{gap}</b> で「{tier}」に昇格"
+  },
+  "donateTierLegendLabel": {
+    "message": "累計額に応じて称号がランクアップ："
+  },
+  "donateCurrencyLabel": {
+    "message": "通貨"
+  },
+  "donateCurrencySearch": {
+    "message": "通貨を検索（名前・コード）"
+  },
+  "donateCurrencyNone": {
+    "message": "該当する通貨がありません"
+  },
+  "donateContact": {
+    "message": "作者に連絡"
+  },
+  "donateContactCopy": {
+    "message": "コピー"
+  },
+  "donateContactCopied": {
+    "message": "コピーしました"
+  },
+  "donateAmountPlaceholder": {
+    "message": "最低 {min}"
+  },
+  "donateThanks": {
+    "message": "🎉 ご支援ありがとうございます！現在 <b>{rank} 位</b>です。"
+  },
+  "donateProfileSave": {
+    "message": "ランキングの名前とアイコンを更新"
+  },
+  "donateProfileSaved": {
+    "message": "ランキングは現在の名前とアイコンです"
+  },
+  "donateProfileFailed": {
+    "message": "名前とアイコンを更新できませんでした。しばらくしてからもう一度お試しください。"
+  },
+  "donateMethodCardTw": {
+    "message": "クレジットカード（台湾発行のみ）"
+  },
+  "donateMethodCvs": {
+    "message": "コンビニ払い（NT$150 から）"
+  },
+  "donateMethodsNoteTw": {
+    "message": "台湾以外で発行されたカードは別の通貨を選んでください。実際の選択は次の支払いページで行います"
+  },
+  "donateEmailLabel": {
+    "message": "メールアドレス（任意）"
+  },
+  "donateEmailNote": {
+    "message": "入力すると、別のパソコンやブラウザから支援しても今のランキングに合算されます。本人確認にだけ使い、公開されません。"
+  },
+  "donateEmailBad": {
+    "message": "メールアドレスの形式が正しくありません"
   }
 }

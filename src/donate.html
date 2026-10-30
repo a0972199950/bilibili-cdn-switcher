@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<!-- 贊助頁固定明亮模式：不載入 theme.js（不跟 popup 的主題設定與系統深色模式），深色的 CSS 變數留著，之後要開再載回 theme.js -->
+<html data-theme="light">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title></title>
+  <style>
+    /* 贊助頁：popup 按「贊助我一杯咖啡」開的分頁。先顯示乾爹排行榜，贊助入口在右側（窄螢幕是第二個分頁）。
+       顏色變數與 popup.html / report.html 一致，維持擴充簡約的調性；搶眼的顏色只留給第一名與最高稱號。 */
+    :root,
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f4f5f7; --text: #18191c; --muted: #61666d; --placeholder: #9499a0; --line: #e3e5e7; --border: #e3e5e7;
+      --control-bg: #fff; --raised: #fff; --accent: #fb7299; --accent-hover: #e85c86; --hover-bg: #ffecf1; --selected-bg: #ffdce6; --link: #00aeec;
+      --primary: #fb7299; --primary-hover: #e85c86; --primary-text: #fff;
+      --ok: #2ba471; --danger: #d93025; --warn-bg: #fff4e5; --warn: #b36b00; --me-bg: #fff3d6; --me-border: #f5b83d;
+      --row-bg: #fff; --row-alt: #fafbfc; --shadow: 0 6px 24px rgba(0, 0, 0, .08);
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #141416; --text: #eaeaea; --muted: #a3a3aa; --placeholder: #777; --line: rgba(128, 128, 128, .25); --border: rgba(128, 128, 128, .4);
+      --control-bg: rgba(255, 255, 255, .04); --raised: #232326; --accent: #ff7aa2; --accent-hover: #ff5c8d; --hover-bg: rgba(255, 122, 162, .12); --selected-bg: rgba(255, 122, 162, .2); --link: #00a1d6;
+      --primary: #ff5c8d; --primary-hover: #ff4580; --primary-text: #fff;
+      --ok: #3ddc84; --danger: #ff6b6b; --warn-bg: rgba(240, 160, 32, .12); --warn: #e08a00; --me-bg: rgba(245, 184, 61, .14); --me-border: rgba(245, 184, 61, .7);
+      --row-bg: #1d1d20; --row-alt: #212124; --shadow: 0 6px 24px rgba(0, 0, 0, .4);
+    }
+    :root { --gold: #f5b83d; --silver: #a7b4c2; --bronze: #d08a52; }
+    /* 稱號的顏色（淡底＋同色字） */
+    :root, :root[data-theme="light"] { --t1: #5f7385; --t1-bg: rgba(95, 115, 133, .12); --t2: #b36b00; --t2-bg: rgba(245, 166, 35, .16); --t3: #6f4bc2; --t3-bg: rgba(126, 87, 194, .14); }
+    :root[data-theme="dark"] { --t1: #b4c2cf; --t1-bg: rgba(180, 194, 207, .14); --t2: #f0b545; --t2-bg: rgba(240, 181, 69, .16); --t3: #b39af0; --t3-bg: rgba(179, 154, 240, .16); }
+    html, body { margin: 0; }
+    body {
+      font: 14px/1.55 -apple-system, "Segoe UI", "Microsoft JhengHei", "Microsoft YaHei", "Hiragino Sans", "Apple SD Gothic Neo", sans-serif;
+      color: var(--text); background: var(--bg); min-height: 100vh;
+    }
+    :lang(ja) { word-break: auto-phrase; line-break: strict; }
+    :lang(ko) { word-break: keep-all; overflow-wrap: anywhere; }
+    button, input, select { font: inherit; color: inherit; }
+    .hidden { display: none !important; }
+
+    /* ---------- 頂端橫幅：B 站粉→B 站藍的淡色漸層，跟擴充同色系（人數跟標題同一行，不另佔一行） ---------- */
+    :root, :root[data-theme="light"] { --hero-bg: linear-gradient(120deg, #ffe3ec 0%, #fff0f4 45%, #e3f5fc 100%); --hero-line: #f6d3de; }
+    :root[data-theme="dark"] { --hero-bg: linear-gradient(120deg, rgba(255, 122, 162, .18) 0%, rgba(255, 122, 162, .06) 45%, rgba(0, 161, 214, .14) 100%); --hero-line: rgba(255, 122, 162, .25); }
+    .hero { position: relative; text-align: center; background: var(--hero-bg); border-bottom: 1px solid var(--hero-line); padding: 22px 16px 18px; }
+    /* 語言切換（右上角）：跟 popup 進階設定的語言是同一個設定 */
+    .langPick { position: absolute; top: 10px; right: 12px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 8px; border: 1px solid var(--hero-line); background: var(--raised); color: var(--muted); font-size: 12.5px; }
+    .langPick svg { width: 14px; height: 14px; flex: 0 0 auto; }
+    .langPick select { border: 0; background: transparent; padding: 0; font-size: 12.5px; color: var(--text); cursor: pointer; outline: none; }
+    .hero h1 { margin: 0; font-size: 32px; letter-spacing: .02em; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 4px 14px; }
+    .hero h1 .ttl { display: inline-flex; align-items: center; gap: 10px; }
+    .hero h1 .logo { width: 44px; height: 44px; flex: 0 0 auto; }
+    .hero h1 .count { font-size: 14px; font-weight: 400; letter-spacing: 0; color: var(--muted); padding: 1px 10px; border-radius: 999px; background: var(--raised); border: 1px solid var(--hero-line); }
+    .hero h1 .count b { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .hero p { margin: 8px auto 0; max-width: 600px; color: var(--muted); font-size: 15px; }
+
+    /* ---------- 窄螢幕的分頁 ---------- */
+    .tabs { display: none; position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); }
+    .tabs button { flex: 1; border: 0; background: none; padding: 12px 8px; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; }
+    .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ---------- 版面：寬螢幕兩欄（排行榜＋贊助），窄螢幕切分頁 ---------- */
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; max-width: 1180px; margin: 0 auto; padding: 24px 24px 40px; align-items: start; }
+    .panel { background: var(--raised); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+    /* 表單比畫面高時還要能捲到底，所以不固定（sticky）在畫面上 */
+    .give.pulse { animation: pulse 1s ease-out 2; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(251, 114, 153, .5); } 100% { box-shadow: 0 0 0 12px rgba(251, 114, 153, 0); } }
+    h2 { font-size: 18px; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+
+    @media (max-width: 900px) {
+      .tabs { display: flex; }
+      .layout { display: block; padding: 14px 12px 128px; } /* 底部留出固定按鈕的高度，最下面的稱號圖例才不會被蓋住 */
+      body[data-tab="board"] .give, body[data-tab="give"] .board { display: none; }
+      .hero { padding: 44px 12px 14px; } /* 上方留給右上角的語言切換 */
+      .hero h1 { font-size: 24px; }
+      .hero h1 .logo { width: 34px; height: 34px; }
+      .hero p { font-size: 13.5px; }
+    }
+
+    /* ---------- 我的位置（激勵卡） ---------- */
+    .meCard { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: var(--me-bg); border: 1px solid var(--me-border); margin-bottom: 18px; }
+    .meCard .meIcon { font-size: 22px; flex: 0 0 auto; }
+    .meCard .meText { flex: 1; min-width: 0; }
+    .meCard .meText b { color: var(--warn); }
+    .meCard button { flex: 0 0 auto; }
+
+    /* ---------- 前三名頒獎台：一樣的白卡片，只用獎牌與頭像外框分金銀銅，第一名加金框 ---------- */
+    .podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 12px; align-items: end; margin: 18px 0 16px; }
+    .pod { position: relative; text-align: center; border-radius: 12px; padding: 26px 10px 12px; min-width: 0; background: var(--raised); border: 1px solid var(--line); }
+    .pod .av { width: 60px; height: 60px; border-radius: 50%; display: block; margin: 0 auto 8px; border: 3px solid var(--line); box-sizing: border-box; object-fit: cover; }
+    .pod.r1 { padding-top: 30px; border: 2px solid var(--gold); }
+    .pod.r1 .av { width: 76px; height: 76px; border-color: var(--gold); }
+    .pod.r2 .av { border-color: var(--silver); }
+    .pod.r3 .av { border-color: var(--bronze); }
+    .pod .medal { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 26px; line-height: 1; }
+    .pod.r1 .medal { font-size: 30px; top: -18px; }
+    .pod .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pod .amt { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .pod.r1 .amt { font-size: 21px; color: var(--t2); }
+    .pod .cnt { font-size: 12px; color: var(--muted); }
+    .pod.empty { background: transparent; color: var(--muted); border: 1px dashed var(--border); }
+    .pod.empty .av { opacity: .5; }
+    .pod.me { background: var(--me-bg); }
+
+    /* ---------- 第 4 名以後 ---------- */
+    .list { list-style: none; margin: 0; padding: 0; }
+    .row { display: grid; grid-template-columns: 36px 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--row-bg); border: 1px solid var(--line); margin-bottom: 6px; }
+    .row.me { background: var(--me-bg); border-color: var(--me-border); }
+    .row .rk { font-weight: 700; font-size: 15px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+    .row .av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: block; }
+    .row .who { min-width: 0; }
+    .row .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row .meta { font-size: 12px; color: var(--muted); }
+    .row .amt { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; }
+    .youTag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--me-border); color: #3a2600; vertical-align: 1px; }
+    .tier { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 12px; font-weight: 700; line-height: 19px; margin-right: 4px; vertical-align: 1px; white-space: nowrap; }
+    .tier.t0 { background: var(--row-alt); color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+    .tier.t1 { background: var(--t1-bg); color: var(--t1); }
+    .tier.t2 { background: var(--t2-bg); color: var(--t2); }
+    .tier.t3 { background: var(--t3-bg); color: var(--t3); }
+    /* 最高稱號：全頁唯一的彩色漸層 */
+    .tier.t4 { color: #fff; background: linear-gradient(90deg, #ff3d77, #ffb300, #3ddc84, #00a1d6, #8041c8); background-size: 200% 100%; animation: rainbow 4s linear infinite; }
+    @keyframes rainbow { to { background-position: 200% 0; } }
+    .boardNote { color: var(--muted); font-size: 12.5px; text-align: center; margin: 14px 0 0; }
+    .boardState { text-align: center; color: var(--muted); padding: 24px 0; }
+
+    /* ---------- 窄螢幕：排行榜底部固定的「我也要上榜」 ---------- */
+    .stickyCta { display: none; }
+    @media (max-width: 900px) {
+      body[data-tab="board"] .stickyCta { display: block; position: fixed; left: 0; right: 0; bottom: 0; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--bg) 35%); z-index: 6; }
+      .stickyCta button { width: 100%; }
+      .narrowHide { display: none; }
+    }
+
+    /* ---------- 按鈕 ---------- */
+    .btn { border: 0; border-radius: 8px; padding: 9px 18px; font-weight: 600; cursor: pointer; }
+    .btn.primary { background: var(--primary); color: var(--primary-text); }
+    .btn.primary:hover { background: var(--primary-hover); }
+    .btn.primary[disabled] { opacity: .5; cursor: default; background: var(--primary); }
+    .btn.big { width: 100%; padding: 11px 18px; font-size: 15px; }
+    .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn.ghost:hover { background: var(--hover-bg); }
+    .btn.small { padding: 6px 12px; font-size: 13px; }
+
+    /* ---------- 贊助表單 ---------- */
+    .step { margin-top: 18px; }
+    .step:first-of-type { margin-top: 0; }
+    .stepHead { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 8px; }
+    .stepNo { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .field { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+    .field label { color: var(--muted); font-size: 13px; min-width: 64px; }
+    select, input[type=text], input[type=number], input[type=email] {
+      border: 1px solid var(--border); background: var(--control-bg); border-radius: 8px; padding: 8px 10px; outline: none; box-sizing: border-box;
+    }
+    select:focus, input:focus { border-color: var(--accent); }
+    select { flex: 1; min-width: 0; }
+    select option { background: var(--raised); color: var(--text); }
+    @supports (-webkit-touch-callout: none) { select, input[type=text], input[type=number], input[type=email], #curSearch { font-size: 16px; } }
+    .cups { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .cup { border: 1px solid var(--border); background: var(--control-bg); border-radius: 8px; padding: 8px 4px; cursor: pointer; text-align: center; line-height: 1.3; }
+    .cup:hover { border-color: var(--accent); }
+    .cup.on { border-color: var(--accent); background: var(--selected-bg); }
+    .cup .ic { display: block; height: 22px; }
+    .cupIcon { width: 1.25em; height: 1.25em; vertical-align: -0.25em; margin-right: .3em; }
+    .cup .cupIcon { width: 22px; height: 22px; margin: 0; }
+    .cup .lb { font-size: 12px; color: var(--muted); display: block; }
+    .cup .pr { font-weight: 800; font-variant-numeric: tabular-nums; display: block; }
+    .amountRow { display: flex; align-items: center; gap: 8px; }
+    .amountBox { flex: 1; display: flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; background: var(--control-bg); padding-left: 6px; }
+    .amountBox:focus-within { border-color: var(--accent); }
+    .amountBox input { flex: 1; border: 0 !important; background: transparent; font-weight: 800; font-size: 18px; min-width: 0; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    .amountHint { font-size: 12.5px; color: var(--muted); margin-top: 6px; min-height: 19px; }
+    .amountHint.err { color: var(--danger); }
+    .amountHint b { color: var(--text); }
+    #name { width: 100%; }
+    .nameUnder { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin: 4px 0 10px; }
+    #nameCount { white-space: nowrap; }
+    .avatars { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    .avBtn { position: relative; padding: 0; border: 3px solid transparent; border-radius: 50%; background: none; cursor: pointer; aspect-ratio: 1; overflow: hidden; }
+    .avBtn img { width: 100%; height: 100%; display: block; border-radius: 50%; object-fit: cover; }
+    .avBtn.on { border-color: var(--accent); box-shadow: 0 0 0 2px var(--selected-bg); }
+    .avBtn.upload { border: 2px dashed var(--muted); color: var(--muted); font-size: 11px; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .avBtn.upload.on { border: 3px solid var(--accent); }
+    .avBtn.upload:hover { border-color: var(--accent); color: var(--accent); }
+    .preview { margin-top: 12px; }
+    .preview .lbl { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .preview .row { margin: 0; }
+    /* 付款方式只是說明（實際在金流的付款頁選），做成不像按鈕的灰色小標籤 */
+    .methods { display: flex; flex-wrap: wrap; gap: 6px; }
+    .method { display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; padding: 2px 8px; font-size: 12.5px; background: var(--row-alt); color: var(--muted); cursor: default; }
+    .methodsNote { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    .emailBox { margin-top: 14px; }
+    .emailBox label { display: block; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .emailBox input { width: 100%; }
+    .emailNote { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .emailErr { font-size: 12px; color: var(--danger); min-height: 0; }
+    #payBtn { margin-top: 14px; }
+    /* 聯絡作者：按了才顯示 email */
+    .contact { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
+    .contactBox { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .contactBox a { color: var(--link); font-weight: 600; word-break: break-all; }
+    .linkBtn { border: 0; background: none; padding: 0; color: var(--muted); cursor: pointer; font-size: 12.5px; text-decoration: underline; }
+    /* 可搜尋的幣別選單 */
+    .curPick { position: relative; flex: 1; min-width: 0; }
+    #curBtn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--border); background: var(--control-bg); border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: left; }
+    #curBtn:focus-visible, #curBtn[aria-expanded="true"] { border-color: var(--accent); outline: none; }
+    .curBtnText { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .caret { color: var(--muted); font-size: 11px; flex: 0 0 auto; }
+    .curPanel { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); background: var(--raised); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .12); padding: 6px; }
+    #curSearch { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--control-bg); border-radius: 6px; padding: 7px 9px; outline: none; }
+    #curSearch:focus { border-color: var(--accent); }
+    .curList { list-style: none; margin: 6px 0 0; padding: 0; max-height: 260px; overflow-y: auto; }
+    .curOpt { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 9px; border-radius: 6px; cursor: pointer; }
+    .curOpt.active, .curOpt:hover { background: var(--hover-bg); }
+    .curOpt.on .curName { font-weight: 700; color: var(--accent); }
+    .curCode { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .curNone { padding: 10px; color: var(--muted); font-size: 13px; text-align: center; }
+    .fine { font-size: 12px; color: var(--muted); margin: 10px 0 0; }
+    .notice { margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; background: var(--warn-bg); color: var(--warn); font-size: 13px; }
+    .nextTier { font-size: 12.5px; color: var(--muted); margin-top: 6px; min-height: 19px; }
+    .nextTier b { color: var(--warn); }
+    .profileSave { margin-top: 8px; }
+    .mockBadge { position: fixed; top: 8px; left: 8px; z-index: 9; padding: 2px 8px; border-radius: 6px; background: #d93025; color: #fff; font: 700 11px/18px monospace; pointer-events: none; }
+    .profileSave .btn[disabled] { opacity: .55; cursor: default; }
+    /* 稱號門檻放在選金額這一步，選金額時就看得到 */
+    .tierBox { margin-top: 10px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); }
+    .tierLabel { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .tierLegend { display: grid; grid-template-columns: max-content 1fr; gap: 5px 12px; align-items: center; font-size: 12.5px; color: var(--muted); }
+    .legendItem { display: contents; }
+    .legendItem .tier { justify-self: start; margin: 0; }
+    .legendItem .min { font-variant-numeric: tabular-nums; }
+    .amountBox span { color: var(--muted); font-weight: 700; padding-left: 4px; }
+    .notice.ok { background: rgba(43, 164, 113, .12); color: var(--ok); }
+
+    @media (max-width: 420px) {
+      .podium { gap: 6px; }
+      .pod { padding: 24px 4px 10px; }
+      .pod .av { width: 46px; height: 46px; }
+      .pod.r1 .av { width: 58px; height: 58px; }
+      .pod .amt { font-size: 15px; }
+      .pod.r1 .amt { font-size: 17px; }
+      .row { grid-template-columns: 28px 36px minmax(0, 1fr) auto; gap: 8px; padding: 8px 10px; }
+      .row .av { width: 38px; height: 38px; }
+      .cups { grid-template-columns: repeat(2, 1fr); }
+      .avatars { grid-template-columns: repeat(4, 1fr); }
+      .meCard { flex-wrap: wrap; }
+      .meCard button { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; }
+    }
+  </style>
+</head>
+
+<body data-tab="board">
+  <header class="hero">
+    <label class="langPick"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c1.8 1.9 2.7 4 2.7 6.5S9.8 12.6 8 14.5C6.2 12.6 5.3 10.5 5.3 8S6.2 3.4 8 1.5z"/></svg><select id="langSelect"></select></label>
+    <h1><span class="ttl"><img class="logo" src="logo128.png" alt="" /><span id="heroTitle"></span></span><span class="count" id="stats"><b id="statDonors">-</b> <span id="statDonorsLabel"></span></span></h1>
+    <p id="heroSub"></p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button type="button" id="tabBoard" class="on" role="tab"></button>
+    <button type="button" id="tabGive" role="tab"></button>
+  </nav>
+
+  <main class="layout">
+    <section class="board">
+      <div class="meCard hidden" id="meCard">
+        <span class="meIcon" id="meIcon"></span>
+        <span class="meText" id="meText"></span>
+        <button type="button" class="btn primary small" id="meBtn"></button>
+      </div>
+      <div class="podium" id="podium"></div>
+      <ol class="list" id="list"></ol>
+      <div class="boardState hidden" id="boardState"></div>
+      <p class="boardNote" id="boardNote"></p>
+    </section>
+
+    <section class="give panel" id="give">
+      <h2 id="giveTitle"></h2>
+      <p class="sub" id="giveSub"></p>
+      <div class="notice hidden" id="payNotice"></div>
+
+      <div class="step">
+        <div class="stepHead"><span class="stepNo">1</span><span id="stepAmount"></span></div>
+        <div class="field">
+          <label for="curBtn" id="currencyLabel"></label>
+          <div class="curPick" id="curPick">
+            <button type="button" id="curBtn" aria-haspopup="listbox" aria-expanded="false"><span class="curBtnText" id="curBtnText"></span><span class="caret" aria-hidden="true">▾</span></button>
+            <div class="curPanel hidden" id="curPanel">
+              <input type="search" id="curSearch" autocomplete="off" spellcheck="false" />
+              <ul class="curList" id="curList" role="listbox"></ul>
+            </div>
+          </div>
+          <input type="hidden" id="currency" />
+        </div>
+        <div class="cups" id="cups"></div>
+        <div class="amountRow">
+          <div class="amountBox"><span id="curSym"></span><input type="number" id="amount" inputmode="decimal" min="0" step="any" /></div>
+        </div>
+        <div class="amountHint" id="amountHint"></div>
+        <div class="tierBox">
+          <div class="tierLabel" id="tierLabel"></div>
+          <div class="tierLegend" id="tierLegend"></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="stepHead"><span class="stepNo">2</span><span id="stepProfile"></span></div>
+        <input type="text" id="name" maxlength="20" autocomplete="nickname" spellcheck="false" />
+        <div class="nameUnder"><span id="nameNote"></span><span id="nameCount"></span></div>
+        <div class="avatars" id="avatars"></div>
+        <input type="file" id="avatarFile" accept="image/*" class="hidden" />
+        <div class="preview">
+          <div class="lbl" id="previewLabel"></div>
+          <div class="row me" id="previewRow"></div>
+          <div class="nextTier" id="nextTier"></div>
+        </div>
+        <div class="profileSave hidden" id="profileSave"><button type="button" class="btn ghost small" id="profileSaveBtn"></button></div>
+      </div>
+
+      <div class="step">
+        <div class="stepHead"><span class="stepNo">3</span><span id="stepPay"></span></div>
+        <div class="methods" id="methods"></div>
+        <div class="methodsNote" id="methodsNote"></div>
+        <div class="emailBox hidden" id="emailBox">
+          <label for="email" id="emailLabel"></label>
+          <input type="email" id="email" maxlength="200" autocomplete="email" spellcheck="false" placeholder="example@gmail.com" />
+          <div class="emailNote" id="emailNote"></div>
+          <div class="emailErr" id="emailErr"></div>
+        </div>
+        <button type="button" class="btn primary big" id="payBtn"></button>
+        <p class="fine" id="fineText"></p>
+        <div class="contact">
+          <button type="button" class="btn ghost small" id="contactBtn"></button>
+          <span class="contactBox hidden" id="contactBox"><a id="contactMail"></a><button type="button" class="linkBtn" id="contactCopy"></button></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="stickyCta"><button type="button" class="btn primary big" id="ctaBtn"></button></div>
+
+  <script src="i18n.js"></script>
+  <script src="common.js"></script>
+  <script src="donate.js"></script>
+</body>
+
+</html>
