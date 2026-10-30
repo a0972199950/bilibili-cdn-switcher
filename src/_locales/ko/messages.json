@@ -42,7 +42,10 @@
     "message": "🔍 노드별 속도 테스트"
   },
   "rateBtnLabel": {
-    "message": "⭐ 마음에 드셨다면 별 5개로 응원해 주세요"
+    "message": "⭐ 별 5개로 응원하기"
+  },
+  "donateBtnLabel": {
+    "message": "☕ 커피 한 잔 후원하기"
   },
   "feedbackBtnLabel": {
     "message": "🐛 문제 신고 / 기능 요청"
@@ -634,5 +637,233 @@
   },
   "lotteryNote": {
     "message": "참고 사항"
+  },
+  "donateTitle": {
+    "message": "후원 · 회장님 랭킹"
+  },
+  "donateBoardTitle": {
+    "message": "회장님 랭킹"
+  },
+  "donateBoardSub": {
+    "message": "BiBoost는 광고 없이 영원히 무료이며, 회장님들 덕분에 유지됩니다. 모든 후원은 달러로 환산되어 랭킹에 올라갑니다!"
+  },
+  "donateStatDonors": {
+    "message": "명의 회장님"
+  },
+  "donateTabBoard": {
+    "message": "👑 회장님 랭킹"
+  },
+  "donateTabGive": {
+    "message": "☕ 후원하기"
+  },
+  "donateGiveTitle": {
+    "message": "☕ 커피 한 잔 사주기"
+  },
+  "donateGiveSub": {
+    "message": "BiBoost는 개인 개발자가 퇴근 후에 관리하고 있어요. 후원은 계속 업데이트하고 더 많은 나라의 노드를 테스트하는 힘이 됩니다!"
+  },
+  "donateStepAmount": {
+    "message": "금액 선택"
+  },
+  "donateStepProfile": {
+    "message": "랭킹에 표시될 이름과 사진"
+  },
+  "donateNameNote": {
+    "message": "랭킹에 공개됩니다. 이 기기에 저장되어 다음에 자동으로 입력돼요"
+  },
+  "donatePreviewLabel": {
+    "message": "미리 보기"
+  },
+  "donateStepPay": {
+    "message": "사용 가능한 결제 수단"
+  },
+  "donateFine": {
+    "message": "후원은 자발적인 증여이며 어떤 기능도 잠금 해제되지 않고, 결제 즉시 랭킹에 오르며 환불되지 않아요. 중복 결제나 금액 오류가 있으면 '문제 신고'로 연락해 주시면 환불해 드려요. 받는 사람은 개발자 본인이며 Google, Microsoft, Mozilla가 아니에요. 금액은 결제 시점의 환율로 달러로 환산해 순위를 매기고, 같은 사람의 여러 후원은 합산돼요. 같은 브라우저 계정으로 동기화하면 컴퓨터를 바꿔도 랭킹 자리를 되찾을 수 있어요."
+  },
+  "donateCta": {
+    "message": "☕ 나도 랭킹에 오르기"
+  },
+  "donateBoardNote": {
+    "message": "기간 구분 없이 누적 금액 순이며, 같은 후원자의 여러 후원은 하나로 합쳐집니다."
+  },
+  "donateAnonymous": {
+    "message": "익명의 회장님"
+  },
+  "donateTier0": {
+    "message": "회장님"
+  },
+  "donateTier1": {
+    "message": "실버 회장님"
+  },
+  "donateTier2": {
+    "message": "골드 회장님"
+  },
+  "donateTier3": {
+    "message": "다이아 회장님"
+  },
+  "donateTier4": {
+    "message": "전설의 회장님"
+  },
+  "donateTimes": {
+    "message": " · {n}회"
+  },
+  "donateVacant": {
+    "message": "빈자리"
+  },
+  "donateVacantSub": {
+    "message": "당신의 자리"
+  },
+  "donateYou": {
+    "message": "나"
+  },
+  "donateBoardFailed": {
+    "message": "랭킹을 불러오지 못했어요."
+  },
+  "donateRetry": {
+    "message": "다시 시도"
+  },
+  "donateLoading": {
+    "message": "불러오는 중…"
+  },
+  "donateMeKeepBtn": {
+    "message": "1위 지키기"
+  },
+  "donateMeFirst": {
+    "message": "당신이 <b>1위 회장님</b>이에요! 누적 {usd}, 2위와 <b>{gap}</b> 차이예요. 왕좌를 지키세요!"
+  },
+  "donateMeFirstAlone": {
+    "message": "당신이 <b>1위 회장님</b>이에요! 누적 {usd}, 아직 적수가 없어요."
+  },
+  "donateMeOvertakeBtn": {
+    "message": "지금 추월하기"
+  },
+  "donateMeRank": {
+    "message": "현재 <b>{rank}위</b>({usd})예요. <b>{gap}</b>만 더 후원하면 {above}위 ‘{name}’님을 추월해요!"
+  },
+  "donateMeJoinBtn": {
+    "message": "랭킹에 오르기"
+  },
+  "donateMeFewDonors": {
+    "message": "아직 회장님이 {n}명뿐이라 <b>{min}</b>부터 바로 시상대에 오를 수 있어요!"
+  },
+  "donateMeNoDonors": {
+    "message": "아직 후원한 사람이 없어요. <b>첫 번째 회장님</b>이 되어 주세요!"
+  },
+  "donateMePodium": {
+    "message": "<b>{min}</b>부터 랭킹에 오를 수 있어요! 누적 <b>{gap}</b>을 넘으면 TOP 3 시상대에 올라요."
+  },
+  "donateCups": {
+    "message": "{n}잔"
+  },
+  "donateAmountEmpty": {
+    "message": "금액을 입력하세요 (최소 {min})"
+  },
+  "donateAmountMin": {
+    "message": "최소 {min}: 너무 적으면 결제 수수료를 빼고 거의 남지 않아요"
+  },
+  "donateAmountMax": {
+    "message": "1회 최대 약 {max}까지예요. 0을 너무 많이 입력하지 않았나요?"
+  },
+  "donateAmountDecimals": {
+    "message": "이 통화에서는 소수점 자릿수가 너무 많아요"
+  },
+  "donateAmountOk": {
+    "message": "약 <b>{usd}</b> · 후원 후 <b>{rank}위</b>가 돼요 (최소 {min})"
+  },
+  "donateAmountOkUsd": {
+    "message": "후원 후 <b>{rank}위</b>가 돼요 (최소 {min})"
+  },
+  "donatePayBtnIdle": {
+    "message": "☕ 결제하러 가기"
+  },
+  "donatePayBtn": {
+    "message": "☕ {amount} 후원하기"
+  },
+  "donateMethodCard": {
+    "message": "신용/체크카드"
+  },
+  "donateAvatarStyle": {
+    "message": "프로필 스타일 {n}"
+  },
+  "donateAvatarMine": {
+    "message": "내가 올린 사진"
+  },
+  "donateAvatarUpload": {
+    "message": "사진 올리기"
+  },
+  "donateCheckoutOpened": {
+    "message": "결제 페이지를 새 탭에서 열었어요. 결제가 끝나면 자동으로 이곳으로 돌아와요."
+  },
+  "donateConfirming": {
+    "message": "결제를 확인하고 있어요. 몇 초 안에 랭킹이 업데이트돼요…"
+  },
+  "donateConfirmSlow": {
+    "message": "아직 결제 결과를 받지 못했어요. 결제했다면 잠시 후 이 페이지를 새로고침해 주세요."
+  },
+  "donateCheckoutFailed": {
+    "message": "결제 페이지를 열지 못했어요. 잠시 후 다시 시도해 주세요."
+  },
+  "donateMethodsNote": {
+    "message": "통화에 따라 달라지며, 다음 결제 페이지에서 선택해요"
+  },
+  "donateUsdLocal": {
+    "message": "{local}(약 {usd})"
+  },
+  "donateNextTier": {
+    "message": "이번 후원 후 <b>{gap}</b>만 더 하면 '{tier}' 등급이 돼요"
+  },
+  "donateTierLegendLabel": {
+    "message": "누적 금액에 따라 칭호가 올라가요:"
+  },
+  "donateCurrencyLabel": {
+    "message": "통화"
+  },
+  "donateCurrencySearch": {
+    "message": "통화 검색(이름 또는 코드)"
+  },
+  "donateCurrencyNone": {
+    "message": "일치하는 통화가 없어요"
+  },
+  "donateContact": {
+    "message": "개발자에게 연락"
+  },
+  "donateContactCopy": {
+    "message": "복사"
+  },
+  "donateContactCopied": {
+    "message": "복사했어요"
+  },
+  "donateAmountPlaceholder": {
+    "message": "최소 {min}"
+  },
+  "donateThanks": {
+    "message": "🎉 후원해 주셔서 감사합니다! 지금 <b>{rank}위</b>예요."
+  },
+  "donateProfileSave": {
+    "message": "랭킹의 이름과 사진 업데이트"
+  },
+  "donateProfileSaved": {
+    "message": "랭킹에 지금 이름과 사진이 표시돼 있어요"
+  },
+  "donateProfileFailed": {
+    "message": "이름과 사진을 업데이트하지 못했어요. 잠시 후 다시 시도해 주세요."
+  },
+  "donateMethodCardTw": {
+    "message": "신용카드(대만 발행만)"
+  },
+  "donateMethodCvs": {
+    "message": "편의점 결제(NT$150부터)"
+  },
+  "donateMethodsNoteTw": {
+    "message": "대만 이외에서 발행된 카드는 다른 통화를 선택해 주세요. 실제 선택은 다음 결제 페이지에서 해요"
+  },
+  "donateEmailLabel": {
+    "message": "이메일(선택)"
+  },
+  "donateEmailNote": {
+    "message": "입력하면 다른 컴퓨터나 브라우저에서 후원해도 지금 순위에 합산돼요. 본인 확인에만 쓰이며 공개되지 않아요."
+  },
+  "donateEmailBad": {
+    "message": "이메일 형식이 올바르지 않아요"
   }
 }

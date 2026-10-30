@@ -428,4 +428,28 @@ describe("announcement bar filtering", () => {
   });
 });
 
+describe("donate button", () => {
+  // jsdom 的 User-Agent 會被 detectBrowser 當成 Safari；這裡先換成指定瀏覽器的再載入 popup
+  async function bootAs(ua) {
+    const env = createEnv({ htmlFile: "popup.html", storage: { zoneCheckedAt: Date.now(), countryAutoDone: true } });
+    Object.defineProperty(env.window.navigator, "userAgent", { value: ua, configurable: true });
+    env.fetchHandler = () => { throw new TypeError("Failed to fetch"); };
+    ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
+    await env.settle(20);
+    return env;
+  }
+  test("shown next to the 5-star button in Chrome", async () => {
+    const env = await bootAs("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36");
+    const btn = env.document.getElementById("donateBtn");
+    assert.equal(btn.style.display, "");
+    assert.notEqual(btn.parentNode.style.display, "none");
+    env.close();
+  });
+  test("hidden in Safari (App Store rules: no external payment)", async () => {
+    const env = await bootAs("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15");
+    assert.equal(env.document.getElementById("donateBtn").style.display, "none");
+    env.close();
+  });
+});
+
 after(closeAll);

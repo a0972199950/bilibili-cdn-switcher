@@ -1,0 +1,14 @@
+# 公開網站 https://biboost.app（只有靜態檔案，沒有程式）：目前是贊助頁 /donate，首頁導過去。
+# 檔案由 npm run site:build 從 src/ 產生到 public/；部署：npm run site:deploy
+# 跟問題回報的 bcs-report worker 分開：網站怎麼改都不會動到 api.biboost.app 與已發布擴充用的 API
+name = "biboost-site"
+compatibility_date = "2026-01-01"
+workers_dev = false
+routes = [
+  { pattern = "biboost.app", custom_domain = true }
+]
+
+[assets]
+directory = "./public"
+html_handling = "drop-trailing-slash"
+not_found_handling = "404-page"

@@ -1490,6 +1490,29 @@
       color: inherit;
     }
 
+    /* 5 星鼓勵＋贊助：同一行，兩顆按鈕的文字寬度加起來放得下就並排，放不下（語言較長時）就各自換到下一行、撐滿整行 */
+    .footerPair {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .footerPair button {
+      flex: 1 1 max-content;
+      width: auto;
+    }
+
+    /* 贊助：綠色外框＋淡綠底，跟金色的 5 星按鈕區分開 */
+    button#donateBtn {
+      border: 1px solid rgba(43, 164, 113, .5);
+      background: rgba(43, 164, 113, .12);
+      color: inherit;
+    }
+
+    button#donateBtn:hover {
+      background: rgba(43, 164, 113, .22);
+    }
+
     /* 5 星鼓勵：與「問題回報」同尺寸，放在它上面；配色沿用原本的金色外框＋淡金底 */
     button#rateBtn {
       border: 1px solid rgba(255, 170, 0, .5);
@@ -2622,7 +2645,10 @@
     <hr />
 
     <div class="footerBtns">
-      <button id="rateBtn" type="button" style="display:none"></button>
+      <div class="footerPair">
+        <button id="rateBtn" type="button" style="display:none"></button>
+        <button id="donateBtn" type="button" style="display:none"></button>
+      </div>
       <button id="feedbackBtn" type="button" style="display:none"></button>
     </div>
     <div id="reportHistory" class="reportHistory" style="display:none"></div>

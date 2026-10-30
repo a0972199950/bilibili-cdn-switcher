@@ -44,6 +44,9 @@
   "rateBtnLabel": {
     "message": "⭐ 喜歡嗎？給我 5 星鼓勵"
   },
+  "donateBtnLabel": {
+    "message": "☕ 贊助我一杯咖啡"
+  },
   "feedbackBtnLabel": {
     "message": "🐛 問題回報／功能許願"
   },
@@ -634,5 +637,233 @@
   },
   "lotteryNote": {
     "message": "備註"
+  },
+  "donateTitle": {
+    "message": "贊助・乾爹排行榜"
+  },
+  "donateBoardTitle": {
+    "message": "乾爹排行榜"
+  },
+  "donateBoardSub": {
+    "message": "嗶速永久免費、沒有廣告，全靠乾爹們撐著。每一筆贊助都會換算成美金上榜！"
+  },
+  "donateStatDonors": {
+    "message": "位乾爹"
+  },
+  "donateTabBoard": {
+    "message": "👑 乾爹排行榜"
+  },
+  "donateTabGive": {
+    "message": "☕ 我要贊助"
+  },
+  "donateGiveTitle": {
+    "message": "☕ 請我喝杯咖啡"
+  },
+  "donateGiveSub": {
+    "message": "嗶速由一位獨立開發者下班後維護。你的贊助會讓我更有動力繼續更新、測更多國家的節點！"
+  },
+  "donateStepAmount": {
+    "message": "選擇金額"
+  },
+  "donateStepProfile": {
+    "message": "上榜名稱與頭像"
+  },
+  "donateNameNote": {
+    "message": "會公開顯示在排行榜；這台裝置會記住，下次自動帶入"
+  },
+  "donatePreviewLabel": {
+    "message": "上榜預覽"
+  },
+  "donateStepPay": {
+    "message": "可用的付款方式"
+  },
+  "donateFine": {
+    "message": "贊助屬自願贈與，不會解鎖任何功能，付款完成即上榜，恕不退款；如遇重複扣款或金額錯誤，請透過「問題回報」聯絡，我們會退款。收款人是開發者本人，不是 Google、Microsoft 或 Mozilla。金額依付款當時的匯率換算成美金排名，同一個人的多次贊助會合併。換電腦或清掉瀏覽器資料後，只要登入同一個瀏覽器帳號並開啟同步，就能找回你的上榜身分。"
+  },
+  "donateCta": {
+    "message": "☕ 我也要上榜"
+  },
+  "donateBoardNote": {
+    "message": "依累計金額排序，不分時間；同一位贊助者的多次贊助合併為一筆。"
+  },
+  "donateAnonymous": {
+    "message": "匿名乾爹"
+  },
+  "donateTier0": {
+    "message": "乾爹"
+  },
+  "donateTier1": {
+    "message": "親爹"
+  },
+  "donateTier2": {
+    "message": "乾祖父"
+  },
+  "donateTier3": {
+    "message": "親祖父"
+  },
+  "donateTier4": {
+    "message": "你是唯一的神話"
+  },
+  "donateTimes": {
+    "message": " ・{n} 次"
+  },
+  "donateVacant": {
+    "message": "虛位以待"
+  },
+  "donateVacantSub": {
+    "message": "就等你了"
+  },
+  "donateYou": {
+    "message": "你"
+  },
+  "donateBoardFailed": {
+    "message": "排行榜暫時載入失敗。"
+  },
+  "donateRetry": {
+    "message": "重試"
+  },
+  "donateLoading": {
+    "message": "載入中…"
+  },
+  "donateMeKeepBtn": {
+    "message": "加碼守榜"
+  },
+  "donateMeFirst": {
+    "message": "你是<b>榜一乾爹</b>！累計 {usd}，領先第二名 <b>{gap}</b>，守住王座吧！"
+  },
+  "donateMeFirstAlone": {
+    "message": "你是<b>榜一乾爹</b>！累計 {usd}，目前無人能敵。"
+  },
+  "donateMeOvertakeBtn": {
+    "message": "立刻超車"
+  },
+  "donateMeRank": {
+    "message": "你目前排第 <b>{rank}</b> 名（{usd}）。再贊助 <b>{gap}</b> 就能超越第 {above} 名「{name}」！"
+  },
+  "donateMeJoinBtn": {
+    "message": "我要上榜"
+  },
+  "donateMeFewDonors": {
+    "message": "目前只有 {n} 位乾爹，<b>{min}</b> 起就能直接登上頒獎台！"
+  },
+  "donateMeNoDonors": {
+    "message": "還沒有人贊助過，<b>第一位乾爹</b>就是你！"
+  },
+  "donateMePodium": {
+    "message": "<b>{min}</b> 起就能上榜！累計超過 <b>{gap}</b> 還能登上前三名頒獎台。"
+  },
+  "donateCups": {
+    "message": "{n} 杯"
+  },
+  "donateAmountEmpty": {
+    "message": "請輸入金額（最低 {min}）"
+  },
+  "donateAmountMin": {
+    "message": "最低 {min}：金額太小的話，扣掉金流手續費後就所剩無幾了"
+  },
+  "donateAmountMax": {
+    "message": "單筆最多約 {max}，是不是多打了幾個 0？"
+  },
+  "donateAmountDecimals": {
+    "message": "這個幣別不能有這麼多位小數"
+  },
+  "donateAmountOk": {
+    "message": "約 <b>{usd}</b>・贊助後你會排在第 <b>{rank}</b> 名（最低 {min}）"
+  },
+  "donateAmountOkUsd": {
+    "message": "贊助後你會排在第 <b>{rank}</b> 名（最低 {min}）"
+  },
+  "donatePayBtnIdle": {
+    "message": "☕ 前往付款"
+  },
+  "donatePayBtn": {
+    "message": "☕ 贊助 {amount}"
+  },
+  "donateMethodCard": {
+    "message": "信用卡／金融卡"
+  },
+  "donateAvatarStyle": {
+    "message": "頭像樣式 {n}"
+  },
+  "donateAvatarMine": {
+    "message": "我上傳的頭像"
+  },
+  "donateAvatarUpload": {
+    "message": "上傳圖片"
+  },
+  "donateCheckoutOpened": {
+    "message": "付款頁已在新分頁開啟，付款完成後會自動帶你回來。"
+  },
+  "donateConfirming": {
+    "message": "正在確認你的付款，幾秒內就會更新排行榜…"
+  },
+  "donateConfirmSlow": {
+    "message": "還沒收到這筆付款的結果。如果已經付款，過一會兒重新整理這一頁就會看到。"
+  },
+  "donateCheckoutFailed": {
+    "message": "付款頁開啟失敗，請稍後再試。"
+  },
+  "donateMethodsNote": {
+    "message": "依幣別顯示，實際在下一步的付款頁選擇"
+  },
+  "donateUsdLocal": {
+    "message": "{local}（約 {usd}）"
+  },
+  "donateNextTier": {
+    "message": "這次贊助後，再 <b>{gap}</b> 就能升級為「{tier}」"
+  },
+  "donateTierLegendLabel": {
+    "message": "累計金額達到門檻，稱號就會升級："
+  },
+  "donateCurrencyLabel": {
+    "message": "幣別"
+  },
+  "donateCurrencySearch": {
+    "message": "搜尋幣別（名稱或代碼）"
+  },
+  "donateCurrencyNone": {
+    "message": "找不到這個幣別"
+  },
+  "donateContact": {
+    "message": "聯絡作者"
+  },
+  "donateContactCopy": {
+    "message": "複製"
+  },
+  "donateContactCopied": {
+    "message": "已複製"
+  },
+  "donateAmountPlaceholder": {
+    "message": "最低 {min}"
+  },
+  "donateThanks": {
+    "message": "🎉 謝謝你的贊助！你現在排第 <b>{rank}</b> 名。"
+  },
+  "donateProfileSave": {
+    "message": "更新排行榜上的名稱與頭像"
+  },
+  "donateProfileSaved": {
+    "message": "排行榜上已是目前的名稱與頭像"
+  },
+  "donateProfileFailed": {
+    "message": "名稱與頭像更新失敗，請稍後再試。"
+  },
+  "donateMethodCardTw": {
+    "message": "信用卡（限台灣發行）"
+  },
+  "donateMethodCvs": {
+    "message": "超商條碼／代碼（NT$150 起）"
+  },
+  "donateMethodsNoteTw": {
+    "message": "國外發行的信用卡請改選其他幣別；實際在下一步的付款頁選擇"
+  },
+  "donateEmailLabel": {
+    "message": "Email（選填）"
+  },
+  "donateEmailNote": {
+    "message": "填了的話，換電腦或換瀏覽器後再贊助，金額也會合併到你原本的排名。只用來認出你，不會公開。"
+  },
+  "donateEmailBad": {
+    "message": "Email 格式不對"
   }
 }

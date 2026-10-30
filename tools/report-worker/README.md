@@ -101,11 +101,44 @@ npx wrangler secret put GITHUB_TOKEN --config tools/report-worker/wrangler.toml
 npx wrangler secret put REPORT_TOKEN --config tools/report-worker/wrangler.toml
 npx wrangler secret put MAIL_URL --config tools/report-worker/wrangler.toml      # Apps Script web app /exec
 npx wrangler secret put MAIL_SECRET --config tools/report-worker/wrangler.toml
-npx wrangler secret put DATABASE_URL --config tools/report-worker/wrangler.toml   # Neon 連線字串（抽獎跑馬燈）
+npx wrangler secret put DATABASE_URL --config tools/report-worker/wrangler.toml   # Neon 連線字串（抽獎跑馬燈、贊助排行榜）
+npx wrangler secret put ECPAY_MERCHANT_ID --config tools/report-worker/wrangler.toml      # 贊助結帳：新台幣（綠界），見下方「贊助與乾爹排行榜」
+npx wrangler secret put ECPAY_HASH_KEY --config tools/report-worker/wrangler.toml
+npx wrangler secret put ECPAY_HASH_IV --config tools/report-worker/wrangler.toml
+npx wrangler secret put STRIPE_SECRET_KEY --config tools/report-worker/wrangler.toml      # 贊助結帳：其他幣別（Stripe）
+npx wrangler secret put STRIPE_WEBHOOK_SECRET --config tools/report-worker/wrangler.toml
 npm run worker:deploy
 ```
 
 `GITHUB_TOKEN` 用 fine-grained PAT，只授權兩個 repo：私有 reports repo 的 Contents 讀寫、公開 repo 的 Issues 讀寫。
+
+## 贊助與乾爹排行榜（`/v1/donors`、`/v1/donate/*`，`src/donate.js`）
+
+擴充的贊助頁（`src/donate.html`）用。資料表在 Neon（`donors`、`donation_intents`、`donations`，見 `scripts/lib/donations.mjs`），
+**部署前先 `npm run donations:setup` 建表**；管理：`npm run donations:show`、`donations:hide -- <pid> [--clear-image]`、`donations:unhide -- <pid>`。
+
+- `GET /v1/donors`：`{ ok, items: [{ pid, name, avatar: { style } | { url }, usd, count }], totalUsd, donors }`。只算 `status = 'paid'`，同一個 pid 合併、
+  依美金累計排序（同額時先達到的在前），最多 200 名；`hidden` 的人不列但算進總額。邊緣快取 1 分鐘，資料表還沒建時回空榜。
+- `GET /v1/donors/<pid>/avatar?v=<更新時間>`：上傳的頭像（存在 `donors.avatar_image` 的 data URL 解回圖片），長期快取。
+- `POST /v1/donate/checkout`：body（`text/plain` 的 JSON）`{ v: 1, donorId, name, avatar: { style } | { image }, amount, currency, lang, browser, version }`
+  → 檢查金額下限（與擴充 `CURRENCIES` 相同）、同 IP 10 分鐘最多 10 次 → 建 Stripe Checkout Session（`price_data` 帶幣別與金額、`client_reference_id` = pid、
+  `metadata.intent`）並記一筆 `donation_intents` → 回 `{ ok, url }`。沒設 `STRIPE_SECRET_KEY` 時回 503 `not_configured`。
+- 新台幣走**綠界**（個人一般賣家、全方位金流 AIO）：結帳回 `/v1/donate/ecpay/go/<intent>`，這頁算好 CheckMacValue 後自動 form POST 到綠界付款頁
+  （`ChoosePayment=ALL`，`IgnorePayment` 去掉 ATM／WebATM，NT$150 以下再去掉超商）。付款結果通知 `POST /v1/donate/webhook/ecpay`：驗 CheckMacValue，
+  `RtnCode=1` 且不是模擬付款才記帳，`provider_ref` = 綠界 TradeNo、手續費取 `PaymentTypeChargeFee`；一律回純文字 `1|OK`（失敗回 `0|…` 讓綠界重送）。
+  綠界的通知不給付款人 email，所以選新台幣時擴充讓使用者選填 email（存在 `donation_intents.email`），用來自動合併同一位贊助者。
+- `POST /v1/donors/profile`：已上榜的人事後改名稱、頭像（body 同結帳的 `donorId`、`name`、`avatar`），沒贊助過回 404 `not_donor`。
+- email 自動合併：付款 email（Stripe 付款頁收的，或綠界時擴充選填的）跟另一位贊助者相同，就把這次的 pid 併過去（`donor_aliases`），
+  排行榜那一筆多一個 `pids` 陣列，擴充用它認出「你」。
+- 其他幣別走 **Stripe**：驗 `Stripe-Signature`（`STRIPE_WEBHOOK_SECRET`），`checkout.session.completed`（已付款）／`checkout.session.async_payment_succeeded`
+  寫進 `donations`（`provider_ref` = PaymentIntent，重送不會重複），讀 balance transaction 取手續費、實收（SGD）；美金換算用付款當下 open.er-api.com 的匯率。
+  `charge.refunded` → `refunded`、`charge.dispute.created` → `disputed`（都不算進排行榜）。付款當下手續費常常還沒算出來，
+  `charge.updated` 帶上 balance transaction 時再補記手續費、實收。Stripe 後台的 webhook 要勾這五個事件；查不到這個環境結帳紀錄的通知會略過（正式與測試環境共用一個 Stripe 帳戶時）。
+- `GET /v1/donate/thanks`、`/v1/donate/cancel`：付款完成／取消後導回的頁面（五語，`?lang=`）。
+
+secrets：`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`（測試時在 wrangler.toml 的 `[vars]` 加 `ECPAY_STAGE = "1"`，用綠界公開的測試商店 3002607）、
+`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（`npx wrangler secret put <NAME> --config tools/report-worker/wrangler.toml`）。
+Stripe 新加坡帳戶的「捐款」只限註冊慈善團體，商品名稱寫成 tip（`PRODUCT_NAME`），Stripe 商家描述也不要寫 donation。
 
 ## 確認信（Apps Script）
 
@@ -114,3 +147,9 @@ npm run worker:deploy
 部署成 Web app（執行身分 = 我、存取 = 任何人），以作者的 Gmail 寄出、五語模板；使用者直接回信就進作者的收件匣。
 原始碼副本在 `mailer/Mailer.gs`（secret 已遮），改完要在 Apps Script 編輯器「部署 → 管理部署 → 編輯 → 新版本」才會生效。
 Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再給內容，Worker 用 `redirect: "follow"` 即可。
+
+## 網域
+
+- `https://bcs-report.bilibili-cdn-switcher-tools.workers.dev`：**不能關**。已發布的擴充（公告、抽獎、問題回報）與 CDN 測速工具 exe 都寫死這個網址（`wrangler.toml` 的 `workers_dev = true`）。
+- `https://api.biboost.app`：同一個 worker 的正式網域（`routes` 的 custom domain），贊助功能用這個；Stripe webhook 也指到這裡。
+- 公開網站 `https://biboost.app`（贊助頁網頁版 `/donate`）是另一個只有靜態檔案的 worker：`tools/site/`，`npm run site:deploy`。

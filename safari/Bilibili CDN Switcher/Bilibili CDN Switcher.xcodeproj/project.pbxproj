@@ -53,6 +53,12 @@
 		2B5DF63D3066315B00949CE2 /* i18n.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63B3066315B00949CE2 /* i18n.js */; };
 		2B5DF7053066315B00949CE2 /* report.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7043066315B00949CE2 /* report.js */; };
 		2B5DF7063066315B00949CE2 /* report.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7043066315B00949CE2 /* report.js */; };
+		2B5DFD013066315B00949CE2 /* donate.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD003066315B00949CE2 /* donate.html */; };
+		2B5DFD023066315B00949CE2 /* donate.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD003066315B00949CE2 /* donate.html */; };
+		2B5DFD043066315B00949CE2 /* donate.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD033066315B00949CE2 /* donate.js */; };
+		2B5DFD053066315B00949CE2 /* donate.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD033066315B00949CE2 /* donate.js */; };
+		2B5DFD073066315B00949CE2 /* logo128.png in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD063066315B00949CE2 /* logo128.png */; };
+		2B5DFD083066315B00949CE2 /* logo128.png in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DFD063066315B00949CE2 /* logo128.png */; };
 		2B5DF7023066315B00949CE2 /* report.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7013066315B00949CE2 /* report.html */; };
 		2B5DF7033066315B00949CE2 /* report.html in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF7013066315B00949CE2 /* report.html */; };
 		2B5DF63F3066315B00949CE2 /* theme.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF63E3066315B00949CE2 /* theme.js */; };
@@ -151,6 +157,9 @@
 		2B5DF6383066315B00949CE2 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../../src/background.js; sourceTree = "<group>"; };
 		2B5DF63B3066315B00949CE2 /* i18n.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = i18n.js; path = ../../../src/i18n.js; sourceTree = "<group>"; };
 		2B5DF7043066315B00949CE2 /* report.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = report.js; path = ../../../src/report.js; sourceTree = "<group>"; };
+		2B5DFD003066315B00949CE2 /* donate.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = donate.html; path = ../../../src/donate.html; sourceTree = "<group>"; };
+		2B5DFD033066315B00949CE2 /* donate.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = donate.js; path = ../../../src/donate.js; sourceTree = "<group>"; };
+		2B5DFD063066315B00949CE2 /* logo128.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = logo128.png; path = ../../../src/logo128.png; sourceTree = "<group>"; };
 		2B5DF7013066315B00949CE2 /* report.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = report.html; path = ../../../src/report.html; sourceTree = "<group>"; };
 		2B5DF63E3066315B00949CE2 /* theme.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = theme.js; path = ../../../src/theme.js; sourceTree = "<group>"; };
 		2B5DF8103066315B00949CE2 /* common.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = common.js; path = ../../../src/common.js; sourceTree = "<group>"; };
@@ -303,6 +312,9 @@
 				2B5DF6383066315B00949CE2 /* background.js */,
 				2B5DF63B3066315B00949CE2 /* i18n.js */,
 				2B5DF7043066315B00949CE2 /* report.js */,
+				2B5DFD003066315B00949CE2 /* donate.html */,
+				2B5DFD033066315B00949CE2 /* donate.js */,
+				2B5DFD063066315B00949CE2 /* logo128.png */,
 				2B5DF7013066315B00949CE2 /* report.html */,
 				2B5DF63E3066315B00949CE2 /* theme.js */,
 				2B5DF8103066315B00949CE2 /* common.js */,
@@ -497,6 +509,9 @@
 				2B5DF63A3066315B00949CE2 /* background.js in Resources */,
 				2B5DF63D3066315B00949CE2 /* i18n.js in Resources */,
 				2B5DF7063066315B00949CE2 /* report.js in Resources */,
+				2B5DFD023066315B00949CE2 /* donate.html in Resources */,
+				2B5DFD053066315B00949CE2 /* donate.js in Resources */,
+				2B5DFD083066315B00949CE2 /* logo128.png in Resources */,
 				2B5DF7033066315B00949CE2 /* report.html in Resources */,
 				2B5DF6403066315B00949CE2 /* theme.js in Resources */,
 				2B5DF8123066315B00949CE2 /* common.js in Resources */,
@@ -524,6 +539,9 @@
 				2B5DF6393066315B00949CE2 /* background.js in Resources */,
 				2B5DF63C3066315B00949CE2 /* i18n.js in Resources */,
 				2B5DF7053066315B00949CE2 /* report.js in Resources */,
+				2B5DFD013066315B00949CE2 /* donate.html in Resources */,
+				2B5DFD043066315B00949CE2 /* donate.js in Resources */,
+				2B5DFD073066315B00949CE2 /* logo128.png in Resources */,
 				2B5DF7023066315B00949CE2 /* report.html in Resources */,
 				2B5DF63F3066315B00949CE2 /* theme.js in Resources */,
 				2B5DF8113066315B00949CE2 /* common.js in Resources */,
