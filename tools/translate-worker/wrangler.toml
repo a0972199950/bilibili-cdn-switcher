@@ -1,0 +1,20 @@
+# 雲端後台的翻譯（Gemini API）。只給 biboost-site 透過 service binding（TRANSLATE）呼叫：沒有 workers.dev 網址、沒有網域，外面連不到。
+# 獨立成一個 worker 是為了固定執行地點：Gemini API 不支援香港等地區，請求從哪個機房發出就算哪裡；
+# 整個 biboost-site 固定在新加坡的話，歐美打開 /donate 都要繞一趟，所以只固定這支。
+# secrets（npx wrangler secret put GEMINI_API_KEY --config tools/translate-worker/wrangler.toml）：
+#   GEMINI_API_KEY  Google AI Studio 的 API key（後台專用的一把，不跟 n8n 共用）
+# 部署：npm run translate:deploy（要先於 biboost-site 部署，service binding 才找得到）
+name = "biboost-translate"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+# scripts/lib/translate.mjs 也有本機用的 claude -p（node:child_process），這裡不會呼叫，但要能載入
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+# 在離 Google 新加坡機房（GCP asia-southeast1）最近的 Cloudflare 機房執行
+[placement]
+region = "gcp:asia-southeast1"
+
+[vars]
+# Google 說 Flash-Lite 是為翻譯調過的；語氣不夠好再換 gemini-3.6-flash
+GEMINI_MODEL = "gemini-3.5-flash-lite"

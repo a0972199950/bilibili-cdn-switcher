@@ -20,6 +20,11 @@ html_handling = "drop-trailing-slash"
 not_found_handling = "404-page"
 run_worker_first = ["/admin", "/admin/*", "/donate", "/donate.html"]
 
+# 雲端後台的翻譯（tools/translate-worker：Gemini，固定在新加坡執行）。要先部署 biboost-translate
+[[services]]
+binding = "TRANSLATE"
+service = "biboost-translate"
+
 # 後台登入失敗的限流（跟 report worker 共用 namespace，key 開頭 adm:）
 [[kv_namespaces]]
 binding = "RATE_KV"

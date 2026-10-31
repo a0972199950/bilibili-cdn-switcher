@@ -1,7 +1,9 @@
-// 用本機的 Claude Code（claude -p）翻譯一般公告的前綴／標題／HTML。本機後台 admin/ 的「用 Claude 翻譯」按鈕用。
-// 走 claude.ai 訂閱的登入，不用 API key：子程序的環境拿掉 ANTHROPIC_API_KEY／ANTHROPIC_AUTH_TOKEN
-// （這台電腦的使用者環境變數有設 API key，留著的話 claude 會改走 API 計費）。
-// 只給翻譯，不給工具（--tools ""）、不載入 MCP、不讀使用者與專案設定（避免跑到 hooks），在暫存資料夾執行、不留 session。
+// 翻譯公告、抽獎的前綴／標題／HTML（後台的「翻譯」按鈕）。兩種做法用同一份提示詞、同樣的回傳格式：
+//   · translateFields：本機後台用本機的 Claude Code（claude -p）。
+//     走 claude.ai 訂閱的登入，不用 API key：子程序的環境拿掉 ANTHROPIC_API_KEY／ANTHROPIC_AUTH_TOKEN
+//     （這台電腦的使用者環境變數有設 API key，留著的話 claude 會改走 API 計費）。
+//     只給翻譯，不給工具（--tools ""）、不載入 MCP、不讀使用者與專案設定（避免跑到 hooks），在暫存資料夾執行、不留 session。
+//   · translateWithGemini：雲端後台用 Gemini API（tools/translate-worker，固定在新加坡執行：Gemini 不支援香港等地區）
 import os from "node:os";
 import { spawn } from "node:child_process";
 
@@ -10,6 +12,8 @@ export const LANG_NAMES = {
   en: "English", ja: "Japanese", ko: "Korean",
 };
 const TIMEOUT_MS = 180_000;
+const GEMINI_TIMEOUT_MS = 90_000;
+const GEMINI_API = "https://generativelanguage.googleapis.com/v1beta/models";
 
 export class TranslateError extends Error {}
 
@@ -67,17 +71,20 @@ function parseReply(stdout) {
   try { return JSON.parse(text.slice(start, end + 1)); } catch { throw new TranslateError("claude 回傳的翻譯不是合法的 JSON"); }
 }
 
-// fields：來源語言的 { prefix?, title, html? }（空的欄位不用給）；回傳 { 語言: { 同樣的欄位 } }
-export async function translateFields(from, targets, fields) {
+// 檢查參數：回傳要翻的語言與非空的欄位
+function prepare(from, targets, fields) {
   if (!LANG_NAMES[from]) throw new TranslateError(`不認得的語言：${from}`);
-  targets = targets.filter((l) => l !== from && LANG_NAMES[l]);
-  const src = Object.fromEntries(Object.entries(fields).filter(([, v]) => typeof v === "string" && v.trim()));
+  targets = (Array.isArray(targets) ? targets : []).filter((l) => l !== from && LANG_NAMES[l]);
+  const src = Object.fromEntries(Object.entries(fields || {}).filter(([, v]) => typeof v === "string" && v.trim()));
   if (!src.title) throw new TranslateError("來源語言要先填標題");
-  if (!targets.length) return {};
-  const reply = parseReply(await runClaude(buildPrompt(from, targets, src)));
+  return { targets, src };
+}
+
+// 模型回的 JSON → { 語言: { 欄位 } }；少了語言或欄位就丟錯，不填半套
+function checkReply(reply, targets, src) {
   const out = {};
   for (const l of targets) {
-    const t = reply[l];
+    const t = reply?.[l];
     if (!t || typeof t !== "object") throw new TranslateError(`翻譯結果少了 ${LANG_NAMES[l]}`);
     out[l] = {};
     for (const k of Object.keys(src)) {
@@ -86,4 +93,44 @@ export async function translateFields(from, targets, fields) {
     }
   }
   return out;
+}
+
+// fields：來源語言的 { prefix?, title, html? }（空的欄位不用給）；回傳 { 語言: { 同樣的欄位 } }
+export async function translateFields(from, targets, fields) {
+  const p = prepare(from, targets, fields);
+  if (!p.targets.length) return {};
+  return checkReply(parseReply(await runClaude(buildPrompt(from, p.targets, p.src))), p.targets, p.src);
+}
+
+// 同上，改用 Gemini API（{ apiKey, model }）
+export async function translateWithGemini({ apiKey, model }, from, targets, fields) {
+  if (!apiKey) throw new TranslateError("沒有設定 GEMINI_API_KEY");
+  const p = prepare(from, targets, fields);
+  if (!p.targets.length) return {};
+  let res;
+  try {
+    res = await fetch(`${GEMINI_API}/${encodeURIComponent(model)}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: buildPrompt(from, p.targets, p.src) }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.3 },
+      }),
+      signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new TranslateError(e?.name === "TimeoutError" ? "Gemini 翻譯逾時（超過 90 秒）" : `連不到 Gemini：${e?.message || e}`);
+  }
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = String(j.error?.message || res.status);
+    if (/location is not supported/i.test(msg)) throw new TranslateError("Gemini 不支援這次執行的地區，請改用本機後台翻譯");
+    throw new TranslateError(`Gemini 回報錯誤（${res.status}）：${msg.slice(0, 300)}`);
+  }
+  const cand = j.candidates?.[0];
+  const text = (cand?.content?.parts || []).map((x) => x.text || "").join("");
+  if (!text) throw new TranslateError(`Gemini 沒有回傳翻譯結果（${cand?.finishReason || j.promptFeedback?.blockReason || "空白"}）`);
+  let reply;
+  try { reply = JSON.parse(text); } catch { throw new TranslateError("Gemini 回傳的翻譯不是合法的 JSON"); }
+  return checkReply(reply, p.targets, p.src);
 }

@@ -33,6 +33,7 @@ const PRIVATE_PATHS = [
   ".env.local",
   "tools/report-worker/.dev.vars",
   "tools/site/.dev.vars",
+  "tools/translate-worker/.dev.vars",
   "tools/cdn-speedtest-app/config.json",
   "tools/cdn-speedtest-app/signing", // Mac 版測速 App 的 Developer ID 簽章憑證（p12＋密碼）
 ];

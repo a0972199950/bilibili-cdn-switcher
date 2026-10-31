@@ -39,7 +39,9 @@
     "site:build": "node scripts/build-site.mjs",
     "site:deploy": "node scripts/build-site.mjs && npx wrangler deploy --config tools/site/wrangler.toml",
     "admin": "npm --prefix admin run dev",
-    "admin:hash": "node scripts/admin-hash.mjs"
+    "admin:hash": "node scripts/admin-hash.mjs",
+    "admin:google": "node scripts/admin-google.mjs",
+    "translate:deploy": "npx wrangler deploy --config tools/translate-worker/wrangler.toml"
   },
   "devDependencies": {
     "jsdom": "^27.0.1",

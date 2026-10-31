@@ -7,8 +7,10 @@
 //     有 Origin 時要跟後台同一個來源
 //   · session cookie：HttpOnly、SameSite=Strict；雲端另外 Secure 加 __Host- 前綴。內容是 admin-auth.mjs 簽章的 token
 //   · 登入限流（LOGIN_LIMITS）：同一個 IP 15 分鐘內錯 5 次、所有來源 1 小時內錯 30 次就先擋（雲端用 KV，本機用記憶體）
-//   · LOCAL_ONLY 的動作要用到本機的檔案或程式（Python、Claude Code、Google 憑證、測速報告歸檔），雲端一律拒絕
-// ctx：{ local: 是不是本機後台, env: { ADMIN_USER, ADMIN_PASS_HASH, ADMIN_SESSION_KEY }, ip, limiter: { get(key), incr(key, ttl 秒) } }
+//   · LOCAL_ONLY 的動作要用到本機的檔案或程式（Python、Claude Code、Google 憑證、測速報告歸檔），雲端拒絕；
+//     翻譯、寄信在雲端有設定時開放（localOnly(ctx)）
+// ctx：{ local: 是不是本機後台, env: { ADMIN_USER, ADMIN_PASS_HASH, ADMIN_SESSION_KEY, GOOGLE_OAUTH? }, ip, limiter: { get(key), incr(key, ttl 秒) },
+//        translate?: (from, targets, fields) => { 語言: { 欄位 } }（雲端的翻譯；沒給就用本機的 Claude Code） }
 import * as A from "./announcements.mjs";
 import * as D from "./donations.mjs";
 import * as I from "./invites.mjs";
@@ -23,18 +25,29 @@ const LOGIN_LIMITS = [{ key: (ip) => `adm:ip:${ip}`, max: 5, ttl: 900 }, { key: 
 const FAIL_DELAY_MS = 500;
 
 // 只能在本機後台用的動作 → 原因（雲端的畫面把按鈕停用，滑過去顯示這段）
+const NO_GOOGLE = "雲端沒有設定 Google 憑證（GOOGLE_OAUTH，npm run admin:google）";
 export const LOCAL_ONLY = {
-  translate: "用 Claude 翻譯要跑本機的 Claude Code",
+  translate: "雲端沒有接上翻譯（biboost-translate worker）",
   saveLottery: "v1 抽獎存檔要用本機的 Python 產生舊版 exe 的文字",
-  drawWinnersV2: "抽出中獎人要讀本機的 Google 憑證（測速報告試算表）與測速報告歸檔",
-  winnerMailDraftV2: "寄信要用本機的 Google 憑證（從你的 Gmail 寄）",
-  sendWinnerMailV2: "寄信要用本機的 Google 憑證（從你的 Gmail 寄）",
-  inviteMailDraft: "寄信要用本機的 Google 憑證（從你的 Gmail 寄）",
-  sendInviteMail: "寄信要用本機的 Google 憑證（從你的 Gmail 寄）",
+  drawWinnersV2: "抽出中獎人要讀本機的測速報告歸檔",
+  winnerMailDraftV2: NO_GOOGLE,
+  sendWinnerMailV2: NO_GOOGLE,
+  inviteMailDraft: NO_GOOGLE,
+  sendInviteMail: NO_GOOGLE,
 };
+const GOOGLE_ACTIONS = ["winnerMailDraftV2", "sendWinnerMailV2", "inviteMailDraft", "sendInviteMail"];
+
+// 這個後台不能用的動作 → 原因：本機全開；雲端扣掉有設定的（翻譯：ctx.translate；寄信：GOOGLE_OAUTH）
+export function localOnly(ctx) {
+  if (ctx.local) return {};
+  const out = { ...LOCAL_ONLY };
+  if (ctx.translate) delete out.translate;
+  if (ctx.env?.GOOGLE_OAUTH) for (const k of GOOGLE_ACTIONS) delete out[k];
+  return out;
+}
 // 這些錯誤的訊息是寫給人看的（欄位檢查不過等），原樣顯示在畫面上；其他錯誤是程式或連線問題
 const USER_ERRORS = new Set(["LotteryError", "AnnouncementError", "DonationError", "TranslateError"]);
-const CLOUD_SHEET_NOTE = "雲端後台讀不到測速報告的試算表與本機歸檔：報告欄只有 Apps Script 記的份數，要看報告細節、寄信請用本機後台";
+const CLOUD_SHEET_NOTE = "雲端後台沒有設定 Google 憑證（GOOGLE_OAUTH）：讀不到測速報告的試算表，報告欄只有 Apps Script 記的份數";
 
 // 清單欄位：表單給陣列（antd 的 tags 輸入），也接受一行一個的字串
 const lines = (s) => (Array.isArray(s) ? s : String(s || "").split(/\r?\n/)).map((x) => String(x).trim()).filter(Boolean);
@@ -81,8 +94,8 @@ const ACTIONS = {
     return { id: Number(id) };
   },
   deleteAnnouncement: ([id]) => done(A.deleteHtmlAnnouncement(Number(id))),
-  // 用本機的 Claude Code 翻譯（公告、抽獎 v2 共用）：→ { translations: { 語言: { 欄位: 文字 } } }
-  translate: async ([from, targets, fields]) => ({ translations: await T.translateFields(from, targets, fields) }),
+  // 翻譯（公告、抽獎 v2 共用）：本機用 Claude Code，雲端用 ctx.translate（Gemini）→ { translations: { 語言: { 欄位: 文字 } } }
+  translate: async ([from, targets, fields], ctx) => ({ translations: await (ctx.translate || T.translateFields)(from, targets, fields) }),
 
   // ── 抽獎 v1 ──
   listLotteries: () => L.listLotteries(),
@@ -120,10 +133,11 @@ const ACTIONS = {
   winnerMailDraftV2: async ([id, rid, opts]) => ({ draft: await V.winnerMailDraft(Number(id), rid, opts) }),
   sendWinnerMailV2: async ([id, rid, mail]) => ({ draw: await V.sendWinnerMail(Number(id), rid, mail) }),
 
-  // ── 必中獎 ──（雲端讀不到試算表與歸檔：listInvites 本來就會退回只有資料庫的欄位）
+  // ── 必中獎 ──（雲端沒設 Google 憑證就讀不到試算表：listInvites 本來就會退回只有資料庫的欄位；歸檔狀態用本機同步的快照）
   listInvites: async (_, ctx) => {
-    const [{ rows, sheetError }, lotteries] = await Promise.all([I.listInvites(), I.lotteryChoices()]);
-    return { rows, sheetError: ctx.local ? (sheetError && `讀不到測速報告的試算表：${sheetError}`) : CLOUD_SHEET_NOTE, reviews: I.REVIEWS, lotteries };
+    const [{ rows, sheetError, archive }, lotteries] = await Promise.all([I.listInvites(), I.lotteryChoices()]);
+    const noSheet = !ctx.local && !ctx.env?.GOOGLE_OAUTH;
+    return { rows, sheetError: noSheet ? CLOUD_SHEET_NOTE : sheetError && `讀不到測速報告的試算表：${sheetError}`, archive, reviews: I.REVIEWS, lotteries };
   },
   createInvite: async ([email, lotteryId]) => ({ code: await I.createInvite(email, lotteryId) }),
   setReview: ([code, review, note]) => done(I.setReview(code, review, note)),
@@ -168,7 +182,7 @@ function setCookie(ctx, value, maxAge) {
   return `${cookieName(ctx)}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${ctx.local ? "" : "; Secure"}`;
 }
 const sessionKey = (ctx) => (ctx.env.ADMIN_SESSION_KEY && ctx.env.ADMIN_SESSION_KEY.length >= SESSION_KEY_MIN ? ctx.env.ADMIN_SESSION_KEY : "");
-const sessionInfo = (ctx) => ({ local: !!ctx.local, localOnly: ctx.local ? {} : LOCAL_ONLY });
+const sessionInfo = (ctx) => ({ local: !!ctx.local, localOnly: localOnly(ctx) });
 
 async function startSession(ctx) {
   const token = await makeSession(sessionKey(ctx));
@@ -212,7 +226,8 @@ export async function handleAdminApi(request, ctx) {
   if (!authed) return fail(401, "unauthorized");
 
   if (!Object.hasOwn(ACTIONS, name)) return fail(404, "not_found");
-  if (!ctx.local && Object.hasOwn(LOCAL_ONLY, name)) return fail(400, `${LOCAL_ONLY[name]}，只能在本機後台（npm run admin）使用`);
+  const off = localOnly(ctx);
+  if (Object.hasOwn(off, name)) return fail(400, `${off[name]}，只能在本機後台（npm run admin）使用`);
   try {
     return json(200, { ok: true, result: (await ACTIONS[name](args, ctx)) ?? null });
   } catch (e) {

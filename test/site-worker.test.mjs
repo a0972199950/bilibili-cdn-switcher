@@ -63,6 +63,30 @@ describe("biboost-site worker", () => {
     assert.equal(res.headers.get("X-Frame-Options"), "DENY");
   });
 
+  test("cloud translate goes through the TRANSLATE service binding", async () => {
+    const { makeSession } = await import("../scripts/lib/admin-auth.mjs");
+    const KEY = "k".repeat(40);
+    let sent;
+    const TRANSLATE = {
+      async fetch(url, init) {
+        sent = { url: String(url), body: JSON.parse(init.body) };
+        return Response.json(sent.body.from === "en" ? { ok: true, result: { ja: { title: "やあ" } }, model: "m", colo: "SIN" } : { ok: false, error: "不認得的語言：xx" }, { status: sent.body.from === "en" ? 200 : 400 });
+      },
+    };
+    const call = async (args) => worker.fetch(new Request("https://biboost.app/admin/api/translate", {
+      method: "POST", body: JSON.stringify({ args }),
+      headers: { "Content-Type": "application/json", "X-BB-Admin": "1", Origin: "https://biboost.app", Cookie: `__Host-bb_admin=${await makeSession(KEY)}` },
+    }), { ...env, ADMIN_SESSION_KEY: KEY, TRANSLATE }, ctx);
+    const res = await call(["en", ["ja"], { title: "Hi" }]);
+    assert.equal(res.status, 200);
+    assert.deepEqual((await res.json()).result, { translations: { ja: { title: "やあ" } } });
+    assert.match(sent.url, /\/translate$/);
+    assert.deepEqual(sent.body, { from: "en", targets: ["ja"], fields: { title: "Hi" } });
+    const bad = await call(["xx", ["ja"], { title: "Hi" }]);
+    assert.equal(bad.status, 400);
+    assert.match((await bad.json()).error, /不認得的語言/);
+  });
+
   test("/donate follows the admin's donate switch", async () => {
     flag = true;
     assert.equal((await get("/donate")).status, 200);

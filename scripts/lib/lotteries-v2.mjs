@@ -16,7 +16,7 @@
 import { randomInt } from "node:crypto";
 import { LANGS, LotteryError, ensureTable as ensureBaseTables, previewFromApi, sql } from "./lotteries.mjs";
 import {
-  archivedRids, cjkPad, extName, fillText, ispLabel, ispMatcher, mailLang, money, pickText, sendGmail, sheetEntries,
+  archivedRids, cjkPad, extName, fillText, ispLabel, ispMatcher, loadSnapshot, mailLang, money, pickText, sendGmail, sheetEntries,
 } from "./speedtest-reports.mjs";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -296,6 +296,7 @@ const MAIL = {
 };
 // 中獎人的信件草稿：{ to, lang, subject, body }；lang 省略＝依抽獎國家
 export async function winnerMailDraft(id, rid, { lang } = {}) {
+  await loadSnapshot();   // 雲端：業者名稱對照用本機同步的快照
   const l = await getLotteryV2(id);
   const w = l?.draw?.winners.find((x) => x.rid === rid);
   if (!w) throw new LotteryError(`v2 第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);

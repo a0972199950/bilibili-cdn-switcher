@@ -125,6 +125,14 @@ async function review(dry) {
   }
   for (const c of changes) console.log(`${c.code}  ${c.email}  ${REVIEWS[c.from]} → ${REVIEWS[c.to]}${c.note ? `（${c.note}）` : ""}`);
   console.log(`自動審核：${dry ? "（預覽）會改" : "改了"} ${changes.length} 組`);
+  if (dry) return;
+  // 剛收完信：歸檔、排除紀錄同步一份到 Neon 給雲端後台（biboost.app/admin）用
+  const { syncSnapshot } = await import("./lib/speedtest-reports.mjs");
+  try {
+    if (await syncSnapshot()) console.log("已更新雲端後台用的測速報告快照");
+  } catch (e) {
+    console.error(`同步測速報告快照失敗（不影響審核）：${e.message}`);
+  }
 }
 
 const [cmd, ...args] = process.argv.slice(2);

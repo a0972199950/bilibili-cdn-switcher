@@ -9,11 +9,21 @@
  *   ADMIN_USER         後台帳號
  *   ADMIN_PASS_HASH    後台密碼的雜湊（npm run admin:hash 產生，不存明碼）
  *   ADMIN_SESSION_KEY  簽 session cookie 的金鑰（32 字元以上的亂數；換掉＝所有登入失效）
+ *   GOOGLE_OAUTH       選填：寄信與讀測速報告試算表用的 Google 憑證（npm run admin:google 產生並直接設好）；沒設的話雲端不能寄信
  * 登入失敗的限流記在 RATE_KV（跟 report worker 共用同一個 namespace，key 開頭 adm:）。
+ * 翻譯走 service binding TRANSLATE（tools/translate-worker，Gemini；固定在新加坡執行）；沒綁的話雲端不能翻譯。
  * scripts/lib 讀連線字串用 process.env.DATABASE_URL：compatibility_flags 開 nodejs_compat，Worker 的 secrets 會放進 process.env。
  */
+import "./ext-window.js";
+import "../../../src/lottery-text.js";
 import { API_PREFIX, handleAdminApi } from "../../../scripts/lib/admin-api.mjs";
 import { donateEnabled } from "../../../scripts/lib/settings.mjs";
+import { useCurrencyTable } from "../../../scripts/lib/speedtest-reports.mjs";
+import { TranslateError } from "../../../scripts/lib/translate.mjs";
+
+// 寫信的金額符號用擴充的同一張表（本機是 exe 的 Python，這裡跑不了）
+useCurrencyTable(globalThis.window.LotteryText.currencies);
+delete globalThis.window;
 
 const FLAG_CACHE_S = 60;
 
@@ -59,6 +69,20 @@ async function donateOn(request, ctx) {
   return on;
 }
 
+// 雲端後台的翻譯：交給 biboost-translate worker（{ ok, result, model, colo }）
+function translator(env) {
+  if (!env.TRANSLATE) return undefined;
+  return async (from, targets, fields) => {
+    const res = await env.TRANSLATE.fetch("https://biboost-translate/translate", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ from, targets, fields }),
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!j.ok) throw new TranslateError(j.error || `翻譯失敗（${res.status}）`);
+    console.log(`translate: ${j.model} @ ${j.colo}`);   // wrangler tail 看得到在哪個機房跑的
+    return j.result;
+  };
+}
+
 async function adminPage(request, env) {
   let res = await env.ASSETS.fetch(request);
   // 前端路由（/admin/lotteries-v2/3 之類）沒有對應的檔案：回後台首頁，由前端依網址顯示；有副檔名的（js、css）照實回 404
@@ -75,7 +99,7 @@ export default {
     const path = url.pathname;
     if (path.startsWith(API_PREFIX)) {
       const res = await handleAdminApi(request, {
-        local: false, env, ip: request.headers.get("CF-Connecting-IP") || "", limiter: kvLimiter(env),
+        local: false, env, ip: request.headers.get("CF-Connecting-IP") || "", limiter: kvLimiter(env), translate: translator(env),
       });
       return withHeaders(res, ADMIN_HEADERS);
     }

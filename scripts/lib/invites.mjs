@@ -10,11 +10,9 @@
 //     用 CLI（scripts/invite.mjs）產生的沒有綁定，寄信時禮物卡要自己填
 // 作廢只影響之後的驗證與送報告（Apps Script 讀 revoked_at），資料保留。錯誤一律丟 LotteryError（訊息給人看的中文）。
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
-import { LotteryError, ROOT, sql } from "./lotteries.mjs";
+import { LotteryError, sql } from "./lotteries.mjs";
 import {
-  archivedRids, cjkPad, extName, fillText, ispLabel, mailLang, money, sendGmail, sheetEntries,
+  archiveSource, archivedRids, cjkPad, extName, fillText, ispLabel, loadSnapshot, mailLang, money, rejectedReports, sendGmail, sheetEntries,
 } from "./speedtest-reports.mjs";
 
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 去掉容易看錯的 0/O、1/I（同 scripts/invite.mjs）
@@ -52,9 +50,12 @@ function ensureTable() {
 const ms = (t) => (t ? new Date(t).getTime() : null);
 const normCode = (c) => String(c || "").replace(/[\s-]/g, "").toUpperCase();
 
-// 全部邀請碼（新的在前），附上試算表彙整的報告。試算表讀不到時 reports 是 null，並回傳 sheetError
+// 全部邀請碼（新的在前），附上試算表彙整的報告。試算表讀不到時 reports 是 null，並回傳 sheetError。
+// archive：歸檔狀態從哪裡來（speedtest-reports.mjs 的 archiveSource）；null＝不知道，報告的 archived 也是 null
 export async function listInvites() {
   await ensureTable();
+  await loadSnapshot();
+  const source = archiveSource();
   const codes = await sql("select * from invite_codes order by created_at desc");
   let entries = null, sheetError = "";
   try { entries = await sheetEntries(); } catch (e) { sheetError = e.message; }
@@ -66,6 +67,7 @@ export async function listInvites() {
   }
   const archivedBy = new Map();
   const archived = (e) => {
+    if (!source) return null;
     if (!archivedBy.has(e.country)) archivedBy.set(e.country, archivedRids(e.country));
     return archivedBy.get(e.country).has(e.rid);
   };
@@ -85,17 +87,7 @@ export async function listInvites() {
       lottery: lotteries.get(r.lottery_v2_id) || null,   // 參加的抽獎（產生邀請碼時綁定的）；null＝沒綁定（CLI 產生的）
     };
   });
-  return { rows, sheetError };
-}
-
-// /collect-speedtest-mail 排除的報告（cdn-speedtest-results/_rejected.json）：rid → { base, kind（vpn／invalid／dup）, why, at }
-// （寫在這裡、不放 speedtest-reports.mjs，免得後台要重開）
-function rejectedReports() {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(ROOT, "cdn-speedtest-results", "_rejected.json"), "utf8"));
-  } catch {
-    return {};
-  }
+  return { rows, sheetError, archive: source };
 }
 
 // 抽獎 v2 的 id → { id, title（繁中，沒有就任一語言）, country, currency, giftCards: [{ name, amount }] }
