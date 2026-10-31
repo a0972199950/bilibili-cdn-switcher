@@ -235,7 +235,7 @@ if (isIosSafari()) document.getElementById("autoDetectText").textContent = t("au
 // 只下載、不送任何資料；國家由這裡依本機的 detectedCountry 自己篩，國家不會送出去。
 // storage.local.announcementFeed = { v, at, items } 快取 LOTTERY_TTL_MS（v 不是 ANNOUNCE_FEED_V 的舊格式快取直接作廢）：開 popup 先畫快取、過期再背景更新。
 // 按 × 只關目前那一則：announcementDismissed = { <公告 id>: 到期時間（現在 + 3 天） }，其他則照常顯示，新公告自然會出現。
-var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/announcements";
+var ANNOUNCE_API = "https://api.biboost.app/v2/announcements";
 var LOTTERY_TTL_MS = 15 * 60 * 1000; // 擴充自己的公告快取；加上 worker 的 1 分鐘，改了公告最慢約 16 分鐘使用者看得到
 var ANNOUNCE_FEED_V = 2; // announcementFeed 的格式版本：公告 API 的回應格式改了就 +1，舊快取自動作廢（announcement.js 的同名常數要一起改）；2＝/v2/announcements
 var LOTTERY_HIDE_MS = 3 * 24 * 60 * 60 * 1000;

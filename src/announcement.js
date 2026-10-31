@@ -6,7 +6,7 @@
  *    （html-sanitize.js 依白名單重建），下面接參加方式、「下載測速工具與教學」
  *  - type "html"：標題是公告的標題，內容是後台寫的 HTML（html-sanitize.js 依白名單重建），只有「關閉」
  */
-var ANNOUNCE_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/announcements";
+var ANNOUNCE_API = "https://api.biboost.app/v2/announcements";
 var ANNOUNCE_FEED_V = 2; // 同 popup.js：announcementFeed 的格式版本，不同的舊快取不用
 var SPEEDTEST_DOC_URL = "https://lazy-cv.com/docs/bilibili-cdn-speedtest";
 

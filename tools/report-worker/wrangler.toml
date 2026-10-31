@@ -10,8 +10,8 @@
 name = "bcs-report"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
-# workers.dev 網址不能關：已發布的擴充（公告、抽獎、問題回報）與 CDN 測速工具 exe 都寫死這個網址。
-# 正式網域另外掛 api.biboost.app（同一份程式；部署時 Cloudflare 自動建 DNS 與憑證），新的功能（贊助）用這個
+# workers.dev 網址不能關：2.8.0（含）以前的擴充（公告、問題回報）與改網址前打包的 CDN 測速工具 exe（抽獎）都寫死這個網址。
+# 正式網域另外掛 api.biboost.app（同一份程式；部署時 Cloudflare 自動建 DNS 與憑證），之後的擴充與 exe 全部用這個
 workers_dev = true
 routes = [
   { pattern = "api.biboost.app", custom_domain = true }
