@@ -1,6 +1,7 @@
 // 產生雲端後台（biboost.app/admin）寄信、讀測速報告試算表用的 Google 憑證，直接設成 biboost-site 的 secret GOOGLE_OAUTH。
 //   npm run admin:google            （在自己的終端機視窗跑：會開瀏覽器到 Google 同意畫面，同意後自動設好，憑證不會印出來）
 //   npm run admin:google -- --port 8001   回呼的埠號（預設 8000；被占用時換一個，Desktop 類型的 OAuth client 任何埠都行）
+//   npm run admin:google -- --no-open     不自動開瀏覽器，只印同意頁網址（自己或 agent 用別的瀏覽器開）
 // 權限只要三個（不像本機 google-workspace MCP 的憑證那樣能讀寫整個信箱、雲端硬碟）：
 //   gmail.send（寄信）、spreadsheets.readonly（讀試算表）、drive.metadata.readonly（用名稱找試算表）；另外 email（測試信寄給自己）
 // OAuth client 沿用 google-workspace MCP 那組（~/.google_workspace_mcp/credentials/<email>.json 的 client_id、client_secret）。
@@ -89,7 +90,7 @@ auth.search = new URLSearchParams({
 
 const pending = waitForCode(state);
 console.log("在瀏覽器登入要寄信的 Gmail 帳號，三個權限都勾選後按「繼續」。瀏覽器沒有自動打開的話，手動開這個網址：\n" + auth);
-openBrowser(auth.toString());
+if (!process.argv.includes("--no-open")) openBrowser(auth.toString());
 let code;
 try { code = await pending; } catch (e) { die(`授權失敗：${e.message}`); }
 
