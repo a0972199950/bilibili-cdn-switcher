@@ -201,7 +201,7 @@ src=playinfo|playurl  rw=<rewrite count>  seg=<segment swap count>  qn=<quality>
 ## ⚠️ Notes
 
 - 🔒 The original host is always kept as a `backupUrl` fallback, so a single host-bound URL failing doesn't break the whole segment.
-- 📍 Default nodes have been tested in Taiwan and Singapore, with more countries coming soon; users elsewhere can switch to a closer node or use the "Custom node list" to add their own hosts (the CDNSpeedTest tool can find them for you).
+- 📍 The nodes for every supported country are picked from speed tests run by real users there. Supported countries: Taiwan, Singapore, Hong Kong, Japan, Australia, United States, Macau, United Kingdom, Spain, Russia. Users elsewhere get the "Other regions" list, and can also switch to a closer node or use the "Custom node list" to add their own hosts (the CDNSpeedTest tool can find them for you).
 - 📶 "Test node speeds" is a short-lived, single-segment measurement — treat the results as a reference only: whether the CDN has already cached this video/quality, and how congested the route is at different times, both affect real playback experience. The fastest node during a test isn't necessarily the smoothest over a long viewing session.
 
 ---
