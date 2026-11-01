@@ -40,7 +40,7 @@
 
 ### 公告
 
-彈出視窗主畫面的公告欄與點開後的公告視窗，會從作者架設的接收端（Cloudflare Workers，`https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements`）下載公告（抽獎活動的資料，以及作者寫的一般公告），在你打開彈出視窗時最多每 15 分鐘一次（公告欄關閉期間也會照常下載，才知道有沒有新的公告）。
+彈出視窗主畫面的公告欄與點開後的公告視窗，會從作者架設的接收端（Cloudflare Workers，`https://api.biboost.app/v2/announcements`）下載公告（抽獎活動的資料，以及作者寫的一般公告），在你打開彈出視窗時最多每 15 分鐘一次（公告欄關閉期間也會照常下載，才知道有沒有新的公告）。
 
 - 這是單純的下載（GET），**不帶 Cookie、不附任何資料**。
 - 接收端會依連線 IP 判斷的國家，彙總記錄「每天各國、各瀏覽器（Chrome／Edge／Firefox／Safari）的下載次數」，用來了解各國實際使用的比例；**不會記錄 IP**，也不記錄 User-Agent 或其他能識別你的資料。統計存在 Cloudflare Workers Analytics Engine，保留 3 個月。除此之外不記錄任何存取紀錄。
@@ -110,7 +110,7 @@ When the extension is installed or updated (in the background), or when you open
 
 ### Announcements
 
-The announcement bar on the popup's main screen, and the announcement window it opens, download announcements (data about ongoing prize draws, and general announcements written by the author) from an endpoint run by the author (Cloudflare Workers, `https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v1/announcements`) when you open the popup, at most once every 15 minutes (this continues while the bar is closed, so it knows when a new announcement appears).
+The announcement bar on the popup's main screen, and the announcement window it opens, download announcements (data about ongoing prize draws, and general announcements written by the author) from an endpoint run by the author (Cloudflare Workers, `https://api.biboost.app/v2/announcements`) when you open the popup, at most once every 15 minutes (this continues while the bar is closed, so it knows when a new announcement appears).
 
 - It is a plain download (GET) **with no cookies and no data attached**.
 - The endpoint keeps an aggregate count of downloads per day, per country (as determined from the connecting IP) and per browser (Chrome / Edge / Firefox / Safari), to understand how usage is spread across countries. **Your IP is not recorded**, nor is your User-Agent or anything else that could identify you. The counts are stored in Cloudflare Workers Analytics Engine for 3 months. No other access logs are kept.
