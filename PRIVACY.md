@@ -59,7 +59,7 @@
 
 ### 贊助與乾爹排行榜
 
-彈出視窗的「贊助我一杯咖啡」會在新分頁開啟贊助頁（Safari 版沒有這個功能）；同樣的贊助頁也放在網站 `https://biboost.app/donate`。
+彈出視窗的「贊助/乾爹排行榜」會在新分頁開啟贊助頁（Safari 版沒有這個功能）；同樣的贊助頁也放在網站 `https://biboost.app/donate`。
 
 - 開啟時會從作者架設的接收端（`https://api.biboost.app/v1/donors`）下載排行榜，這是單純的下載（GET），**不帶 Cookie、不附任何資料**。
 - 擴充會產生一組隨機的贊助者 ID，存在瀏覽器的 `chrome.storage.sync`（登入同一個瀏覽器帳號、開啟同步的裝置會共用；不支援同步時存在本機），你填的上榜名稱與選的頭像存在本機 `chrome.storage.local`。網站版沒有瀏覽器同步，這些資料存在該網站的 localStorage。
@@ -129,7 +129,7 @@ The full diagnostics are shown on the form before sending so you can review them
 
 ### Tips and the supporter leaderboard
 
-"Buy me a coffee" in the popup opens the support page in a new tab (not available in the Safari version); the same page is also on the website at `https://biboost.app/donate`.
+"Tip / Top Patrons" in the popup opens the support page in a new tab (not available in the Safari version); the same page is also on the website at `https://biboost.app/donate`.
 
 - When opened, it downloads the leaderboard from the author's endpoint (`https://api.biboost.app/v1/donors`). This is a plain download (GET) **with no cookies and no data attached**.
 - The extension creates a random supporter ID stored in the browser's `chrome.storage.sync` (shared by devices signed in to the same browser account with sync on; stored locally if sync is unavailable). The name and avatar you choose for the board are stored locally in `chrome.storage.local`. The website version has no browser sync and keeps this data in the site's localStorage.
