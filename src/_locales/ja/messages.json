@@ -512,9 +512,6 @@
   "optimizingTitle": {
     "message": "最適化中..."
   },
-  "optimizingSkip": {
-    "message": "スキップ"
-  },
   "reportTitle": {
     "message": "問題の報告／機能リクエスト"
   },

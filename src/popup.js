@@ -2,7 +2,7 @@
 
 var DEFAULTS = {
   enabled: true,
-  cdnHost: "upos-sz-mirror08ct.bilivideo.com",
+  cdnHost: "cn-bj-se-01-05.bilivideo.com", // 全域預設 = cdn-list.json「其他地區」（OTHER）的第一個，同 main-hook.js
   cdnMode: null, // 一般影片用哪份節點："list"（國家清單）或 "custom"（自訂節點列表）；null = 1.6 以前的設定，載入時遷移
   customHosts: [], // 自訂節點列表（使用者加入的、測速工具匯入的），依加入順序
   cdnCountry: null, // 節點清單的國家選項（cdn-list.json countries 的 code，或 "ALL"）
@@ -11,7 +11,7 @@ var DEFAULTS = {
   autoFallback: true,
   autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
-  autoTestPending: false, // 節點是程式替使用者選的（切換國家、安裝後自動選國家、自訂切回清單）→ 第一支影片在背景測一次、換成最快節點；觸發即清，使用者自己選節點也清。受 FEATURE_AUTO_TEST_ON_COUNTRY 控制
+  installTestPending: false, // 全新安裝時 background.js 設：第一支影片在背景優化一次（見 main-hook.js 的 runAutoSpeedTest）；觸發即清，使用者自己選節點、測速、關閉也清
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
@@ -30,11 +30,6 @@ var DEFAULTS = {
   stLivePreset: null,
   zoneCheckedAt: 0 // 上次查 B 站 zone API 的時間：超過 ZONE_MAX_AGE_MS 才重查（refreshZoneIfStale）
 };
-
-// 功能開關：安裝後／切換國家／自訂切回清單時，第一支影片在背景自動測速一次並換成最快節點（popup 顯示「優化中」）。
-// 2.2.0 上線後各國預設節點已改為「各家 ISP 都能順暢播 4K」的普世節點，暫時不需要；程式碼保留，之後要應急再改回 true。
-// main-hook.js 有同名開關，兩邊要一起改。
-var FEATURE_AUTO_TEST_ON_COUNTRY = false;
 
 var els = {
   enabled: document.getElementById("enabled"),
@@ -104,7 +99,7 @@ document.documentElement.lang = uiLanguage();
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stStopBtn", "stStopBtn"], ["stHintLeave", "stHintLeave"],
   ["liveRouteRowLabel", "liveRouteRowLabel"],
   ["sortBySpeedLabel", "sortBySpeedLabel"], ["sortBySpeedHint", "sortBySpeedHint"],
-  ["optTitle", "optimizingTitle"], ["optSkip", "optimizingSkip"],
+  ["optTitle", "optimizingTitle"],
   ["stVideoLimitTitle", "stVideoLimitTitle"], ["stVideoLimitHint", "stVideoLimitHint"], ["stVideoMbLabel", "stVideoMbLabel"],
   ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"], ["stVideoPresetLabel", "stPresetLabel"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
@@ -624,7 +619,7 @@ function cdnDisplayName(o) {
 
 // -------- 國家：節點下拉只列該國的建議節點（研究報告預先篩出的前 10 名），最後接 B 站備援；「全部」列出全部節點 --------
 var COUNTRY_ALL = "ALL";
-var COUNTRY_FALLBACK = "TW"; // 偵測不到、或使用者所在國家不在清單內時的預設
+var COUNTRY_FALLBACK = "OTHER"; // 使用者所在國家不在清單內時用「其他地區」（跨國挑的通用清單）
 // 舊版清單裡、已確定網域不存在而移除的節點：還存著它們的使用者搬回預設
 var REMOVED_HOSTS = ["upos-sz-mirrorhwov.bilivideo.com", "cn-hk-eq-bcache-01.bilivideo.com"];
 var cdnCountries = []; // cdn-list.json 的 countries
@@ -718,9 +713,7 @@ els.countrySelect.addEventListener("change", function () {
   countryAutoPending = false; // 使用者自己選了，偵測結果晚到也不要蓋掉
   var patch = { cdnCountry: code, countryAutoDone: true };
   useCountryFirstNode(code, patch); // 國家選單只在清單模式顯示，切國家就直接換成該國第一個節點
-  // 下一支影片在背景測一次、換成最快的（「全部」300 個測不完，不測）。要測的清單跟旗標一起寫，
-  // content script 收到旗標時清單已經是新國家的，不用等 saveAutoSpeedHosts 的第二次寫入
-  patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && code !== COUNTRY_ALL;
+  // 自動測速要測的清單跟國家一起寫（「全部」300 個測不完，不測）：安裝後的優化還沒跑的話，測的就是新國家的清單
   patch.autoSpeedHosts = code === COUNTRY_ALL ? [] : countryHosts(code);
   savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
   save(patch);
@@ -764,7 +757,6 @@ function autoSelectCountry(cfg) {
     // in the dropdown. Users on the custom list keep their node.
     if (cdnMode !== "custom") {
       useCountryFirstNode(target, patch);
-      patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && target !== COUNTRY_ALL;
       patch.autoSpeedHosts = target === COUNTRY_ALL ? [] : countryHosts(target);
       savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
     }
@@ -827,7 +819,7 @@ function buildCdnSelectList(options) {
       if (o.value === cdnSelectValue) return;
       selectCdnValue(o.value);
       currentCdnHost = o.value;
-      save({ videoEnabled: true, cdnHost: o.value, autoTestPending: false }); // 使用者自己選了，切換國家後的自動測速取消
+      save({ videoEnabled: true, cdnHost: o.value, installTestPending: false }); // 使用者自己選了，安裝後的優化取消
     });
     els.cdnSelectList.appendChild(row);
   });
@@ -911,7 +903,7 @@ function journalUi(k, d) {
 function save(patch) {
   chrome.storage.local.set(patch);
   if (journalReady) {
-    if ("cdnHost" in patch && patch.cdnHost !== lastCfg.cdnHost) journalUi("ui.node", { from: shortHost(lastCfg.cdnHost), to: shortHost(patch.cdnHost), mode: patch.cdnMode || lastCfg.cdnMode, auto: "autoTestPending" in patch && patch.autoTestPending ? 1 : 0 });
+    if ("cdnHost" in patch && patch.cdnHost !== lastCfg.cdnHost) journalUi("ui.node", { from: shortHost(lastCfg.cdnHost), to: shortHost(patch.cdnHost), mode: patch.cdnMode || lastCfg.cdnMode });
     if ("cdnCountry" in patch && patch.cdnCountry !== lastCfg.cdnCountry) journalUi("ui.country", { from: lastCfg.cdnCountry, to: patch.cdnCountry, auto: "detectedCountry" in patch ? 1 : 0 });
     if ("liveRoute" in patch && patch.liveRoute !== lastCfg.liveRoute) journalUi("ui.liveRoute", { from: lastCfg.liveRoute, to: patch.liveRoute });
     if ("cdnMode" in patch && patch.cdnMode !== lastCfg.cdnMode) journalUi("ui.mode", { from: lastCfg.cdnMode, to: patch.cdnMode });
@@ -1010,10 +1002,9 @@ els.modeList.addEventListener("change", function () {
   videoOn = true;
   var patch = { videoEnabled: true, cdnMode: "list" };
   if (cdnMode !== "list") {
-    // 從自訂切回清單：節點是程式替使用者選的（該國第一個），跟切換國家一樣，下一支影片在背景測一次
+    // 從自訂切回清單：改用該國第一個節點
     cdnMode = "list";
     useCountryFirstNode(countrySel, patch);
-    patch.autoTestPending = FEATURE_AUTO_TEST_ON_COUNTRY && countrySel !== COUNTRY_ALL;
     patch.autoSpeedHosts = countrySel === COUNTRY_ALL ? [] : countryHosts(countrySel);
     savedAutoSpeedHosts = patch.autoSpeedHosts.join("|");
   }
@@ -1024,7 +1015,7 @@ els.modeList.addEventListener("change", function () {
 els.modeCustom.addEventListener("change", function () {
   if (!els.modeCustom.checked) return;
   videoOn = true;
-  var patch = { videoEnabled: true, cdnMode: "custom", autoTestPending: false };
+  var patch = { videoEnabled: true, cdnMode: "custom", installTestPending: false };
   if ((cdnMode !== "custom" || customHosts.indexOf(cdnSelectValue) < 0) && customHosts.length) useHost(customHosts[0], patch);
   cdnMode = "custom";
   currentCdnHost = cdnSelectValue;
@@ -1036,7 +1027,7 @@ els.modeOff.addEventListener("change", function () {
   if (!els.modeOff.checked) return;
   syncModeUI();
   videoOn = false;
-  save({ videoEnabled: false, autoTestPending: false });
+  save({ videoEnabled: false, installTestPending: false });
 });
 
 // -------- 自訂節點列表：輸入網址或 host 按 Enter／加入；每列可移除、可整個清空 --------
@@ -1426,11 +1417,12 @@ function pollDebug() {
 }
 pollDebug();
 
-// -------- 切換國家後的自動測速：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
+// -------- 安裝後第一支影片的優化：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
+// 只會發生一次，所以沒有「略過」；最長顯示時間由 bridge 把關（超過 maxMs 就回報已結束）
 var optEl = document.getElementById("optimizing");
 var optShown = false, optLastCount = null;
 function renderOptimizing(st) {
-  var on = !!(st && st.running && st.reason === "country");
+  var on = !!(st && st.running && st.reason === "install");
   if (on) {
     var total = st.total || 0, done = Math.min(st.done || 0, total), left = total - done;
     var cnt = document.getElementById("optCount");
@@ -1446,14 +1438,6 @@ function renderOptimizing(st) {
   optShown = on;
   optEl.classList.toggle("show", on);
 }
-// 略過：中斷這一輪（旗標在開始測時就已清掉，不會再測），節點維持該國第一個
-document.getElementById("optSkip").addEventListener("click", function () {
-  renderOptimizing(null);
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (!tabs || !tabs[0]) return;
-    sendToTop(tabs[0].id, { type: "CDN_SWITCHER_STOP_AUTOTEST" }, function () { void chrome.runtime.lastError; });
-  });
-});
 
 // -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
 var SPEEDTEST_ERR_KEYS = {
@@ -1635,7 +1619,7 @@ document.getElementById("stLiveReset").addEventListener("click", function () { r
 function lim(key) { return limits[key] || DEFAULTS[key]; }
 
 // -------- 恢復原始設置（進階設定最下方）--------
-// 進階設定的開關與門檻、節點排序回到預設；影片改回清單選擇、預設國家（偵測到的國家，否則台灣）的第一個節點、清空自訂節點列表；
+// 進階設定的開關與門檻、節點排序回到預設；影片改回清單選擇、預設國家（偵測到的國家，否則「其他地區」）的第一個節點、清空自訂節點列表；
 // 直播改回偏好選擇的國際線路。主畫面的「啟用」總開關不動
 function resetAllSettings() {
   var code = detectedCountry || COUNTRY_FALLBACK;
@@ -2037,7 +2021,7 @@ function applySpeedtestHost(host) {
   (cdnMode === "custom" ? els.modeCustom : els.modeList).checked = true;
   selectCdnValue(host);
   syncModeUI();
-  save({ videoEnabled: true, cdnHost: host, autoTestPending: false });
+  save({ videoEnabled: true, cdnHost: host, installTestPending: false });
   renderSpeedtest(lastSpeedtestState); // 立即重绘打勾标示，不用等下次 poll
 }
 els.stList.addEventListener("click", function (ev) {
@@ -2315,7 +2299,7 @@ function enterSpeedtest(tabId) {
 
 // fresh：剛進測速頁（或分頁剛重新整理完），還不知道能不能測，先不畫清單，等第一份測速狀態回來再畫（見 showSpeedtestView）
 function startSpeedtest(tabId, fresh) {
-  save({ autoTestPending: false }); // 使用者自己測速了，切換國家後的自動測速取消（MAIN 那邊開手動測速也會讓它作廢）
+  save({ installTestPending: false }); // 使用者自己測速了，安裝後的優化取消（MAIN 那邊開手動測速也會讓它作廢）
   var prev = lastSpeedtestState || {};
   if (!fresh) renderSpeedtest({ running: true, results: [], error: null, title: prev.title || "", qn: prev.qn || "", avail: prev.avail || null });
   var live = speedtestMode === "live";

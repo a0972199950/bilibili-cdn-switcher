@@ -512,9 +512,6 @@
   "optimizingTitle": {
     "message": "최적화 중..."
   },
-  "optimizingSkip": {
-    "message": "건너뛰기"
-  },
   "reportTitle": {
     "message": "문제 신고 / 기능 요청"
   },

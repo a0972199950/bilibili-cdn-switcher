@@ -22,13 +22,9 @@
   window.__CDN_SWITCHER_INSTALLED__ = true;
 
   var CFG_KEY = "__CDN_SWITCHER_CFG__";
-  // 功能开关：切换国家／安装后自动选国家后，第一支影片在背景自动测速一次并换成最快节点（autoTestPending）。
-  // 各国预设节点已改为「各家 ISP 都能顺畅播 4K」的普世节点，暂时不需要；代码保留，之后要应急再改回 true。
-  // popup.js 有同名开关，两边要一起改。这里也挡掉旧版留在 storage 里的 autoTestPending=true
-  var FEATURE_AUTO_TEST_ON_COUNTRY = false;
   var DEFAULTS = {
     enabled: true, // 预设开启
-    cdnHost: "upos-sz-mirror08ct.bilivideo.com", // 默认：TW/SG 实测都是第一梯队。'base' (= do not rewrite) is a legacy value: popup.js migrates it to videoEnabled=false, MAIN keeps accepting it for old configs
+    cdnHost: "cn-bj-se-01-05.bilivideo.com", // 默认 = cdn-list.json「其他地区」（OTHER）的第一个：跨各国报告 1080P 最稳。'base' (= do not rewrite) is a legacy value: popup.js migrates it to videoEnabled=false, MAIN keeps accepting it for old configs
     autoFallback: true, // 失败自动切换：预设开启；网络本身不稳（弱 WiFi 等）的用户可关掉，避免频繁黑屏重载
     showDebug: false, // debug 叠层预设关闭，避免新装用户被打扰
     videoEnabled: true, // 一般影片的「关闭」：false = 不介入影片 CDN 选线（enabled 是总开关，管影片与直播）
@@ -36,7 +32,7 @@
     liveRoute: "ov", // 直播线路偏好：ov / ovb / cn / cnb（记的是线路种类，不是具体 host，集群号随房间而变）
     autoSpeedSwitch: false, // 影片自动测速并切换到最快节点（进阶设定，预设关闭）
     autoSpeedHosts: [], // 自动测速要测的节点（popup 依目前国家写入）
-    autoTestPending: false, // 切换国家（或安装后自动选国家）后：第一支影片拿到样本就在背景测一次、换成最快节点，触发即清
+    installTestPending: false, // 全新安装后第一支影片在背景优化一次（规则见 runAutoSpeedTest），触发即清
     stVideoMb: 8, // 测速门槛（与 popup 进阶设定共用）
     stVideoSec: 5
   };
@@ -1259,9 +1255,15 @@
   // 与手动测速共用 speedTestGen：popup 开始手动测速会让自动测速这一轮作废。
   var AUTO_TEST_KEY = "__CDN_SWITCHER_AUTOTEST__";
   var AUTO_TEST_DELAY_MS = 5000;
-  var COUNTRY_TEST_DELAY_MS = 300; // 切换国家后那一次不等起播顺了才测：使用者正看着「优化中」，越快开始越好
   var autoTestKey = null, autoTestTimer = null, autoTestRunning = false;
-  var pendingTimer = null; // 「切换国家后测一次」的排程：与每支影片的自动测速分开记，不受「测过的影片」限制
+  var pendingTimer = null; // 「安装后第一支影片」那一次的排程：与每支影片的自动测速分开记，不受「测过的影片」限制
+  // 安装后第一支影片的优化（installTestPending，background.js 安装时设）：先测目前的节点（该国预设），
+  // 达到 4K 标准就不动（就算别的节点更快也不换）；没达到才依清单顺序测其余节点，第一个达标的就停下来选它，
+  // 全部测完都没有达标才选最快的（还是目前的节点最快就不换）。
+  // 过程向 bridge 回报开始／进度／结束（popup 开着就显示「优化中」）；maxMs 是这一轮最长能跑多久：
+  // 每个节点最多 stMaxMs（measureHost 的 timer 连线带下载一起算）× 节点数，再加一点余裕，到了不论测到哪都收掉
+  var UHD_BPS = 25e6 / 8; // 4K 标准 25 Mbps（bytes/s），同 popup 的画质门槛、/analyze-cdn 的达标线
+  var INSTALL_TEST_SLACK_MS = 5000;
   function postAutoTest(dir, payload) {
     try { window.postMessage({ __cdnSwitcher: 1, dir: dir, payload: payload || {} }, "*"); } catch (e) {}
   }
@@ -1279,15 +1281,15 @@
   function maybeScheduleAutoTest() {
     if (IS_LIVE_PAGE || !ACTIVE || !isActive(cfg)) return;
     if (!WATCH_RE.test(location.pathname)) return;
-    // 切换国家后测一次（autoTestPending）：不管这支影片测过没有，拿到样本就测；开始测的那一刻旗标就清掉，
-    // 之后不论完成、失败、关分页或使用者略过都不会再测。timer 到时还没样本的话 runAutoSpeedTest 不会开始，
-    // 下一个分段进来会再排一次
-    if (FEATURE_AUTO_TEST_ON_COUNTRY && cfg.autoTestPending && (cfg.autoSpeedHosts || []).length) {
+    // 安装后第一支影片：等起播顺了再测（同每支影片的自动测速），开始测的那一刻旗标就清掉，之后不论完成、失败或关分页都不会再测。
+    // timer 到时还没样本的话 runAutoSpeedTest 不会开始，下一个分段进来会再排一次。
+    // 还没有国家清单（安装时没查到 IP、popup 也还没打开过）就先不测
+    if (cfg.installTestPending && (cfg.autoSpeedHosts || []).length) {
       if (autoTestRunning || pendingTimer) return;
       pendingTimer = setTimeout(function () {
         pendingTimer = null;
-        if (cfg.autoTestPending && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "country");
-      }, COUNTRY_TEST_DELAY_MS);
+        if (cfg.installTestPending && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "install");
+      }, AUTO_TEST_DELAY_MS);
       return;
     }
     if (!cfg.autoSpeedSwitch) return;
@@ -1301,52 +1303,65 @@
       if (videoKey() === key && cfg.autoSpeedSwitch && isActive(cfg)) runAutoSpeedTest(cfg.autoSpeedHosts || [], "video");
     }, AUTO_TEST_DELAY_MS);
   }
-  // reason："video" = 每支影片的自动测速（进阶设定）；"country" = 切换国家后测一次。
-  // "country" 会向 bridge 回报开始／进度／结束（popup 显示「优化中」与倒数），并以开始时的节点当 from：
-  // 中途使用者自己换了节点，bridge 比对不符就不覆盖
+  // reason："video" = 每支影片的自动测速（进阶设定），全部测完选最快的；"install" = 安装后第一支影片那一次（规则见上面）。
+  // "install" 以开始时的节点当 from：中途使用者自己换了节点，bridge 比对不符就不覆盖
   function runAutoSpeedTest(hosts, reason) {
     if (speedTestRunning || autoTestRunning || !hosts.length || !sampleUrl()) return;
-    var country = reason === "country";
-    if (country) {
-      if (!cfg.autoTestPending) return;
-      cfg.autoTestPending = false; // 触发即清（bridge 收到 autotest-start 会写回 storage）
-      autoTestKey = videoKey(); markTested(autoTestKey); // 这支影片不再另外做每支影片的自动测速
-      postAutoTest("autotest-start", { reason: reason, total: hosts.length });
-    }
+    var install = reason === "install";
+    var from = cfg.cdnHost;
     stMaxBytes = clampNum(cfg.stVideoMb, 1, 100, ST_DEFAULT_MB) * 1024 * 1024;
     stMaxMs = clampNum(cfg.stVideoSec, 1, 60, ST_DEFAULT_SEC) * 1000;
+    var maxMs = 0;
+    if (install) {
+      if (!cfg.installTestPending) return;
+      cfg.installTestPending = false; // 触发即清（bridge 收到 autotest-start 会写回 storage）
+      autoTestKey = videoKey(); markTested(autoTestKey); // 这支影片不再另外做每支影片的自动测速
+      hosts = [from].concat(hosts.filter(function (h) { return h !== from; })); // 先测目前的节点
+      maxMs = hosts.length * stMaxMs + INSTALL_TEST_SLACK_MS;
+      postAutoTest("autotest-start", { reason: reason, total: hosts.length, maxMs: maxMs });
+    }
     var myGen = ++speedTestGen;
     autoTestRunning = true;
-    var from = cfg.cdnHost, best = null, i = 0;
+    var best = null, i = 0, over = false, watchdog = null;
     jlog("ui.speedtest", { phase: "start", kind: "auto-" + reason, hosts: hosts.length });
     function end(clearAbort) {
+      if (over) return;
+      over = true;
+      clearTimeout(watchdog);
       autoTestRunning = false;
       if (clearAbort) speedTestAbort = null; // 被手动测速取代时 speedTestAbort 已是对方的，不能动
-      if (country) postAutoTest("autotest-end", { reason: reason });
+      if (install) postAutoTest("autotest-end", { reason: reason });
+    }
+    // pick：提早停下来选的节点；没给就用测到最快的
+    function finish(pick) {
+      if (over) return;
+      pick = pick || (best && best.host) || "";
+      jlog("ui.speedtest", { phase: "done", kind: "auto-" + reason, tested: i, best: shortHost(pick), kbps: best ? Math.round(best.bps / 1024) : "" });
+      var cur = install ? from : cfg.cdnHost;
+      if (pick && pick !== cur && (install || cfg.autoSpeedSwitch)) postAutoTest("autotest-done", { host: pick, from: cur, reason: reason });
+      end(true);
+    }
+    if (install) {
+      watchdog = setTimeout(function () {
+        if (over) return;
+        jlog("ui.speedtest", { phase: "timeout", kind: "auto-" + reason, tested: i });
+        speedTestGen++; // 还在测的那个节点回来时自行退出
+        if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
+        finish();
+      }, maxMs);
     }
     (function next() {
-      if (myGen !== speedTestGen) { end(false); return; } // 被手动测速取代、或使用者略过
-      if (i >= hosts.length) {
-        jlog("ui.speedtest", { phase: "done", kind: "auto-" + reason, best: best ? shortHost(best.host) : "", kbps: best ? Math.round(best.bps / 1024) : "" });
-        if (best && best.host !== cfg.cdnHost && (country || cfg.autoSpeedSwitch)) {
-          postAutoTest("autotest-done", { host: best.host, from: country ? from : cfg.cdnHost, reason: reason });
-        }
-        end(true);
-        return;
-      }
+      if (myGen !== speedTestGen) { end(false); return; } // 被手动测速取代
+      if (i >= hosts.length) { finish(); return; }
       measureHost(hosts[i++]).then(function (r) {
         if (myGen !== speedTestGen) { end(false); return; }
-        if (!r.error && r.bps > 0 && (!best || r.bps > best.bps)) best = r;
-        if (country) postAutoTest("autotest-progress", { done: i, total: hosts.length });
+        var ok = !r.error && r.bps > 0;
+        if (ok && (!best || r.bps > best.bps)) best = r;
+        if (install) postAutoTest("autotest-progress", { done: i, total: hosts.length });
+        if (install && ok && r.bps >= UHD_BPS) { finish(r.host); return; }
         next();
       });
     })();
-  }
-  // popup 按「略过」：让这一轮作废并中断目前的下载；节点维持原样
-  function stopAutoTest() {
-    if (!autoTestRunning) return;
-    speedTestGen++;
-    if (speedTestAbort) { try { speedTestAbort.abort(); } catch (e) {} }
   }
 
   // ---------------- 直播测速 ----------------
@@ -1601,7 +1616,6 @@
     if (!d || d.__cdnSwitcher !== 1) return;
     if (d.dir === "speedtest-run") { runSpeedTest((d.payload && d.payload.hosts) || [], d.payload && d.payload.limits); return; }
     if (d.dir === "speedtest-stop") { stopSpeedTest(); return; }
-    if (d.dir === "autotest-stop") { stopAutoTest(); return; }
     if (d.dir === "livetest-run") { runLiveSpeedTest(d.payload && d.payload.limits); return; }
     if (d.dir === "debug-poll") { probeLiveAvail(); return; }
     if (d.dir === "debug-flush") { updateSpeed(); postDebug(); postSample(); return; } // 回報頁開啟：立刻給一份最新快照與採樣
@@ -1663,7 +1677,7 @@
     if (!d || d.__cdnSwitcher !== 1 || d.dir !== "config") return;
     if (!d.payload) return;
     var beforeSig = effSig(cfg), beforeActive = ACTIVE, beforeEffHost = effHost(), beforeLiveSig = liveSig(cfg);
-    var beforePending = !!cfg.autoTestPending;
+    var beforePending = !!cfg.installTestPending;
     // Tripwire, not a security boundary: everything MAIN world sees (this message, the localStorage
     // copy read by readCfg) is writable by page scripts, and a script that runs in the page could
     // wrap fetch itself anyway. The persistent path (storage) is guarded in bridge.js. This check
@@ -1675,8 +1689,8 @@
     }
     for (var k in DEFAULTS) if (d.payload[k] !== undefined) cfg[k] = d.payload[k];
     if (beforeSig !== effSig(cfg) || beforeLiveSig !== liveSig(cfg)) jlog("page.cfg", { sig: effSig(cfg), live: liveSig(cfg) });
-    // 影片播放中切换国家：不等下一支影片，这支就排程测一次（有样本才会真的开始）
-    if (cfg.autoTestPending && !beforePending) maybeScheduleAutoTest();
+    // 影片播放中才收到旗标（例如安装后先开着影片）：不等下一个分段，这支就排程测一次（有样本才会真的开始）
+    if (cfg.installTestPending && !beforePending) maybeScheduleAutoTest();
     // 中途关掉「失败自动切换」：收掉正在显示的「皆无法播放」询问弹窗（persistent，不会自己消失）
     if (!cfg.autoFallback && askToastOn) { askToastOn = false; hideToast(); }
     renderOverlay();
@@ -1887,7 +1901,7 @@
       clampNum: clampNum, cleanTitle: cleanTitle, pageTypeOf: pageTypeOf, qnText: qnText, currentQn: currentQn, isAllowedCdnHost: isAllowedCdnHost,
       addSample: addSample, updateSpeed: updateSpeed, videoQnByPath: function () { return videoQnByPath; },
       needsOwnSig: needsOwnSig, knownUrlOn: knownUrlOn, onSegFailure: onSegFailure, checkSegFailure: checkSegFailure, segFail: segFail, checkStall: checkStall, stallState: stallState,
-      autoHost: function () { return autoHost; }, mainVideoIdle: mainVideoIdle
+      autoHost: function () { return autoHost; }, mainVideoIdle: mainVideoIdle, noteEarlySample: noteEarlySample, runAutoSpeedTest: runAutoSpeedTest
     });
   }
 })();

@@ -14,7 +14,7 @@
   var CFG_KEY = "__CDN_SWITCHER_CFG__";
   var DEFAULTS = {
     enabled: true,
-    cdnHost: "upos-sz-mirror08ct.bilivideo.com",
+    cdnHost: "cn-bj-se-01-05.bilivideo.com", // 同 main-hook.js 的 DEFAULTS
     autoFallback: true,
     showDebug: false,
     videoEnabled: true,
@@ -22,7 +22,7 @@
     liveRoute: "ov",
     autoSpeedSwitch: false,
     autoSpeedHosts: [],
-    autoTestPending: false,
+    installTestPending: false,
     stVideoMb: 8,
     stVideoSec: 5
   };
@@ -41,7 +41,9 @@
     toBackground({ type: "CDN_SWITCHER_SNAPSHOT", payload: payload, url: location.href.split(/[?#]/)[0] });
   }
 
-  var latestAutoTest = null; // 切换国家后自动测速的进度（autotest-start/progress/end）
+  var latestAutoTest = null; // 安装后第一支影片那次优化的进度（autotest-start/progress/end）
+  // 「优化中」最长显示多久：MAIN 依节点数算好送来（maxMs）；送来的值不合理就用这个上限，免得 bug 让遮罩一直关不掉
+  var AUTOTEST_MAX_MS = 10 * 60 * 1000;
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
   var speedTestHosts = []; // hosts of the current video run (from the popup); live runs have none
   var LIVE_ROUTES = ["ov", "ovb", "cn", "cnb"];
@@ -52,9 +54,9 @@
     if (row.route) return LIVE_ROUTES.indexOf(row.route) >= 0 && LIVE_HOST_RE.test(row.host);
     return speedTestHosts.indexOf(row.host) >= 0;
   }
-  // "country" auto test: armed only when storage (which the page cannot write) says one is pending
-  // at the time autotest-start arrives; a forged autotest-done with reason "country" is otherwise ignored.
-  var countryTestArmed = false;
+  // "install" auto test: armed only when storage (which the page cannot write) says one is pending
+  // at the time autotest-start arrives; a forged autotest-done with reason "install" is otherwise ignored.
+  var installTestArmed = false;
 
   function pushConfig(cfg) {
     try { window.localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {}
@@ -95,6 +97,16 @@
   // 启动即同步一次
   loadAndPush();
   pushMessages();
+
+  // 安装时没查到 IP（国家还没选、安装后的优化还没跑）：请 background 再查一次，第一支影片的优化就能用所在国家的清单
+  // （查不到的话 background 安装时已经先放了「其他地区」的清单）
+  if (isTopFrame) {
+    try {
+      chrome.storage.local.get({ countryAutoDone: false, installTestPending: false }, function (items) {
+        if (!items.countryAutoDone && items.installTestPending) toBackground({ type: "CDN_SWITCHER_SELECT_COUNTRY" });
+      });
+    } catch (e) {}
+  }
 
   // 測速工具（CDNSpeedTest.exe）測完後會用瀏覽器開 https://www.bilibili.com/#cdnsw-import=1.<host>,<host>…，
   // 這裡把節點交給 background 接到「自訂節點列表」後面（background 只收 cdn-list.json 裡有的節點），
@@ -152,15 +164,17 @@
     if (d.dir === "debug") { latestDebug = d.payload || null; if (isTopFrame && latestDebug) maybeStoreSnapshot(latestDebug); return; }
     if (d.dir === "journal" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_JOURNAL", entry: d.payload }); return; }
     if (d.dir === "sample" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_SAMPLE", row: d.payload }); return; }
-    // 切换国家后的自动测速（main-hook 的 reason "country"）：进度给 popup 显示「优化中」；
+    // 安装后第一支影片的优化（main-hook 的 reason "install"）：进度给 popup 显示「优化中」；
     // 一开始就把旗标清掉，之后不论结果都不再测
     if (d.dir === "autotest-start" && d.payload) {
-      latestAutoTest = { running: true, reason: d.payload.reason || "", total: d.payload.total || 0, done: 0 };
-      if (d.payload.reason === "country") {
+      var maxMs = Number(d.payload.maxMs);
+      latestAutoTest = { running: true, reason: d.payload.reason || "", total: d.payload.total || 0, done: 0,
+        startedAt: Date.now(), maxMs: maxMs > 0 && maxMs < AUTOTEST_MAX_MS ? maxMs : AUTOTEST_MAX_MS };
+      if (d.payload.reason === "install") {
         try {
-          chrome.storage.local.get({ autoTestPending: false }, function (items) {
-            countryTestArmed = !!items.autoTestPending;
-            if (items.autoTestPending) chrome.storage.local.set({ autoTestPending: false });
+          chrome.storage.local.get({ installTestPending: false }, function (items) {
+            installTestArmed = !!items.installTestPending;
+            if (items.installTestPending) chrome.storage.local.set({ installTestPending: false });
           });
         } catch (e) {}
       }
@@ -187,23 +201,23 @@
     }
     // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
     // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
-    // 切换国家后的那一次（reason "country"）不看「影片自动测速」开关，但要先经过上面的 countryTestArmed
+    // 安装后的那一次（reason "install"）不看「影片自动测速」开关，但要先经过上面的 installTestArmed
     // Security: any script running in the page context (bilibili's own, third-party SDKs, other
     // extensions) can post a forged "autotest-done", and whatever host we store here is applied to
     // every segment request in every tab from then on. Every condition below reads storage, which
     // the page cannot write: the host must be in autoSpeedHosts (the list the test was asked to
-    // measure), the "country" bypass of autoSpeedSwitch needs a real pending test, and videoEnabled
+    // measure), the "install" bypass of autoSpeedSwitch needs a real pending test, and videoEnabled
     // is never touched from here (auto tests only run while video override is on anyway).
     if (d.dir === "autotest-done" && d.payload && typeof d.payload.host === "string") {
       var p = d.payload;
       journal("ui.speedtest", { phase: "apply", kind: "auto-" + (p.reason || ""), host: p.host, from: p.from });
-      var country = p.reason === "country" && countryTestArmed;
-      if (p.reason === "country") countryTestArmed = false;
+      var install = p.reason === "install" && installTestArmed;
+      if (p.reason === "install") installTestArmed = false;
       try {
         chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost, autoSpeedHosts: [] }, function (items) {
           if (!Array.isArray(items.autoSpeedHosts) || items.autoSpeedHosts.indexOf(p.host) < 0) return;
           if (items.cdnHost !== p.from) return;
-          if (!country && !items.autoSpeedSwitch) return;
+          if (!install && !items.autoSpeedSwitch) return;
           chrome.storage.local.set({ cdnHost: p.host });
         });
       } catch (e) {}
@@ -229,6 +243,8 @@
       if (msg && msg.type === "CDN_SWITCHER_GET_DEBUG") {
         // 顺便通知 MAIN：popup 开着了，直播间可以开始探测各线路是否存在（懒探测，见 main-hook.js）
         try { window.postMessage({ __cdnSwitcher: 1, dir: "debug-poll" }, "*"); } catch (e) {}
+        // 超过最长时间还没收到 autotest-end（MAIN 卡住或讯息掉了）：当作已结束，popup 的遮罩就会关掉
+        if (latestAutoTest && latestAutoTest.running && Date.now() - latestAutoTest.startedAt > latestAutoTest.maxMs) latestAutoTest.running = false;
         sendResponse({ debug: latestDebug, autoTest: latestAutoTest });
         return true;
       }
@@ -248,11 +264,6 @@
         speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
         journal("ui.speedtest", { phase: "start", kind: "live" });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}
-        sendResponse({ ok: true });
-        return true;
-      }
-      if (msg && msg.type === "CDN_SWITCHER_STOP_AUTOTEST") {
-        try { window.postMessage({ __cdnSwitcher: 1, dir: "autotest-stop" }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
       }

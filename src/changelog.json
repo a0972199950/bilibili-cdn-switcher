@@ -19,6 +19,26 @@
         "ja": "最新の実測をもとにマカオのデフォルトノードを更新",
         "ko": "최신 실측을 바탕으로 마카오 기본 노드를 업데이트했어요"
       }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "剛安裝時播放第一支影片，如果預設節點播不順 4K，會在背景自動換到更快的節點，之後不再打擾",
+        "zh_CN": "刚安装时播放第一个视频，如果默认节点播不顺 4K，会在后台自动换到更快的节点，之后不再打扰",
+        "en": "Right after install, if the default node can't play your first video smoothly in 4K, a faster node is picked in the background, just once",
+        "ja": "インストール直後の最初の動画でデフォルトノードが 4K をスムーズに再生できない場合、バックグラウンドで速いノードに自動で切り替えます（一度だけ）",
+        "ko": "설치 직후 첫 영상에서 기본 노드로 4K가 매끄럽지 않으면 백그라운드에서 더 빠른 노드로 자동 전환해요 (한 번만)"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "新增「其他地區」節點清單，所在國家沒有專屬清單時改用跨地區挑選的節點；沒打開過設定的使用者也會自動套用所在國家的建議節點",
+        "zh_CN": "新增「其他地区」节点列表，所在国家没有专属列表时改用跨地区挑选的节点；没打开过设置的用户也会自动套用所在国家的推荐节点",
+        "en": "Added an \"Other regions\" node list for countries without their own list, and your country's recommended nodes now apply even if you never opened the settings",
+        "ja": "専用リストのない国向けに「その他の地域」ノードリストを追加。設定を開いたことがなくても、自分の国のおすすめノードが自動で適用されます",
+        "ko": "전용 목록이 없는 국가를 위한 '기타 지역' 노드 목록을 추가했어요. 설정을 한 번도 열지 않았어도 내 국가의 추천 노드가 자동으로 적용돼요"
+      }
     }
   ],
   "releases": [

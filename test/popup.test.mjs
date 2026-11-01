@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createEnv, readSrcJson, plain, closeAll } from "./helpers/load.mjs";
 
 const CDN = readSrcJson("cdn-list.json");
-const DEFAULT_HOST = "upos-sz-mirror08ct.bilivideo.com";
+const DEFAULT_HOST = "cn-bj-se-01-05.bilivideo.com"; // = cdn-list.json OTHER 的第一個
 const ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
 function nodesOf(code) { return CDN.countries.find((c) => c.code === code).nodes; }
 
@@ -213,9 +213,9 @@ describe("settings migration on load", () => {
     assert.equal(env.storage.cdnHost, "x.y.com");
     env.close();
   });
-  test("unknown cdnCountry falls back to TW", async () => {
+  test("unknown cdnCountry falls back to Other regions", async () => {
     const env = await boot({ cdnCountry: "XX", cdnMode: "list", cdnHost: DEFAULT_HOST });
-    assert.equal(env.internals("popup").state().countrySel, "TW");
+    assert.equal(env.internals("popup").state().countrySel, "OTHER");
     env.close();
   });
 });
@@ -228,16 +228,17 @@ describe("automatic country selection (first run)", () => {
     assert.equal(env.storage.detectedCountry, "SG");
     assert.equal(env.storage.cdnHost, nodesOf("SG")[0]);
     assert.deepEqual(env.storage.autoSpeedHosts, nodesOf("SG"));
-    assert.equal(env.storage.autoTestPending, false, "feature flag is off");
+    assert.equal("installTestPending" in env.storage, false, "only a fresh install (background.js) arms the optimization");
     const s = env.internals("popup").state();
     assert.equal(s.countrySel, "SG");
     assert.equal(s.detectedCountry, "SG");
     assert.equal(s.currentCdnHost, nodesOf("SG")[0]);
     env.close();
   });
-  test("unknown dial → TW with no 'you are here' country", async () => {
+  test("unknown dial → Other regions with no 'you are here' country", async () => {
     const env = await boot({ countryAutoDone: false, cdnMode: "list", cdnHost: DEFAULT_HOST }, { zone: zoneOf(999) });
-    assert.equal(env.storage.cdnCountry, "TW");
+    assert.equal(env.storage.cdnCountry, "OTHER");
+    assert.equal(env.storage.cdnHost, nodesOf("OTHER")[0]);
     assert.equal(env.storage.detectedCountry, "");
     assert.equal(env.storage.countryAutoDone, true);
     env.close();
