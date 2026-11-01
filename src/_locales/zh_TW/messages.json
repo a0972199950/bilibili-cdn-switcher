@@ -18,10 +18,10 @@
     "message": "啟用"
   },
   "autoFallbackLabel": {
-    "message": "失敗自動切換"
+    "message": "速度不佳時自動優化節點"
   },
   "autoFallbackHint": {
-    "message": "影片或直播卡住、線路連不上時，自動換到其他可用線路。網路本身不穩（如 Wi-Fi 訊號弱）時可能頻繁切換、畫面黑掉重載，建議關閉。"
+    "message": "影片卡住或載入失敗時，先在背景測速目前清單的節點，換到夠快的那個；還是卡才改用 B 站原始節點。直播則改用國際線路。網路本身不穩（如 Wi-Fi 訊號弱）時可能頻繁切換，建議關閉。"
   },
   "cdnHostRowLabel": {
     "message": "CDN 節點"
@@ -45,7 +45,7 @@
     "message": "⭐ 喜歡嗎？給我 5 星鼓勵"
   },
   "donateBtnLabel": {
-    "message": "☕ 贊助我一杯咖啡"
+    "message": "☕ 贊助/乾爹排行榜"
   },
   "feedbackBtnLabel": {
     "message": "🐛 問題回報／功能許願"
@@ -422,32 +422,8 @@
   "stDescCollapse": {
     "message": "收合說明"
   },
-  "autoSpeedSwitchLabel": {
-    "message": "影片自動測速並切換到最快節點"
-  },
-  "autoSpeedSwitchHint": {
-    "message": "每支影片開始播放後，在背景測速目前國家的節點，自動切換到最快的節點並記住。"
-  },
-  "autoSpeedSwitchAllNote": {
-    "message": "節點清單選「全部」時無法使用，請先在主頁選擇國家。"
-  },
   "mhToastSwitched": {
     "message": "切換到 {host}"
-  },
-  "autoSpeedWarnTitle": {
-    "message": "確定要開啟自動測速嗎？"
-  },
-  "autoSpeedWarnText": {
-    "message": "由於每次測速的排名都不同，這有<b>極大副作用</b>：幾乎每次看影片都會因切換 CDN <b>跳一次黑畫面</b>。"
-  },
-  "autoSpeedWarnAdvice": {
-    "message": "選定的節點大多能順暢播放的話，開了也沒有明顯提升；怕卡又不想手動切換，請改用「失敗自動切換」。"
-  },
-  "autoSpeedWarnCancel": {
-    "message": "取消，維持關閉"
-  },
-  "autoSpeedWarnConfirm": {
-    "message": "仍要開啟"
   },
   "customHintDup": {
     "message": "這個節點已經在列表裡了。"
@@ -510,7 +486,10 @@
     "message": "沒有你的國家？全部節點都很慢？試試最接近的國家，或是{link}。"
   },
   "optimizingTitle": {
-    "message": "優化中..."
+    "message": "當前節點速度不佳，優化中..."
+  },
+  "optimizingStop": {
+    "message": "中斷優化"
   },
   "reportTitle": {
     "message": "問題回報／功能許願"

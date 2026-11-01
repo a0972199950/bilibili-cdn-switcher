@@ -34,6 +34,17 @@ describe("onInstalled", () => {
     assert.equal("installedVersion" in env.storage, false);
     env.close();
   });
+  test("update: the old per-video auto test folds into autoFallback", () => {
+    const env = boot({ autoSpeedSwitch: true, autoFallback: false });
+    env.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });
+    assert.equal(env.storage.autoFallback, true, "they wanted automatic switching");
+    assert.equal("autoSpeedSwitch" in env.storage, false);
+    env.close();
+    const env2 = boot({ autoFallback: false });
+    env2.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });
+    assert.equal(env2.storage.autoFallback, false, "a user who turned it off stays off");
+    env2.close();
+  });
   test("update never arms it and drops the old per-country flag", () => {
     const env = boot({ autoTestPending: true });
     env.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });

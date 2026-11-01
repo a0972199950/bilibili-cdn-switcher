@@ -182,7 +182,7 @@ function buildDiag(data) {
   lines.push("[ext]  " + kv({ version: manifest.version, installedVersion: cfg.installedVersion, installedAt: cfg.installedAt ? new Date(cfg.installedAt).toISOString() : null, updatedAt: cfg.updatedAt ? new Date(cfg.updatedAt).toISOString() : null }));
   lines.push("[env]  " + kv({ browser: browserVersion(), os: osName(), uiLang: uiLanguage(), tz: tz, connType: conn.effectiveType, downlink: conn.downlink, saveData: conn.saveData }));
   lines.push("[ua]   " + navigator.userAgent);
-  lines.push("[cfg]  " + kv({ enabled: cfg.enabled, autoFallback: cfg.autoFallback, sortBySpeed: cfg.sortBySpeed, autoSpeedSwitch: cfg.autoSpeedSwitch, showDebug: cfg.showDebug,
+  lines.push("[cfg]  " + kv({ enabled: cfg.enabled, autoFallback: cfg.autoFallback, sortBySpeed: cfg.sortBySpeed, showDebug: cfg.showDebug,
     country: cfg.cdnCountry, mode: cfg.cdnMode, video: cfg.videoEnabled === false ? "off" : cfg.cdnHost, customHosts: (cfg.customHosts || []).length,
     live: cfg.liveEnabled === false ? "off" : cfg.liveRoute, stVideo: (cfg.stVideoMb || 8) + "MB/" + (cfg.stVideoSec || 5) + "s" }));
   lines.push("[net]  " + kv({ ip: zone.ip, isp: zone.isp, province: zone.province, ipCountry: zone.countryName, ipDial: zone.dial, detectedCountry: detectedCode, zoneAge: zone.at ? Math.round((now - zone.at) / 60000) + "m" : null, vpnSuspect: vpnSuspect ? 1 : 0 }));

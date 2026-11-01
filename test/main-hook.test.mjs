@@ -522,6 +522,74 @@ describe("segment failures", () => {
   });
 });
 
+describe("fallback waits for the install optimization", () => {
+  test("pending optimization with a list → no switch; once it has started (flag cleared) the switch works again", () => {
+    const env = boot({ installTestPending: true, autoSpeedHosts: [HOST, COS] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 0, "the optimization will pick a node anyway");
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { installTestPending: false } });
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.optimized, true, "flag cleared → the stall path runs (its first step is the list optimization)");
+    env.close();
+  });
+  test("pending but no list to test (nothing will run) → the switch still works", () => {
+    const env = boot({ installTestPending: true, autoSpeedHosts: [] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1);
+    env.close();
+  });
+});
+
+describe("stall: optimize within the list first, then bilibili's backup", () => {
+  function bootStall(speed) {
+    const env = boot({ autoSpeedHosts: [HOST, COS] });
+    env.fetchHandler = () => {
+      let sent = false;
+      return { ok: true, status: 206, body: { getReader: () => ({ cancel() {},
+        read: () => sent ? Promise.resolve({ done: true }) : new Promise((r) => setTimeout(() => { sent = true; r({ done: false, value: { length: speed } }); }, 5)) }) } };
+    };
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    return { env, mh };
+  }
+  test("first failure runs the optimization instead of switching; the next one (after the cooldown) goes to the backup", async () => {
+    const { env, mh } = bootStall(9e6); // current node is fast → optimization keeps it
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.optimized, true);
+    assert.equal(mh.FALLBACK.attempts, 0);
+    assert.equal(mh.autoHost(), null);
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 0, "no switch while it is measuring / cooling down");
+    for (let i = 0; i < 100 && mh.FALLBACK.lastSwitchAt < Date.now() - 1000; i++) await env.settle(10);
+    await env.settle(30);
+    mh.FALLBACK.lastSwitchAt = 0; // cooldown over
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1, "still failing after the optimization → bilibili's backup");
+    assert.equal(mh.autoHost(), COS);
+    env.close();
+  });
+  test("node list 'All' (no hosts to test) → straight to the backup, as before", () => {
+    const env = boot({ autoSpeedHosts: [] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1);
+    env.close();
+  });
+});
+
 describe("stall detection", () => {
   test("paused with an empty buffer and only a trickle of data still counts as stuck", () => {
     const env = boot({});

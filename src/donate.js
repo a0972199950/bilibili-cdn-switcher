@@ -1,6 +1,6 @@
 "use strict";
 /*
- * 贊助頁（donate.html）：popup 按「贊助我一杯咖啡」開成一般分頁。
+ * 贊助頁（donate.html）：popup 按「贊助/乾爹排行榜」開成一般分頁。
  *  - 乾爹排行榜：GET <DONATE_API>/v1/donors（report worker），同一位贊助者的多筆已在後端合併、換算成美金，依累計金額排序
  *  - 贊助入口：付款地區 → 幣別與金額（一杯咖啡為單位的快選＋自訂，有下限）→ 上榜名稱與頭像 → 前往付款
  *  - 贊助者身分：隨機的 donorId（storage.sync：同一個瀏覽器帳號的各台裝置共用；不支援 sync 的退回 local），

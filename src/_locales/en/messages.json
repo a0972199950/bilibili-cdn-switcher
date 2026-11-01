@@ -18,10 +18,10 @@
     "message": "Enabled"
   },
   "autoFallbackLabel": {
-    "message": "Auto-switch on failure"
+    "message": "Auto-optimize node when slow"
   },
   "autoFallbackHint": {
-    "message": "Switches to another working route when a video or live stream freezes or can't connect. On an unstable connection (e.g. weak Wi-Fi) it may keep switching and blank the picture, so turn it off."
+    "message": "When a video freezes or fails to load, the nodes in your current list are speed-tested in the background and a fast enough one is picked; if it still freezes, bilibili's original node is used. Live streams switch to the international route. On an unstable connection (e.g. weak Wi-Fi) it may keep switching, so turn it off."
   },
   "cdnHostRowLabel": {
     "message": "CDN node"
@@ -45,7 +45,7 @@
     "message": "⭐ Like it? Rate 5 stars"
   },
   "donateBtnLabel": {
-    "message": "☕ Buy me a coffee"
+    "message": "☕ Tip / Top Patrons"
   },
   "feedbackBtnLabel": {
     "message": "🐛 Report a bug / Request a feature"
@@ -422,32 +422,8 @@
   "stDescCollapse": {
     "message": "Show less"
   },
-  "autoSpeedSwitchLabel": {
-    "message": "Auto-switch videos to the fastest node"
-  },
-  "autoSpeedSwitchHint": {
-    "message": "After each video starts, your current country's nodes are tested in the background and the fastest one is selected and remembered."
-  },
-  "autoSpeedSwitchAllNote": {
-    "message": "Unavailable while the node list is set to \"All\" — pick a country on the main page first."
-  },
   "mhToastSwitched": {
     "message": "Switched to {host}"
-  },
-  "autoSpeedWarnTitle": {
-    "message": "Turn on auto speed test?"
-  },
-  "autoSpeedWarnText": {
-    "message": "Because the ranking differs on every test, this has a <b>major side effect</b>: almost every video will <b>briefly go black</b> while the CDN switches."
-  },
-  "autoSpeedWarnAdvice": {
-    "message": "If your chosen node usually plays smoothly, this brings no visible benefit. Worried about stalls but don't want to switch manually? Use \"Auto-switch on failure\" instead."
-  },
-  "autoSpeedWarnCancel": {
-    "message": "Cancel, keep it off"
-  },
-  "autoSpeedWarnConfirm": {
-    "message": "Turn it on anyway"
   },
   "customHintDup": {
     "message": "This node is already in the list."
@@ -510,7 +486,10 @@
     "message": "Your country isn't listed, or every node is slow? Try the closest country, or add your own nodes under {link}."
   },
   "optimizingTitle": {
-    "message": "Optimizing..."
+    "message": "Current node is slow, optimizing..."
+  },
+  "optimizingStop": {
+    "message": "Stop"
   },
   "reportTitle": {
     "message": "Report a problem / Request a feature"

@@ -9,14 +9,13 @@ var DEFAULTS = {
   detectedCountry: "", // 依 IP 偵測到、且在清單內的國家；標「你在這裡」用
   countryAutoDone: false, // IP-based country selection runs once per install (never reset, not even on update); a manual choice also sets it
   autoFallback: true,
-  autoSpeedSwitch: false, // 影片自動測速並切換到最快節點（進階設定，預設關閉；實際測速在 main-hook.js）
   autoSpeedHosts: [], // 自動測速要測的節點：依目前國家寫入，content script 讀這份
   installTestPending: false, // 全新安裝時 background.js 設：第一支影片在背景優化一次（見 main-hook.js 的 runAutoSpeedTest）；觸發即清，使用者自己選節點、測速、關閉也清
   showDebug: false,
   videoEnabled: true,
   liveEnabled: true,
   liveRoute: "ov",
-  sortBySpeed: false, // 只有 popup 用：節點按測速排序
+  sortBySpeed: true, // 只有 popup 用：節點按測速排序（預設開啟；storage 沒存過的人都算開）
   speedOrder: null, // 上次測速排出的順序 { video: [host...], live: [route...] }，沒重新測速就一直沿用
   // 測速門檻（進階設定，永久儲存）：影片每個節點下載到 N MB 或測滿 N 秒先到為準；
   // 直播切台卡頓測 N 次取平均、持續觀看每條線路測 N 秒
@@ -89,7 +88,7 @@ var els = {
 document.title = t("popupTitle");
 document.documentElement.lang = uiLanguage();
 [
-  ["headerTitle", "popupHeaderTitle"], ["gearBtnLabel", "advancedBtnLabel"], ["uiLangLabel", "uiLangLabel"], ["uiThemeLabel", "uiThemeLabel"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["autoSpeedSwitchLabel", "autoSpeedSwitchLabel"], ["cdnHostRowLabel", "cdnHostRowLabel"],
+  ["headerTitle", "popupHeaderTitle"], ["gearBtnLabel", "advancedBtnLabel"], ["uiLangLabel", "uiLangLabel"], ["uiThemeLabel", "uiThemeLabel"], ["enabledLabel", "enabledLabel"], ["autoFallbackLabel", "autoFallbackLabel"], ["autoFallbackHint", "autoFallbackHint"], ["cdnHostRowLabel", "cdnHostRowLabel"],
   ["tabVideo", "tabVideo"], ["tabLive", "tabLive"], ["advHeaderTitle", "advancedTitle"], ["advBackBtn", "stBackBtn"], ["clBackBtn", "stBackBtn"], ["clHeaderTitle", "changelogTitle"],
   ["modeListLabel", "modeListLabel"], ["modeCustomLabel", "modeCustomLabel"], ["modeOffLabel", "modeOffLabel"], ["speedtestBtn", "speedtestBtnLabel"],
   ["liveModeListLabel", "liveModePrefLabel"], ["liveModeOffLabel", "modeOffLabel"], ["liveSpeedtestBtn", "liveSpeedtestBtnLabel"],
@@ -99,7 +98,7 @@ document.documentElement.lang = uiLanguage();
   ["stHeaderTitle", "stHeaderTitle"], ["stRetestBtn", "stRetestBtn"], ["stStopBtn", "stStopBtn"], ["stHintLeave", "stHintLeave"],
   ["liveRouteRowLabel", "liveRouteRowLabel"],
   ["sortBySpeedLabel", "sortBySpeedLabel"], ["sortBySpeedHint", "sortBySpeedHint"],
-  ["optTitle", "optimizingTitle"],
+  ["optTitle", "optimizingTitle"], ["optStop", "optimizingStop"],
   ["stVideoLimitTitle", "stVideoLimitTitle"], ["stVideoLimitHint", "stVideoLimitHint"], ["stVideoMbLabel", "stVideoMbLabel"],
   ["stVideoSecLabel", "stVideoSecLabel"], ["stVideoSecUnit", "unitSec"], ["stVideoReset", "resetDefault"], ["stVideoPresetLabel", "stPresetLabel"],
   ["stLiveLimitTitle", "stLiveLimitTitle"], ["stLiveLimitHint", "stLiveLimitHint"], ["stLiveRunsLabel", "stLiveRunsLabel"],
@@ -169,8 +168,6 @@ els.customHost.placeholder = t("customHostPlaceholder");
 els.countrySelect.setAttribute("aria-label", t("countryLabel"));
 els.countrySelect.title = t("countryLabel");
 els.debug.textContent = t("debugInitial");
-setRichText(document.getElementById("autoSpeedSwitchHint"), t("autoSpeedSwitchHint"));
-document.getElementById("autoSpeedSwitchAllNote").textContent = t("autoSpeedSwitchAllNote");
 
 // iPhone 的 popup 是整個螢幕寬的底部面板（見 popup.html 的 html.iphone）
 var IS_IPHONE = /iPhone|iPod/.test(navigator.userAgent);
@@ -684,15 +681,11 @@ function applyCountry(code) {
   selectCdnValue(cdnSelectValue);
   saveAutoSpeedHosts();
 }
-// 自動測速要測的節點跟著國家走；選「全部」時不能用（約 300 個節點，背景測不完）：
-// 寫入空清單讓 content script 不測，進階設定的開關也停用並顯示原因
+// 自動優化要測的節點跟著國家走；選「全部」時不測（約 300 個節點，背景測不完）：
+// 寫入空清單讓 content script 不測，卡頓時直接退回 B 站原始節點
 var savedAutoSpeedHosts = "";
 function saveAutoSpeedHosts() {
   var isAll = cdnMode === "list" && countrySel === COUNTRY_ALL;
-  var sw = document.getElementById("autoSpeedSwitch");
-  sw.disabled = isAll;
-  sw.closest(".advItem").classList.toggle("disabled", isAll);
-  document.getElementById("autoSpeedSwitchAllNote").style.display = isAll ? "" : "none";
   var hosts = isAll ? [] : activeHosts();
   var sig = hosts.join("|");
   if (sig === savedAutoSpeedHosts) return;
@@ -896,7 +889,7 @@ function useHost(host, patch) {
 // 問題回報用的事件日誌：使用者在 popup 的動作（換節點、換國家、開關…）統一在 save() 這裡比對前後值記下，
 // 不用在每個事件處理器各記一次。載入時的遷移寫入（journalReady 之前）不算使用者動作
 var journalReady = false, lastCfg = {};
-var JOURNAL_TOGGLE_KEYS = ["enabled", "autoFallback", "videoEnabled", "liveEnabled", "sortBySpeed", "autoSpeedSwitch", "showDebug"];
+var JOURNAL_TOGGLE_KEYS = ["enabled", "autoFallback", "videoEnabled", "liveEnabled", "sortBySpeed", "showDebug"];
 function journalUi(k, d) {
   try { chrome.runtime.sendMessage({ type: "CDN_SWITCHER_JOURNAL", entry: { t: Date.now(), k: k, d: d } }, function () { void chrome.runtime.lastError; }); } catch (e) {}
 }
@@ -938,7 +931,6 @@ Promise.all([
   if (addFakeCountry.active) { countrySel = detectedCountry = FAKE_COUNTRY.code; cfg.countryAutoDone = true; }
   els.enabled.checked = !!cfg.enabled;
   els.autoFallback.checked = !!cfg.autoFallback;
-  document.getElementById("autoSpeedSwitch").checked = !!cfg.autoSpeedSwitch;
   savedAutoSpeedHosts = (cfg.autoSpeedHosts || []).join("|");
   els.showDebug.checked = !!cfg.showDebug;
   syncDebugSection();
@@ -977,20 +969,7 @@ Promise.all([
 });
 
 els.enabled.addEventListener("change", function () { save({ enabled: els.enabled.checked }); });
-els.autoFallback.addEventListener("change", function () { save({ autoFallback: els.autoFallback.checked }); });
-// 自動測速副作用大：打開前先跳警告，按「仍要開啟」才真的開；關閉不用確認
-document.getElementById("autoSpeedSwitch").addEventListener("change", function () {
-  var sw = this;
-  if (!sw.checked) { save({ autoSpeedSwitch: false }); return; }
-  sw.checked = false;
-  showWarnDialog({
-    title: t("autoSpeedWarnTitle"),
-    paras: [t("autoSpeedWarnText"), t("autoSpeedWarnAdvice")],
-    cancel: t("autoSpeedWarnCancel"),
-    confirm: t("autoSpeedWarnConfirm"),
-    onConfirm: function () { sw.checked = true; save({ autoSpeedSwitch: true }); }
-  });
-});
+els.autoFallback.addEventListener("change", function () { save({ autoFallback: els.autoFallback.checked }); }); // 「速度不佳時自動優化節點」
 // Debug（目前分頁）的文字只在開啟 debug 疊層時才顯示，跟該開關放在同一區
 function syncDebugSection() { document.getElementById("debugSection").style.display = els.showDebug.checked ? "" : "none"; }
 els.showDebug.addEventListener("change", function () { syncDebugSection(); save({ showDebug: els.showDebug.checked }); });
@@ -1418,12 +1397,14 @@ function pollDebug() {
 pollDebug();
 
 // -------- 安裝後第一支影片的優化：目前分頁回報「正在跑」才顯示「優化中」遮罩與剩餘節點數；手動測速不顯示 --------
-// 只會發生一次，所以沒有「略過」；最長顯示時間由 bridge 把關（超過 maxMs 就回報已結束）
+// 安裝後那次只會發生一次，沒有「中斷」；卡頓時那次（reason "stall"）可以中斷。最長顯示時間由 bridge 把關（超過 maxMs 就回報已結束）。
+// 第一個測的是目前的節點：它夠快就直接結束、什麼都不顯示；測完它（done ≥ 1）還在跑 = 它不夠快，才顯示「當前節點速度不佳，優化中」
 var optEl = document.getElementById("optimizing");
 var optShown = false, optLastCount = null;
 function renderOptimizing(st) {
-  var on = !!(st && st.running && st.reason === "install");
+  var on = !!(st && st.running && (st.reason === "install" || st.reason === "stall") && st.done >= 1);
   if (on) {
+    optStopRow.style.display = st.reason === "stall" ? "" : "none";
     var total = st.total || 0, done = Math.min(st.done || 0, total), left = total - done;
     var cnt = document.getElementById("optCount");
     if (left !== optLastCount) {
@@ -1438,6 +1419,15 @@ function renderOptimizing(st) {
   optShown = on;
   optEl.classList.toggle("show", on);
 }
+var optStopRow = document.getElementById("optStopRow");
+// 中斷：這一輪作廢、節點維持原樣（這支影片不會再優化；之後還卡會退回 B 站原始節點）
+document.getElementById("optStop").addEventListener("click", function () {
+  renderOptimizing(null);
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    if (!tabs || !tabs[0]) return;
+    sendToTop(tabs[0].id, { type: "CDN_SWITCHER_STOP_AUTOTEST" }, function () { void chrome.runtime.lastError; });
+  });
+});
 
 // -------- 手动测速：切到独立页面，逐节点显示等待中/测试中/结果；离开页面就中止 --------
 var SPEEDTEST_ERR_KEYS = {
@@ -1624,13 +1614,12 @@ function lim(key) { return limits[key] || DEFAULTS[key]; }
 function resetAllSettings() {
   var code = detectedCountry || COUNTRY_FALLBACK;
   var patch = {
-    autoFallback: DEFAULTS.autoFallback, autoSpeedSwitch: DEFAULTS.autoSpeedSwitch, showDebug: DEFAULTS.showDebug,
+    autoFallback: DEFAULTS.autoFallback, showDebug: DEFAULTS.showDebug,
     sortBySpeed: DEFAULTS.sortBySpeed, speedOrder: null,
     videoEnabled: true, cdnMode: "list", customHosts: [], cdnCountry: code,
     liveEnabled: true, liveRoute: DEFAULTS.liveRoute
   };
   els.autoFallback.checked = DEFAULTS.autoFallback;
-  document.getElementById("autoSpeedSwitch").checked = DEFAULTS.autoSpeedSwitch;
   els.showDebug.checked = DEFAULTS.showDebug;
   syncDebugSection();
   sortOn = DEFAULTS.sortBySpeed;

@@ -20,7 +20,6 @@
     videoEnabled: true,
     liveEnabled: true,
     liveRoute: "ov",
-    autoSpeedSwitch: false,
     autoSpeedHosts: [],
     installTestPending: false,
     stVideoMb: 8,
@@ -41,7 +40,7 @@
     toBackground({ type: "CDN_SWITCHER_SNAPSHOT", payload: payload, url: location.href.split(/[?#]/)[0] });
   }
 
-  var latestAutoTest = null; // 安装后第一支影片那次优化的进度（autotest-start/progress/end）
+  var latestAutoTest = null; // 自动优化节点的进度（autotest-start/progress/end；安装后那次或卡顿时）
   // 「优化中」最长显示多久：MAIN 依节点数算好送来（maxMs）；送来的值不合理就用这个上限，免得 bug 让遮罩一直关不掉
   var AUTOTEST_MAX_MS = 10 * 60 * 1000;
   var speedTest = { running: false, results: [], total: 0, error: null, title: "", qn: "", avail: null };
@@ -164,8 +163,8 @@
     if (d.dir === "debug") { latestDebug = d.payload || null; if (isTopFrame && latestDebug) maybeStoreSnapshot(latestDebug); return; }
     if (d.dir === "journal" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_JOURNAL", entry: d.payload }); return; }
     if (d.dir === "sample" && d.payload && isTopFrame) { toBackground({ type: "CDN_SWITCHER_SAMPLE", row: d.payload }); return; }
-    // 安装后第一支影片的优化（main-hook 的 reason "install"）：进度给 popup 显示「优化中」；
-    // 一开始就把旗标清掉，之后不论结果都不再测
+    // 自动优化节点（main-hook 的 reason "install"／"stall"）：进度给 popup 显示「当前节点速度不佳，优化中」；
+    // 安装后那次一开始就把旗标清掉，之后不论结果都不再测
     if (d.dir === "autotest-start" && d.payload) {
       var maxMs = Number(d.payload.maxMs);
       latestAutoTest = { running: true, reason: d.payload.reason || "", total: d.payload.total || 0, done: 0,
@@ -199,14 +198,14 @@
       else speedTest.results.push(d.payload);
       return;
     }
-    // 自动测速测完：把最快的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
-    // 存之前再确认一次设定：期间使用者关掉了选项、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
-    // 安装后的那一次（reason "install"）不看「影片自动测速」开关，但要先经过上面的 installTestArmed
+    // 自动优化测完：把选到的节点存成使用者选的节点（storage 变更会再推回 MAIN，由它做播放器内重载）。
+    // 存之前再确认一次设定：期间使用者关掉了开关、或自己换了节点（cdnHost 已不是开测时的 from），就不覆盖。
+    // 安装后的那一次（reason "install"）不看开关，但要先经过上面的 installTestArmed；卡顿时那次（"stall"）要开着「速度不佳时自动优化节点」
     // Security: any script running in the page context (bilibili's own, third-party SDKs, other
     // extensions) can post a forged "autotest-done", and whatever host we store here is applied to
     // every segment request in every tab from then on. Every condition below reads storage, which
     // the page cannot write: the host must be in autoSpeedHosts (the list the test was asked to
-    // measure), the "install" bypass of autoSpeedSwitch needs a real pending test, and videoEnabled
+    // measure), "install" needs a real pending test, "stall" needs autoFallback on, and videoEnabled
     // is never touched from here (auto tests only run while video override is on anyway).
     if (d.dir === "autotest-done" && d.payload && typeof d.payload.host === "string") {
       var p = d.payload;
@@ -214,10 +213,10 @@
       var install = p.reason === "install" && installTestArmed;
       if (p.reason === "install") installTestArmed = false;
       try {
-        chrome.storage.local.get({ autoSpeedSwitch: false, cdnHost: DEFAULTS.cdnHost, autoSpeedHosts: [] }, function (items) {
+        chrome.storage.local.get({ autoFallback: DEFAULTS.autoFallback, cdnHost: DEFAULTS.cdnHost, autoSpeedHosts: [] }, function (items) {
           if (!Array.isArray(items.autoSpeedHosts) || items.autoSpeedHosts.indexOf(p.host) < 0) return;
           if (items.cdnHost !== p.from) return;
-          if (!install && !items.autoSpeedSwitch) return;
+          if (!install && !(p.reason === "stall" && items.autoFallback)) return;
           chrome.storage.local.set({ cdnHost: p.host });
         });
       } catch (e) {}
@@ -264,6 +263,11 @@
         speedTest = { running: true, results: [], total: 4, error: null, title: speedTest.title, qn: speedTest.qn, avail: null };
         journal("ui.speedtest", { phase: "start", kind: "live" });
         try { window.postMessage({ __cdnSwitcher: 1, dir: "livetest-run", payload: { limits: msg.limits || null } }, "*"); } catch (e) {}
+        sendResponse({ ok: true });
+        return true;
+      }
+      if (msg && msg.type === "CDN_SWITCHER_STOP_AUTOTEST") {
+        try { window.postMessage({ __cdnSwitcher: 1, dir: "autotest-stop" }, "*"); } catch (e) {}
         sendResponse({ ok: true });
         return true;
       }

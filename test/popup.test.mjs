@@ -189,6 +189,14 @@ describe("settings migration on load", () => {
     assert.equal(env.internals("popup").els.modeOff.checked, true);
     env.close();
   });
+  test("sort by speed is on unless the user turned it off", async () => {
+    const env = await boot({ cdnMode: "list", cdnHost: DEFAULT_HOST });
+    assert.equal(env.window.document.getElementById("sortBySpeed").checked, true);
+    env.close();
+    const env2 = await boot({ cdnMode: "list", cdnHost: DEFAULT_HOST, sortBySpeed: false });
+    assert.equal(env2.window.document.getElementById("sortBySpeed").checked, false);
+    env2.close();
+  });
   test("removed hosts fall back to the default", async () => {
     const env = await boot({ cdnHost: "upos-sz-mirrorhwov.bilivideo.com", cdnMode: "list" });
     assert.equal(env.storage.cdnHost, DEFAULT_HOST);

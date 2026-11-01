@@ -22,6 +22,11 @@ chrome.runtime.onInstalled.addListener(function (details) {
     chrome.storage.local.set({ updatedAt: Date.now() });
     // autoTestPending：2.8 以前「切換國家後測一次」的旗標，已由只在安裝時設的 installTestPending 取代
     chrome.storage.local.remove("autoTestPending");
+    // autoSpeedSwitch：2.8 以前的「影片自動測速並切換到最快節點」，已併進「速度不佳時自動優化節點」（autoFallback）；開著它的人想要自動換節點
+    chrome.storage.local.get({ autoSpeedSwitch: false }, function (items) {
+      if (items.autoSpeedSwitch) chrome.storage.local.set({ autoFallback: true });
+      chrome.storage.local.remove("autoSpeedSwitch");
+    });
     selectCountry("update");
   }
   if (details.reason !== "update" || !details.previousVersion) return;

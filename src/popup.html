@@ -2144,7 +2144,7 @@
       color: inherit;
     }
 
-    /* 切換國家後的自動測速「優化中」遮罩：圖示被鎚子敲敲打打 + 剩餘節點數倒數 + 一個不強調的「略過」 */
+    /* 自動優化節點的「當前節點速度不佳，優化中」遮罩：圖示被鎚子敲敲打打 + 剩餘節點數倒數；卡頓時那次多一個不強調的「中斷優化」 */
     #optimizing {
       display: none;
       position: fixed;
@@ -2306,6 +2306,21 @@
     @keyframes optPop {
       0% { transform: scale(1.35); opacity: .4; }
       100% { transform: scale(1); opacity: 1; }
+    }
+
+    .optStopRow {
+      margin-top: 14px;
+    }
+
+    .optStopRow button.linkBtn {
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: underline;
+      cursor: pointer;
     }
 
     /* 更新後的「更新內容」提示：蓋在整個 popup 上的一次性遮罩，關閉後才把新版本號寫進 storage */
@@ -2699,15 +2714,6 @@
         <label class="switch"><input type="checkbox" id="sortBySpeed" /><span class="slider"></span></label>
       </div>
       <div class="hint" id="sortBySpeedHint"></div>
-    </div>
-
-    <div class="advItem">
-      <div class="row">
-        <span id="autoSpeedSwitchLabel"></span>
-        <label class="switch"><input type="checkbox" id="autoSpeedSwitch" /><span class="slider"></span></label>
-      </div>
-      <div class="hint" id="autoSpeedSwitchHint"></div>
-      <div class="hint advDisabledNote" id="autoSpeedSwitchAllNote" style="display:none"></div>
     </div>
 
     <div class="advItem">
@@ -3107,7 +3113,7 @@
     </div>
   </div>
 
-  <!-- 安裝後第一支影片的優化：目前分頁回報進行中才顯示（見 popup.js renderOptimizing）；手動測速不會出現 -->
+  <!-- 自動優化節點（安裝後第一支影片、或卡頓時）：目前分頁回報進行中才顯示（見 popup.js renderOptimizing）；手動測速不會出現 -->
   <div id="optimizing" role="dialog" aria-modal="true" aria-labelledby="optTitle">
     <div class="optCard">
       <!-- 場景：擴充圖示當小人，左手拿扳手鎖管子上的螺帽、右手拿鎚子敲工作台上的機器（齒輪一直轉），敲到會冒火花。
@@ -3179,6 +3185,7 @@
       <div class="optTitle" id="optTitle"></div>
       <!-- 剩餘節點數「10...」：數字每減一跳一下，後面的點 0 → 3 個循環 -->
       <div class="optCountRow"><span class="optCount" id="optCount">10</span><span class="optDots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></div>
+      <div class="optStopRow" id="optStopRow" style="display:none"><button type="button" class="linkBtn" id="optStop"></button></div>
     </div>
   </div>
 

@@ -18,10 +18,10 @@
     "message": "有効"
   },
   "autoFallbackLabel": {
-    "message": "失敗時に自動切り替え"
+    "message": "遅いときにノードを自動最適化"
   },
   "autoFallbackHint": {
-    "message": "動画やライブが止まったり回線につながらなかったりしたとき、使える別の回線へ自動で切り替えます。ネットワーク自体が不安定（Wi-Fi が弱いなど）だと切り替えを繰り返して画面が暗転することがあるため、オフをおすすめします。"
+    "message": "動画が止まったり読み込みに失敗したりしたとき、まず現在のリストのノードをバックグラウンドで速度テストし、十分速いノードに切り替えます。それでも止まる場合は bilibili の元のノードを使います。ライブは国際回線に切り替えます。ネットワーク自体が不安定（Wi-Fi が弱いなど）だと切り替えを繰り返すことがあるため、オフをおすすめします。"
   },
   "cdnHostRowLabel": {
     "message": "CDN ノード"
@@ -45,7 +45,7 @@
     "message": "⭐ 星 5 つで応援"
   },
   "donateBtnLabel": {
-    "message": "☕ コーヒーをおごる"
+    "message": "☕ 支援/石油王ランキング"
   },
   "feedbackBtnLabel": {
     "message": "🐛 不具合の報告・機能のリクエスト"
@@ -422,32 +422,8 @@
   "stDescCollapse": {
     "message": "説明を閉じる"
   },
-  "autoSpeedSwitchLabel": {
-    "message": "動画を自動テストして最速ノードに切り替え"
-  },
-  "autoSpeedSwitchHint": {
-    "message": "動画の再生が始まるたびに、現在の国のノードをバックグラウンドでテストし、最速のノードに自動で切り替えて記憶します。"
-  },
-  "autoSpeedSwitchAllNote": {
-    "message": "ノードリストが「すべて」のときは使えません。先にメイン画面で国を選んでください。"
-  },
   "mhToastSwitched": {
     "message": "{host} に切り替えました"
-  },
-  "autoSpeedWarnTitle": {
-    "message": "自動テストをオンにしますか？"
-  },
-  "autoSpeedWarnText": {
-    "message": "テストのたびに順位が変わるため、<b>大きな副作用</b>があります：ほぼすべての動画で、CDN の切り替え時に<b>画面が一度暗転</b>します。"
-  },
-  "autoSpeedWarnAdvice": {
-    "message": "選んだノードでたいていスムーズに再生できるなら、オンにしても目に見える改善はありません。止まるのが心配でも手動で切り替えたくない場合は、「失敗時に自動切り替え」を使ってください。"
-  },
-  "autoSpeedWarnCancel": {
-    "message": "キャンセル（オフのまま）"
-  },
-  "autoSpeedWarnConfirm": {
-    "message": "それでもオンにする"
   },
   "customHintDup": {
     "message": "このノードはすでにリストにあります。"
@@ -510,7 +486,10 @@
     "message": "お住まいの国がない、またはどのノードも遅い場合は、最も近い国を試すか、{link}でノードを追加してください。"
   },
   "optimizingTitle": {
-    "message": "最適化中..."
+    "message": "現在のノードが遅いため最適化中..."
+  },
+  "optimizingStop": {
+    "message": "中止"
   },
   "reportTitle": {
     "message": "問題の報告／機能リクエスト"

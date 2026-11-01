@@ -3,11 +3,11 @@
     {
       "type": "feature",
       "text": {
-        "zh_TW": "新增「贊助我一杯咖啡」與乾爹排行榜：贊助後可以用自己的名稱和頭像上榜",
-        "zh_CN": "新增「请我喝杯咖啡」与金主爸爸排行榜：赞助后可以用自己的名称和头像上榜",
-        "en": "Added \"Buy me a coffee\" and the Top Patrons leaderboard: tip to show up on the board with your own name and avatar",
-        "ja": "「コーヒーをおごる」と石油王ランキングを追加。支援すると自分の名前とアイコンでランキングに載ります",
-        "ko": "'커피 한 잔 후원하기'와 회장님 랭킹을 추가했어요. 후원하면 내 이름과 아바타로 랭킹에 올라가요"
+        "zh_TW": "新增「贊助/乾爹排行榜」：贊助後可以用自己的名稱和頭像上榜",
+        "zh_CN": "新增「赞助/金主爸爸榜」：赞助后可以用自己的名称和头像上榜",
+        "en": "Added \"Tip / Top Patrons\": tip to show up on the leaderboard with your own name and avatar",
+        "ja": "「支援/石油王ランキング」を追加。支援すると自分の名前とアイコンでランキングに載ります",
+        "ko": "'후원/회장님 랭킹'을 추가했어요. 후원하면 내 이름과 아바타로 랭킹에 올라가요"
       }
     },
     {
@@ -28,6 +28,26 @@
         "en": "Right after install, if the default node can't play your first video smoothly in 4K, a faster node is picked in the background, just once",
         "ja": "インストール直後の最初の動画でデフォルトノードが 4K をスムーズに再生できない場合、バックグラウンドで速いノードに自動で切り替えます（一度だけ）",
         "ko": "설치 직후 첫 영상에서 기본 노드로 4K가 매끄럽지 않으면 백그라운드에서 더 빠른 노드로 자동 전환해요 (한 번만)"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "「失敗自動切換」改為「速度不佳時自動優化節點」：卡頓時先換到清單裡夠快的節點，還是卡才改用 B 站原始節點；移除每支影片都會黑畫面一次的「影片自動測速」",
+        "zh_CN": "「失败自动切换」改为「速度不佳时自动优化节点」：卡顿时先换到列表里够快的节点，还是卡才改用 B 站原始节点；移除每个视频都会黑屏一次的「视频自动测速」",
+        "en": "\"Auto-switch on failure\" is now \"Auto-optimize node when slow\": when playback freezes, a fast enough node from your list is picked first, and bilibili's original node only if it still freezes. The per-video auto speed test, which blanked every video once, is removed",
+        "ja": "「失敗時に自動切り替え」を「遅いときにノードを自動最適化」に変更。止まったときはまずリスト内の十分速いノードに切り替え、それでも止まる場合のみ bilibili の元のノードを使います。毎回画面が暗転していた「動画の自動速度テスト」は廃止しました",
+        "ko": "'실패 시 자동 전환'을 '느릴 때 노드 자동 최적화'로 바꿨어요. 멈추면 먼저 목록에서 충분히 빠른 노드로 전환하고, 그래도 멈출 때만 bilibili 원래 노드를 사용해요. 영상마다 화면이 한 번씩 꺼지던 '영상 자동 속도 측정'은 없앴어요"
+      }
+    },
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "「節點按測速排序」改為預設開啟",
+        "zh_CN": "「节点按测速排序」改为默认开启",
+        "en": "\"Sort nodes by speed test\" is now on by default",
+        "ja": "「テスト結果でノードを並べ替え」をデフォルトでオンに",
+        "ko": "'속도 테스트 순으로 노드 정렬'을 기본으로 켰어요"
       }
     },
     {

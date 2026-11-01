@@ -18,10 +18,10 @@
     "message": "启用"
   },
   "autoFallbackLabel": {
-    "message": "失败自动切换"
+    "message": "速度不佳时自动优化节点"
   },
   "autoFallbackHint": {
-    "message": "视频或直播卡住、线路连不上时，自动换到其他可用线路。网络本身不稳（如 Wi-Fi 信号弱）时可能频繁切换、画面黑屏重新加载，建议关闭。"
+    "message": "视频卡住或加载失败时，先在后台测速当前列表的节点，换到够快的那个；还是卡才改用 B 站原始节点。直播则改用国际线路。网络本身不稳（如 Wi-Fi 信号弱）时可能频繁切换，建议关闭。"
   },
   "cdnHostRowLabel": {
     "message": "CDN 节点"
@@ -45,7 +45,7 @@
     "message": "⭐ 喜欢吗？给我 5 星鼓励"
   },
   "donateBtnLabel": {
-    "message": "☕ 请我喝杯咖啡"
+    "message": "☕ 赞助/金主爸爸榜"
   },
   "feedbackBtnLabel": {
     "message": "🐛 问题反馈／功能许愿"
@@ -422,32 +422,8 @@
   "stDescCollapse": {
     "message": "收起说明"
   },
-  "autoSpeedSwitchLabel": {
-    "message": "视频自动测速并切换到最快节点"
-  },
-  "autoSpeedSwitchHint": {
-    "message": "每个视频开始播放后，在后台测速当前国家的节点，自动切换到最快的节点并记住。"
-  },
-  "autoSpeedSwitchAllNote": {
-    "message": "节点列表选「全部」时无法使用，请先在主页选择国家。"
-  },
   "mhToastSwitched": {
     "message": "切换到 {host}"
-  },
-  "autoSpeedWarnTitle": {
-    "message": "确定要开启自动测速吗？"
-  },
-  "autoSpeedWarnText": {
-    "message": "由于每次测速的排名都不同，这有<b>极大副作用</b>：几乎每次看视频都会因切换 CDN <b>黑屏一次</b>。"
-  },
-  "autoSpeedWarnAdvice": {
-    "message": "选定的节点大多能流畅播放的话，开了也没有明显提升；怕卡又不想手动切换，请改用「失败自动切换」。"
-  },
-  "autoSpeedWarnCancel": {
-    "message": "取消，保持关闭"
-  },
-  "autoSpeedWarnConfirm": {
-    "message": "仍要开启"
   },
   "customHintDup": {
     "message": "这个节点已经在列表里了。"
@@ -510,7 +486,10 @@
     "message": "没有你的国家？全部节点都很慢？试试最接近的国家，或是{link}。"
   },
   "optimizingTitle": {
-    "message": "优化中..."
+    "message": "当前节点速度不佳，优化中..."
+  },
+  "optimizingStop": {
+    "message": "中断优化"
   },
   "reportTitle": {
     "message": "问题反馈／功能许愿"

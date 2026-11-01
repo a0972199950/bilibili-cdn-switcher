@@ -5,7 +5,7 @@ import { createEnv, plain, closeAll } from "./helpers/load.mjs";
 const A = "upos-sz-mirror08ct.bilivideo.com";
 const B = "upos-sz-mirrorcos.bilivideo.com";
 function boot(storage, url = "https://www.bilibili.com/video/BV1xx") {
-  const env = createEnv({ url, storage: { cdnHost: A, autoSpeedSwitch: false, autoSpeedHosts: [A, B], ...storage } });
+  const env = createEnv({ url, storage: { cdnHost: A, autoSpeedHosts: [A, B], ...storage } });
   env.load("bridge.js");
   return env;
 }
@@ -32,15 +32,15 @@ describe("config sync to MAIN world", () => {
 });
 
 describe("autotest-done → storage", () => {
-  test("per-video auto test with the switch off is ignored", () => {
-    const env = boot({});
-    autotestDone(env, { host: B, from: A, reason: "video" });
+  test("stall optimization with the switch off is ignored", () => {
+    const env = boot({ autoFallback: false });
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
-  test("per-video auto test with the switch on applies", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { host: B, from: A, reason: "video" });
+  test("stall optimization applies with the switch on (the default)", () => {
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, B);
     assert.equal("videoEnabled" in env.storage, false, "only cdnHost is written");
     env.close();
@@ -65,36 +65,42 @@ describe("autotest-done → storage", () => {
     assert.equal(env.storage.cdnHost, A, "forged autotest-start does not arm it either");
     env.close();
   });
+  test("any other reason (e.g. the removed per-video test) is ignored", () => {
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "video" });
+    assert.equal(env.storage.cdnHost, A);
+    env.close();
+  });
   test("user changed the node meanwhile (from mismatch) → not overwritten", () => {
-    const env = boot({ autoSpeedSwitch: true });
+    const env = boot({});
     autotestDone(env, { host: B, from: "something.else", reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("forged result with a host outside autoSpeedHosts is rejected (page scripts can post this)", () => {
-    const env = boot({ autoSpeedSwitch: true, installTestPending: true });
+    const env = boot({ installTestPending: true });
     env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 2 } });
     autotestDone(env, { host: "attacker.example", from: A, reason: "install" });
-    autotestDone(env, { host: "attacker.example", from: A, reason: "video" });
+    autotestDone(env, { host: "attacker.example", from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, A);
     assert.equal("videoEnabled" in env.storage, false);
     env.close();
   });
   test("autoSpeedHosts missing or malformed → nothing is applied", () => {
-    const env = boot({ autoSpeedSwitch: true, autoSpeedHosts: "oops" });
+    const env = boot({ autoSpeedHosts: "oops" });
     autotestDone(env, { host: B, from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("missing host is ignored", () => {
-    const env = boot({ autoSpeedSwitch: true });
+    const env = boot({});
     autotestDone(env, { from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("result is journaled to background", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { host: B, from: A, reason: "video" });
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     const j = env.runtimeMessages.find((m) => m.type === "CDN_SWITCHER_JOURNAL" && m.entry.k === "ui.speedtest");
     assert.equal(j.entry.d.phase, "apply");
     assert.equal(j.entry.d.host, B);
