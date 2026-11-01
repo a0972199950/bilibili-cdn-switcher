@@ -2,7 +2,7 @@
 
 **B 站 CDN 線路重排（Bilibili CDN Switcher）**
 
-最後更新 / Last updated：2026-10-29
+最後更新 / Last updated：2026-11-01
 
 ---
 
@@ -33,7 +33,7 @@
 
 ### 依 IP 自動選擇國家
 
-新安裝或更新後第一次打開彈出視窗時，擴充功能會向 B 站自己的 `https://api.bilibili.com/x/web-interface/zone` 查詢「你的 IP 位於哪個國家」，用來自動選擇節點清單的國家（自動選國家只做一次，你自己換過國家後就不再自動改）。
+安裝或更新時（在背景執行），以及還沒選好國家時打開 B 站頁面或彈出視窗時，擴充功能會向 B 站自己的 `https://api.bilibili.com/x/web-interface/zone` 查詢「你的 IP 位於哪個國家」，用來自動選擇節點清單的國家（自動選國家只做一次，你自己換過國家後就不再自動改）。
 
 - 這個請求只送往 bilibili.com（擴充原本就有權限、你看 B 站時本來就會連線的網站），**不帶 Cookie**，不會送往作者或任何第三方。
 - 回傳結果（國家、省份、ISP、IP）存在本機 `chrome.storage.local`，供節點清單選國家與「問題回報」的診斷資料使用；超過 24 小時會在你打開彈出視窗或回報頁時重新查詢。除了你主動送出的問題回報之外，不會上傳到任何地方。
@@ -103,7 +103,7 @@ No other permissions are requested (no tab content, no full browsing history, no
 
 ### Automatic country selection by IP
 
-The first time you open the popup after installing or updating, the extension asks bilibili's own `https://api.bilibili.com/x/web-interface/zone` which country your IP is in, to pick the country of the node list automatically (the automatic choice happens only once — after you change the country yourself it is never changed automatically again).
+When the extension is installed or updated (in the background), or when you open a bilibili page or the popup before a country has been chosen, the extension asks bilibili's own `https://api.bilibili.com/x/web-interface/zone` which country your IP is in, to pick the country of the node list automatically (the automatic choice happens only once — after you change the country yourself it is never changed automatically again).
 
 - The request goes only to bilibili.com (a site the extension already has permission for and that you connect to anyway when watching bilibili), **without cookies**, and never to the author or any third party.
 - The result (country, province, ISP, IP) is stored locally in `chrome.storage.local` for choosing the country and for the diagnostics attached to problem reports; it is refreshed when older than 24 hours the next time you open the popup or the report form. Apart from problem reports you choose to send, it is never uploaded anywhere.
