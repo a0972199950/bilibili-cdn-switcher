@@ -1,14 +1,18 @@
 <div align="center">
 
-# 🎬 B 站 CDN 線路重排
+# <img src="../assets/icons-prod/icon128.png" width="40" height="40" align="center"> 嗶速 - 海外影片加速 for bilibili
 
 **語言 / Language：** 繁體中文（本頁）｜[简体中文](README.zh-CN.md)｜[English](../README.md)｜[日本語](README.ja.md)｜[한국어](README.ko.md)
 
-### 讓海外用戶看網頁版 B 站更順的 Chrome / Firefox / Edge / Safari 擴充
-
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw) ｜ [Safari（Mac）](https://apps.apple.com/tw/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_zhtw) ｜ [Safari（iPhone／iPad）](https://apps.apple.com/tw/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_zhtw_ios)
+### 讓海外用戶看網頁版 B 站更順，無緩衝播放 4K，不再遭受卡頓的擴充
 
 </div>
+
+<img src="icons/chrome.png" width="20" height="20" align="center"> [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)<br>
+<img src="icons/firefox.png" width="20" height="20" align="center"> [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)<br>
+<img src="icons/edge.png" width="20" height="20" align="center"> [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)<br>
+<img src="icons/safari.png" width="20" height="20" align="center"> [Safari（Mac）](https://apps.apple.com/tw/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_zhtw)<br>
+<img src="icons/safari-ios.png" width="20" height="20" align="center"> [Safari（iPhone／iPad）](https://apps.apple.com/tw/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_zhtw_ios)
 
 ---
 
@@ -36,16 +40,18 @@ B 站預設分配的取流節點對海外使用者常常繞路、不夠快。這
 
 | 功能 | 說明 |
 |:--|:--|
-| 🚀 **所在地區最優節點** | 預設換成你所在國家實測最快的 CDN（已實測台灣、香港、澳門、新加坡、日本、澳洲、美國、英國、西班牙、俄羅斯，其他國家陸續上線），開箱即用 |
-| 🌐 **其他 CDN 節點** | 阿里雲／騰訊雲／華為雲／Akamai／各海外節點…，依所在地區自由比較切換 |
-| ✏️ **自訂節點列表** | 跟「清單選擇」互斥的另一個模式：可加入多個任意 CDN host，同樣支援測速與排序；官方測速工具 **CDNSpeedTest**（Windows）測完會把推薦節點自動加進來 |
-| 🛑 **關閉** | 影片／直播各有獨立的「關閉」選項：不介入 CDN 選線、完全維持 B 站官方原始邏輯 |
+| 🚀 **0 設定，開箱即用** | 安裝後就在背景依 IP 判斷你所在的國家，自動換成該國實測最快的 CDN，不用打開設定、也不用自己挑節點 |
+| 🧑‍🔬 **真人測速，多國支援** | 每個國家的節點清單，都是當地使用者用自己的網路真人實測後挑出來的。已支援台灣、新加坡、香港、日本、澳洲、美國、澳門、英國、西班牙、俄羅斯，其他國家陸續上線；沒有專屬清單的地區，會用從各國報告挑出、跨地區通用的「其他地區」清單 |
+| ✏️ **自訂節點列表** | 按照你的網路環境客製專屬節點：下載官方測速工具 **[CDNSpeedTest](https://lazy-cv.com/docs/bilibili-cdn-speedtest?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw)**（Windows／Mac）測一次，最適合你的節點會自動加進擴充；也可以自己輸入多個 CDN host，同樣支援測速與排序 |
+| 📶 **各節點測速** | popup 內的測速頁（影片、直播共用），顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，標示夠看 8K／4K／1080P／720P 還是可能卡頓；點任一列就切換到該節點，測速中可以停止或重新測，離開該頁即中止 |
+| 🔁 **卡頓自動優化節點** | 偵測到目前 CDN 分段請求失敗、或播放持續卡住（非單純緩衝已滿）時，每支影片先在背景測一次目前清單的節點：目前節點達到 4K 標準（25 Mbps）就不換，否則換成第一個達標的節點（都沒達標就換測到最快的），並存成你的節點；之後還是卡住，才靜默切換到 B 站原生給的備援節點（顯示提示，通常不整頁刷新）；備援也不行時彈出提示，讓你自行決定是否切到「備用URL」。可在進階設定的「速度不佳時自動優化節點」開關關閉（預設開啟）；網路本身不穩時建議關閉 |
 | 📺 **直播支援** | 「直播」分頁可在 國際線路(ov)／國際備用線路(ov-b)／中國線路(cn)／中國備用線路(cn-b) 之間切換，不整頁重載；進入直播間播放後才會顯示各線路的實際網址，當前直播沒有的線路會標註並變淡（仍可選）。直播線路不佳時，「速度不佳時自動優化節點」會自動退回國際線路(ov)（只針對該直播間，不改變你長期的選擇） |
-| 🔁 **卡頓自動優化節點** | 偵測到目前 CDN 分段請求失敗、或播放持續卡住（非單純緩衝已滿）時，每支影片先在背景測一次目前國家的節點：目前節點達到 4K 標準（25 Mbps）就不換，否則換成第一個達標的節點（都沒達標就換測到最快的），並存成你的節點；之後還是卡住，才靜默切換到 B 站原生給的備援節點（顯示提示、不整頁刷新）；備援也不行時彈出提示，讓你自行決定是否切到「備用URL」。可在進階設定的「速度不佳時自動優化節點」開關關閉（預設開啟）；網路本身不穩時建議關閉 |
-| 📶 **各節點測速** | 獨立頁面（影片、直播各一個），顯示影片標題／畫質，實測當前影片、當前畫質下各節點的下載速度並逐一列出，標示夠看 8K／4K／1080P／720P 還是可能卡頓，測速中也能重新測；不影響你手動選擇的 CDN，離開該頁即中止 |
-| 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English／日本語／한국어（也可在進階設定手動選擇），涵蓋 popup、頁面提示與 debug 疊層 |
-| 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在右上角齒輪的進階設定中打開） |
 | 🦊 **Chrome / Firefox / Edge / Safari 四平台** | 同一份 `src/`，打包時依瀏覽器各自產生 zip（Edge 是 Chromium 內核，直接沿用 Chrome 的 manifest）；Safari 另用 Xcode 包成 `.app`（見下方「打包 Safari」） |
+| 🌏 **多語系介面** | 依瀏覽器語言自動顯示繁體中文／简体中文／English／日本語／한국어（也可在進階設定手動選擇），涵蓋 popup、頁面提示與 debug 疊層 |
+| 💬 **問題回報／功能許願** | 在 popup 裡直接回報問題或許願新功能，送出後會在 GitHub 開 issue 方便追蹤進度；回報問題時附上的完整診斷資料不會公開 |
+| 📢 **公告** | 主頁上方的公告列顯示你所在國家的公告（例如測速抽獎活動），點開可看全文 |
+| ☕ **贊助・乾爹排行榜** | 嗶速永久免費；想支持開發可以從主頁贊助，並登上依累計金額排序的乾爹排行榜（Safari 版沒有贊助） |
+| 🐛 **debug 疊層** | 查看當前 CDN 節點（預設關閉，可在右上角齒輪的進階設定中打開） |
 
 ---
 
@@ -53,34 +59,29 @@ B 站預設分配的取流節點對海外使用者常常繞路、不夠快。這
 
 ```text
 bilibili-cdn-switcher/
-├── src/                  ← 擴充本體（載入未封裝 / 打包的就是這層）
-│   ├── manifest.json          ← Chrome / Edge 用
-│   ├── manifest.firefox.json  ← Firefox 用（含 browser_specific_settings）
-│   ├── popup.html / popup.js
-│   ├── main-hook.js      ← MAIN world：改寫取流 URL
-│   ├── bridge.js         ← ISOLATED world：storage / i18n ↔ 頁面 橋接
-│   ├── cdn-list.json     ← 節點清單
-│   ├── _locales/{zh_TW,zh_CN,en,ja,ko}/  ← 五語系文案（manifest 用 __MSG_x__ 引用；popup.js／main-hook.js 執行期查表）
-│   └── icons/            ← 16 / 32 / 48 / 128
+├── src/                  ← 擴充本體（載入未封裝 / 打包的就是這層）：manifest、popup、注入 B 站頁面的腳本、
+│                            贊助／公告／問題回報頁、節點清單 cdn-list.json、更新紀錄 changelog.json、五語系 _locales/
+├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，用相對路徑直接引用 ../../../src/）
+├── tools/
+│   ├── cdn-speedtest-app/    ← 官方測速工具 CDNSpeedTest（Python，Windows／Mac）
+│   ├── report-worker/        ← api.biboost.app：問題回報、公告、贊助等 API（Cloudflare Worker）
+│   ├── site/                 ← biboost.app 網站（Cloudflare Worker）
+│   └── translate-worker/     ← 後台用的翻譯 API（Cloudflare Worker）
+├── scripts/              ← 開發／打包／發版／營運腳本（Node 為主，少數 Python）
+├── test/                 ← 單元測試（npm test）
+├── assets/               ← 圖示母檔 512px 與正式版圖示（icons-prod 由 gen-icons.mjs 產生）
+├── docs/                 ← README 截圖、平台圖示 + 繁體中文／简体中文／日本語／한국어 README
 ├── dist/                 ← 打包產物（Chrome/Firefox/Edge 是 .zip；Safari 是 .app）
-├── docs/                 ← README 用的截圖 + 繁體中文／简体中文／日本語／한국어 README
-├── assets/               ← 圖示母檔 512px（icons-prod 由 gen-icons.mjs 產生）
-├── store/                ← 各商店上架用截圖 / 宣傳圖 + 各平台介紹文字（放在私人 repo，不在這裡公開）
-├── safari/               ← Safari 擴充的 Xcode 工程（safari-web-extension-converter 產生，內含擴充資源用相對路徑直接引用 ../../../src/）
-├── scripts/              ← 所有開發／打包腳本，純 Node，Windows／Mac／Linux 都能跑
-│   ├── build.mjs                 ← 打包成上架用 zip（Chrome + Firefox + Edge）
-│   ├── build-safari.mjs          ← 用 Xcode 打包 Safari 擴充成 .app（macOS-only）
-│   ├── changelog.mjs             ← 驗證 src/changelog.json；pre-push hook 用它檢查清單有沒有更新
-│   ├── release.mjs               ← 發版機械步驟（升版號、把 unreleased 搬進新版本）
-│   ├── publish-stores.mjs        ← 用 API 金鑰上傳新版 zip 到 Chrome / Edge / Firefox（不會按發布）
-│   ├── test-whats-new.mjs        ← 用真的 Chrome 測「更新內容」popup
-│   └── gen-icons.mjs             ← 重新產生圖示
-├── package.json           ← scripts/*.mjs 用的 Node 依賴（jszip / puppeteer / sharp）
-├── .env.local.example     ← 本機憑證範例：商店上架金鑰、bilibili 登入 cookie（複製成 .env.local 再填）
+├── .githooks/            ← pre-push 更新紀錄檢查、私人 repo 自動同步
+├── .github/workflows/    ← GitHub Actions：Safari 打包上架、Mac 版測速工具打包等
+├── package.json          ← scripts/*.mjs 與測試用的 Node 依賴
+├── .env.local.example    ← 本機憑證範例：商店上架金鑰、bilibili 登入 cookie（複製成 .env.local 再填）
 └── README.md
 ```
 
-所有 `scripts/` 底下的工具都是純 Node（配 [jszip](https://npm.im/jszip) 打包 zip、[sharp](https://npm.im/sharp) 處理圖片），
+商店文案與截圖（`store/`）、推廣、研究資料等不公開的檔案放在另一個私人 repo，不在這裡（見 `scripts/private-repo.mjs`）。
+
+打包相關的腳本（`build.mjs`、`build-safari.mjs`、`gen-icons.mjs` 等）都是純 Node（配 [jszip](https://npm.im/jszip) 打包 zip、[sharp](https://npm.im/sharp) 處理圖片），
 不依賴 Windows 專屬的 PowerShell／System.Drawing，Mac／Linux 一樣能跑，只要先 `npm install` 裝好依賴即可。
 
 ### 📦 打包（上架 Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons 用）
@@ -105,14 +106,21 @@ Chrome／Edge 用同一份 `src/manifest.json`（Edge 是 Chromium 內核，Mani
 打包結果是可重現的（reproducible build）：只要 `src/` 內容沒變，同一個瀏覽器目標每次包出來的
 zip bytes 完全相同（跨 Windows／Mac 也一樣），方便日後要接 CI 時判斷 `dist/` 是否真的需要更新。
 
+### 🧪 測試
+
+```bash
+npm test                             # 跑 test/*.test.mjs（Node 內建 test runner）
+npm run test:whats-new               # 用 puppeteer 的 Chrome 載入 src/，自動測「更新內容」popup
+```
+
 ### 📝 更新紀錄與發版
 
 - `src/changelog.json` 同時記「尚未上架的新功能（`unreleased`）」與「各已上架版本相較前一版追加的內容（`releases`）」，五語（zh_TW / zh_CN / en / ja / ko）。
-  老使用者更新後第一次開設定選單，會看到一次性的「更新內容」popup（內容就來自這份檔案；打包進 zip 時會自動拿掉 `unreleased`）。
+  老使用者更新後第一次打開 popup，會看到一次性的「更新內容」popup（內容就來自這份檔案；打包進 zip 時會自動拿掉 `unreleased`）。
 - `.githooks/pre-push`：push 時若相較於分支出來的基準 `src/changelog.json` 沒有變動，會詢問是否仍要 push，選 No 就擋下。
   `npm install` 會自動設定 `core.hooksPath`（或手動 `git config core.hooksPath .githooks`）。確定不需要記錄時：`CHANGELOG_CHECK_IGNORE=1 git push`。
 - 發版用 Claude Code 的 `/release`（`.claude/skills/release/SKILL.md`）；上架金鑰放 `.env.local`（見 `.env.local.example`）。商店的「發布」按鈕一律人工按。
-- `npm run test:whats-new`：用 puppeteer 的 Chrome 載入 `src/`，自動測更新提示 popup。
+- `npm run package`：除了 `dist/` 的商店上傳 zip，另外把離線安裝用的 zip 與 `CDNSpeedTest.exe` 打包到 `release/`，由 `/release` 上傳到該版本的 GitHub Release。
 
 ### 🍎 打包 Safari（上架 App Store 用）
 
@@ -150,61 +158,70 @@ npm run gen-icons
 
 | 選項 | 行為 |
 |:--|:--|
-| ⚙️ **進階設定（右上角齒輪）** | 「速度不佳時自動優化節點」與「顯示頁面 debug 疊層」兩個開關收在這裡（各附白話說明），開啟 debug 疊層時同一區會顯示目前分頁的 debug 資訊；主頁標題顯示擴充在當前語系的正式名稱，「⭐ 給我 5 星鼓勵」與「🐛 問題回報」是主頁最下方的兩顆按鈕 |
-| 🔘 **啟用** | 預設 **開啟** 的總開關，同時管影片與直播；關閉後完全不改動 B 站取流（debug 疊層仍會顯示當前 CDN） |
-| 🎞️ **影片／直播分頁** | 「啟用」下面分成「影片」「直播」兩個分頁；目前分頁是直播間時，打開會自動停在「直播」 |
-| 📡 **CDN 線路** | 「清單選擇」／「自訂節點列表」／「關閉」互斥單選。**預設＝清單選擇**。清單上方可選**國家**（台灣／新加坡／香港／日本／澳洲／美國／澳門／英國／西班牙／俄羅斯／其他地區／全部），只列出該國實測最快的 10 個節點（依研究報告排序，預設為第一項），最後一項是「備用URL」；旁邊標示目前選項有幾個節點。選「全部」會列出全部約 300 個節點。一安裝就會在背景依 IP 自動選你所在的國家（不用先打開 popup），並標「你在這裡」（查詢 B 站自己的 zone API，不需新增權限）；沒有專屬清單的國家（加拿大跟美國共用國際區碼，會用美國的清單）或查不到 IP 時，改用「其他地區」——從各國測速報告挑出、跨地區通用的清單。還不知道國家時，全域預設節點是「其他地區」的第一個 `cn-bj-se-01-05`；知道國家後節點預設為該國第一個，從舊版更新、從沒選過節點的使用者也會自動換成所在國家的預設；切換國家時節點會改成該國第一個，「節點按測速排序」排出的順序會清掉、回到該國原始排序；切到「自訂節點列表」可輸入多個節點網址或 host 加入列表（CDNSpeedTest 測完也會自動加入），同樣能測速與排序；「關閉」只作用於一般影片，不介入影片 CDN 選線 |
-| 📺 **直播線路** | 「偏好選擇」／「關閉」二選一，**預設＝偏好選擇，國際線路(ov)**。四個線路是同一個直播間、同一集群號下的 `ov`／`ov-b`／`cn`／`cn-b` 變體（B 站直播的簽名只在同號之間通用，點播那些節點對直播無效）；記住的是「線路種類」而非具體 host |
-| 📺 **測試各直播線路速度** | 只有在直播間播放時才能測；先檢查四條線路是否都存在（不存在的不測），再對每條線路測兩項：**切台卡頓**（連測 3 次取平均的起播時間，0–800ms 低／800–1500ms 中／超過 1500ms 高，分別以綠／黃／紅字顯示）與**持續觀看**（拉 8 秒，完全跟上＝綠字「優秀」、掉隊 1 秒內＝黃字「中等」、超過 1 秒＝紅字「差勁」）。測速會與正在播放的直播搶頻寬 |
-| 🔍 **測試各節點速度** | 按下後切到獨立的測速頁面，上方顯示目前影片標題與畫質；抓「當前影片、當前畫質」的分段，依序換各節點 host 實測下載速度（8MB 或 5 秒先到為準，5 秒內完全沒收到資料才算超時；有收到但不到 8MB 就顯示實際測到的速度），只測目前國家清單內的節點，逐格顯示「等待中／測試中／結果」，最快的前三名在右上角戴上金／銀／銅皇冠；選「全部」時開測前會先跳紅色警告並估算耗時（節點數 × 每節點秒數上限），引導改選國家。可按「🔄 重新測速」重跑（測速中也能按，會中斷目前的重新開始）。**只顯示數字，不會更動你目前選擇的 CDN**；按左上角「← 返回」或關掉 popup 會立即中止測速。開啟「啟用」時，playurl 一解析完就能測，不用等真的開始播放；若「啟用」是關閉的，則要等實際下載過分段才有樣本 |
-| 🔁 **卡頓自動優化 CDN** | 即進階設定的「速度不佳時自動優化節點」，預設開啟，可關閉（網路本身不穩、如 WiFi 訊號弱時建議關閉，避免頻繁黑屏重載）；開啟時偵測到分段請求失敗（403/404/5xx/網路錯誤）或播放確實卡住（8 秒內進度不動、且線路上也沒有資料在動），每支影片會先在背景測一次目前國家的清單：先測目前節點，達到 4K 標準（25 Mbps）就不換；沒達到就依序測清單其餘節點，換成第一個達到 25 Mbps 的，都沒達到就換測到最快的（目前節點仍是最快就不換），選中的節點會存成你的節點。測速時若 popup 開著，會顯示「當前節點速度不佳，優化中...」與剩餘節點數，按「中斷優化」即停止、節點不變。國家選「全部」（約 300 個節點）時跳過這一步，直接進入下面的備援切換。優化後有 30 秒冷卻，之後仍卡住才靜默切到 B 站原生給的備援節點（分段層即時差替、不整頁刷新，並跳出提示）；這個備援也播不動時，改彈出一個不會自動消失的提示，讓你自己決定要不要「重載並切換至備用URL」。直播間則是：先檢查你選的線路在這個直播是否存在（不存在就直接退回國際線路 ov），之後持續一段時間沒有碼流也退回 ov |
-| ⚡ **安裝後第一支影片自動優化節點** | 只在全新安裝後執行一次。第一支影片開始播放約 5 秒後，在背景用跟「卡頓自動優化 CDN」相同的方式測速：目前節點達到 25 Mbps 就不換，否則換成第一個達標的（都沒達標就換測到最快的）並存起來。只有目前節點不夠快時，popup 才會顯示「當前節點速度不佳，優化中...」，這次優化無法中斷；之後也不會再跑（切換國家、看其他影片都不會）。這次優化開始前，卡頓自動優化會先暫緩，避免播放器連換兩次節點 |
-| 🌏 **語言** | 預設跟隨瀏覽器／作業系統語言，自動顯示繁體中文／简体中文／English／日本語／한국어（其餘語言顯示英文）；如需強制指定，可在 popup 的「進階設定 → 語言」選擇 |
-| 🎨 **外觀主題** | popup 的「進階設定 → 外觀主題」：跟隨系統（預設，依作業系統的淺色／深色設定）／淺色／深色。淺色為淺灰底、白色卡片配 B 站粉，風格同測速工具 CDNSpeedTest；深色為原本的深色設計 |
-| ⏱️ **測速門檻** | 在進階設定中，分「影片」「直播」兩區：影片是每個節點最多下載幾 MB／最多測幾秒（預設 8MB／5 秒，先到為準）；直播是切台卡頓測幾次取平均／持續觀看每條線路測幾秒（預設 3 次／8 秒）。各區可一鍵套用「快／適中／準確」三種預設（適中＝預設值），選「自訂」才能自己填數字。調整後永久儲存，各區有「恢復預設」 |
-| 🔢 **節點按測速排序** | 在進階設定中；預設 **開啟**。開啟後，測速時每測完一個節點就以平移動畫排到「由快到慢」的位置（影片看下載速度；直播先看持續觀看等級，同級再比切台卡頓）。排出的順序存在本機，主畫面的節點清單也照這個順序，直到下次重新測速；關閉即恢復預設順序 |
-| 🐛 **顯示頁面 debug 疊層** | 在進階設定中；預設 **關閉**；獨立於重排開關，關閉重排時仍可顯示當前 CDN，方便比較 |
+| 🏠 **主頁** | 上方是公告列，中間是「啟用」開關與影片／直播的節點設定。最下方有評分、贊助、問題回報三顆按鈕，以及版本號（點開看完整更新紀錄） |
+| 🔄 **這個分頁需要重新整理** | 擴充剛安裝或更新時，已開著的 B 站分頁要重新整理才會生效，popup 會提示並附「重新整理」按鈕 |
+| 📢 **公告列** | 只顯示你所在國家的公告（例如測速抽獎活動），點開看全文。按 × 可關閉該則，3 天內不再顯示 |
+| 🔘 **啟用** | 總開關，預設開啟，同時管影片與直播。關閉後完全不改動 B 站取流 |
+| 🎞️ **影片／直播分頁** | 「啟用」下方分成影片、直播兩個分頁。在直播間打開時會自動停在「直播」 |
+| 📡 **CDN 線路** | 「清單選擇」／「自訂節點列表」／「關閉」三選一，預設是清單選擇。清單依國家列出實測最快的 10 多個節點，覆蓋所有 ISP 用戶，安裝後會依 IP 自動選好你的國家；沒有專屬清單的國家用「其他地區」。自訂節點列表可自己輸入 host，或用 CDNSpeedTest 測完自動加入 |
+| 🔍 **測試各節點速度** | 用目前影片、目前畫質實測清單內每個節點的下載速度，前三名戴上皇冠。點任一列就切換到該節點；可隨時停止或重新測速 |
+| ☕ **贊助・乾爹排行榜** | 依累計金額排名的乾爹排行榜，透過 Stripe 贊助。贊助不會解鎖任何功能，Safari 版沒有這個按鈕 |
+| 💬 **問題回報／功能許願** | 在獨立視窗回報問題或許願，送出後會在 GitHub 開 issue。回報問題時附上的完整診斷資料不會公開 |
+| 📺 **直播線路** | 在國際線路(ov)／國際備用線路(ov-b)／中國線路(cn)／中國備用線路(cn-b) 之間選擇，預設國際線路(ov)。記住的是線路種類，換直播間也適用 |
+| 🔍 **測試各直播線路速度** | 在直播間播放時，實測每條線路的切台卡頓（起播時間）與持續觀看（是否跟得上），以綠／黃／紅標示好壞 |
+| ⚙️ **進階設定（右上角齒輪）** | 語言、外觀主題、自動優化、測速門檻、節點排序、debug 疊層等設定都收在這裡。最下方的「恢復原始設定」可一鍵回到預設 |
+| 🌏 **語言** | 預設跟隨瀏覽器語言，支援繁體中文／简体中文／English／日本語／한국어，也可在進階設定手動指定 |
+| 🎨 **外觀主題** | 跟隨系統（預設）／淺色／深色 |
+| 🔁 **卡頓自動優化節點** | 偵測到卡頓或分段載入失敗時，先在背景測速並換到夠看 4K（25 Mbps）的節點；還是卡就切到 B 站原生的備援節點。預設開啟，網路本身不穩時建議關閉 |
+| ⚡ **安裝後第一支影片自動優化節點** | 全新安裝後只執行一次：第一支影片播放約 5 秒後在背景測速，目前節點不夠快就自動換掉 |
+| ⏱️ **測速門檻** | 影片、直播各自可選「快／適中／準確」三種預設或自訂數字，調整測速的時間長短與準確度 |
+| 🔢 **節點按測速排序** | 預設開啟。測完的節點會由快到慢排列，主頁清單也照這個順序 |
+| 🐛 **顯示頁面 debug 疊層** | 預設關閉。開啟後在播放器左上角顯示目前使用的節點等技術資訊 |
+| ♻️ **恢復原始設定** | 所有設定回到預設，並清空自訂節點列表 |
 
 <details>
 <summary>🔍 <b>Debug 疊層長什麼樣</b>（播放器左上角）</summary>
 
+影片頁：
+
 ```text
-mode=on  target=upos-sz-mirror08ct.bilivideo.com
+mode=on  target=<你選的節點>
+auto-fallback -> <自動切換到的備援節點>        ← 有自動切換過才會出現
 cdn=<當前實際串流的 host>
 v=<video 主用 host>  a=<audio 主用 host>
-src=playinfo|playurl  rw=<改寫次數>  seg=<分段差替數>  qn=<畫質>
+src=playinfo|playurl  rw=<改寫次數>  seg=<分段替換數>  qn=<畫質>  spd=<速度>
+buf=<前方緩衝>s  rs=<readyState> [paused]  stall=<卡住秒數>/<門檻>  fb=<備援次數>/2 [cd=<冷卻剩餘>]  lat=<分段延遲>
+err=<最後一次錯誤> (<N>s ago)                    ← 有錯誤才會出現
+-<N>s  <最近的事件>                              ← 最多 3 筆
+```
+
+直播間：
+
+```text
+mode=on  target=<你選的線路>
+auto-fallback -> <自動退回的線路>              ← 有自動退回過才會出現
+cdn=<當前實際串流的 host>
+proto=<協定>  cluster=<集群號>  orig=<原始線路>  seg=<分段替換數>  pin=<playinfo 是否已鎖定>
+（以下與影片頁相同：buf=… / err=… / 最近事件）
 ```
 
 </details>
 
 ---
 
-## 🗂️ 設定與檔案
+## ☕ 請我喝杯咖啡
 
-- 📋 節點清單放在 **`src/cdn-list.json`**，直接手動編輯：
-  收錄 300 多個點播節點（已去重，並排除直播節點與確定失效的節點），
-  各國的 `nodes` 是依 CDN 池分散的建議前 10 名。測速程式（`tools/cdn-speedtest-app`）的報告收集後用 `/analyze-cdn` 分析，再依分析結果更新 `countries`。
-- 🧩 格式：
+嗶速永久免費，由一位獨立開發者下班後維護。如果你喜歡它，歡迎請我喝杯咖啡！為了感謝你的慷慨，可以自選名字與頭像登上乾爹列表喔
 
-  ```json
-  {
-    "countries": [{ "code": "TW", "dial": 886, "name": { "zh_TW": "台灣", "zh_CN": "台湾", "en": "Taiwan" }, "nodes": ["upos-sz-mirror08ct.bilivideo.com", "…"] }],
-    "pools": { "hw-biliv6": { "zh_TW": "華為雲 一般池", "zh_CN": "华为云 常规池", "en": "Huawei Cloud" } },
-    "options": [{ "value": "upos-sz-mirror08ct.bilivideo.com", "name": "08ct", "pool": "hw-biliv6" }]
-  }
-  ```
+<div align="center">
 
-  `options` 是全部節點（也是「全部」選項的順序），顯示成「代號 (池類型)」；`countries[].nodes` 第一項為該國預設；`dial` 是國際電話區碼，用來對應 B 站 zone API 回傳的 `country_code`。
-  `value` 特殊值：🔁 `backup`＝優先備用URL（固定放最後，用 `nameKey` / `noteKey` 對應語系檔）。「關閉」與「自訂節點列表」是 popup 獨立的模式，不在清單裡。
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw"><img src="https://img.shields.io/badge/%E2%98%95%20%E8%AB%8B%E6%88%91%E5%96%9D%E6%9D%AF%E5%92%96%E5%95%A1-FB7299?style=for-the-badge" alt="☕ 請我喝杯咖啡"></a>
 
----
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=zhtw"><img src="donate-qr.png" width="160" alt="贊助頁 QR code"></a>
 
-## ⚠️ 注意
+<sub>用手機掃 QR code 也能贊助</sub>
 
-- 🔒 一律保留原 host 為 `backupUrl` fallback，避免個別 host-bound URL 整段播不出。
-- 📍 已支援的國家，節點都經由當地使用者真人實測挑選。支援國家：台灣、新加坡、香港、日本、澳洲、美國、澳門、英國、西班牙、俄羅斯。其他地區使用者會用「其他地區」清單，也可自行切換到較近的節點，或用「自訂節點列表」加入自己的 host（可用測速工具 CDNSpeedTest 找出來）。
-- 📶 「測試各節點速度」是短時間實測單一分段，結果僅供參考：CDN 是否已對這支影片、這個畫質建立快取，
-  以及路由在不同時段的壅塞狀況都會影響實際觀看體驗，測速當下最快不代表長時間播放最順。
+</div>
 
 ---
 
@@ -222,6 +239,6 @@ src=playinfo|playurl  rw=<改寫次數>  seg=<分段差替數>  qn=<畫質>
 
 <div align="center">
 
-Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · 靈感致謝 [@roge4444](https://github.com/roge4444) 的 [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) ／ [blblRogerMod](https://github.com/roge4444/blblRogerMod)
+Made with ❤️ for bilibili viewers overseas · 靈感致謝 [@roge4444](https://github.com/roge4444) 的 [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) ／ [blblRogerMod](https://github.com/roge4444/blblRogerMod)
 
 </div>

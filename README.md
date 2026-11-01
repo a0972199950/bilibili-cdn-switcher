@@ -1,14 +1,18 @@
 <div align="center">
 
-# 🎬 Bilibili CDN Route Switcher
+# <img src="assets/icons-prod/icon128.png" width="40" height="40" align="center"> BiBoost - Overseas Video Speedup for bilibili
 
 **Language:** [繁體中文](docs/README.zh-TW.md)｜[简体中文](docs/README.zh-CN.md)｜English (this page)｜[日本語](docs/README.ja.md)｜[한국어](docs/README.ko.md)
 
-### A Chrome / Firefox / Edge / Safari extension for smoother bilibili web playback for overseas viewers
-
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en) ｜ [Safari (Mac)](https://apps.apple.com/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_en) ｜ [Safari (iPhone / iPad)](https://apps.apple.com/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_en_ios)
+### An extension that makes bilibili web playback smoother for overseas viewers: 4K with no buffering, no more stuttering
 
 </div>
+
+<img src="docs/icons/chrome.png" width="20" height="20" align="center"> [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en)<br>
+<img src="docs/icons/firefox.png" width="20" height="20" align="center"> [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en)<br>
+<img src="docs/icons/edge.png" width="20" height="20" align="center"> [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en)<br>
+<img src="docs/icons/safari.png" width="20" height="20" align="center"> [Safari (Mac)](https://apps.apple.com/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_en)<br>
+<img src="docs/icons/safari-ios.png" width="20" height="20" align="center"> [Safari (iPhone / iPad)](https://apps.apple.com/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_en_ios)
 
 ---
 
@@ -32,20 +36,22 @@ After (extension on)
 
 **🎯 It exists to make bilibili's web player (www.bilibili.com) smoother for overseas viewers (outside mainland China).**
 
-Bilibili's default CDN assignment often routes overseas users through slow, roundabout paths. This extension **reroutes the video-fetching CDN to a node that tested faster for your region**, reducing buffering and load times.
+Bilibili's default CDN assignment often routes overseas users through slow, roundabout paths. This extension **reorders the video-fetching CDNs and switches to the best node that tested faster for your region**, so buffering and loading are smoother.
 
 | Feature | Description |
 |:--|:--|
-| 🚀 **Best node for your region** | Defaults to the CDN that tested fastest for your country (hand-tested in Taiwan, Hong Kong, Macau, Singapore, Japan, Australia, the US, the UK, Spain and Russia, more coming), works out of the box |
-| 🌐 **Other CDN nodes** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / various overseas nodes…, freely switchable based on your region |
-| ✏️ **Custom node list** | A mode mutually exclusive with "choose from list": add as many CDN hosts as you like, with speed test and sorting; the official **CDNSpeedTest** tool (Windows) adds its recommended nodes here automatically |
-| 🛑 **Off** | Video and live each have their own "Off" option: CDN selection is left alone and bilibili's original behavior is kept |
-| 📺 **Live-stream support** | A "Live" tab switches between International (ov) / International backup (ov-b) / China (cn) / China backup (cn-b) without reloading the page. Actual route URLs are shown only once you are in a live room and it is playing; routes the current stream does not have are labelled and dimmed (still selectable). When a live route performs badly, "Auto-optimize node when slow" falls back to International (ov) for that room only, without changing your long-term choice |
-| 🔁 **Automatic failover** | When a segment request fails or playback genuinely stalls (not just a full buffer), it first speed-tests your country's nodes in the background (once per video): the current node stays if it reaches the 4K standard (25 Mbps), otherwise it switches to the first node that does (or the fastest one measured) and saves it as your node. If playback still stalls, it silently switches to bilibili's own backup node (with a toast, no full-page reload); if that backup also fails, it shows a persistent prompt letting you decide whether to switch to the Backup URL. Can be turned off with the "Auto-optimize node when slow" toggle in Advanced settings (on by default); turn it off if your own network is unstable |
-| 📶 **Per-node speed test** | A dedicated page (one for video, one for live) showing the video title/quality; measures download speed for each node using segments from the current video and quality, listed one by one with a label showing whether each node is good for 8K/4K/1080p/720p or may stutter — retestable mid-run. **Read-only, never changes your selected CDN**; leaving the page stops the test immediately |
-| 🌏 **Multi-language UI** | Automatically shows Traditional Chinese / Simplified Chinese / English / Japanese / Korean based on your browser language (or pick one in Settings), covering the popup, in-page toasts, and the debug overlay |
-| 🐛 **Debug overlay** | Shows the currently active CDN node (off by default, toggle it in Advanced settings behind the gear icon) |
+| 🚀 **Zero setup, works out of the box** | Right after installing, it works out your country from your IP in the background and switches to the CDN that tested fastest there — no need to open the settings or pick a node yourself |
+| 🧑‍🔬 **Real-user speed tests, many countries** | Every country's node list is picked from speed tests run by local users on their own connections. Currently supported: Taiwan, Singapore, Hong Kong, Japan, Australia, the US, Macau, the UK, Spain and Russia, with more on the way; regions without their own list get the cross-region "Other regions" list, picked from every country's reports |
+| ✏️ **Custom node list** | Tailor your own nodes to your network: download the official speed test tool **[CDNSpeedTest](https://lazy-cv.com/docs/bilibili-cdn-speedtest?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en)** (Windows / Mac) and run it once, and the nodes that suit you best are added to the extension automatically; you can also enter several CDN hosts yourself, with the same speed test and sorting |
+| 📶 **Per-node speed test** | A speed-test page inside the popup (shared by video and live) showing the video title/quality; measures download speed for each node using the current video at its current quality, listed one by one with a label showing whether each node is good for 8K/4K/1080p/720p or may stutter. Click any row to switch to that node; you can stop or retest mid-run, and leaving the page stops the test |
+| 🔁 **Auto-optimize node on stalls** | When a segment request to the current CDN fails or playback keeps stalling (not just a full buffer), it first speed-tests the nodes in your current list in the background, once per video: the current node stays if it reaches the 4K standard (25 Mbps), otherwise it switches to the first node that does (or the fastest one measured if none does) and saves it as your node. If playback still stalls, it silently switches to bilibili's own backup node (with a toast, usually without a full-page reload); if that backup also fails, it shows a prompt letting you decide whether to switch to the "Backup URL". Can be turned off with the "Auto-optimize node when slow" toggle in Advanced settings (on by default); turn it off if your own network is unstable |
+| 📺 **Live-stream support** | The "Live" tab switches between International (ov) / International backup (ov-b) / China (cn) / China backup (cn-b) without reloading the page. Actual route URLs are shown only once you are in a live room and it is playing; routes the current stream does not have are labelled and dimmed (still selectable). When a live route performs badly, "Auto-optimize node when slow" falls back to International (ov) automatically (for that room only, without changing your long-term choice) |
 | 🦊 **Chrome / Firefox / Edge / Safari** | A single `src/` tree; packaging produces a per-browser zip (Edge is Chromium-based and reuses Chrome's manifest as-is); Safari is packaged into a `.app` via Xcode (see "Packaging Safari" below) |
+| 🌏 **Multi-language UI** | Automatically shows Traditional Chinese / Simplified Chinese / English / Japanese / Korean based on your browser language (or pick one manually in Advanced settings), covering the popup, in-page toasts, and the debug overlay |
+| 💬 **Report a problem / Request a feature** | Report a problem or request a feature straight from the popup; once sent, an issue is opened on GitHub so you can follow its progress. The full diagnostics attached to a problem report are never made public |
+| 📢 **Announcements** | The announcement bar at the top of the main page shows announcements for your country (such as speed-test prize draws); click one to read it in full |
+| ☕ **Support · Top Patrons** | BiBoost is free forever; if you'd like to support development, you can tip from the main page and get onto the Top Patrons board, ranked by total amount (no tipping in the Safari version) |
+| 🐛 **Debug overlay** | Shows the currently active CDN node (off by default; turn it on in Advanced settings behind the gear icon at the top right) |
 
 ---
 
@@ -53,38 +59,35 @@ Bilibili's default CDN assignment often routes overseas users through slow, roun
 
 ```text
 bilibili-cdn-switcher/
-├── src/                  ← Extension source (this is what "Load unpacked" / packaging uses)
-│   ├── manifest.json          ← Chrome / Edge
-│   ├── manifest.firefox.json  ← Firefox (includes browser_specific_settings)
-│   ├── popup.html / popup.js
-│   ├── main-hook.js      ← MAIN world: rewrites stream URLs
-│   ├── bridge.js         ← ISOLATED world: storage / i18n bridge to the page
-│   ├── cdn-list.json     ← CDN node list
-│   ├── _locales/{zh_TW,zh_CN,en,ja,ko}/  ← UI strings in five languages (manifest uses __MSG_x__; popup.js/main-hook.js look them up at runtime)
-│   └── icons/            ← 16 / 32 / 48 / 128
-├── dist/                 ← Packaged output (.zip for Chrome/Firefox/Edge; .app for Safari)
-├── docs/                 ← Screenshots for the README + the Traditional / Simplified Chinese, Japanese and Korean READMEs
-├── assets/               ← 512px icon master (icons-prod is generated by gen-icons.mjs)
-├── store/                ← Store-listing screenshots / promo images + per-platform copy (kept in a private repo, not published here)
+├── src/                  ← The extension itself (what "Load unpacked" / packaging uses): manifest, popup, scripts injected into bilibili pages,
+│                            tip / announcement / bug-report pages, node list cdn-list.json, release notes changelog.json, five-language _locales/
 ├── safari/               ← Safari extension Xcode project (generated by safari-web-extension-converter; references ../../../src/ via relative paths)
-├── scripts/              ← All dev/build scripts, pure Node — runs on Windows / Mac / Linux
-│   ├── build.mjs                 ← Packages store-ready zips (Chrome + Firefox + Edge)
-│   ├── build-safari.mjs          ← Packages the Safari extension into a .app via Xcode (macOS-only)
-│   └── gen-icons.mjs             ← Regenerates icons
-├── package.json           ← Node deps for scripts/*.mjs (jszip / puppeteer / sharp)
-├── .env.local.example     ← Sample local credentials: store API keys, bilibili login cookie (copy to .env.local)
+├── tools/
+│   ├── cdn-speedtest-app/    ← Official speed test tool CDNSpeedTest (Python, Windows / Mac)
+│   ├── report-worker/        ← api.biboost.app: bug-report, announcement, tipping and other APIs (Cloudflare Worker)
+│   ├── site/                 ← biboost.app website (Cloudflare Worker)
+│   └── translate-worker/     ← Translation API used by the admin console (Cloudflare Worker)
+├── scripts/              ← Dev / build / release / operations scripts (mostly Node, a few Python)
+├── test/                 ← Unit tests (npm test)
+├── assets/               ← 512px icon master and store-build icons (icons-prod is generated by gen-icons.mjs)
+├── docs/                 ← README screenshots, platform icons + the Traditional Chinese / Simplified Chinese / Japanese / Korean READMEs
+├── dist/                 ← Packaged output (.zip for Chrome/Firefox/Edge; .app for Safari)
+├── .githooks/            ← pre-push release-notes check, private repo auto-sync
+├── .github/workflows/    ← GitHub Actions: Safari build and App Store upload, Mac build of the speed test tool, etc.
+├── package.json          ← Node deps for scripts/*.mjs and the tests
+├── .env.local.example    ← Sample local credentials: store API keys, bilibili login cookie (copy to .env.local and fill in)
 └── README.md
 ```
 
-Everything under `scripts/` is plain Node (zipping via [jszip](https://npm.im/jszip), image work via
-[sharp](https://npm.im/sharp)) — no dependency on Windows-only PowerShell or System.Drawing, so it runs
-the same way on a Mac. Just `npm install` once to pull in the dependencies.
+Store copy and screenshots (`store/`), promotion, research data and other non-public files live in a separate private repo, not here (see `scripts/private-repo.mjs`).
+
+The packaging scripts (`build.mjs`, `build-safari.mjs`, `gen-icons.mjs`, etc.) are plain Node (zipping via [jszip](https://npm.im/jszip), image work via [sharp](https://npm.im/sharp)),
+with no dependency on Windows-only PowerShell or System.Drawing, so they run the same way on Mac / Linux. Just `npm install` once to pull in the dependencies.
 
 ### 📦 Packaging (for Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons)
 
-There's no compile/transpile step — `src/` is plain source you can `Load unpacked` directly. "Packaging"
-just zips it up for store submission, and **there's no automation for it** (e.g. nothing runs on push) —
-you need to run it by hand whenever `dist/` needs updating:
+There's no compile/transpile step — `src/` is plain source you can `Load unpacked` directly. "Packaging" just zips it up for store submission,
+and **there's no automation for it (e.g. nothing packages automatically before a push)** — you need to run it by hand whenever `dist/` needs updating:
 
 ```bash
 npm install                          # first run, or whenever node_modules has been wiped
@@ -94,25 +97,37 @@ npm run build -- --browser=firefox    # Firefox only
 npm run build -- --browser=edge       # Edge only
 ```
 
-Chrome and Edge share `src/manifest.json` (Edge is Chromium-based and fully compatible with Chrome's
-Manifest V3, so no separate manifest is needed); Firefox uses `src/manifest.firefox.json`. The script
-reads `version` from the matching manifest and zips the **contents of `src/`** (with the chosen manifest
-renamed to `manifest.json` at the zip root) into `dist/bilibili-cdn-switcher-<browser>-<version>.zip`.
-The `version` in the Chrome and Firefox manifests must stay in sync — the script warns if they diverge
-(Edge reuses Chrome's manifest, so its version is always in sync by construction).
+Chrome and Edge share `src/manifest.json` (Edge is Chromium-based and fully compatible with Chrome's Manifest V3,
+so no separate manifest is needed); Firefox uses `src/manifest.firefox.json`. The script reads `version` from the matching manifest and
+zips the **contents of `src/`** (with the chosen manifest renamed to `manifest.json` at the zip root) into
+`dist/bilibili-cdn-switcher-<browser>-<version>.zip`. The `version` in the Chrome and Firefox manifests
+must stay in sync — the script warns if they diverge (Edge reuses Chrome's manifest, so its version is always in sync and needs no separate check).
 
-The build is reproducible: as long as `src/` hasn't changed, packaging the same browser target always
-produces byte-identical zips (Windows and Mac included), which makes it easy to check later on whether
-`dist/` actually needs updating if this ever gets wired into CI.
+The build is reproducible: as long as `src/` hasn't changed, packaging the same browser target always produces
+byte-identical zips (Windows and Mac included), which makes it easy to check later on whether `dist/` actually needs updating if this ever gets wired into CI.
+
+### 🧪 Tests
+
+```bash
+npm test                             # runs test/*.test.mjs (Node's built-in test runner)
+npm run test:whats-new               # loads src/ in puppeteer's Chrome and tests the "What's new" popup automatically
+```
+
+### 📝 Release notes and releases
+
+- `src/changelog.json` records both "new features not yet released (`unreleased`)" and "what each released version added over the previous one (`releases`)", in five languages (zh_TW / zh_CN / en / ja / ko).
+  The first time existing users open the popup after an update, they see a one-off "What's new" popup (its content comes from this file; `unreleased` is stripped automatically when packaging the zip).
+- `.githooks/pre-push`: on push, if `src/changelog.json` hasn't changed compared with the commit the branch was created from, it asks whether to push anyway; choosing No blocks the push.
+  `npm install` sets `core.hooksPath` automatically (or run `git config core.hooksPath .githooks` by hand). When you're sure nothing needs recording: `CHANGELOG_CHECK_IGNORE=1 git push`.
+- Releases are done with Claude Code's `/release` (`.claude/skills/release/SKILL.md`); store API keys go in `.env.local` (see `.env.local.example`). The stores' "Publish" buttons are always pressed by hand.
+- `npm run package`: besides the store-upload zips in `dist/`, it also packages the zips for offline installation and `CDNSpeedTest.exe` into `release/`, which `/release` uploads to that version's GitHub Release.
 
 ### 🍎 Packaging Safari (for the App Store)
 
-Safari extensions can't be side-loaded from a zip like Chrome — they must be wrapped in a containing app
-(a `.app` on macOS, an `.ipa` on iOS) and distributed through the App Store. The `safari/` folder is the
-Xcode project generated by `xcrun safari-web-extension-converter`; it references the repo's `src/` directly
-via relative paths (`../../../src/`), so **editing `src/` requires no file syncing** — just repackage and it
-picks up the latest. It also builds on any Mac after cloning the whole repo (there are no hardcoded absolute
-paths in the project).
+Safari extensions can't be loaded straight from a zip like Chrome — they must be wrapped in a containing app (a `.app` on macOS, an `.ipa` on iOS)
+and distributed through the App Store. The `safari/` folder is the Xcode project generated by `xcrun safari-web-extension-converter`; it references the repo's `src/` directly
+via relative paths (`../../../src/`), so **editing `src/` requires no file syncing** — just repackage and it picks up the latest. It also builds on any
+Mac after cloning the whole repo (there are no hardcoded absolute paths in the project).
 
 **Requirement**: a Mac with the full Xcode installed (Command Line Tools alone isn't enough).
 
@@ -122,17 +137,14 @@ npm run build:safari -- --platform=ios     # build for iOS instead
 npm run build:safari -- --configuration=Debug
 ```
 
-The script calls `xcodebuild` and overrides `MARKETING_VERSION` with the `version` from `src/manifest.json`
-(so the `.app`'s internal version matches the extension — the Xcode project hardcodes 1.0 by default),
-producing two things:
+The script calls `xcodebuild` and overrides `MARKETING_VERSION` with the `version` from `src/manifest.json` (so the .app's internal version matches the extension —
+the Xcode project hardcodes 1.0 by default), producing two things:
 
 - `dist/Bilibili CDN Switcher (<platform>).app` — the app you can double-click to install/test
-- `dist/bilibili-cdn-switcher-safari-<platform>-<version>.zip` — following the same
-  `bilibili-cdn-switcher-<platform>-<version>` naming convention as the other platforms, for handing to another machine
+- `dist/bilibili-cdn-switcher-safari-<platform>-<version>.zip` — following the same `bilibili-cdn-switcher-<platform>-<version>` naming convention as the other platforms, for handing to another machine
 
-⚠️ This uses **ad-hoc signing and is for local testing only**. Actual App Store submission still goes through
-Xcode: open the project under `safari/` → Product > Archive > Distribute App, signing with your Apple Developer
-account (this step needs signing credentials and can't be done purely from the command line).
+⚠️ This uses **ad-hoc signing and is for local testing only**. Actual App Store submission still goes through Xcode: open the project under `safari/` →
+Product > Archive > Distribute App, signing with your Apple Developer account (this step needs signing credentials and can't be done purely from the command line).
 
 ### 🎨 Regenerating icons
 
@@ -140,75 +152,82 @@ account (this step needs signing credentials and can't be done purely from the c
 npm run gen-icons
 ```
 
-Scales the 512px master down to 16/32/48/128, producing two sets: `src/icons/` (dev build, with a red
-badge dot — what `Load unpacked` normally reads, so it's easy to tell apart from an installed store
-build) and `assets/icons-prod/` (store build, no badge). `scripts/build.mjs` automatically swaps in the
-icons from `assets/icons-prod/` when packaging zips.
+Scales the 512px master down to 16/32/48/128, producing two sets: `src/icons/` (dev build, with a red badge dot — what `Load unpacked` normally reads, so it's easy to tell apart from an installed store build) and `assets/icons-prod/` (store build, no badge). `scripts/build.mjs` automatically swaps in the icons from `assets/icons-prod/` when packaging zips.
 
 ## 🎛️ UI reference
 
 | Option | Behavior |
 |:--|:--|
-| ⚙️ **Advanced settings (gear icon, top right)** | Holds the "Auto-optimize node when slow" and "Show debug overlay" toggles, each with a plain-language explanation; when the debug overlay is on, the same section also shows the current tab's debug info. The main page title is the extension's official name in the current language, and "⭐ Rate 5 stars" and "🐛 Report a bug" are the two buttons at the bottom of the main page |
-| 🎞️ **Video / Live tabs** | Below "Enabled" the popup is split into "Video" and "Live" tabs; if the current tab is a live room, the popup opens on "Live" |
-| 🔘 **Enabled** | Master switch for both video and live, **on** by default; when off, bilibili's stream fetching is left completely untouched (the debug overlay still shows the current CDN) |
-| 📡 **CDN route** | "Choose from list" / "Custom node list" / "Off", mutually exclusive. **Default = choose from list**. Above the list you pick a **country** (Taiwan / Singapore / Hong Kong / Japan / Australia / United States / Macau / United Kingdom / Spain / Russia / Other regions / All); the list then shows only that country's 10 fastest measured nodes (in the research report's order, default = first entry), with "Backup URL" last, and a badge shows how many nodes the current choice has. "All" lists all ~300 nodes. Right after installing, the country is picked automatically in the background from your IP (no need to open the popup) and marked "(you are here)" (via bilibili's own zone API — no new permission needed). Countries without their own list (Canada shares the US dialing code and gets the US list), or installs where the IP lookup fails, get "Other regions" — a cross-region list picked from speed-test reports from every country. Until your country is known, the default node is the first entry of "Other regions", `cn-bj-se-01-05`; after that the node defaults to your country's first entry, and users updating from an older version who never picked a node get their country's default automatically; switching countries also switches the node to the new country's first entry, and clears the order saved by "Sort nodes by speed test" and goes back to that country's original order; switching to "Custom node list" lets you add multiple node URLs or hosts (CDNSpeedTest adds its picks here too), and they can be speed-tested and sorted the same way; "Off" only affects regular videos and leaves their CDN selection alone |
-| 📺 **Live route** | "Preference" / "Off", **default = Preference, International (ov)**. The four routes are the `ov` / `ov-b` / `cn` / `cn-b` variants of the same cluster number for that room (bilibili live signatures only work within the same cluster number; the VOD nodes do not work for live). What is remembered is the route type, not a concrete host |
-| 📺 **Test live routes** | Only works while a live room is playing. It first checks that each of the four routes exists (missing ones are skipped), then measures two things per route: **Switch lag** (startup time, averaged over 3 runs; 0–800 ms Low / 800–1500 ms Mid / over 1500 ms High, shown in green / yellow / red) and **Keeping up** (pulls the stream for 8 seconds; fully keeping up = green "Excellent", falling behind by up to 1 s = yellow "Fair", more than 1 s = red "Poor"). The test competes for bandwidth with the live stream you are watching |
-| 🔍 **Test node speeds** | Switches to a dedicated speed-test page showing the current video's title and quality; measures download speed for each node using segments from the current video/quality (whichever comes first of 8MB or 5s; only counts as a timeout if nothing at all arrives within 5s — a partial result under 8MB is shown as-is), testing only the nodes of the current country and rendering each row as "waiting / testing / result"; the three fastest get a gold / silver / bronze crown in the top-right corner. With "All" selected, a red warning with an estimated duration (nodes × per-node second limit) appears first and steers you toward picking a country. Press "🔄 Retest" to rerun (works mid-test too, aborting the current run and starting fresh). **Read-only — never changes your selected CDN**; pressing "← Back" or closing the popup stops the test immediately. With "Enabled" on, testing is possible as soon as playurl is parsed, no need to wait for actual playback; with it off, a sample is only available after a real segment has been downloaded |
-| 🔁 **Automatic CDN failover** | The "Auto-optimize node when slow" toggle: on by default, can be turned off in Advanced settings (recommended if your own network is unstable, e.g. weak Wi-Fi, to avoid repeated black screens). When on, on detecting a failed segment request (403/404/5xx/network error) or genuinely stalled playback (progress frozen for 8s with no traffic on the wire), it first speed-tests the current country's list in the background, once per video: the current node is tested first and kept if it reaches the 4K standard (25 Mbps); otherwise the rest of the list is tested in order and it switches to the first node that reaches 25 Mbps, or, if none does, to the fastest one measured (staying put if the current node is still the fastest). The chosen node is saved as your node. If the popup is open meanwhile, it shows "Current node is slow, optimizing..." with the number of nodes left, and "Stop" aborts the test without changing your node. With the country set to "All" (~300 nodes) this step is skipped and it goes straight to the backup node below. After the optimization there's a 30 s cooldown; if playback still stalls after that, it silently switches to bilibili's own backup node (swapped at the segment level, no full-page reload, with a toast shown); if that backup also can't play, it shows a persistent prompt letting you decide whether to "Reload and switch to Backup URL". In a live room it first checks that your chosen route exists for that stream (if not it falls straight back to International ov), and falls back to ov as well when no stream data arrives for a while |
-| ⚡ **First-video optimization after install** | Runs only once, after a fresh install. On your first video, about 5 s after playback starts, the same test as in "Automatic CDN failover" runs in the background: the current node stays if it reaches 25 Mbps, otherwise it switches to the first node that does (or the fastest one measured) and saves it as your node. The "Current node is slow, optimizing..." overlay appears in the popup only if the current node turns out not to be fast enough, and this run can't be stopped. It never runs again — not when you switch countries, not on later videos. Until it has started, stall handling waits, so the player doesn't switch nodes twice |
-| 🌏 **Language** | Follows your browser/OS language by default, showing Traditional Chinese / Simplified Chinese / English / Japanese / Korean automatically (other languages fall back to English); to force a specific language, pick it under Settings → Language in the popup |
-| 🎨 **Theme** | Settings → Theme in the popup: System (default; follows your OS light/dark setting) / Light / Dark. Light uses a light gray background, white cards and bilibili pink accents, in the same style as CDNSpeedTest; Dark is the original dark design |
-| ⏱️ **Speed-test limits** | In Advanced settings, split into video and live: video = max MB / max seconds per node (default 8MB / 5s, whichever comes first); live = switch-lag runs to average / keeping-up seconds per route (default 3 runs / 8s). Each section has Fast / Balanced / Accurate presets (Balanced = the defaults); pick "Custom" to type your own numbers. Saved permanently, with a "Reset to default" link for each section |
-| 🔢 **Sort nodes by speed test** | In Advanced settings; **on** by default. When on, each node slides into its fastest-first position as soon as its test finishes (video: download speed; live: "Keeping up" level first, then switch lag). The order is saved locally and the node lists on the main page use it until you test again; turning it off restores the default order |
-| 🐛 **Show debug overlay on page** | In Advanced settings; **off** by default; independent of the routing toggle — still shows the current CDN even when routing is disabled, useful for comparison |
+| 🏠 **Main page** | The announcement bar sits at the top, with the "Enabled" switch and the video / live node settings in the middle. At the bottom are three buttons for rating, tipping and reporting a problem, plus the version number (click it to see the full release notes) |
+| 🔄 **This tab needs a refresh** | Right after the extension is installed or updated, bilibili tabs that were already open need a refresh before it takes effect; the popup shows a notice with a "Refresh" button |
+| 📢 **Announcement bar** | Shows only announcements for your country (such as speed-test prize draws); click one to read it in full. Press × to close it and hide it for 3 days |
+| 🔘 **Enabled** | Master switch, on by default, covering both video and live. When off, bilibili's stream fetching is left completely untouched |
+| 🎞️ **Video / Live tabs** | Below "Enabled" the popup is split into Video and Live tabs. When opened in a live room, it starts on "Live" |
+| 📡 **CDN Route** | "List" / "Custom" / "Off", mutually exclusive; the default is List. The list shows, per country, the 10-odd nodes that tested fastest, covering users of every ISP, and your country is picked automatically from your IP after installing; countries without their own list use "Other regions". With Custom you can type in hosts yourself, or have them added automatically after a CDNSpeedTest run |
+| 🔍 **Test node speeds** | Measures the download speed of every node in the list using the current video at its current quality; the three fastest get a crown. Click any row to switch to that node; you can stop or retest at any time |
+| ☕ **Support · Top Patrons** | A leaderboard of patrons ranked by total amount, with tips paid through Stripe. Tipping doesn't unlock any features, and the Safari version doesn't have this button |
+| 💬 **Report a problem / Request a feature** | Report a problem or request a feature in a separate window; once sent, an issue is opened on GitHub. The full diagnostics attached to problem reports are never made public |
+| 📺 **Live route** | Choose between International (ov) / International backup (ov-b) / China (cn) / China backup (cn-b); the default is International (ov). What's remembered is the route type, so it also applies when you switch live rooms |
+| 🔍 **Test live routes** | While a live room is playing, measures each route's switch lag (startup time) and keeping up (whether it keeps pace), marked good to bad in green / yellow / red |
+| ⚙️ **Advanced settings (gear icon, top right)** | Language, theme, auto-optimization, speed-test limits, node sorting, the debug overlay and other settings all live here. "Reset all settings" at the very bottom restores the defaults in one click |
+| 🌏 **Language** | Follows your browser language by default, supporting Traditional Chinese / Simplified Chinese / English / Japanese / Korean; it can also be set manually in Advanced settings |
+| 🎨 **Theme** | System (default) / Light / Dark |
+| 🔁 **Automatic CDN optimization on stalls** | On detecting stalls or failed segment loads, it first speed-tests in the background and switches to a node fast enough for 4K (25 Mbps); if playback still stalls, it switches to bilibili's own backup node. On by default; turning it off is recommended if your own network is unstable |
+| ⚡ **First-video node optimization after install** | Runs only once, after a fresh install: about 5 s after your first video starts playing, it speed-tests in the background and switches automatically if the current node isn't fast enough |
+| ⏱️ **Speed-test limits** | Video and live each offer three presets, "Fast - less accurate" / "Balanced" / "Slow - more accurate", or your own numbers, adjusting how long the speed test runs and how accurate it is |
+| 🔢 **Sort nodes by speed test** | On by default. Tested nodes are ordered fastest first, and the node list on the main page follows the same order |
+| 🐛 **Show debug overlay on page** | Off by default. When on, technical info such as the node in use is shown at the top-left of the player |
+| ♻️ **Reset all settings** | Returns all settings to their defaults and clears the custom node list |
 
 <details>
 <summary>🔍 <b>What the debug overlay looks like</b> (top-left of the player)</summary>
 
+Video page:
+
 ```text
-mode=on  target=upos-sz-mirror08ct.bilivideo.com
+mode=on  target=<node you chose>
+auto-fallback -> <backup node switched to automatically>        ← only shown after an automatic switch
 cdn=<host actually streaming right now>
 v=<video host in use>  a=<audio host in use>
-src=playinfo|playurl  rw=<rewrite count>  seg=<segment swap count>  qn=<quality>
+src=playinfo|playurl  rw=<rewrite count>  seg=<segment swap count>  qn=<quality>  spd=<speed>
+buf=<buffer ahead>s  rs=<readyState> [paused]  stall=<seconds stalled>/<threshold>  fb=<fallback count>/2 [cd=<cooldown left>]  lat=<segment latency>
+err=<last error> (<N>s ago)                    ← only shown when there's an error
+-<N>s  <recent event>                              ← up to 3 entries
+```
+
+Live room:
+
+```text
+mode=on  target=<route you chose>
+auto-fallback -> <route fallen back to automatically>              ← only shown after an automatic fallback
+cdn=<host actually streaming right now>
+proto=<protocol>  cluster=<cluster number>  orig=<original route>  seg=<segment swap count>  pin=<whether playinfo is pinned>
+(the rest is the same as the video page: buf=… / err=… / recent events)
 ```
 
 </details>
 
 ---
 
-## 🗂️ Configuration files
+## ☕ Buy me a coffee
 
-- 📋 The node list lives in **`src/cdn-list.json`** and is edited by hand.
-  It covers 300+ VOD nodes (de-duplicated, with live-only and confirmed-dead nodes removed);
-  each country's `nodes` is its top 10 spread across CDN pools. Reports from the speed-test app (`tools/cdn-speedtest-app`) are collected and analyzed with `/analyze-cdn`; update `countries` based on that analysis.
-- 🧩 Format:
+BiBoost is free forever, maintained by one indie developer after work. If you like it, consider buying me a coffee! As a thank-you for your generosity, you can pick your own name and avatar to appear on the Top Patrons list.
 
-  ```json
-  {
-    "countries": [{ "code": "TW", "dial": 886, "name": { "zh_TW": "台灣", "zh_CN": "台湾", "en": "Taiwan" }, "nodes": ["upos-sz-mirror08ct.bilivideo.com", "…"] }],
-    "pools": { "hw-biliv6": { "zh_TW": "華為雲 一般池", "zh_CN": "华为云 常规池", "en": "Huawei Cloud" } },
-    "options": [{ "value": "upos-sz-mirror08ct.bilivideo.com", "name": "08ct", "pool": "hw-biliv6" }]
-  }
-  ```
+<div align="center">
 
-  `options` holds every node (also the order of the "All" choice) and is shown as "code (pool type)"; the first entry of `countries[].nodes` is that country's default; `dial` is the international calling code, matched against `country_code` from bilibili's zone API.
-  Special `value`: 🔁 `backup` = prefer the Backup URL (always last; uses `nameKey` / `noteKey` from the locale files). "Off" and "Custom node list" are separate popup modes and aren't part of this list.
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en"><img src="https://img.shields.io/badge/%E2%98%95%20Buy%20me%20a%20coffee-FB7299?style=for-the-badge" alt="☕ Buy me a coffee"></a>
 
----
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=en"><img src="docs/donate-qr.png" width="160" alt="QR code for the tip page"></a>
 
-## ⚠️ Notes
+<sub>Or scan the QR code with your phone</sub>
 
-- 🔒 The original host is always kept as a `backupUrl` fallback, so a single host-bound URL failing doesn't break the whole segment.
-- 📍 The nodes for every supported country are picked from speed tests run by real users there. Supported countries: Taiwan, Singapore, Hong Kong, Japan, Australia, United States, Macau, United Kingdom, Spain, Russia. Users elsewhere get the "Other regions" list, and can also switch to a closer node or use the "Custom node list" to add their own hosts (the CDNSpeedTest tool can find them for you).
-- 📶 "Test node speeds" is a short-lived, single-segment measurement — treat the results as a reference only: whether the CDN has already cached this video/quality, and how congested the route is at different times, both affect real playback experience. The fastest node during a test isn't necessarily the smoothest over a long viewing session.
+</div>
 
 ---
 
 ## 📜 License
 
-Source-available under a custom **[Source-Available License](LICENSE)**:
+The source is public under a custom **[Source-Available License](LICENSE)**:
 
 - ✅ You may view, fork, and modify the source; personal use, teaching/research, and other non-commercial uses are freely permitted
 - ❌ You may not repackage this project or a modified version as a competing browser extension/app/service and publish it, nor remove copyright notices
@@ -220,6 +239,6 @@ Privacy policy: [PRIVACY.md](PRIVACY.md)
 
 <div align="center">
 
-Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · Inspired by [@roge4444](https://github.com/roge4444)'s [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) / [blblRogerMod](https://github.com/roge4444/blblRogerMod)
+Made with ❤️ for bilibili viewers overseas · Inspired by [@roge4444](https://github.com/roge4444)'s [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) / [blblRogerMod](https://github.com/roge4444/blblRogerMod)
 
 </div>

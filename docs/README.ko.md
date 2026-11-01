@@ -1,14 +1,18 @@
 <div align="center">
 
-# 🎬 BiBoost - 해외 영상 가속 for bilibili
+# <img src="../assets/icons-prod/icon128.png" width="40" height="40" align="center"> BiBoost - 해외 영상 가속 for bilibili
 
 **언어 / Language：** [繁體中文](README.zh-TW.md)｜[简体中文](README.zh-CN.md)｜[English](../README.md)｜[日本語](README.ja.md)｜한국어(이 페이지)
 
-### 해외에서 웹 bilibili를 더 매끄럽게 보기 위한 Chrome / Firefox / Edge / Safari 확장 프로그램
-
-### 📥 [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko) ｜ [Safari(Mac)](https://apps.apple.com/kr/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_ko) ｜ [Safari(iPhone / iPad)](https://apps.apple.com/kr/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_ko_ios)
+### 해외에서 웹 bilibili를 더 매끄럽게, 버퍼링 없이 4K로 재생하고 더 이상 끊김에 시달리지 않는 확장 프로그램
 
 </div>
+
+<img src="icons/chrome.png" width="20" height="20" align="center"> [Chrome Web Store](https://chromewebstore.google.com/detail/dfaddcffoondcendifiljhdbdagebgch?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko)<br>
+<img src="icons/firefox.png" width="20" height="20" align="center"> [Firefox Add-ons](https://addons.mozilla.org/addon/bilibili-cdn-switcher?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko)<br>
+<img src="icons/edge.png" width="20" height="20" align="center"> [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/dllallgilijcacpdemjafegibdafcbdp?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko)<br>
+<img src="icons/safari.png" width="20" height="20" align="center"> [Safari(Mac)](https://apps.apple.com/kr/app/id6817181919?platform=mac&pt=129529980&ct=github_readme_ko)<br>
+<img src="icons/safari-ios.png" width="20" height="20" align="center"> [Safari(iPhone / iPad)](https://apps.apple.com/kr/app/id6817181919?platform=iphone&pt=129529980&ct=github_readme_ko_ios)
 
 ---
 
@@ -32,20 +36,22 @@
 
 **🎯 해외(중국 본토 외) 사용자가 웹 bilibili(www.bilibili.com)를 더 매끄럽게 볼 수 있도록 만든 확장 프로그램입니다.**
 
-bilibili가 기본으로 배정하는 CDN은 해외 사용자에게 느리고 돌아가는 경로가 되는 경우가 많습니다. 이 확장 프로그램은 **영상을 가져오는 CDN을 사용자 지역에서 실측해 더 빨랐던 노드로 바꿔** 버퍼링과 로딩 시간을 줄여 줍니다.
+bilibili가 기본으로 배정하는 스트림 노드는 해외 사용자에게 돌아가는 경로가 되거나 충분히 빠르지 않은 경우가 많습니다. 이 확장 프로그램은 **영상을 가져오는 CDN의 순서를 다시 정해, 사용자 지역에서 실측해 더 빨랐던 최적의 노드로 바꿔** 버퍼링과 로딩을 더 매끄럽게 만들어 줍니다.
 
 | 기능 | 설명 |
 |:--|:--|
-| 🚀 **지역별 최적 노드** | 사용자 국가에서 실측해 가장 빨랐던 CDN을 기본으로 사용(대만, 홍콩, 마카오, 싱가포르, 일본, 호주, 미국, 영국, 스페인, 러시아에서 실측 완료, 다른 국가도 순차 추가 중). 설치하면 바로 사용할 수 있습니다 |
-| 🌐 **다른 CDN 노드** | Alibaba Cloud / Tencent Cloud / Huawei Cloud / Akamai / 각종 해외 노드… 지역에 맞게 자유롭게 전환 가능 |
-| ✏️ **사용자 지정 노드 목록** | 「목록」과 상호 배타적인 별도 모드. CDN 호스트를 원하는 만큼 추가할 수 있고 속도 테스트와 정렬도 지원합니다. 공식 도구 **CDNSpeedTest**(Windows)가 찾은 추천 노드도 여기에 자동으로 추가됩니다 |
-| 🛑 **끄기** | 영상과 라이브에 각각 「끄기」가 있으며, CDN 선택에 개입하지 않고 bilibili 원래 동작을 그대로 유지합니다 |
-| 📺 **라이브 방송 지원** | 「라이브」 탭에서 국제 회선(ov) / 국제 예비 회선(ov-b) / 중국 회선(cn) / 중국 예비 회선(cn-b)을 페이지 새로고침 없이 전환할 수 있습니다. 실제 회선 URL은 라이브 방송 페이지에서 재생이 시작된 뒤에 표시되며, 현재 방송에 없는 회선은 그렇다고 표시되고 흐리게 나타납니다(선택은 가능). 라이브 회선 상태가 나쁘면 「느릴 때 노드 자동 최적화」가 해당 방송만 국제 회선(ov)으로 되돌리며, 평소 설정은 바꾸지 않습니다 |
-| 🔁 **자동 장애 조치** | 세그먼트 요청 실패나 실제 재생 멈춤(버퍼가 가득 찬 상태는 제외)을 감지하면, 영상마다 한 번 먼저 현재 국가의 노드를 백그라운드에서 테스트합니다. 현재 노드가 4K 기준(25 Mbps)에 도달하면 그대로 두고, 아니면 처음으로 기준에 도달한 노드(모두 미달이면 가장 빠른 노드)로 바꿔 사용자 노드로 저장합니다. 그래도 멈추면 bilibili 자체 백업 노드로 조용히 전환하고(토스트 알림만 표시, 페이지 전체 새로고침 없음), 백업도 실패하면 백업 URL로 전환할지 상시 메시지로 묻습니다. 고급 설정의 「느릴 때 노드 자동 최적화」로 끌 수 있으며(기본값은 켬), 사용자 네트워크가 불안정하다면 끄는 것을 권장합니다 |
-| 📶 **노드별 속도 테스트** | 전용 페이지(영상용, 라이브용)에서 영상 제목과 화질을 보여 주고, 현재 영상·화질의 세그먼트로 각 노드의 다운로드 속도를 하나씩 측정합니다. 테스트 도중에도 다시 테스트할 수 있습니다. **읽기 전용이며 선택한 CDN은 바꾸지 않습니다**. 페이지를 벗어나면 바로 테스트를 멈춥니다 |
-| 🌏 **다국어 UI** | 브라우저 언어에 맞춰 번체 중국어 / 간체 중국어 / 영어 / 일본어 / 한국어를 자동으로 표시합니다(설정에서 직접 선택도 가능). 팝업, 페이지 내 토스트, 디버그 오버레이 모두 지원합니다 |
-| 🐛 **디버그 오버레이** | 현재 사용 중인 CDN 노드를 표시합니다(기본값은 끔. 톱니바퀴 아이콘의 고급 설정에서 켤 수 있습니다) |
-| 🦊 **Chrome / Firefox / Edge / Safari** | 소스는 `src/` 하나뿐이며, 패키징하면 브라우저별 zip이 나옵니다(Edge는 Chromium 기반이라 Chrome의 manifest를 그대로 사용). Safari는 Xcode로 `.app`으로 패키징합니다(아래 「Safari 패키징」 참고) |
+| 🚀 **설정 없이 바로 사용** | 설치하면 백그라운드에서 IP로 사용자 국가를 판단해, 그 국가에서 실측해 가장 빨랐던 CDN으로 자동 전환합니다. 설정을 열 필요도, 노드를 직접 고를 필요도 없습니다 |
+| 🧑‍🔬 **실사용자 실측, 다국가 지원** | 국가별 노드 목록은 모두 현지 사용자가 자신의 네트워크로 직접 실측한 결과로 골랐습니다. 대만, 싱가포르, 홍콩, 일본, 호주, 미국, 마카오, 영국, 스페인, 러시아를 지원하며 다른 국가도 순차 추가 중입니다. 전용 목록이 없는 지역에서는 각국 보고서에서 골라낸, 여러 지역에서 두루 쓸 수 있는 「기타 지역」 목록을 사용합니다 |
+| ✏️ **사용자 지정 노드 목록** | 사용자 네트워크 환경에 맞춘 전용 노드를 만들 수 있습니다. 공식 속도 테스트 도구 **[CDNSpeedTest](https://lazy-cv.com/docs/bilibili-cdn-speedtest?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko)**(Windows / Mac)로 한 번 테스트하면 가장 잘 맞는 노드가 확장 프로그램에 자동으로 추가됩니다. CDN 호스트를 직접 여러 개 입력할 수도 있으며, 마찬가지로 속도 테스트와 정렬을 지원합니다 |
+| 📶 **노드별 속도 테스트** | 팝업 안의 속도 테스트 페이지(영상·라이브 공용)에서 영상 제목과 화질을 보여 주고, 현재 영상·현재 화질에서 각 노드의 다운로드 속도를 실측해 하나씩 나열하며, 8K / 4K / 1080p / 720p를 원활하게 볼 수 있는지 끊길 수 있는지 표시합니다. 아무 행이나 누르면 그 노드로 전환되고, 테스트 중에도 중지하거나 다시 테스트할 수 있으며, 페이지를 벗어나면 테스트가 중단됩니다 |
+| 🔁 **끊김 시 노드 자동 최적화** | 현재 CDN의 세그먼트 요청 실패나 계속되는 재생 멈춤(단순히 버퍼가 가득 찬 상태는 제외)을 감지하면, 영상마다 한 번 먼저 현재 목록의 노드를 백그라운드에서 테스트합니다. 현재 노드가 4K 기준(25 Mbps)에 도달하면 그대로 두고, 아니면 처음으로 기준에 도달한 노드(모두 미달이면 가장 빨랐던 노드)로 바꿔 사용자 노드로 저장합니다. 그래도 멈추면 bilibili가 기본 제공하는 백업 노드로 조용히 전환하고(알림 표시, 보통 페이지 전체 새로고침 없음), 백업도 안 되면 「백업 URL」로 전환할지 직접 정할 수 있도록 알림을 띄웁니다. 고급 설정의 「느릴 때 노드 자동 최적화」 스위치로 끌 수 있으며(기본값은 켬), 네트워크 자체가 불안정하다면 끄는 것을 권장합니다 |
+| 📺 **라이브 방송 지원** | 「라이브」 탭에서 국제 회선(ov) / 국제 예비 회선(ov-b) / 중국 회선(cn) / 중국 예비 회선(cn-b)을 페이지 전체 새로고침 없이 전환할 수 있습니다. 각 회선의 실제 URL은 라이브 방송 페이지에서 재생이 시작된 뒤에 표시되며, 현재 방송에 없는 회선은 그렇다고 표시되고 흐리게 나타납니다(선택은 가능). 라이브 회선 상태가 나쁘면 「느릴 때 노드 자동 최적화」가 국제 회선(ov)으로 자동으로 되돌립니다(해당 라이브 방송에만 적용되며 평소 선택은 바꾸지 않음) |
+| 🦊 **Chrome / Firefox / Edge / Safari 4개 플랫폼** | 소스는 `src/` 하나뿐이며, 패키징하면 브라우저별 zip이 각각 나옵니다(Edge는 Chromium 기반이라 Chrome의 manifest를 그대로 사용). Safari는 별도로 Xcode로 `.app`으로 패키징합니다(아래 「Safari 패키징」 참고) |
+| 🌏 **다국어 UI** | 브라우저 언어에 맞춰 繁體中文 / 简体中文 / English / 日本語 / 한국어를 자동으로 표시합니다(고급 설정에서 직접 선택도 가능). 팝업, 페이지 내 알림, 디버그 오버레이 모두 지원합니다 |
+| 💬 **문제 신고 / 기능 요청** | 팝업에서 바로 문제를 신고하거나 새 기능을 요청할 수 있으며, 보내면 GitHub에 issue가 열려 진행 상황을 확인하기 쉽습니다. 문제 신고에 첨부되는 전체 진단 데이터는 공개되지 않습니다 |
+| 📢 **공지** | 메인 페이지 위쪽의 공지 바에 사용자 국가의 공지(예: 속도 테스트 추첨 이벤트)가 표시되며, 누르면 전문을 볼 수 있습니다 |
+| ☕ **후원 · 회장님 랭킹** | BiBoost는 영원히 무료입니다. 개발을 응원하고 싶다면 메인 페이지에서 후원할 수 있고, 누적 금액 순으로 정렬되는 회장님 랭킹에 오르게 됩니다(Safari 버전에는 후원 기능이 없음) |
+| 🐛 **디버그 오버레이** | 현재 CDN 노드를 확인할 수 있습니다(기본값은 끔. 오른쪽 위 톱니바퀴의 고급 설정에서 켤 수 있습니다) |
 
 ---
 
@@ -53,82 +59,92 @@ bilibili가 기본으로 배정하는 CDN은 해외 사용자에게 느리고 �
 
 ```text
 bilibili-cdn-switcher/
-├── src/                  ← 확장 프로그램 소스(「압축해제된 확장 프로그램을 로드」/ 패키징 대상)
-│   ├── manifest.json          ← Chrome / Edge
-│   ├── manifest.firefox.json  ← Firefox(browser_specific_settings 포함)
-│   ├── popup.html / popup.js
-│   ├── main-hook.js      ← MAIN world: 스트림 URL 재작성
-│   ├── bridge.js         ← ISOLATED world: storage / i18n을 페이지로 전달
-│   ├── cdn-list.json     ← CDN 노드 목록
-│   ├── _locales/{zh_TW,zh_CN,en,ja,ko}/  ← 5개 언어 UI 문구(manifest는 __MSG_x__, popup.js / main-hook.js는 실행 중에 조회)
-│   └── icons/            ← 16 / 32 / 48 / 128
+├── src/                  ← 확장 프로그램 본체(「압축해제된 확장 프로그램을 로드」/ 패키징 대상): manifest, 팝업, bilibili 페이지에 주입하는 스크립트,
+│                            후원 / 공지 / 문제 신고 페이지, 노드 목록 cdn-list.json, 업데이트 기록 changelog.json, 5개 언어 _locales/
+├── safari/               ← Safari 확장 프로그램 Xcode 프로젝트(safari-web-extension-converter로 생성, 상대 경로로 ../../../src/ 직접 참조)
+├── tools/
+│   ├── cdn-speedtest-app/    ← 공식 속도 테스트 도구 CDNSpeedTest(Python, Windows / Mac)
+│   ├── report-worker/        ← api.biboost.app: 문제 신고, 공지, 후원 등의 API(Cloudflare Worker)
+│   ├── site/                 ← biboost.app 웹사이트(Cloudflare Worker)
+│   └── translate-worker/     ← 관리자 페이지용 번역 API(Cloudflare Worker)
+├── scripts/              ← 개발 / 패키징 / 릴리스 / 운영 스크립트(주로 Node, 일부 Python)
+├── test/                 ← 단위 테스트(npm test)
+├── assets/               ← 512px 아이콘 원본과 정식 버전 아이콘(icons-prod는 gen-icons.mjs가 생성)
+├── docs/                 ← README 스크린샷, 플랫폼 아이콘 + 繁體中文 / 简体中文 / 日本語 / 한국어 README
 ├── dist/                 ← 패키징 결과물(Chrome/Firefox/Edge는 .zip, Safari는 .app)
-├── docs/                 ← README용 이미지 + 각 언어 README
-├── assets/               ← 512px 아이콘 원본(icons-prod는 gen-icons.mjs가 생성)
-├── store/                ← 스토어 등록용 스크린샷 / 홍보 이미지 + 플랫폼별 소개문 (비공개 저장소에서 관리, 여기에는 없음)
-├── safari/               ← Safari 확장 프로그램 Xcode 프로젝트(safari-web-extension-converter로 생성, 상대 경로로 ../../../src/ 참조)
-├── scripts/              ← 개발/빌드 스크립트. 모두 순수 Node로 Windows / Mac / Linux에서 동작
-│   ├── build.mjs                 ← 스토어 제출용 zip 패키징(Chrome + Firefox + Edge)
-│   ├── build-safari.mjs          ← Xcode로 Safari 확장 프로그램을 .app으로 패키징(macOS 전용)
-│   └── gen-icons.mjs             ← 아이콘 재생성
-├── package.json           ← scripts/*.mjs가 쓰는 Node 의존성(jszip / puppeteer / sharp)
-├── .env.local.example     ← 로컬 자격 증명 예시: 스토어 게시 키, bilibili 로그인 cookie(.env.local로 복사해서 사용)
+├── .githooks/            ← pre-push 업데이트 기록 검사, 비공개 저장소 자동 동기화
+├── .github/workflows/    ← GitHub Actions: Safari 패키징 및 스토어 등록, Mac용 속도 테스트 도구 패키징 등
+├── package.json          ← scripts/*.mjs와 테스트에 쓰는 Node 의존성
+├── .env.local.example    ← 로컬 자격 증명 예시: 스토어 게시 키, bilibili 로그인 cookie(.env.local로 복사한 뒤 입력)
 └── README.md
 ```
 
-`scripts/` 아래는 모두 순수 Node(zip은 [jszip](https://npm.im/jszip), 이미지 처리는
-[sharp](https://npm.im/sharp))로, Windows 전용 PowerShell이나 System.Drawing에 의존하지 않아
-Mac에서도 똑같이 동작합니다. 처음 한 번 `npm install`로 의존성만 설치하면 됩니다.
+스토어 소개문과 스크린샷(`store/`), 홍보, 연구 자료 등 공개하지 않는 파일은 별도의 비공개 저장소에 있으며 여기에는 없습니다(`scripts/private-repo.mjs` 참고).
+
+패키징 관련 스크립트(`build.mjs`, `build-safari.mjs`, `gen-icons.mjs` 등)는 모두 순수 Node(zip은 [jszip](https://npm.im/jszip), 이미지 처리는 [sharp](https://npm.im/sharp))로,
+Windows 전용 PowerShell이나 System.Drawing에 의존하지 않아 Mac / Linux에서도 똑같이 동작합니다. 처음에 `npm install`로 의존성만 설치하면 됩니다.
 
 ### 📦 패키징(Chrome Web Store / Firefox Add-ons / Microsoft Edge Add-ons 제출용)
 
-컴파일이나 트랜스파일 단계는 없으며, `src/`는 그대로 「압축해제된 확장 프로그램을 로드」로 쓸 수 있는 소스입니다.
-「패키징」은 스토어 제출용으로 zip으로 묶는 것뿐이고, **자동화는 되어 있지 않습니다**(push 시 실행되는 등의
-장치는 없음). `dist/`를 갱신해야 할 때 직접 실행하세요:
+이 프로젝트는 컴파일이나 트랜스파일이 필요 없으며, `src/`는 그대로 「압축해제된 확장 프로그램을 로드」로 쓸 수 있는 소스입니다. 「패키징」은 스토어 제출용 zip으로 묶는 것뿐이고,
+**자동화는 되어 있지 않습니다(예: push 전 자동 패키징 같은 장치 없음)**. `dist/`를 갱신하려면 직접 한 번 실행해야 합니다:
 
 ```bash
-npm install                          # 처음 실행할 때, 또는 node_modules를 지운 뒤
-npm run build                        # 기본값: Chrome + Firefox + Edge 패키징
-npm run build -- --browser=chrome     # Chrome만
-npm run build -- --browser=firefox    # Firefox만
-npm run build -- --browser=edge       # Edge만
+npm install                          # 처음 실행할 때, 또는 node_modules를 지운 뒤에만 필요
+npm run build                        # 기본값: Chrome + Firefox + Edge 모두 패키징
+npm run build -- --browser=chrome     # Chrome만 패키징
+npm run build -- --browser=firefox    # Firefox만 패키징
+npm run build -- --browser=edge       # Edge만 패키징
 ```
 
-Chrome과 Edge는 `src/manifest.json`을 함께 쓰고(Edge는 Chromium 기반으로 Chrome의 Manifest V3와 완전히 호환되므로
-별도 manifest가 필요 없음), Firefox는 `src/manifest.firefox.json`을 씁니다. 스크립트는 해당 manifest에서
-`version`을 읽어 **`src/`의 내용**(선택한 manifest를 zip 최상위의 `manifest.json`으로 이름 변경)을
-`dist/bilibili-cdn-switcher-<browser>-<version>.zip`으로 묶습니다. Chrome과 Firefox manifest의 `version`은
-항상 같아야 하며, 다르면 스크립트가 경고합니다(Edge는 Chrome의 manifest를 쓰므로 항상 일치합니다).
+Chrome과 Edge는 같은 `src/manifest.json`을 쓰고(Edge는 Chromium 기반으로 Manifest V3가 Chrome과 완전히 호환되므로
+별도 manifest가 필요 없음), Firefox는 `src/manifest.firefox.json`을 씁니다. 스크립트는 해당 manifest의 `version`을 읽어,
+**`src/`의 내용**(선택한 manifest를 `manifest.json`으로 바꿔 zip 최상위에 배치)을
+`dist/bilibili-cdn-switcher-<browser>-<버전>.zip`으로 묶습니다. Chrome과 Firefox 두 manifest의 `version`은
+항상 같아야 하며, 다르면 스크립트가 경고합니다(Edge는 Chrome의 manifest를 그대로 쓰므로 버전이 항상 같아 따로 확인할 필요 없음).
 
-빌드는 재현 가능합니다. `src/`가 바뀌지 않았다면 같은 브라우저용 패키징은 매번 바이트 단위로 동일한 zip을
-만듭니다(Windows와 Mac 사이에서도 동일). 나중에 CI에 연결하더라도 `dist/`를 갱신해야 하는지 판단하기 쉽습니다.
+패키징 결과는 재현 가능합니다(reproducible build). `src/` 내용이 바뀌지 않았다면 같은 브라우저용 zip은
+매번 바이트 단위로 완전히 동일하며(Windows와 Mac 사이에서도 동일), 나중에 CI에 연결할 때 `dist/`를 정말 갱신해야 하는지 판단하기 쉽습니다.
+
+### 🧪 테스트
+
+```bash
+npm test                             # test/*.test.mjs 실행(Node 내장 test runner)
+npm run test:whats-new               # puppeteer의 Chrome으로 src/를 로드해 「업데이트 내용」 팝업을 자동 테스트
+```
+
+### 📝 업데이트 기록과 릴리스
+
+- `src/changelog.json`에는 「아직 스토어에 올라가지 않은 새 기능(`unreleased`)」과 「이미 출시된 각 버전이 이전 버전보다 추가한 내용(`releases`)」이 함께 5개 언어(zh_TW / zh_CN / en / ja / ko)로 기록됩니다.
+  기존 사용자가 업데이트 후 처음 팝업을 열면 일회성 「업데이트 내용」 팝업이 표시됩니다(내용은 이 파일에서 가져오며, zip으로 패키징할 때 `unreleased`는 자동으로 제거됩니다).
+- `.githooks/pre-push`: push할 때 분기한 기준 커밋과 비교해 `src/changelog.json`에 변경이 없으면 그래도 push할지 묻고, No를 고르면 막습니다.
+  `npm install`이 `core.hooksPath`를 자동으로 설정합니다(또는 직접 `git config core.hooksPath .githooks`). 기록할 필요가 없는 게 확실할 때: `CHANGELOG_CHECK_IGNORE=1 git push`.
+- 릴리스는 Claude Code의 `/release`(`.claude/skills/release/SKILL.md`)로 합니다. 스토어 게시 키는 `.env.local`에 둡니다(`.env.local.example` 참고). 스토어의 「게시」 버튼은 항상 사람이 직접 누릅니다.
+- `npm run package`: `dist/`의 스토어 업로드용 zip 외에, 오프라인 설치용 zip과 `CDNSpeedTest.exe`를 `release/`에 패키징하며, `/release`가 이를 해당 버전의 GitHub Release에 업로드합니다.
 
 ### 🍎 Safari 패키징(App Store 제출용)
 
-Safari 확장 프로그램은 Chrome처럼 zip에서 바로 불러올 수 없고, 호스트 앱(macOS는 `.app`, iOS는 `.ipa`)으로
-감싸 App Store로 배포해야 합니다. `safari/` 폴더는 `xcrun safari-web-extension-converter`로 생성한
-Xcode 프로젝트로, 상대 경로(`../../../src/`)로 저장소의 `src/`를 직접 참조하므로
-**`src/`를 수정해도 파일을 동기화할 필요가 없고**, 다시 패키징하기만 하면 최신 내용이 들어갑니다.
-저장소 전체를 clone하면 어느 Mac에서나 빌드할 수 있습니다(프로젝트에 절대 경로가 없음).
+Safari 확장 프로그램은 Chrome처럼 zip을 바로 불러올 수 없고, 「확장 프로그램을 담은 앱」(macOS는 `.app`, iOS는 `.ipa`)으로 패키징해
+App Store로 배포해야 합니다. `safari/` 폴더는 `xcrun safari-web-extension-converter`로 생성한 Xcode 프로젝트로, 상대 경로
+(`../../../src/`)로 저장소의 `src/`를 직접 참조하므로 **`src/`를 수정해도 파일을 동기화할 필요가 없고**, 다시 패키징하기만 하면 최신 내용이 들어갑니다.
+저장소 전체를 clone하면 어느 Mac에서나 빌드할 수 있습니다(프로젝트에 하드코딩된 절대 경로가 없음).
 
 **필요 조건**: Xcode 전체를 설치한 Mac(Command Line Tools만으로는 부족).
 
 ```bash
 npm run build:safari                       # macOS, Release, ad-hoc 서명 → dist/
-npm run build:safari -- --platform=ios     # iOS용으로 빌드
+npm run build:safari -- --platform=ios     # iOS용으로 패키징
 npm run build:safari -- --configuration=Debug
 ```
 
-스크립트는 `xcodebuild`를 호출하고 `src/manifest.json`의 `version`으로 `MARKETING_VERSION`을 덮어씁니다
-(`.app` 내부 버전을 확장 프로그램과 맞추기 위해서이며, Xcode 프로젝트 기본값은 1.0 고정). 결과물은 두 가지입니다:
+스크립트는 `xcodebuild`를 호출하고 `MARKETING_VERSION`을 `src/manifest.json`의 `version`으로 덮어써(.app 내부 버전을 확장 프로그램과 맞추기 위함,
+Xcode 프로젝트 기본값은 1.0 고정) 두 가지 결과물을 만듭니다:
 
-- `dist/Bilibili CDN Switcher (<platform>).app` —— 더블클릭으로 설치/테스트할 수 있는 앱
-- `dist/bilibili-cdn-switcher-safari-<platform>-<version>.zip` —— 다른 플랫폼과 같은
-  `bilibili-cdn-switcher-<platform>-<version>` 명명 규칙으로, 다른 기기에 넘길 때 사용
+- `dist/Bilibili CDN Switcher (<플랫폼>).app` —— 더블클릭으로 바로 설치 / 테스트할 수 있는 앱
+- `dist/bilibili-cdn-switcher-safari-<플랫폼>-<버전>.zip` —— 다른 플랫폼의 `bilibili-cdn-switcher-<플랫폼>-<버전>` 명명 규칙에 맞춘 것으로, 다른 기기에 넘길 때 편리
 
-⚠️ 이것은 **ad-hoc 서명이며 로컬 테스트 전용**입니다. 실제 App Store 제출은 Xcode에서 합니다:
-`safari/` 아래 프로젝트 열기 → Product > Archive > Distribute App에서 Apple Developer 계정으로 서명
-(서명 정보가 필요해 명령줄만으로는 끝낼 수 없습니다).
+⚠️ 이것은 **ad-hoc 서명이며 로컬 테스트 전용**입니다. 실제 App Store 제출은 Xcode에서 `safari/` 아래 프로젝트를 열고 →
+Product > Archive > Distribute App에서 Apple Developer 계정으로 서명해 업로드해야 합니다(서명 인증서가 필요해 명령줄만으로는 끝낼 수 없습니다).
 
 ### 🎨 아이콘 재생성
 
@@ -136,69 +152,76 @@ npm run build:safari -- --configuration=Debug
 npm run gen-icons
 ```
 
-512px 원본을 16/32/48/128로 축소해 두 세트를 만듭니다: `src/icons/`(개발용. 빨간 배지 점이 있으며
-「압축해제된 확장 프로그램을 로드」가 평소 읽는 아이콘으로, 스토어에서 설치한 버전과 구분하기 쉽게 하기 위함)와
-`assets/icons-prod/`(스토어용, 배지 없음). `scripts/build.mjs`는 zip을 패키징할 때 자동으로
-`assets/icons-prod/`의 아이콘으로 바꿔 넣습니다.
+512px 원본을 16/32/48/128로 축소해 두 세트를 만듭니다: `src/icons/`(개발용. 빨간 배지 점이 있으며, 「압축해제된 확장 프로그램을 로드」가 평소 읽는 아이콘으로 이미 설치한 정식 버전과 구분하기 쉽게 하기 위함)와 `assets/icons-prod/`(정식 버전, 배지 없음). `scripts/build.mjs`는 zip을 패키징할 때 자동으로 아이콘을 `assets/icons-prod/`의 정식 버전으로 바꿔 넣습니다.
 
 ## 🎛️ UI 설명
 
 | 항목 | 동작 |
 |:--|:--|
-| ⚙️ **고급 설정(오른쪽 위 톱니바퀴)** | 「느릴 때 노드 자동 최적화」와 「페이지에 디버그 오버레이 표시」 스위치가 여기 있으며, 각각 알기 쉬운 설명이 붙어 있습니다. 디버그 오버레이를 켜면 같은 영역에 현재 탭의 디버그 정보도 표시됩니다. 메인 페이지 제목은 현재 언어로 된 확장 프로그램의 정식 이름이고, 「⭐ 마음에 드셨다면 별 5개로 응원해 주세요」와 「🐛 문제 신고 / 기능 요청」은 메인 페이지 맨 아래의 두 버튼입니다 |
-| 🎞️ **영상 / 라이브 탭** | 「사용」 아래는 「영상」과 「라이브」 두 탭으로 나뉩니다. 현재 탭이 라이브 방송 페이지라면 팝업은 「라이브」로 열립니다 |
-| 🔘 **사용** | 영상과 라이브 공통의 마스터 스위치로 기본값은 **켬**. 끄면 bilibili의 스트림 가져오기에 전혀 개입하지 않습니다(디버그 오버레이는 여전히 현재 CDN을 표시합니다) |
-| 📡 **CDN 회선** | 「목록」/「사용자 지정」/「끄기」 중 하나를 선택. **기본값＝목록**. 목록 위에서 **국가**(대만/싱가포르/홍콩/일본/호주/미국/마카오/영국/스페인/러시아/기타 지역/전체)를 고르면 그 국가에서 실측해 빨랐던 노드 10개만 표시하며(연구 보고서 순서, 기본값은 첫 항목), 마지막 항목은 「백업 URL」입니다. 옆에는 현재 선택의 노드 수가 표시됩니다. 「전체」를 고르면 약 300개 노드를 모두 표시합니다. 설치하면 팝업을 열지 않아도 바로 백그라운드에서 IP로 사용자 국가를 자동으로 고르고 「(현재 위치)」로 표시합니다(bilibili 자체 zone API를 사용하므로 추가 권한 불필요). 전용 목록이 없는 국가(캐나다는 국가 번호가 미국과 같아 미국 목록 사용)나 IP 조회에 실패한 경우에는 「기타 지역」을 씁니다. 모든 국가의 속도 테스트 보고서에서 골라낸, 여러 지역에서 두루 쓸 수 있는 목록입니다. 국가를 아직 모를 때의 기본 노드는 「기타 지역」의 첫 항목 `cn-bj-se-01-05`이고, 국가가 정해지면 그 국가의 첫 항목이 기본값이 됩니다(이전 버전에서 업데이트했고 노드를 직접 고른 적이 없다면 자동으로 적용). 국가를 바꾸면 노드도 그 국가의 첫 항목으로 바뀌고 「속도 테스트 순으로 노드 정렬」로 정한 순서는 지워져 그 국가의 원래 순서로 돌아갑니다. 「사용자 지정」으로 바꾸면 여러 노드 URL이나 호스트를 목록에 추가할 수 있고(CDNSpeedTest로 테스트한 노드도 자동 추가), 똑같이 속도 테스트와 정렬이 가능합니다. 「끄기」는 일반 영상에만 적용되며 영상 CDN 선택에 개입하지 않습니다 |
-| 📺 **라이브 회선** | 「선호 회선」/「끄기」, **기본값＝선호 회선, 국제 회선(ov)**. 네 회선은 해당 방송과 같은 클러스터 번호의 `ov` / `ov-b` / `cn` / `cn-b`입니다(bilibili 라이브 서명은 같은 클러스터 번호 안에서만 유효하며, 영상 노드는 라이브에 쓸 수 없습니다). 기억하는 것은 회선 종류이지 특정 호스트가 아닙니다 |
-| 📺 **라이브 회선 속도 테스트** | 라이브 방송이 재생 중일 때만 사용할 수 있습니다. 먼저 네 회선이 있는지 확인하고(없는 회선은 건너뜀), 회선마다 두 가지를 측정합니다: **전환 지연**(시작 시간, 3회 평균. 0～800 ms 낮음 / 800～1500 ms 보통 / 1500 ms 초과 높음, 초록/노랑/빨강으로 표시)과 **연속 시청**(8초 동안 스트림을 받아 완전히 따라가면 초록 「우수」, 1초 이내로 뒤처지면 노랑 「보통」, 1초 넘게 뒤처지면 빨강 「나쁨」). 테스트는 시청 중인 라이브 방송과 대역폭을 나눠 씁니다 |
-| 🔍 **노드별 속도 테스트** | 전용 속도 테스트 페이지로 바뀌며 현재 영상의 제목과 화질을 보여 줍니다. 현재 영상·화질의 세그먼트로 각 노드의 다운로드 속도를 측정하고(8MB와 5초 중 먼저 도달하는 쪽에서 종료. 5초 안에 데이터가 전혀 오지 않을 때만 시간 초과로 처리하며, 8MB 미만의 중간 결과는 그대로 표시), 현재 국가의 노드만 테스트해 각 행을 「대기 중 / 테스트 중 / 결과」로 표시합니다. 가장 빠른 세 노드에는 오른쪽 위에 금·은·동 왕관이 붙습니다. 「전체」를 선택한 경우에는 먼저 빨간 경고와 예상 소요 시간(노드 수 × 노드당 초 한도)을 보여 주고 국가를 고르도록 안내합니다. 「🔄 다시 테스트」로 다시 실행할 수 있습니다(테스트 도중에도 가능하며, 현재 테스트를 중단하고 처음부터 다시 시작). **읽기 전용이며 선택한 CDN은 바꾸지 않습니다**. 「← 뒤로」를 누르거나 팝업을 닫으면 바로 테스트를 멈춥니다. 「사용」이 켜져 있으면 playurl을 해석한 시점부터 테스트할 수 있어 실제 재생을 기다릴 필요가 없고, 꺼져 있으면 실제로 세그먼트를 내려받은 뒤에야 샘플이 생깁니다 |
-| 🔁 **CDN 자동 장애 조치** | 고급 설정의 「느릴 때 노드 자동 최적화」로, 기본값은 켬이며 끌 수 있습니다(Wi-Fi가 약한 등 사용자 네트워크가 불안정하다면 반복되는 검은 화면을 피하기 위해 끄는 것을 권장). 켜져 있으면 세그먼트 요청 실패(403/404/5xx/네트워크 오류)나 실제 재생 멈춤(8초 동안 진행이 없고 통신도 없음)을 감지했을 때, 영상마다 한 번 먼저 현재 국가의 목록을 백그라운드에서 테스트합니다. 현재 노드를 먼저 테스트해 4K 기준(25 Mbps)에 도달하면 그대로 두고, 아니면 목록의 나머지를 순서대로 테스트해 처음으로 25 Mbps에 도달한 노드로, 모두 미달이면 측정한 것 중 가장 빠른 노드로 전환합니다(현재 노드가 가장 빠르면 그대로). 고른 노드는 사용자 노드로 저장됩니다. 이때 팝업을 열어 두면 「현재 노드 속도가 느려 최적화 중...」과 남은 노드 수가 표시되며, 「중단」을 누르면 테스트를 멈추고 노드는 바뀌지 않습니다. 국가가 「전체」(약 300개 노드)이면 이 최적화를 건너뛰고 바로 아래의 백업 전환으로 넘어갑니다. 최적화 후에는 30초의 대기 시간이 있으며, 그 뒤에도 계속 멈추면 bilibili 자체 백업 노드로 조용히 전환합니다(세그먼트 단위로 교체하므로 페이지 전체 새로고침 없음, 토스트로 알림). 백업으로도 재생할 수 없으면 「새로고침하고 백업 URL로 전환」할지 상시 메시지로 묻습니다. 라이브 방송에서는 먼저 선택한 회선이 그 방송에 있는지 확인하고(없으면 바로 국제 회선 ov로 되돌림), 한동안 데이터가 오지 않을 때도 ov로 되돌립니다 |
-| ⚡ **설치 후 첫 영상 노드 최적화** | 새로 설치한 뒤 한 번만 실행됩니다. 첫 영상 재생이 시작되고 약 5초 뒤 「CDN 자동 장애 조치」와 같은 방식으로 백그라운드 테스트를 해서, 현재 노드가 25 Mbps에 도달하면 그대로 두고, 아니면 처음으로 도달한 노드(모두 미달이면 가장 빠른 노드)로 바꿔 저장합니다. 「현재 노드 속도가 느려 최적화 중...」은 현재 노드가 충분히 빠르지 않을 때만 팝업에 표시되며, 이 최적화는 중단할 수 없습니다. 이후에는 국가를 바꾸거나 다른 영상을 봐도 다시 실행되지 않습니다. 이 최적화가 시작되기 전까지는 자동 장애 조치를 보류해 플레이어가 두 번 전환되지 않게 합니다 |
-| 🌏 **언어** | 기본적으로 브라우저/OS 언어에 맞춰 번체 중국어 / 간체 중국어 / 영어 / 일본어 / 한국어를 자동으로 표시합니다(그 밖의 언어는 영어). 언어를 고정하려면 팝업의 설정 → 언어에서 고르세요 |
-| 🎨 **테마** | 팝업의 설정 → 테마에서 시스템 설정 따름(기본값, OS의 라이트/다크 설정에 따름) / 라이트 / 다크 중에서 고를 수 있습니다. 라이트는 연회색 배경에 흰색 카드와 bilibili 핑크로, 속도 테스트 도구 CDNSpeedTest와 같은 스타일입니다. 다크는 기존 다크 디자인입니다 |
-| ⏱️ **속도 테스트 한도** | 고급 설정에 있으며 영상과 라이브로 나뉩니다: 영상＝노드당 최대 다운로드 / 최대 시간(기본 8MB / 5초, 먼저 도달하는 쪽), 라이브＝전환 지연 측정 횟수 / 연속 시청 회선당 시간(기본 3회 / 8초). 설정은 영구 저장되며 각 영역에 「기본값으로」 링크가 있습니다 |
-| 🔢 **속도 테스트 순으로 노드 정렬** | 고급 설정에 있으며 기본값은 **켬**. 켜면 각 노드는 테스트가 끝나는 즉시 빠른 순 위치로 미끄러지듯 이동합니다(영상: 다운로드 속도, 라이브: 먼저 연속 시청 등급, 그다음 전환 지연). 순서는 로컬에 저장되어 다음 테스트 전까지 메인 페이지의 노드 목록도 이 순서를 따르며, 끄면 기본 순서로 돌아갑니다 |
-| 🐛 **페이지에 디버그 오버레이 표시** | 고급 설정에 있으며 기본값은 **끔**. 회선 전환 스위치와는 독립적이라 전환을 꺼도 현재 CDN을 표시하므로 비교할 때 편리합니다 |
+| 🏠 **메인 페이지** | 위쪽은 공지 바, 가운데는 「사용」 스위치와 영상 / 라이브 노드 설정입니다. 맨 아래에는 평가, 후원, 문제 신고 세 버튼과 버전 번호(누르면 전체 업데이트 기록 표시)가 있습니다 |
+| 🔄 **이 탭은 새로고침이 필요합니다** | 확장 프로그램을 막 설치하거나 업데이트했을 때 이미 열려 있던 bilibili 탭은 새로고침해야 적용되므로, 팝업에 안내와 「새로고침」 버튼이 표시됩니다 |
+| 📢 **공지 바** | 사용자 국가의 공지(예: 속도 테스트 추첨 이벤트)만 표시하며, 누르면 전문을 볼 수 있습니다. ×를 누르면 그 공지를 닫고 3일 동안 표시하지 않습니다 |
+| 🔘 **사용** | 기본값이 켬인 마스터 스위치로, 영상과 라이브를 함께 관리합니다. 끄면 bilibili의 스트림 가져오기를 전혀 바꾸지 않습니다 |
+| 🎞️ **영상 / 라이브 탭** | 「사용」 아래는 영상, 라이브 두 탭으로 나뉩니다. 라이브 방송 페이지에서 열면 자동으로 「라이브」가 선택됩니다 |
+| 📡 **CDN 회선** | 「목록」/「사용자 지정」/「끄기」 중 하나를 선택하며, 기본값은 목록입니다. 목록은 국가별로 실측해 가장 빨랐던 10여 개 노드를 보여 주어 모든 ISP 사용자를 아우르며, 설치하면 IP로 사용자 국가를 자동 선택합니다. 전용 목록이 없는 국가는 「기타 지역」을 사용합니다. 사용자 지정 노드 목록에는 호스트를 직접 입력하거나, CDNSpeedTest로 테스트를 마친 뒤 자동으로 추가할 수 있습니다 |
+| 🔍 **노드별 속도 테스트** | 현재 영상, 현재 화질로 목록의 각 노드 다운로드 속도를 실측하고, 가장 빠른 세 노드에 왕관을 붙입니다. 아무 행이나 누르면 그 노드로 전환되며, 언제든 중지하거나 다시 테스트할 수 있습니다 |
+| ☕ **후원 · 회장님 랭킹** | 누적 금액 순으로 정렬되는 회장님 랭킹이며, Stripe로 후원할 수 있습니다. 후원으로 잠금 해제되는 기능은 없으며, Safari 버전에는 이 버튼이 없습니다 |
+| 💬 **문제 신고 / 기능 요청** | 별도 창에서 문제를 신고하거나 기능을 요청할 수 있으며, 보내면 GitHub에 issue가 열립니다. 문제 신고에 첨부되는 전체 진단 데이터는 공개되지 않습니다 |
+| 📺 **라이브 회선** | 국제 회선(ov) / 국제 예비 회선(ov-b) / 중국 회선(cn) / 중국 예비 회선(cn-b) 중에서 고르며, 기본값은 국제 회선(ov)입니다. 기억하는 것은 회선 종류이므로 다른 라이브 방송에서도 그대로 적용됩니다 |
+| 🔍 **라이브 회선 속도 테스트** | 라이브 방송을 재생 중일 때 회선마다 전환 지연(재생 시작 시간)과 연속 시청(라이브를 따라가는지)을 실측해 초록 / 노랑 / 빨강으로 좋고 나쁨을 표시합니다 |
+| ⚙️ **고급 설정(오른쪽 위 톱니바퀴)** | 언어, 테마, 자동 최적화, 테스트 한도, 노드 정렬, 디버그 오버레이 등의 설정이 모두 여기에 있습니다. 맨 아래의 「초기 설정으로 복원」으로 한 번에 기본값으로 되돌릴 수 있습니다 |
+| 🌏 **언어** | 기본적으로 브라우저 언어를 따르며 繁體中文 / 简体中文 / English / 日本語 / 한국어를 지원합니다. 고급 설정에서 직접 지정할 수도 있습니다 |
+| 🎨 **테마** | 시스템 설정 따름(기본값) / 라이트 / 다크 |
+| 🔁 **끊김 시 노드 자동 최적화** | 끊김이나 세그먼트 로드 실패를 감지하면 먼저 백그라운드에서 테스트해 4K(25 Mbps)를 볼 수 있는 노드로 바꾸고, 그래도 끊기면 bilibili가 기본 제공하는 백업 노드로 전환합니다. 기본값은 켬이며, 네트워크 자체가 불안정하다면 끄는 것을 권장합니다 |
+| ⚡ **설치 후 첫 영상 노드 자동 최적화** | 새로 설치한 뒤 한 번만 실행됩니다. 첫 영상 재생 약 5초 뒤 백그라운드에서 테스트해, 현재 노드가 충분히 빠르지 않으면 자동으로 바꿉니다 |
+| ⏱️ **테스트 한도** | 영상과 라이브 각각 「빠름 - 정확도 낮음」/「보통」/「느림 - 정확도 높음」 세 가지 프리셋이나 사용자 지정 숫자를 골라 테스트 시간과 정확도를 조절합니다 |
+| 🔢 **속도 테스트 순으로 노드 정렬** | 기본값은 켬. 테스트가 끝난 노드가 빠른 순으로 정렬되며, 메인 페이지 목록도 이 순서를 따릅니다 |
+| 🐛 **페이지에 디버그 오버레이 표시** | 기본값은 끔. 켜면 플레이어 왼쪽 위에 현재 사용 중인 노드 등 기술 정보를 표시합니다 |
+| ♻️ **초기 설정으로 복원** | 모든 설정을 기본값으로 되돌리고 사용자 지정 노드 목록을 비웁니다 |
 
 <details>
 <summary>🔍 <b>디버그 오버레이 모습</b>(플레이어 왼쪽 위)</summary>
 
+영상 페이지:
+
 ```text
-mode=on  target=upos-sz-mirror08ct.bilivideo.com
+mode=on  target=<선택한 노드>
+auto-fallback -> <자동 전환된 백업 노드>        ← 자동 전환된 적이 있을 때만 표시
 cdn=<지금 실제로 스트리밍 중인 호스트>
-v=<사용 중인 영상 호스트>  a=<사용 중인 오디오 호스트>
-src=playinfo|playurl  rw=<재작성 횟수>  seg=<세그먼트 교체 횟수>  qn=<화질>
+v=<영상 주 호스트>  a=<오디오 주 호스트>
+src=playinfo|playurl  rw=<재작성 횟수>  seg=<세그먼트 교체 횟수>  qn=<화질>  spd=<속도>
+buf=<앞쪽 버퍼>s  rs=<readyState> [paused]  stall=<멈춘 초>/<한도>  fb=<백업 전환 횟수>/2 [cd=<남은 대기 시간>]  lat=<세그먼트 지연>
+err=<마지막 오류> (<N>s ago)                    ← 오류가 있을 때만 표시
+-<N>s  <최근 이벤트>                              ← 최대 3개
+```
+
+라이브 방송 페이지:
+
+```text
+mode=on  target=<선택한 회선>
+auto-fallback -> <자동으로 되돌린 회선>          ← 자동으로 되돌린 적이 있을 때만 표시
+cdn=<지금 실제로 스트리밍 중인 호스트>
+proto=<프로토콜>  cluster=<클러스터 번호>  orig=<원래 회선>  seg=<세그먼트 교체 횟수>  pin=<playinfo 고정 여부>
+(이하 영상 페이지와 동일: buf=… / err=… / 최근 이벤트)
 ```
 
 </details>
 
 ---
 
-## 🗂️ 설정 파일
+## ☕ 커피 한 잔 사 주세요
 
-- 📋 노드 목록은 **`src/cdn-list.json`**에 있으며 직접 편집합니다.
-  300개 이상의 영상 노드(중복 제거, 라이브 전용 노드와 작동하지 않는 것으로 확인된 노드 삭제)를 담고 있습니다.
-  각 국가의 `nodes`는 CDN 풀이 한쪽에 몰리지 않도록 고른 상위 10개 노드입니다. 속도 측정 앱(`tools/cdn-speedtest-app`)의 보고서를 모아 `/analyze-cdn`으로 분석한 뒤, 그 결과에 따라 `countries`를 업데이트합니다.
-- 🧩 형식:
+BiBoost는 영원히 무료이며, 1인 개발자가 퇴근 후에 관리하고 있습니다. 마음에 드셨다면 커피 한 잔 사 주세요! 감사의 뜻으로 원하는 이름과 프로필 사진으로 회장님 랭킹에 올라갈 수 있어요
 
-  ```json
-  {
-    "countries": [{ "code": "TW", "dial": 886, "name": { "zh_TW": "台灣", "zh_CN": "台湾", "en": "Taiwan" }, "nodes": ["upos-sz-mirror08ct.bilivideo.com", "…"] }],
-    "pools": { "hw-biliv6": { "zh_TW": "華為雲 一般池", "zh_CN": "华为云 常规池", "en": "Huawei Cloud" } },
-    "options": [{ "value": "upos-sz-mirror08ct.bilivideo.com", "name": "08ct", "pool": "hw-biliv6" }]
-  }
-  ```
+<div align="center">
 
-  `options`는 모든 노드(「전체」를 골랐을 때의 순서이기도 함)이며 「코드(풀 종류)」 형태로 표시됩니다. `countries[].nodes`의 첫 항목이 그 국가의 기본값입니다. `dial`은 국제 전화 국가 번호로, bilibili zone API가 돌려주는 `country_code`와 대조하는 데 씁니다.
-  특수 `value`: 🔁 `backup` = 백업 URL 우선(항상 마지막, 언어 파일의 `nameKey` / `noteKey` 사용). 「끄기」와 「사용자 지정」은 팝업의 별도 모드로 이 목록에 포함되지 않습니다.
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko"><img src="https://img.shields.io/badge/%E2%98%95%20%EC%BB%A4%ED%94%BC%20%ED%95%9C%20%EC%9E%94%20%EC%82%AC%20%EC%A3%BC%EA%B8%B0-FB7299?style=for-the-badge" alt="☕ 커피 한 잔 사 주기"></a>
 
----
+<a href="https://biboost.app/donate?utm_source=github&utm_medium=referral&utm_campaign=readme&utm_content=ko"><img src="donate-qr.png" width="160" alt="후원 페이지 QR 코드"></a>
 
-## ⚠️ 참고 사항
+<sub>휴대폰으로 QR 코드를 스캔해서 후원할 수도 있습니다</sub>
 
-- 🔒 원래 호스트는 항상 `backupUrl`로 남겨 두므로, 호스트에 묶인 URL 하나가 실패해도 세그먼트 전체를 못 받는 일은 없습니다.
-- 📍 지원 국가의 노드는 모두 현지 사용자의 실측 결과로 골랐습니다. 지원 국가: 대만, 싱가포르, 홍콩, 일본, 호주, 미국, 마카오, 영국, 스페인, 러시아. 그 밖의 지역에서는 「기타 지역」 목록을 사용하며, 가까운 노드로 바꾸거나 「사용자 지정 노드 목록」에 직접 호스트를 추가할 수도 있습니다(CDNSpeedTest 도구로 찾을 수 있습니다).
-- 📶 「노드별 속도 테스트」는 세그먼트 하나만 짧게 측정하므로 결과는 참고용으로만 보세요. CDN이 이미 해당 영상·화질을 캐시했는지, 시간대별 회선 혼잡 정도 등이 실제 시청 경험에 영향을 줍니다. 테스트에서 가장 빨랐던 노드가 오래 볼 때도 가장 매끄럽다고는 할 수 없습니다.
+</div>
 
 ---
 
@@ -207,7 +230,7 @@ src=playinfo|playurl  rw=<재작성 횟수>  seg=<세그먼트 교체 횟수>  q
 자체 **[Source-Available License](../LICENSE)**로 소스를 공개합니다:
 
 - ✅ 소스 열람, fork, 수정이 가능하며 개인 사용, 교육·연구 등 비상업적 용도는 자유롭게 허용됩니다
-- ❌ 이 프로젝트나 수정본을 경쟁 브라우저 확장 프로그램/앱/서비스로 다시 패키징해 배포하거나, 저작권 표시를 삭제할 수 없습니다
+- ❌ 이 프로젝트나 수정본을 경쟁 브라우저 확장 프로그램/앱/서비스로 다시 패키징해 배포하거나 스토어에 올릴 수 없으며, 저작권 표시를 삭제할 수 없습니다
 - 전체 조항은 [LICENSE](../LICENSE)를 참고하세요. 상업적 협업이나 예외 허가는 issue로 문의해 주세요
 
 개인정보 처리방침: [PRIVACY.md](../PRIVACY.md)
@@ -216,6 +239,6 @@ src=playinfo|playurl  rw=<재작성 횟수>  seg=<세그먼트 교체 횟수>  q
 
 <div align="center">
 
-Made with ❤️ for 🇹🇼 / 🇸🇬 bilibili viewers · Inspired by [@roge4444](https://github.com/roge4444)'s [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) / [blblRogerMod](https://github.com/roge4444/blblRogerMod)
+Made with ❤️ for bilibili viewers overseas · Inspired by [@roge4444](https://github.com/roge4444)'s [PiliNaraRogerMod](https://github.com/roge4444/PiliNaraRogerMod) / [blblRogerMod](https://github.com/roge4444/blblRogerMod)
 
 </div>
