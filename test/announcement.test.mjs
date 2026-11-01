@@ -2,7 +2,7 @@ import { test, describe, after } from "node:test";
 import assert from "node:assert/strict";
 import { createEnv, closeAll } from "./helpers/load.mjs";
 
-const API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/announcements";
+const API = "https://api.biboost.app/v2/announcements";
 const now = Date.now();
 const ITEMS = [
   { id: 1, type: "lottery", lottery: { country: "TW", startsAt: now - 1000, endsAt: now + 1e6, title: { en: "Draw!" }, prize: { currency: "TWD", giftCards: [{ name: "A", amount: 100 }, { name: "B", amount: 200 }] }, winners: 2, isps: ["ISP1"], startDate: "2026-10-01", endDate: "2026-10-30", drawBy: "2026-11-06", note: { en: "<p>Note <b>here</b><script>x()</script></p>" } } },

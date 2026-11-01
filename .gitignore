@@ -38,6 +38,8 @@ release/
 
 # Cloudflare Worker 本機密鑰 / 暫存
 tools/report-worker/.dev.vars
+tools/site/.dev.vars
+tools/translate-worker/.dev.vars
 # Mac 版測速 App 的 Developer ID 簽章憑證（p12＋密碼），只進私人 repo
 tools/cdn-speedtest-app/signing/
 tools/report-worker/.wrangler/
@@ -59,5 +61,8 @@ promotions/
 /.git-private/
 /.private-restore-backup/
 
-# 本機後台（Next.js，只在 localhost 跑、不部署），只進私人 repo
+# 後台（Vite 純前端；本機 npm run admin，雲端打包進 biboost.app/admin），只進私人 repo
 /admin/
+tools/site/public/
+tools/site/.wrangler/
+tools/translate-worker/.wrangler/

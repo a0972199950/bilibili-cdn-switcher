@@ -3,31 +3,57 @@
 //   · 本機歸檔 cdn-speedtest-results/<國家>/（/collect-speedtest-mail 排除了 VPN、無效、重複送出）
 //   · 業者名稱對照（.claude/skills/analyze-cdn/isp-share.json，加上這裡的 ISP_ALIASES）
 //   · 用使用者自己的 Gmail 寄純文字信
-// Google 用 google-workspace MCP 登入時存的 OAuth 憑證（~/.google_workspace_mcp/credentials/<email>.json，
-// 含 spreadsheets、drive、gmail.send 權限）換 access token，不另外設定。錯誤一律丟 LotteryError（訊息給人看的中文）。
-// 注意：本機後台用相對路徑 import 這支，改了這支要重開 admin 的 dev server（見 admin/lib/repo.js）
+// Google 的 OAuth 憑證換 access token：
+//   · 本機：google-workspace MCP 登入時存的（~/.google_workspace_mcp/credentials/<email>.json，含 spreadsheets、drive、gmail.send 權限），不另外設定
+//   · 雲端（biboost-site）：secret GOOGLE_OAUTH（npm run admin:google 產生：只有 gmail.send、試算表唯讀、雲端硬碟中繼資料唯讀）
+// 雲端讀不到本機檔案：業者對照表、歸檔的報告編號、排除紀錄另外存一份在 Neon（settings 的 speedtest_snapshot），
+// 本機後台啟動時與 npm run invite:review 後更新（syncSnapshot），雲端用 loadSnapshot 讀。
+// 錯誤一律丟 LotteryError（訊息給人看的中文）。
+// 注意：本機後台（admin/server.mjs）載入後不會重新讀這支，改了要重開 npm run admin
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { LotteryError, ROOT, textTables } from "./lotteries.mjs";
+import { getSetting, setSetting } from "./settings.mjs";
+// 擴充名稱（寫信用）：打包進來，雲端也讀得到
+import enMsg from "../../src/_locales/en/messages.json" with { type: "json" };
+import jaMsg from "../../src/_locales/ja/messages.json" with { type: "json" };
+import koMsg from "../../src/_locales/ko/messages.json" with { type: "json" };
+import zhCNMsg from "../../src/_locales/zh_CN/messages.json" with { type: "json" };
+import zhTWMsg from "../../src/_locales/zh_TW/messages.json" with { type: "json" };
 
 const SHEET_NAME = "CDN SpeedTest Log";
 const CRED_DIR = path.join(os.homedir(), ".google_workspace_mcp", "credentials");
 const ISP_SHARE = path.join(ROOT, ".claude", "skills", "analyze-cdn", "isp-share.json");
 const RESULTS = path.join(ROOT, "cdn-speedtest-results");
+const REJECTED = path.join(RESULTS, "_rejected.json");
 const COL = { time: "收到時間", rid: "報告編號", test: "測試模式", email: "Email", country: "國家", isp: "ISP", join: "參加方式", invite: "邀請碼" };
 
-export async function googleToken() {
+// { client_id, client_secret, refresh_token, token_uri?, email? }（email：GOOGLE_OAUTH 才有，測試信寄給自己用）
+function googleCred() {
+  if (process.env.GOOGLE_OAUTH) {
+    try { return { ...JSON.parse(process.env.GOOGLE_OAUTH), cloud: true }; } catch { throw new LotteryError("GOOGLE_OAUTH 不是合法的 JSON：重跑 npm run admin:google"); }
+  }
   let files = [];
   try { files = fs.readdirSync(CRED_DIR).filter((f) => f.includes("@") && f.endsWith(".json")); } catch { /* 沒有資料夾 */ }
   if (!files.length) throw new LotteryError(`找不到 Google 憑證（${CRED_DIR}）：先用 google-workspace MCP 登入一次`);
-  const c = JSON.parse(fs.readFileSync(path.join(CRED_DIR, files[0]), "utf8"));
+  return JSON.parse(fs.readFileSync(path.join(CRED_DIR, files[0]), "utf8"));
+}
+
+// access token 留到過期前 1 分鐘（雲端一次列表＋草稿＋寄信不用每次都換）
+let cached = null;
+export async function googleToken() {
+  if (cached && cached.until > Date.now()) return cached.token;
+  const c = googleCred();
   const res = await fetch(c.token_uri || "https://oauth2.googleapis.com/token", {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: c.client_id, client_secret: c.client_secret, refresh_token: c.refresh_token, grant_type: "refresh_token" }),
   });
   const j = await res.json().catch(() => ({}));
-  if (!res.ok || !j.access_token) throw new LotteryError(`Google 憑證換不到 token（${j.error || res.status}）：用 google-workspace MCP 重新登入`);
+  if (!res.ok || !j.access_token) {
+    throw new LotteryError(`Google 憑證換不到 token（${j.error || res.status}）：${c.cloud ? "重跑 npm run admin:google" : "用 google-workspace MCP 重新登入"}`);
+  }
+  cached = { token: j.access_token, email: c.email || "", until: Date.now() + (Number(j.expires_in) || 3600) * 1000 - 60_000 };
   return j.access_token;
 }
 
@@ -76,14 +102,66 @@ export async function sheetEntries() {
   });
 }
 
-// 本機有歸檔的報告編號（資料夾名稱 <國家>-<yyyyMMdd-HHmm>-<rid>）
+// ── 本機檔案與雲端的快照 ───────────────────────────────────────────────────────────────────────────
+const SNAPSHOT_KEY = "speedtest_snapshot";
+const SNAPSHOT_TTL_MS = 5 * 60_000;
+let snapshot = null, snapshotAt = 0;
+
+function hasLocalFiles() {
+  try { return fs.existsSync(RESULTS); } catch { return false; }
+}
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
+}
+
+// 雲端：讀本機同步上來的快照（快取 5 分鐘）；本機什麼都不做（直接讀檔案）。讀不到就當作沒有
+export async function loadSnapshot() {
+  if (hasLocalFiles() || Date.now() - snapshotAt < SNAPSHOT_TTL_MS) return;
+  try { snapshot = await getSetting(SNAPSHOT_KEY, null); } catch (e) { console.error("speedtest snapshot:", e); }
+  snapshotAt = Date.now();
+}
+
+// 歸檔狀態從哪裡來：{ local: true } 本機檔案／{ local: false, at } 雲端的快照（at：同步時間）／null 都沒有
+export function archiveSource() {
+  if (hasLocalFiles()) return { local: true };
+  return snapshot ? { local: false, at: snapshot.at } : null;
+}
+
+// key 排序後的 JSON（jsonb 存回來的 key 順序跟原本不同，比對內容用）
+function stable(v) {
+  if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+  return JSON.stringify(v ?? null);
+}
+
+// 本機 → Neon：業者對照表、各國歸檔的報告編號、排除紀錄。內容沒變就不寫；回傳有沒有更新
+export async function syncSnapshot() {
+  if (!hasLocalFiles()) return false;
+  const archived = {};
+  for (const d of fs.readdirSync(RESULTS, { withFileTypes: true })) {
+    if (d.isDirectory() && /^[A-Z]{2}$/.test(d.name)) archived[d.name] = [...archivedRids(d.name)].sort();
+  }
+  const data = { ispShare: readJson(ISP_SHARE) || {}, archived, rejected: readJson(REJECTED) || {} };
+  const old = await getSetting(SNAPSHOT_KEY, null);
+  if (old && stable({ ispShare: old.ispShare, archived: old.archived, rejected: old.rejected }) === stable(data)) return false;
+  await setSetting(SNAPSHOT_KEY, { ...data, at: Date.now() });
+  return true;
+}
+
+// 有歸檔的報告編號（資料夾名稱 <國家>-<yyyyMMdd-HHmm>-<rid>）；雲端用快照
 export function archivedRids(country) {
+  if (!hasLocalFiles()) return new Set(snapshot?.archived?.[country] || []);
   try {
     return new Set(fs.readdirSync(path.join(RESULTS, country), { withFileTypes: true })
       .filter((d) => d.isDirectory()).map((d) => d.name.split("-").pop()));
   } catch {
     return new Set();
   }
+}
+
+// /collect-speedtest-mail 排除的報告（cdn-speedtest-results/_rejected.json）：rid → { base, kind（vpn／invalid／dup）, why, at }；雲端用快照
+export function rejectedReports() {
+  return (hasLocalFiles() ? readJson(REJECTED) : snapshot?.rejected) || {};
 }
 
 // isp-share.json 沒有的業者（市占小、不在分析裡）：抽獎設定的名稱 → 比對字串
@@ -94,20 +172,19 @@ const ISP_ALIASES = {
 // 抽獎設定的業者名稱 → isp-share.json（或 ISP_ALIASES）的比對字串（AS 編號、英文公司名）。對不到的就拿名稱本身比對，並列在 ispMap 給人看
 const norm = (s) => String(s).toLowerCase().replace(/[\s()（）]/g, "");
 function knownIsps(country) {
-  let isps = [];
-  try { isps = JSON.parse(fs.readFileSync(ISP_SHARE, "utf8"))[country]?.isps || []; } catch { /* 沒有對照表 */ }
-  return [...isps, ...(ISP_ALIASES[country] || [])];
+  const share = (hasLocalFiles() ? readJson(ISP_SHARE) : snapshot?.ispShare) || {};
+  return [...(share[country]?.isps || []), ...(ISP_ALIASES[country] || [])];
 }
 
 // 報告裡的 ISP（「AS38841 kbro CO. Ltd.」）→ 給人看的名稱：有給業者名單（抽獎限定的業者）時用名單裡的名稱（「凱擘」），
-// 否則用 isp-share.json 的名稱，都對不到就拿原字串去掉 AS 編號
+// 否則用 isp-share.json 的名稱（去掉市占是估的「（估計）」標註，會寫進信裡），都對不到就拿原字串去掉 AS 編號
 export function ispLabel(country, raw, names = []) {
   const s = norm(raw);
   const hitIn = (patterns) => patterns.some((p) => p && s.includes(norm(p)));
   const set = names.length ? ispMatcher(country, names).map.find((m) => hitIn(m.patterns)) : null;
   if (set) return set.name;
   const known = knownIsps(country).find((i) => hitIn(i.match));
-  return known ? known.name : String(raw).replace(/^AS\d+\s+/i, "").trim();
+  return known ? known.name.replace(/\s*[（(]估計[)）]\s*$/, "") : String(raw).replace(/^AS\d+\s+/i, "").trim();
 }
 
 export function ispMatcher(country, names) {
@@ -125,31 +202,32 @@ export function ispMatcher(country, names) {
 }
 
 // ── 寫信 ─────────────────────────────────────────────────────────────────────────────────────
-// 信的語言依國家（台港澳繁中、中新馬簡中、日、韓，其他英文）
-const COUNTRY_LANG = { TW: "zh-TW", HK: "zh-TW", MO: "zh-TW", CN: "zh-CN", SG: "zh-CN", MY: "zh-CN", JP: "ja", KR: "ko" };
+// 信的語言依國家（香港廣東話、台澳繁中、中新馬簡中、日、韓，其他英文）
+const COUNTRY_LANG = { TW: "zh-TW", HK: "zh-HK", MO: "zh-TW", CN: "zh-CN", SG: "zh-CN", MY: "zh-CN", JP: "ja", KR: "ko" };
 export const mailLang = (country) => COUNTRY_LANG[country] || "en";
-export const MAIL_LANGS = ["zh-TW", "zh-CN", "en", "ja", "ko"];
-const LOCALE_DIR = { "zh-TW": "zh_TW", "zh-CN": "zh_CN", en: "en", ja: "ja", ko: "ko" };
+// zh-HK：廣東話（書面粵語），只用在寄信，擴充名稱與抽獎標題沿用繁中
+export const MAIL_LANGS = ["zh-TW", "zh-HK", "zh-CN", "en", "ja", "ko"];
+const LOCALE_MSG = { "zh-TW": zhTWMsg, "zh-HK": zhTWMsg, "zh-CN": zhCNMsg, en: enMsg, ja: jaMsg, ko: koMsg };
 export const fillText = (tpl, v) => tpl.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
 
 // 擴充在這個語言的名稱（_locales 的 extName）
 export function extName(lang) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(ROOT, "src", "_locales", LOCALE_DIR[lang], "messages.json"), "utf8")).extName.message;
-  } catch {
-    return "Overseas Video Speedup for bilibili";
-  }
+  return (LOCALE_MSG[lang] || enMsg).extName.message;
 }
 
-// { 語言: 文字 } 依 語言 → en → zh-TW → 任一種 取一種
+// { 語言: 文字 } 依 語言 → en → zh-TW → 任一種 取一種（zh-HK 先退到 zh-TW）
 export function pickText(map, lang) {
-  for (const k of [lang, "en", "zh-TW", ...Object.keys(map || {})]) if (map?.[k]) return map[k];
+  for (const k of [lang, ...(lang === "zh-HK" ? ["zh-TW"] : []), "en", "zh-TW", ...Object.keys(map || {})]) if (map?.[k]) return map[k];
   return "";
 }
 
+// 幣別 → 金額符號：本機用 exe 的 lottery_text.py（textTables）；雲端跑不了 Python，由 biboost-site 給擴充 lottery-text.js 的同一張表
+let currencyTable = null;
+export function useCurrencyTable(t) { currencyTable = t; }
+
 // 金額：NT$200、HK$100；沒有金額符號的幣別寫成「200 XXX」
 export function money(amount, currency) {
-  const sym = textTables().currencies[currency];
+  const sym = (currencyTable || textTables().currencies)[currency];
   const num = Number(amount).toLocaleString("en-US", { maximumFractionDigits: 2 });
   return sym ? sym + num : `${num} ${currency}`;
 }
@@ -166,7 +244,8 @@ export async function sendGmail({ to, subject, body, toSelf = false }) {
   const token = await googleToken();
   subject = subject.trim();
   if (toSelf) {
-    to = (await gget(token, "https://gmail.googleapis.com/gmail/v1/users/me/profile")).emailAddress;
+    // 雲端的憑證只有 gmail.send，讀不了 profile：用憑證裡記的 email
+    to = cached.email || (await gget(token, "https://gmail.googleapis.com/gmail/v1/users/me/profile")).emailAddress;
     subject = `[測試] ${subject}`;
   }
   const raw = [

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createEnv, readSrcJson, plain, closeAll } from "./helpers/load.mjs";
 
 const CDN = readSrcJson("cdn-list.json");
-const DEFAULT_HOST = "upos-sz-mirror08ct.bilivideo.com";
+const DEFAULT_HOST = "cn-bj-se-01-05.bilivideo.com"; // = cdn-list.json OTHER 的第一個
 const ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
 function nodesOf(code) { return CDN.countries.find((c) => c.code === code).nodes; }
 
@@ -189,6 +189,14 @@ describe("settings migration on load", () => {
     assert.equal(env.internals("popup").els.modeOff.checked, true);
     env.close();
   });
+  test("sort by speed is on unless the user turned it off", async () => {
+    const env = await boot({ cdnMode: "list", cdnHost: DEFAULT_HOST });
+    assert.equal(env.window.document.getElementById("sortBySpeed").checked, true);
+    env.close();
+    const env2 = await boot({ cdnMode: "list", cdnHost: DEFAULT_HOST, sortBySpeed: false });
+    assert.equal(env2.window.document.getElementById("sortBySpeed").checked, false);
+    env2.close();
+  });
   test("removed hosts fall back to the default", async () => {
     const env = await boot({ cdnHost: "upos-sz-mirrorhwov.bilivideo.com", cdnMode: "list" });
     assert.equal(env.storage.cdnHost, DEFAULT_HOST);
@@ -213,9 +221,9 @@ describe("settings migration on load", () => {
     assert.equal(env.storage.cdnHost, "x.y.com");
     env.close();
   });
-  test("unknown cdnCountry falls back to TW", async () => {
+  test("unknown cdnCountry falls back to Other regions", async () => {
     const env = await boot({ cdnCountry: "XX", cdnMode: "list", cdnHost: DEFAULT_HOST });
-    assert.equal(env.internals("popup").state().countrySel, "TW");
+    assert.equal(env.internals("popup").state().countrySel, "OTHER");
     env.close();
   });
 });
@@ -228,16 +236,17 @@ describe("automatic country selection (first run)", () => {
     assert.equal(env.storage.detectedCountry, "SG");
     assert.equal(env.storage.cdnHost, nodesOf("SG")[0]);
     assert.deepEqual(env.storage.autoSpeedHosts, nodesOf("SG"));
-    assert.equal(env.storage.autoTestPending, false, "feature flag is off");
+    assert.equal("installTestPending" in env.storage, false, "only a fresh install (background.js) arms the optimization");
     const s = env.internals("popup").state();
     assert.equal(s.countrySel, "SG");
     assert.equal(s.detectedCountry, "SG");
     assert.equal(s.currentCdnHost, nodesOf("SG")[0]);
     env.close();
   });
-  test("unknown dial → TW with no 'you are here' country", async () => {
+  test("unknown dial → Other regions with no 'you are here' country", async () => {
     const env = await boot({ countryAutoDone: false, cdnMode: "list", cdnHost: DEFAULT_HOST }, { zone: zoneOf(999) });
-    assert.equal(env.storage.cdnCountry, "TW");
+    assert.equal(env.storage.cdnCountry, "OTHER");
+    assert.equal(env.storage.cdnHost, nodesOf("OTHER")[0]);
     assert.equal(env.storage.detectedCountry, "");
     assert.equal(env.storage.countryAutoDone, true);
     env.close();
@@ -425,6 +434,58 @@ describe("announcement bar filtering", () => {
     assert.equal(a.shown().length, 1);
     env.chrome.storage.local.set({ detectedCountry: "SG" });
     assert.equal(a.shown().length, 2);
+  });
+});
+
+describe("donate button", () => {
+  const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36";
+  const CONFIG_API = "https://api.biboost.app/v1/donate/config";
+  // jsdom 的 User-Agent 會被 detectBrowser 當成 Safari；這裡先換成指定瀏覽器的再載入 popup。
+  // config：GET /v1/donate/config 的回應（null＝連不上）；storage：預先放進 storage.local 的東西
+  async function bootAs(ua, { config = null, storage = {} } = {}) {
+    const env = createEnv({ htmlFile: "popup.html", storage: { zoneCheckedAt: Date.now(), countryAutoDone: true, ...storage } });
+    Object.defineProperty(env.window.navigator, "userAgent", { value: ua, configurable: true });
+    env.fetchHandler = (url) => {
+      if (url === CONFIG_API && config) return { ok: true, status: 200, json: () => Promise.resolve(config) };
+      throw new TypeError("Failed to fetch");
+    };
+    ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
+    await env.settle(20);
+    return env;
+  }
+  test("shown next to the 5-star button in Chrome", async () => {
+    const env = await bootAs(CHROME_UA);
+    const btn = env.document.getElementById("donateBtn");
+    assert.equal(btn.style.display, "");
+    assert.notEqual(btn.parentNode.style.display, "none");
+    env.close();
+  });
+  test("hidden once the admin pauses donations, and the answer is cached", async () => {
+    const env = await bootAs(CHROME_UA, { config: { ok: true, enabled: false } });
+    const btn = env.document.getElementById("donateBtn");
+    assert.equal(btn.style.display, "none");
+    assert.equal(btn.parentNode.style.display, "", "the 5-star button keeps the row");
+    const stored = env.storage.donateConfig;
+    assert.equal(stored.enabled, false);
+    assert.equal(stored.api, "https://api.biboost.app");
+    env.close();
+  });
+  test("a fresh cached pause hides the button without asking the API again", async () => {
+    const env = await bootAs(CHROME_UA, { storage: { donateConfig: { api: "https://api.biboost.app", at: Date.now(), enabled: false } } });
+    assert.equal(env.document.getElementById("donateBtn").style.display, "none");
+    assert.ok(!env.fetchCalls.some((c) => c.url === CONFIG_API));
+    env.close();
+  });
+  test("stays visible when the config API is down (default on)", async () => {
+    const env = await bootAs(CHROME_UA);
+    assert.ok(env.fetchCalls.some((c) => c.url === CONFIG_API));
+    assert.equal(env.document.getElementById("donateBtn").style.display, "");
+    env.close();
+  });
+  test("hidden in Safari (App Store rules: no external payment)", async () => {
+    const env = await bootAs("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15");
+    assert.equal(env.document.getElementById("donateBtn").style.display, "none");
+    env.close();
   });
 });
 

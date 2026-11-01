@@ -4,6 +4,7 @@
 // 同時產生兩份：
 //   src/icons/           開發版（多一個紅色圓點角標），Load unpacked 時讀到的就是這份，方便跟已安裝的正式版分辨
 //   assets/icons-prod/    正式版（無角標），build.mjs 打包 zip 時會換成這份
+//   src/logo128.png       正式版 128px 的複本，給頁面裡要顯示品牌圖示的地方用（例如贊助頁橫幅），開發版也不帶角標
 // 用法：node scripts/gen-icons.mjs
 import fs from "node:fs";
 import path from "node:path";
@@ -89,6 +90,7 @@ const devMasterBuf = await renderMaster(true);
 
 const devRows = await saveIconSet(devMasterBuf, DEV_OUT_DIR);
 const prodRows = await saveIconSet(prodMasterBuf, PROD_OUT_DIR);
+fs.copyFileSync(path.join(PROD_OUT_DIR, "icon128.png"), path.join(ROOT, "src", "logo128.png"));
 
 // 512 母檔（正式版，無角標）留在 assets/，不進 src/（不需要打包進擴充）
 fs.writeFileSync(path.join(ROOT, "assets", "icon-master.png"), prodMasterBuf);

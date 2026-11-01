@@ -94,7 +94,7 @@ WEIGHTS = [("detect", 2), ("env", 6), ("pool", 12), ("pick", 4), ("ceiling", 5),
 # 進行中抽獎的 metadata（report worker，不用 token）；文字由 lottery_text.py 組。
 # v2：只有抽獎 v2（禮物卡各自有面額，lottery_text.py 兩種格式都吃）；/v1/lotteries 只有 v1 的抽獎，留給舊版 exe。
 # 1.7.0（含）以前的 exe 是透過 Apps Script（action=lotteries）讀 lotteries.html，那條路保留給舊版用
-LOTTERY_API = "https://bcs-report.bilibili-cdn-switcher-tools.workers.dev/v2/lotteries"
+LOTTERY_API = "https://api.biboost.app/v2/lotteries"
 LOG_MAX = 500_000   # 隨報告送出的詳細記錄最多幾個字（只留最後這段）；一次測速約 20–40KB，Apps Script 整包上限 3MB
 
 

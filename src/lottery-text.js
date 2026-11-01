@@ -143,7 +143,8 @@
     };
   }
 
-  window.LotteryText = { compose: compose };
+  // countries、currencies：後台（admin/）的國家、幣別下拉選單分組用（exe 認得的就是這兩張表，跟 lottery_text.py 相同）
+  window.LotteryText = { compose: compose, countries: Object.keys(COUNTRY), currencies: CURRENCY };
 
   // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
   if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {

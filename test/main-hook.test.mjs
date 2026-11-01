@@ -522,6 +522,74 @@ describe("segment failures", () => {
   });
 });
 
+describe("fallback waits for the install optimization", () => {
+  test("pending optimization with a list → no switch; once it has started (flag cleared) the switch works again", () => {
+    const env = boot({ installTestPending: true, autoSpeedHosts: [HOST, COS] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 0, "the optimization will pick a node anyway");
+    env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { installTestPending: false } });
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.optimized, true, "flag cleared → the stall path runs (its first step is the list optimization)");
+    env.close();
+  });
+  test("pending but no list to test (nothing will run) → the switch still works", () => {
+    const env = boot({ installTestPending: true, autoSpeedHosts: [] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1);
+    env.close();
+  });
+});
+
+describe("stall: optimize within the list first, then bilibili's backup", () => {
+  function bootStall(speed) {
+    const env = boot({ autoSpeedHosts: [HOST, COS] });
+    env.fetchHandler = () => {
+      let sent = false;
+      return { ok: true, status: 206, body: { getReader: () => ({ cancel() {},
+        read: () => sent ? Promise.resolve({ done: true }) : new Promise((r) => setTimeout(() => { sent = true; r({ done: false, value: { length: speed } }); }, 5)) }) } };
+    };
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    return { env, mh };
+  }
+  test("first failure runs the optimization instead of switching; the next one (after the cooldown) goes to the backup", async () => {
+    const { env, mh } = bootStall(9e6); // current node is fast → optimization keeps it
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.optimized, true);
+    assert.equal(mh.FALLBACK.attempts, 0);
+    assert.equal(mh.autoHost(), null);
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 0, "no switch while it is measuring / cooling down");
+    for (let i = 0; i < 100 && mh.FALLBACK.lastSwitchAt < Date.now() - 1000; i++) await env.settle(10);
+    await env.settle(30);
+    mh.FALLBACK.lastSwitchAt = 0; // cooldown over
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1, "still failing after the optimization → bilibili's backup");
+    assert.equal(mh.autoHost(), COS);
+    env.close();
+  });
+  test("node list 'All' (no hosts to test) → straight to the backup, as before", () => {
+    const env = boot({ autoSpeedHosts: [] });
+    const mh = env.internals("main-hook");
+    mh.rewriteRoot(playurl(), "playurl");
+    addVideo(env, { paused: false, currentTime: 10, buffered: [0, 13] });
+    mh.FALLBACK.lastSwitchAt = 0;
+    mh.onSegFailure("http-403");
+    assert.equal(mh.FALLBACK.attempts, 1);
+    env.close();
+  });
+});
+
 describe("stall detection", () => {
   test("paused with an empty buffer and only a trickle of data still counts as stuck", () => {
     const env = boot({});
@@ -583,6 +651,78 @@ describe("node change in other tabs", () => {
     addVideo(env, { paused: false });
     env.postMessage({ __cdnSwitcher: 1, dir: "config", payload: { cdnHost: COS } });
     assert.equal(env.internals("main-hook").effHost(), COS);
+    env.close();
+  });
+});
+
+describe("install test (first video after a fresh install)", () => {
+  const SAMPLE = `https://${HOST}/upgcxcode/1/2/3/v80.m4s?deadline=${FUTURE}`;
+  // speeds: host → "fast" (8 MB at once ≥ 25 Mbps) | bytes delivered over ~30 ms (well below 25 Mbps) | "403"
+  function run(speeds, hosts, cfg = {}) {
+    const env = boot({ installTestPending: true, autoSpeedHosts: hosts, ...cfg });
+    const posted = [], asked = [];
+    env.window.postMessage = (m) => { if (m && m.__cdnSwitcher === 1) posted.push(m); };
+    env.fetchHandler = (url) => {
+      const host = new URL(url).host;
+      asked.push(host);
+      const sp = speeds[host];
+      if (sp === "403") return { ok: false, status: 403 };
+      let sent = false;
+      return { ok: true, status: 206, body: { getReader: () => ({
+        cancel() {},
+        read: () => sent ? Promise.resolve({ done: true })
+          // 「fast」也要過幾毫秒：同一毫秒內讀完的話 measureHost 算出的 ms = 0、速度會記成 0
+          : sp === "fast" ? new Promise((r) => setTimeout(() => { sent = true; r({ done: false, value: { length: 9e6 } }); }, 5))
+          : new Promise((r) => setTimeout(() => { sent = true; r({ done: false, value: { length: sp } }); }, 30))
+      }) } };
+    };
+    const mh = env.internals("main-hook");
+    mh.noteEarlySample(SAMPLE);
+    mh.runAutoSpeedTest(hosts, "install");
+    return { env, posted, asked, mh };
+  }
+  const of = (posted, dir) => posted.filter((m) => m.dir === dir).map((m) => m.payload);
+  // 等這一輪結束（autotest-end），不用固定秒數：整套測試一起跑時計時器會被拖慢
+  async function ended(env, posted) {
+    for (let i = 0; i < 200 && !of(posted, "autotest-end").length; i++) await env.settle(10);
+  }
+
+  test("default already plays 4K → stays, nothing else is tested even if another node would be faster", async () => {
+    const { env, posted, asked, mh } = run({ [HOST]: "fast", [COS]: "fast" }, [HOST, COS, ALI]);
+    await ended(env, posted);
+    assert.deepEqual(asked, [HOST]);
+    assert.deepEqual(of(posted, "autotest-done"), []);
+    assert.equal(of(posted, "autotest-start")[0].total, 3);
+    assert.equal(of(posted, "autotest-start")[0].maxMs, 3 * 5000 + 5000, "every node at most stVideoSec, plus slack");
+    assert.equal(of(posted, "autotest-end").length, 1);
+    assert.equal(mh.cfg().installTestPending, false, "one-shot");
+    env.close();
+  });
+  test("default too slow → the first node that reaches 4K wins and the rest are skipped", async () => {
+    const { env, posted, asked } = run({ [HOST]: 1000, [COS]: "fast", [ALI]: "fast" }, [COS, HOST, ALI]);
+    await ended(env, posted);
+    assert.deepEqual(asked, [HOST, COS], "the current node first, then the list in order");
+    assert.deepEqual(plain(of(posted, "autotest-done")), [{ host: COS, from: HOST, reason: "install" }]);
+    env.close();
+  });
+  test("nothing reaches 4K → the fastest one after testing them all", async () => {
+    const { env, posted, asked } = run({ [HOST]: 1000, [COS]: "403", [ALI]: 20000 }, [HOST, COS, ALI]);
+    await ended(env, posted);
+    assert.deepEqual(asked, [HOST, COS, ALI]);
+    assert.deepEqual(plain(of(posted, "autotest-done")), [{ host: ALI, from: HOST, reason: "install" }]);
+    env.close();
+  });
+  test("nothing reaches 4K and the default is still the fastest → no switch", async () => {
+    const { env, posted } = run({ [HOST]: 20000, [COS]: 1000, [ALI]: "403" }, [HOST, COS, ALI]);
+    await ended(env, posted);
+    assert.deepEqual(of(posted, "autotest-done"), []);
+    assert.equal(of(posted, "autotest-end").length, 1);
+    env.close();
+  });
+  test("not armed → does not run", async () => {
+    const { env, asked } = run({ [HOST]: "fast" }, [HOST, COS], { installTestPending: false });
+    await env.settle(30);
+    assert.deepEqual(asked, []);
     env.close();
   });
 });

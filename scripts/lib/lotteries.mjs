@@ -1,5 +1,5 @@
 // 抽獎（Neon Postgres 的 lotteries）的共用邏輯：欄位檢查、寫入、列出、產生舊版 exe 用的 html、各端文字預覽。
-// scripts/lottery.mjs（CLI）與 admin/（本機後台，gitignored）都用這一份，規則只有一個地方。
+// scripts/lottery.mjs（CLI）與後台（admin/，經過 admin-api.mjs）都用這一份，規則只有一個地方。
 //
 // metadata（lottery.json／後台表單）：
 //   { title, country: "TW", start: "2026-10-01", end: "2026-10-30",
@@ -12,7 +12,9 @@ import vm from "node:vm";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+// 雲端後台（biboost.app/admin，tools/site/src/index.js）打包進 Cloudflare Worker 時沒有 import.meta.url，也沒有 repo 的檔案：
+// ROOT 是空字串，讀檔、跑 Python 的功能會丟錯（後台只在本機開放那些功能，見 admin-api.mjs 的 LOCAL_ONLY）
+export const ROOT = import.meta.url ? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..") : "";
 const LOTTERY_TEXT_PY = path.join(ROOT, "tools", "cdn-speedtest-app", "lottery_text.py");
 const LOTTERY_TEXT_JS = path.join(ROOT, "src", "lottery-text.js");
 export const LANGS = ["zh-TW", "zh-CN", "en", "ja", "ko"];
@@ -168,7 +170,7 @@ export function textTables() {
 }
 
 // 擴充的文字（跑馬燈 label＋line、說明視窗）：直接跑 src/lottery-text.js，跟擴充一模一樣
-// （檔案改了就重新載入：後台 dev server 開著時改 lottery-text.js 也會反映到預覽）
+// （檔案改了就重新載入；後台的預覽則是直接在瀏覽器跑同一份 lottery-text.js）
 let extComposer = null, extMtime = 0;
 function extCompose(meta, lang) {
   const mtime = fs.statSync(LOTTERY_TEXT_JS).mtimeMs;

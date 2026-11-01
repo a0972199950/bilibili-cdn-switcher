@@ -5,6 +5,8 @@
  *  3) 問題回報用的診斷日誌：收 bridge / popup 送來的事件、採樣與快照，單一寫入者序列化寫進 storage.session，
  *     回報頁（report.html）送出時讀取。關瀏覽器就清空；只保留最近 10 分鐘。
  *  4) popup 按「問題回報」時開獨立視窗顯示回報頁（沒有視窗 API 的環境退回新分頁）
+ *  5) 依 IP 選國家與該國第一個節點：全新安裝時（並標記「第一支影片在背景優化一次」installTestPending，見 main-hook.js）、
+ *     安裝時沒查到 IP 而第一次打開 B 站頁面時（bridge.js 要求）、更新時替從沒選過節點的人補選
  *
  * 1) 1.5.x 以前不會記錄 installedVersion，popup 沒辦法分辨「舊使用者剛更新」與「全新安裝」。
  * 瀏覽器在更新時會把 previousVersion 帶進 onInstalled，不用舊版配合，這裡把它補寫成 installedVersion，
@@ -12,8 +14,21 @@
  * 全新安裝（reason = install）不處理，維持「新使用者不彈」。
  */
 chrome.runtime.onInstalled.addListener(function (details) {
-  if (details.reason === "install") chrome.storage.local.set({ installedAt: Date.now() });
-  if (details.reason === "update") chrome.storage.local.set({ updatedAt: Date.now() });
+  if (details.reason === "install") {
+    chrome.storage.local.set({ installedAt: Date.now(), installTestPending: true });
+    selectCountry("install");
+  }
+  if (details.reason === "update") {
+    chrome.storage.local.set({ updatedAt: Date.now() });
+    // autoTestPending：2.8 以前「切換國家後測一次」的旗標，已由只在安裝時設的 installTestPending 取代
+    chrome.storage.local.remove("autoTestPending");
+    // autoSpeedSwitch：2.8 以前的「影片自動測速並切換到最快節點」，已併進「速度不佳時自動優化節點」（autoFallback）；開著它的人想要自動換節點
+    chrome.storage.local.get({ autoSpeedSwitch: false }, function (items) {
+      if (items.autoSpeedSwitch) chrome.storage.local.set({ autoFallback: true });
+      chrome.storage.local.remove("autoSpeedSwitch");
+    });
+    selectCountry("update");
+  }
   if (details.reason !== "update" || !details.previousVersion) return;
   chrome.storage.local.get("installedVersion", function (items) {
     // 已經有紀錄（1.6.0 起 popup 自己會寫）就不蓋掉；沒有才補上
@@ -21,6 +36,52 @@ chrome.runtime.onInstalled.addListener(function (details) {
     chrome.storage.local.set({ installedVersion: details.previousVersion });
   });
 });
+
+// 5) 以前要等使用者第一次打開 popup 才選國家（popup.js 的 autoSelectCountry），沒打開過的人一直停在全域預設節點。
+//    reason：
+//    - "install"：全新安裝。查不到 IP 也先放「其他地區」的清單，第一支影片的優化才有節點可測（countryAutoDone 不設，之後還會再查）
+//    - "retry"：安裝時沒查到 IP，第一次打開 B 站頁面時 bridge.js 要求再查一次；只在安裝後的優化還沒跑（installTestPending）時做，
+//      使用者自己選過節點、測過速就會清掉那個旗標，不會蓋掉使用者的選擇
+//    - "update"：更新時替從沒選過節點的人補選。storage 裡沒有 cdnHost = 從來沒人寫過（只有使用者的動作或這裡會寫），用的一直是程式碼裡的預設
+//    共同條件：popup 已經選過（countryAutoDone）或用自訂節點列表就不動。
+//    B 站 zone API 的查法與存的欄位同 common.js 的 fetchZone（背景腳本沒有載入 common.js）
+var ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
+var COUNTRY_FALLBACK = "OTHER"; // 同 popup.js：所在國家不在清單內時用「其他地區」
+function fetchZoneData() {
+  return fetch(ZONE_API, { credentials: "omit", cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j || j.code !== 0 || !j.data) return null;
+      var d = j.data;
+      chrome.storage.local.set({ detectedIp: d.addr || "", detectedIsp: d.isp || "", detectedProvince: d.province || "", detectedCountryName: d.country || "", detectedDial: Number(d.country_code) || null, zoneCheckedAt: Date.now() });
+      return d;
+    })
+    .catch(function () { return null; });
+}
+function selectCountry(reason) {
+  return Promise.all([
+    fetch(chrome.runtime.getURL("cdn-list.json")).then(function (r) { return r.json(); }),
+    fetchZoneData()
+  ]).then(function (arr) {
+    var data = arr[0] || {}, zone = arr[1];
+    if (!zone && reason !== "install") return;
+    var countries = data.countries || [], known = {};
+    (data.options || []).forEach(function (o) { if (o.value !== "backup") known[o.value] = true; });
+    var code = "";
+    if (zone) { var dial = Number(zone.country_code); countries.forEach(function (c) { if (c.dial === dial) code = c.code; }); }
+    var target = code || COUNTRY_FALLBACK, hosts = [];
+    countries.forEach(function (c) { if (c.code === target) hosts = c.nodes.filter(function (h) { return !!known[h]; }); });
+    return new Promise(function (resolve) {
+      chrome.storage.local.get(["countryAutoDone", "cdnMode", "cdnHost", "installTestPending"], function (items) {
+        if (items.countryAutoDone === true || items.cdnMode === "custom" || !hosts.length ||
+            (reason === "update" && "cdnHost" in items) || (reason === "retry" && !items.installTestPending)) { resolve(); return; }
+        var patch = { cdnCountry: target, cdnMode: "list", cdnHost: hosts[0], autoSpeedHosts: hosts };
+        if (zone) { patch.detectedCountry = code; patch.countryAutoDone = true; }
+        chrome.storage.local.set(patch, resolve);
+      });
+    });
+  }).catch(function () {});
+}
 
 // 2) 匯入網址任何網站都能做出來，所以只收 cdn-list.json 裡有的節點（測速工具測的也就是這份），
 //    別人沒辦法藉此把影片導到自己的網域。已經在列表裡的不重複加，新的依序接在後面
@@ -140,6 +201,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
   if (!msg || !msg.type) return;
   var tabId = sender && sender.tab ? sender.tab.id : (msg.tab != null ? msg.tab : null);
   if (msg.type === "CDN_SWITCHER_IMPORT_CUSTOM") { importCustomHosts(msg.hosts).then(sendResponse); return true; }
+  if (msg.type === "CDN_SWITCHER_SELECT_COUNTRY") { selectCountry("retry").then(function () { sendResponse({ ok: true }); }); return true; }
   if (msg.type === "CDN_SWITCHER_JOURNAL" && msg.entry && typeof msg.entry.k === "string") {
     var e = { t: Number(msg.entry.t) || Date.now(), tab: tabId, k: msg.entry.k, d: msg.entry.d || {} };
     appendJournal(e).then(function () { sendResponse({ ok: true }); });
@@ -162,7 +224,7 @@ chrome.runtime.onMessage.addListener(function (msg, sender, sendResponse) {
 // Test seam: only the unit-test harness (test/helpers/load.mjs) defines __BCS_TEST__.
 if (globalThis.__BCS_TEST__ && typeof globalThis.__BCS_TEST__.register === "function") {
   globalThis.__BCS_TEST__.register("background", {
-    importCustomHosts: importCustomHosts, appendJournal: appendJournal, appendSample: appendSample, putSnapshot: putSnapshot, pruneOld: pruneOld,
+    importCustomHosts: importCustomHosts, selectCountry: selectCountry, appendJournal: appendJournal, appendSample: appendSample, putSnapshot: putSnapshot, pruneOld: pruneOld,
     JOURNAL_MAX: JOURNAL_MAX, SAMPLES_MAX: SAMPLES_MAX, MERGE_WINDOW_MS: MERGE_WINDOW_MS, DIAG_KEEP_MS: DIAG_KEEP_MS
   });
 }

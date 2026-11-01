@@ -5,7 +5,7 @@ import { createEnv, plain, closeAll } from "./helpers/load.mjs";
 const A = "upos-sz-mirror08ct.bilivideo.com";
 const B = "upos-sz-mirrorcos.bilivideo.com";
 function boot(storage, url = "https://www.bilibili.com/video/BV1xx") {
-  const env = createEnv({ url, storage: { cdnHost: A, autoSpeedSwitch: false, autoSpeedHosts: [A, B], ...storage } });
+  const env = createEnv({ url, storage: { cdnHost: A, autoSpeedHosts: [A, B], ...storage } });
   env.load("bridge.js");
   return env;
 }
@@ -32,83 +32,109 @@ describe("config sync to MAIN world", () => {
 });
 
 describe("autotest-done → storage", () => {
-  test("per-video auto test with the switch off is ignored", () => {
-    const env = boot({});
-    autotestDone(env, { host: B, from: A, reason: "video" });
+  test("stall optimization with the switch off is ignored", () => {
+    const env = boot({ autoFallback: false });
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
-  test("per-video auto test with the switch on applies", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { host: B, from: A, reason: "video" });
+  test("stall optimization applies with the switch on (the default)", () => {
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, B);
     assert.equal("videoEnabled" in env.storage, false, "only cdnHost is written");
     env.close();
   });
-  test("country test applies regardless of the switch — but only after a real pending test armed it", () => {
-    const env = boot({ autoTestPending: true });
-    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
-    assert.equal(env.storage.autoTestPending, false, "flag cleared on start");
-    autotestDone(env, { host: B, from: A, reason: "country" });
+  test("install test applies regardless of the switch — but only after a real pending test armed it", () => {
+    const env = boot({ installTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 2 } });
+    assert.equal(env.storage.installTestPending, false, "flag cleared on start");
+    autotestDone(env, { host: B, from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, B);
     assert.equal("videoEnabled" in env.storage, false, "never forced from a page message");
-    autotestDone(env, { host: A, from: B, reason: "country" });
+    autotestDone(env, { host: A, from: B, reason: "install" });
     assert.equal(env.storage.cdnHost, B, "arming is single-use");
     env.close();
   });
-  test("forged country result without a pending test is ignored (feature flag off → autoTestPending never true)", () => {
+  test("forged install result without a pending test is ignored (only a fresh install sets installTestPending)", () => {
     const env = boot({});
-    autotestDone(env, { host: B, from: A, reason: "country" });
+    autotestDone(env, { host: B, from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A);
-    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
-    autotestDone(env, { host: B, from: A, reason: "country" });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 2 } });
+    autotestDone(env, { host: B, from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A, "forged autotest-start does not arm it either");
     env.close();
   });
+  test("any other reason (e.g. the removed per-video test) is ignored", () => {
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "video" });
+    assert.equal(env.storage.cdnHost, A);
+    env.close();
+  });
   test("user changed the node meanwhile (from mismatch) → not overwritten", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { host: B, from: "something.else", reason: "country" });
+    const env = boot({});
+    autotestDone(env, { host: B, from: "something.else", reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("forged result with a host outside autoSpeedHosts is rejected (page scripts can post this)", () => {
-    const env = boot({ autoSpeedSwitch: true, autoTestPending: true });
-    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 2 } });
-    autotestDone(env, { host: "attacker.example", from: A, reason: "country" });
-    autotestDone(env, { host: "attacker.example", from: A, reason: "video" });
+    const env = boot({ installTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 2 } });
+    autotestDone(env, { host: "attacker.example", from: A, reason: "install" });
+    autotestDone(env, { host: "attacker.example", from: A, reason: "stall" });
     assert.equal(env.storage.cdnHost, A);
     assert.equal("videoEnabled" in env.storage, false);
     env.close();
   });
   test("autoSpeedHosts missing or malformed → nothing is applied", () => {
-    const env = boot({ autoSpeedSwitch: true, autoSpeedHosts: "oops" });
-    autotestDone(env, { host: B, from: A, reason: "country" });
+    const env = boot({ autoSpeedHosts: "oops" });
+    autotestDone(env, { host: B, from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("missing host is ignored", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { from: A, reason: "country" });
+    const env = boot({});
+    autotestDone(env, { from: A, reason: "install" });
     assert.equal(env.storage.cdnHost, A);
     env.close();
   });
   test("result is journaled to background", () => {
-    const env = boot({ autoSpeedSwitch: true });
-    autotestDone(env, { host: B, from: A, reason: "video" });
+    const env = boot({});
+    autotestDone(env, { host: B, from: A, reason: "stall" });
     const j = env.runtimeMessages.find((m) => m.type === "CDN_SWITCHER_JOURNAL" && m.entry.k === "ui.speedtest");
     assert.equal(j.entry.d.phase, "apply");
     assert.equal(j.entry.d.host, B);
     env.close();
   });
-  test("autotest-start for a country test clears the pending flag", () => {
-    const env = boot({ autoTestPending: true });
-    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "country", total: 3 } });
-    assert.equal(env.storage.autoTestPending, false);
-    assert.deepEqual(plain(env.internals("bridge").latestAutoTest()), { running: true, reason: "country", total: 3, done: 0 });
+  test("autotest-start for the install test clears the pending flag", () => {
+    const env = boot({ installTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 3, maxMs: 20000 } });
+    assert.equal(env.storage.installTestPending, false);
+    const st = plain(env.internals("bridge").latestAutoTest());
+    assert.ok(st.startedAt > 0);
+    delete st.startedAt;
+    assert.deepEqual(st, { running: true, reason: "install", total: 3, done: 0, maxMs: 20000 });
     env.postMessage({ __cdnSwitcher: 1, dir: "autotest-progress", payload: { done: 2 } });
     assert.equal(env.internals("bridge").latestAutoTest().done, 2);
     env.postMessage({ __cdnSwitcher: 1, dir: "autotest-end" });
     assert.equal(env.internals("bridge").latestAutoTest().running, false);
+    env.close();
+  });
+  test("overlay past its maximum duration is reported as finished even without autotest-end", () => {
+    const env = boot({ installTestPending: true });
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 10, maxMs: 55000 } });
+    const ask = () => { let got; env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_GET_DEBUG" }, (r) => { got = r; }); return got.autoTest; };
+    assert.equal(ask().running, true);
+    env.internals("bridge").latestAutoTest().startedAt -= 56000;
+    assert.equal(ask().running, false);
+    env.close();
+  });
+  test("missing or absurd maxMs falls back to the 10-minute cap", () => {
+    const env = boot({});
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 10, maxMs: 1e12 } });
+    assert.equal(env.internals("bridge").latestAutoTest().maxMs, 600000);
+    env.postMessage({ __cdnSwitcher: 1, dir: "autotest-start", payload: { reason: "install", total: 10 } });
+    assert.equal(env.internals("bridge").latestAutoTest().maxMs, 600000);
     env.close();
   });
 });

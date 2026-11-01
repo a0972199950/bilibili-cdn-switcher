@@ -1,5 +1,6 @@
 import { test, describe, after } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { createEnv, plain, closeAll } from "./helpers/load.mjs";
 
 const A = "upos-sz-mirror08ct.bilivideo.com";
@@ -25,11 +26,124 @@ describe("onInstalled", () => {
     assert.equal(env.storage.installedVersion, "2.0.0");
     env.close();
   });
-  test("fresh install only records installedAt", () => {
+  test("fresh install records installedAt and arms the first-video optimization", () => {
     const env = boot({});
     env.onInstalledListeners[0]({ reason: "install" });
     assert.ok(env.storage.installedAt > 0);
+    assert.equal(env.storage.installTestPending, true);
     assert.equal("installedVersion" in env.storage, false);
+    env.close();
+  });
+  test("update: the old per-video auto test folds into autoFallback", () => {
+    const env = boot({ autoSpeedSwitch: true, autoFallback: false });
+    env.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });
+    assert.equal(env.storage.autoFallback, true, "they wanted automatic switching");
+    assert.equal("autoSpeedSwitch" in env.storage, false);
+    env.close();
+    const env2 = boot({ autoFallback: false });
+    env2.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });
+    assert.equal(env2.storage.autoFallback, false, "a user who turned it off stays off");
+    env2.close();
+  });
+  test("update never arms it and drops the old per-country flag", () => {
+    const env = boot({ autoTestPending: true });
+    env.onInstalledListeners[0]({ reason: "update", previousVersion: "2.8.0" });
+    assert.equal("installTestPending" in env.storage, false);
+    assert.equal("autoTestPending" in env.storage, false);
+    env.close();
+  });
+});
+
+describe("country selection in the background", () => {
+  const LIST = JSON.parse(fs.readFileSync(new URL("../src/cdn-list.json", import.meta.url), "utf8"));
+  const nodesOf = (code) => LIST.countries.find((c) => c.code === code).nodes;
+  const ZONE_API = "https://api.bilibili.com/x/web-interface/zone";
+  function withZone(storage, dial) {
+    const env = boot(storage);
+    env.fetchHandler = (url) => {
+      if (url === ZONE_API && dial) return { ok: true, status: 200, json: () => Promise.resolve({ code: 0, data: { addr: "1.2.3.4", isp: "ISP", country: "X", country_code: String(dial) } }) };
+      throw new TypeError("Failed to fetch");
+    };
+    return env;
+  }
+  const select = (env, reason) => env.internals("background").selectCountry(reason);
+  test("install: detected country → its first node and its list, same as the popup's first run", async () => {
+    const env = withZone({}, 65);
+    await select(env, "install");
+    assert.equal(env.storage.cdnCountry, "SG");
+    assert.equal(env.storage.detectedCountry, "SG");
+    assert.equal(env.storage.countryAutoDone, true);
+    assert.equal(env.storage.cdnMode, "list");
+    assert.equal(env.storage.cdnHost, nodesOf("SG")[0]);
+    assert.deepEqual(env.storage.autoSpeedHosts, nodesOf("SG"));
+    assert.equal(env.storage.detectedDial, 65, "zone fields stored like fetchZone");
+    env.close();
+  });
+  test("install: country without a list → Other regions, no 'you are here' country", async () => {
+    const env = withZone({}, 999);
+    await select(env, "install");
+    assert.equal(env.storage.cdnCountry, "OTHER");
+    assert.equal(env.storage.detectedCountry, "");
+    assert.equal(env.storage.cdnHost, nodesOf("OTHER")[0]);
+    env.close();
+  });
+  test("install: zone lookup failed → Other regions so the first video has a list, but still undecided", async () => {
+    const env = withZone({}, null);
+    await select(env, "install");
+    assert.equal(env.storage.cdnCountry, "OTHER");
+    assert.deepEqual(env.storage.autoSpeedHosts, nodesOf("OTHER"));
+    assert.equal("countryAutoDone" in env.storage, false, "retried later (bridge / popup)");
+    env.close();
+  });
+  test("popup already chose (countryAutoDone) or custom list → untouched", async () => {
+    const env = withZone({ countryAutoDone: true, cdnCountry: "JP", cdnHost: A }, 65);
+    await select(env, "install");
+    assert.equal(env.storage.cdnCountry, "JP");
+    assert.equal(env.storage.cdnHost, A);
+    env.close();
+    const env2 = withZone({ cdnMode: "custom", cdnHost: C }, 65);
+    await select(env2, "update");
+    assert.equal(env2.storage.cdnHost, C);
+    env2.close();
+  });
+  test("retry: only while the install optimization is still pending", async () => {
+    const env = withZone({ installTestPending: true, cdnCountry: "OTHER", cdnHost: nodesOf("OTHER")[0] }, 886);
+    await select(env, "retry");
+    assert.equal(env.storage.cdnCountry, "TW");
+    assert.equal(env.storage.cdnHost, nodesOf("TW")[0]);
+    env.close();
+    const env2 = withZone({ installTestPending: false, cdnHost: C }, 886);
+    await select(env2, "retry");
+    assert.equal(env2.storage.cdnHost, C, "the user picked a node meanwhile (flag cleared)");
+    env2.close();
+  });
+  test("retry / update with the lookup failing again → nothing written", async () => {
+    const env = withZone({ installTestPending: true }, null);
+    await select(env, "retry");
+    await select(env, "update");
+    assert.equal("cdnHost" in env.storage, false);
+    env.close();
+  });
+  test("update: never-chosen user (no cdnHost in storage) gets the country's default", async () => {
+    const env = withZone({ cdnMode: "list" }, 81);
+    await select(env, "update");
+    assert.equal(env.storage.cdnCountry, "JP");
+    assert.equal(env.storage.cdnHost, nodesOf("JP")[0]);
+    assert.equal(env.storage.countryAutoDone, true);
+    env.close();
+  });
+  test("update: a stored cdnHost was chosen by the user → untouched, even if it is the old default", async () => {
+    const env = withZone({ cdnHost: A }, 81);
+    await select(env, "update");
+    assert.equal(env.storage.cdnHost, A);
+    assert.equal("cdnCountry" in env.storage, false);
+    env.close();
+  });
+  test("SELECT_COUNTRY message from bridge runs a retry", async () => {
+    const env = withZone({ installTestPending: true }, 65);
+    env.chrome.runtime.sendMessage({ type: "CDN_SWITCHER_SELECT_COUNTRY" });
+    await env.settle(50);
+    assert.equal(env.storage.cdnCountry, "SG");
     env.close();
   });
 });

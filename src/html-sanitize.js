@@ -1,6 +1,6 @@
 // 一般公告的 HTML（後台寫、從伺服器下載）不能直接塞 innerHTML：先用 DOMParser 解析成惰性文件（不跑 script、不載圖片），
 // 再依白名單重建成 DOM——只留排版標籤，https 連結交給 openLink 開新分頁，其他屬性（style、on*…）全部丟掉，顏色交給頁面的主題。
-// 擴充的公告視窗（announcement.js）用；本機後台的預覽也載入這一份（admin/app/ext/[file]/route.js），兩邊顯示一致。
+// 擴充的公告視窗（announcement.js）用；後台的預覽也 import 這一份（admin/ 的 @ext/html-sanitize.js），兩邊顯示一致。
 (function () {
   "use strict";
   // 白名單標籤（照原樣重建，不帶屬性）；DROP 的整個連內容丟掉；其他標籤拆掉外殼、保留裡面的文字

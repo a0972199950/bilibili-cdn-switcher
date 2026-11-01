@@ -9,6 +9,11 @@
   var pref = "auto";
   try { pref = window.localStorage.getItem(PREF_KEY) || "auto"; } catch (e) {}
   if (LANGS.indexOf(pref) < 0) pref = "auto";
+  // 測試各語言用：網址加 ?lang=ja（zh_TW、zh_CN、en、ja、ko）只換這一頁的語言，不存進設定
+  var urlLang = null;
+  try { urlLang = (new URLSearchParams(window.location.search).get("lang") || "").replace("-", "_"); } catch (e) {}
+  var fromUrl = LANGS.indexOf(urlLang) >= 0;
+  if (fromUrl) pref = urlLang;
 
   function load(lang) {
     try {
@@ -23,6 +28,7 @@
 
   window.UI_LANGS = LANGS;
   window.uiLangPref = pref;
+  window.uiLangFromUrl = fromUrl; // 網址指定的語言：popup 不要拿它跟設定比對、重載（會無限重載）
   window.uiMessages = pref === "auto" ? null : load(pref);
   window.loadUiMessages = load;
   window.setUiLangPref = function (value) {
