@@ -18,6 +18,7 @@ import * as L from "./lotteries.mjs";
 import * as V from "./lotteries-v2.mjs";
 import * as S from "./settings.mjs";
 import * as T from "./translate.mjs";
+import * as W from "./winners.mjs";
 import { SESSION_KEY_MIN, SESSION_TTL_MS, checkSession, makeSession, safeEqual, verifyPassword } from "./admin-auth.mjs";
 
 export const API_PREFIX = "/admin/api/";
@@ -28,7 +29,6 @@ const FAIL_DELAY_MS = 500;
 const NO_GOOGLE = "雲端沒有設定 Google 憑證（GOOGLE_OAUTH，npm run admin:google）";
 export const LOCAL_ONLY = {
   translate: "雲端沒有接上翻譯（biboost-translate worker）",
-  saveLottery: "v1 抽獎存檔要用本機的 Python 產生舊版 exe 的文字",
   drawWinnersV2: "抽出中獎人要讀本機的測速報告歸檔",
   winnerMailDraftV2: NO_GOOGLE,
   sendWinnerMailV2: NO_GOOGLE,
@@ -52,19 +52,6 @@ const CLOUD_SHEET_NOTE = "雲端後台沒有設定 Google 憑證（GOOGLE_OAUTH�
 // 清單欄位：表單給陣列（antd 的 tags 輸入），也接受一行一個的字串
 const lines = (s) => (Array.isArray(s) ? s : String(s || "").split(/\r?\n/)).map((x) => String(x).trim()).filter(Boolean);
 const done = async (p) => { await p; return {}; };
-
-// v1 抽獎表單的值 → lotteries.mjs 的 metadata
-function toMetaV1(v) {
-  return {
-    title: String(v.title || ""),
-    country: String(v.country || "").trim().toUpperCase(),
-    start: v.start, end: v.end,
-    prize: { amount: Number(v.amount), currency: String(v.currency || "").trim().toUpperCase(), giftCards: lines(v.giftCards) },
-    winners: Number(v.winners),
-    isps: lines(v.isps),
-    drawDays: v.drawDays === "" || v.drawDays == null ? 7 : Number(v.drawDays),
-  };
-}
 
 // 抽獎 v2 表單的值 → lotteries-v2.mjs 的 metadata（禮物卡沒填名稱的列略過；面額沒填交給檢查擋；標題、備註是 { 語言: 文字 }）
 function toMetaV2(v) {
@@ -97,25 +84,8 @@ const ACTIONS = {
   // 翻譯（公告、抽獎 v2 共用）：本機用 Claude Code，雲端用 ctx.translate（Gemini）→ { translations: { 語言: { 欄位: 文字 } } }
   translate: async ([from, targets, fields], ctx) => ({ translations: await (ctx.translate || T.translateFields)(from, targets, fields) }),
 
-  // ── 抽獎 v1 ──
-  listLotteries: () => L.listLotteries(),
-  getLottery: ([id]) => L.getLottery(Number(id)),
-  previewLottery: ([values], ctx) => {
-    const api = L.apiMeta(L.validateMeta(toMetaV1(values)));
-    return { preview: { api, exe: ctx.local ? L.htmlFromApi(api) : null } };
-  },
-  saveLottery: async ([id, values]) => {
-    if (!id) return { id: await L.addLottery(toMetaV1(values)) };
-    if (!(await L.updateLottery(Number(id), toMetaV1(values)))) throw new L.LotteryError(`找不到第 ${id} 個抽獎`);
-    return { id: Number(id) };
-  },
-  endLottery: ([id]) => done(L.endLottery(Number(id))),
-
-  // ── 抽獎 v2 ──
-  listLotteriesV2: async () => {
-    const [rows, migratable] = await Promise.all([V.listLotteriesV2(), V.migratableV1()]);
-    return { rows, migratable };
-  },
+  // ── 抽獎（lotteries-v2.mjs；舊版客戶端讀的 v1 抽獎已經不在後台管理）──
+  listLotteriesV2: async () => ({ rows: await V.listLotteriesV2() }),
   getLotteryV2: async ([id]) => ({ lottery: await V.getLotteryV2(Number(id)), reasons: V.EXCLUDE_REASONS }),
   previewLotteryV2: ([values], ctx) => {
     const m = V.validateMetaV2(toMetaV2(values));
@@ -124,27 +94,29 @@ const ACTIONS = {
   },
   saveLotteryV2: async ([id, values]) => {
     if (!id) return { id: await V.addLotteryV2(toMetaV2(values)) };
-    if (!(await V.updateLotteryV2(Number(id), toMetaV2(values)))) throw new L.LotteryError(`找不到 v2 第 ${id} 個抽獎`);
+    if (!(await V.updateLotteryV2(Number(id), toMetaV2(values)))) throw new L.LotteryError(`找不到第 ${id} 個抽獎`);
     return { id: Number(id) };
   },
   endLotteryV2: ([id]) => done(V.endLotteryV2(Number(id))),
-  migrateV1: async () => ({ count: (await V.migrateFromV1()).length }),
   drawWinnersV2: async ([id]) => ({ draw: await V.drawWinners(Number(id)) }),
   winnerMailDraftV2: async ([id, rid, opts]) => ({ draft: await V.winnerMailDraft(Number(id), rid, opts) }),
   sendWinnerMailV2: async ([id, rid, mail]) => ({ draw: await V.sendWinnerMail(Number(id), rid, mail) }),
 
-  // ── 必中獎 ──（雲端沒設 Google 憑證就讀不到試算表：listInvites 本來就會退回只有資料庫的欄位；歸檔狀態用本機同步的快照）
-  listInvites: async (_, ctx) => {
-    const [{ rows, sheetError, archive }, lotteries] = await Promise.all([I.listInvites(), I.lotteryChoices()]);
+  // ── 中獎人（抽獎中獎人＋必中獎參加人，winners.mjs）──
+  //（雲端沒設 Google 憑證就讀不到試算表：必中獎的報告欄退回只有資料庫的欄位；歸檔狀態用本機同步的快照）
+  listWinners: async (_, ctx) => {
+    const r = await W.listWinners();
     const noSheet = !ctx.local && !ctx.env?.GOOGLE_OAUTH;
-    return { rows, sheetError: noSheet ? CLOUD_SHEET_NOTE : sheetError && `讀不到測速報告的試算表：${sheetError}`, archive, reviews: I.REVIEWS, lotteries };
+    return { ...r, sheetError: noSheet ? CLOUD_SHEET_NOTE : r.sheetError && `讀不到測速報告的試算表：${r.sheetError}` };
   },
+  // 記錄／修改禮物卡已寄出（prize：{ date, cost, currency, note }，null＝取消標記；opts.revoke：必中獎同時作廢邀請碼）
+  setPrize: ([key, prize, opts]) => done(W.setPrize(key, prize, opts || {})),
+  // 刪除中獎人（必中獎同時作廢邀請碼）
+  deleteWinner: ([key]) => done(W.deleteWinner(key)),
+  // ── 必中獎 ──
   createInvite: async ([email, lotteryId]) => ({ code: await I.createInvite(email, lotteryId) }),
   setReview: ([code, review, note]) => done(I.setReview(code, review, note)),
   revokeInvite: ([code]) => done(I.revokeInvite(code)),
-  restoreInvite: ([code]) => done(I.restoreInvite(code)),
-  markPrizeSent: ([code, note, revoke]) => done(I.markPrizeSent(code, note, revoke)),
-  unmarkPrizeSent: ([code]) => done(I.unmarkPrizeSent(code)),
   // 信件草稿：{ draft: { to, lang, subject, body, fields: { currency } } }（opts.cards：[{ name, amount }]）
   inviteMailDraft: async ([code, opts]) => {
     const d = await I.inviteMailDraft(code, opts);

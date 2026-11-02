@@ -1,11 +1,12 @@
-// 必中獎參加人（Neon 的 invite_codes，CLI 是 scripts/invite.mjs）的後台邏輯：列表、審核、寄信、記錄獎品已寄出、作廢／恢復邀請碼、新增邀請碼。
+// 必中獎參加人（Neon 的 invite_codes，CLI 是 scripts/invite.mjs）的後台邏輯：列表、審核、寄信、記錄獎品已寄出、作廢邀請碼（不能恢復，要再給同一個人就用同一個 email 重新產生）、刪除、新增邀請碼。
 //   · 一組邀請碼一列：同一個人用同一組碼送了好幾份報告也只算一列，報告數、最新一份報告（國家、ISP、有沒有歸檔）從試算表彙整
 //     （試算表的「參加方式」是 Apps Script 依伺服器端驗證寫的：只算「必中獎」的列；驗證失敗的記成「抽獎」，不算在這裡）
 //   · 審核（review）：pending 待確認／valid 有效／invalid 無效。/collect-speedtest-mail 收完信會跑 autoReview（npm run invite:review）
-//     依歸檔結果自動判定（review_auto＝true）；在後台手動改過的不再自動改
+//     依歸檔結果自動判定（review_auto＝true）；在後台手動改過的不再自動改。審核時間記在 reviewed_at（改回待確認就清掉）
 //   · 寄信：草稿依報告國家的語言（謝謝參加 → 報告確認有效、對某業者的測速結果會幫助同業者 → 回信從禮物卡清單選一種 → 幾天內寄出），
 //     在後台確認、修改後才由使用者按寄出（speedtest-reports.mjs 的 sendGmail），寄出時間記在 mailed_at
-//   · 獎品已寄出（prize_sent_at、prize_note）：照規則同時作廢邀請碼（之後不能再用）
+//   · 獎品已寄出（prize_sent_at、prize_note、花費 prize_cost／prize_currency）：照規則同時作廢邀請碼（之後不能再用）；
+//     後台「中獎人」分頁跟抽獎中獎人一起管（winners.mjs）
 //   · 參加的抽獎（lottery_v2_id）：在後台產生邀請碼時就綁定（createInvite），獎品照那個抽獎的禮物卡與面額。
 //     用 CLI（scripts/invite.mjs）產生的沒有綁定，寄信時禮物卡要自己填
 // 作廢只影響之後的驗證與送報告（Apps Script 讀 revoked_at），資料保留。錯誤一律丟 LotteryError（訊息給人看的中文）。
@@ -38,11 +39,15 @@ function ensureTable() {
       add column if not exists review text not null default 'pending',
       add column if not exists review_note text,
       add column if not exists review_auto boolean not null default false,
+      add column if not exists reviewed_at timestamptz,
       add column if not exists mailed_at timestamptz,
       add column if not exists mail_thread_id text,
       add column if not exists prize_sent_at timestamptz,
       add column if not exists prize_note text,
-      add column if not exists lottery_v2_id int references lotteries_v2(id) on delete set null`);
+      add column if not exists prize_cost numeric,
+      add column if not exists prize_currency text,
+      add column if not exists lottery_v2_id int references lotteries_v2(id) on delete set null,
+      add column if not exists deleted_at timestamptz`);
   })().catch((e) => { ready = null; throw e; });
   return ready;
 }
@@ -56,7 +61,7 @@ export async function listInvites() {
   await ensureTable();
   await loadSnapshot();
   const source = archiveSource();
-  const codes = await sql("select * from invite_codes order by created_at desc");
+  const codes = await sql("select * from invite_codes where deleted_at is null order by created_at desc");   // 刪除的不列
   let entries = null, sheetError = "";
   try { entries = await sheetEntries(); } catch (e) { sheetError = e.message; }
   const byCode = new Map();
@@ -81,7 +86,8 @@ export async function listInvites() {
     }));
     return {
       code: r.code, email: r.email, createdAt: ms(r.created_at), revokedAt: ms(r.revoked_at), lastVerifiedAt: ms(r.last_verified_at),
-      review: r.review, reviewNote: r.review_note || "", reviewAuto: r.review_auto, mailedAt: ms(r.mailed_at), prizeSentAt: ms(r.prize_sent_at), prizeNote: r.prize_note || "",
+      review: r.review, reviewNote: r.review_note || "", reviewAuto: r.review_auto, reviewedAt: ms(r.reviewed_at), mailedAt: ms(r.mailed_at), prizeSentAt: ms(r.prize_sent_at), prizeNote: r.prize_note || "",
+      prizeCost: r.prize_cost == null ? null : Number(r.prize_cost), prizeCurrency: r.prize_currency || null,
       reports: entries ? real : null, testReports: all.length - real.length,
       reportCount: r.report_count,   // Apps Script 記的正式報告數（試算表讀不到時參考）
       lottery: lotteries.get(r.lottery_v2_id) || null,   // 參加的抽獎（產生邀請碼時綁定的）；null＝沒綁定（CLI 產生的）
@@ -92,7 +98,7 @@ export async function listInvites() {
 
 // 抽獎 v2 的 id → { id, title（繁中，沒有就任一語言）, country, currency, giftCards: [{ name, amount }] }
 // （直接查表，不 import lotteries-v2.mjs，免得後台要重開）
-async function boundLotteries() {
+export async function boundLotteries() {
   const rows = await sql("select id, title, country, currency, gift_cards from lotteries_v2");
   return new Map(rows.map((l) => [l.id, {
     id: l.id, title: (l.title || {})["zh-TW"] || Object.values(l.title || {})[0] || "", country: l.country, currency: l.currency,
@@ -134,7 +140,8 @@ export async function createInvite(email, lotteryId) {
 export async function setReview(code, review, note = "") {
   if (!REVIEWS[review]) throw new LotteryError("審核狀態要是 pending／valid／invalid");
   await getInvite(code);
-  await sql("update invite_codes set review = $2, review_note = $3, review_auto = false where code = $1",
+  await sql(`update invite_codes set review = $2, review_note = $3, review_auto = false,
+               reviewed_at = case when $2 = 'pending' then null else now() end where code = $1`,
             [normCode(code), review, String(note || "").trim() || null]);
 }
 
@@ -155,33 +162,37 @@ export async function autoReview({ dry = false } = {}) {
       [review, note] = ["invalid", `自動：${bad.map((x) => `#${x.rid} ${x.rejected.why}`).join("；")}`];
     }
     if (review === r.review && note === r.reviewNote) continue;
-    if (!dry) await sql("update invite_codes set review = $2, review_note = $3, review_auto = $4 where code = $1",
+    if (!dry) await sql(`update invite_codes set review = $2, review_note = $3, review_auto = $4,
+                           reviewed_at = case when $2 = 'pending' then null else now() end where code = $1`,
                         [r.code, review, note || null, review !== "pending"]);
     changes.push({ code: r.code, email: r.email, from: r.review, to: review, note });
   }
   return changes;
 }
 
-// 作廢（之後不能再驗證、送報告）／恢復
+// 作廢（之後不能再驗證、送報告；不能恢復，要再給同一個人就用同一個 email 重新產生邀請碼）
 export async function revokeInvite(code) {
   await getInvite(code);
   await sql("update invite_codes set revoked_at = coalesce(revoked_at, now()) where code = $1", [normCode(code)]);
 }
-export async function restoreInvite(code) {
+
+// 刪除（特殊情況用）：同時作廢，從後台列表拿掉（deleted_at；資料留著，Apps Script 照樣看 revoked_at 擋掉）
+export async function deleteInvite(code) {
   await getInvite(code);
-  await sql("update invite_codes set revoked_at = null where code = $1", [normCode(code)]);
+  await sql("update invite_codes set revoked_at = coalesce(revoked_at, now()), deleted_at = now() where code = $1", [normCode(code)]);
 }
 
-// 獎品已寄出（note：寄了什麼，例如「7-11 商品卡 NT$200 序號 …」）；revoke：同時作廢邀請碼
-export async function markPrizeSent(code, note, revoke = true) {
+// 獎品已寄出（已經標記過的就是修改）：prize = { at（寄出時間 ms）, note（寄了什麼，例如「7-11 商品卡 NT$200 序號 …」）,
+// cost, currency（花了多少錢）}，由 winners.mjs 的 setPrize 檢查過；revoke：同時作廢邀請碼
+export async function markPrizeSent(code, { at, note, cost, currency }, revoke = true) {
   await getInvite(code);
-  await sql(`update invite_codes set prize_sent_at = now(), prize_note = $2
+  await sql(`update invite_codes set prize_sent_at = to_timestamp($2::float8 / 1000), prize_note = $3, prize_cost = $4, prize_currency = $5
                ${revoke ? ", revoked_at = coalesce(revoked_at, now())" : ""} where code = $1`,
-            [normCode(code), String(note || "").trim() || null]);
+            [normCode(code), at, note, cost, currency]);
 }
 export async function unmarkPrizeSent(code) {
   await getInvite(code);
-  await sql("update invite_codes set prize_sent_at = null, prize_note = null where code = $1", [normCode(code)]);
+  await sql("update invite_codes set prize_sent_at = null, prize_note = null, prize_cost = null, prize_currency = null where code = $1", [normCode(code)]);
 }
 
 // ── 寄信 ─────────────────────────────────────────────────────────────────────────────────────

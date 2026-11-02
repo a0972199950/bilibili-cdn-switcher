@@ -47,7 +47,7 @@ function rowToAnnouncement(r) {
   const base = { id: r.id, type: r.type, created: r.created, updated: r.updated };
   if (r.type === "lottery") {
     const v2 = r.lottery_v2_id != null;
-    return { ...base, lotteryId: v2 ? r.lottery_v2_id : r.lottery_id, lotteryHref: v2 ? `/lotteries-v2/${r.lottery_v2_id}` : `/lotteries/${r.lottery_id}`,
+    return { ...base, lotteryId: v2 ? r.lottery_v2_id : r.lottery_id, lotteryHref: v2 ? `/lotteries/${r.lottery_v2_id}` : "/lotteries",
              legacyOnly: !v2, title: v2 ? r.lottery_v2_title || {} : { "zh-TW": r.lottery_title }, countries: r.lottery_country ? [r.lottery_country] : [],
              lotteryStatus: r.lottery_status, visible: r.lottery_status === "active" };
   }

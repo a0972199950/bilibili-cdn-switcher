@@ -4,11 +4,11 @@
 //   · 標題（跑馬燈捲動的那段）與備註都是 { 語言: 文字 }，只填一種也行（各端依 介面語言 → en → zh-TW → 任一 退回）；
 //     後台可以用本機的 Claude Code 翻成其他語言（scripts/lib/translate.mjs）
 // 跟 v1（lotteries）各自獨立：新版擴充與 exe 讀 report worker 的 /v2/*（只有 v2），舊版讀 /v1/*（只有 v1），v2 建的抽獎舊版看不到。
-// 抽獎公告用 announcements.lottery_v2_id 掛在 v2 上。從 v1 遷移（migrateFromV1）時 v1 那筆不動（舊版照常顯示到結束），
-// 那則公告多掛上 v2（lottery_id 與 lottery_v2_id 都有），公告 id 不變。
+// 抽獎公告用 announcements.lottery_v2_id 掛在 v2 上。以前從 v1 遷移過來的（migrated_from）v1 那筆還在，
+// 那則公告 lottery_id 與 lottery_v2_id 都有；提前結束時 v1 那筆一起結束。後台已經不管 v1（新的抽獎都在這裡建）。
 // 抽出中獎人（drawWinners，抽獎結束後才能抽）：參加者來自測速報告的 Google 試算表「CDN SpeedTest Log」（Apps Script 寫的），
 // 依抽獎設定篩選、再對照本機歸檔（cdn-speedtest-results/，/collect-speedtest-mail 排除了 VPN、無效、重複），結果存在 lotteries_v2.draw。
-// 後台（admin/，經過 admin-api.mjs）的「抽獎 v2」用這一份。錯誤一律丟 LotteryError（訊息給人看的中文）。
+// 後台（admin/，經過 admin-api.mjs）的「抽獎」用這一份（後台已經不管 v1）。錯誤一律丟 LotteryError（訊息給人看的中文）。
 //
 // metadata（後台表單）：
 //   { title: { 語言: 文字 }, country: "HK", start: "2026-10-01", end: "2026-10-30", currency: "HKD",
@@ -133,35 +133,6 @@ export async function endLotteryV2(id) {
   return rows.length ? rows[0].title : null;
 }
 
-// v1 裡還沒結束（進行中、未開始）、還沒遷移的抽獎
-const MIGRATABLE = `from lotteries l
-  where l.country is not null and l.ended_at is null and now() < l.ends_at
-    and not exists (select 1 from lotteries_v2 v where v.migrated_from = l.id)`;
-
-export async function migratableV1() {
-  await ensureTable();
-  return sql(`select l.id, l.title ${MIGRATABLE} order by l.starts_at, l.id`);
-}
-
-// 把 v1 還沒結束的抽獎複製到 v2：每張禮物卡的面額都是原本的面額、沒有備註；v1 那筆不動（舊版照常顯示），
-// 那則抽獎公告多掛上 v2（新版改顯示 v2 的資料，公告 id 不變）。回傳 [{ id（v2）, v1Id }]
-export async function migrateFromV1() {
-  await ensureTable();
-  const rows = await sql(
-    `with v as (
-       insert into lotteries_v2 (migrated_from, title, country, currency, gift_cards, note, isps, winners, draw_days, starts_at, ends_at, created_at)
-       select l.id, jsonb_build_object('zh-TW', l.title), l.country, l.currency,
-         (select jsonb_agg(jsonb_build_object('name', t.g, 'amount', l.prize_amount) order by t.o)
-            from unnest(l.gift_cards) with ordinality as t(g, o)),
-         null, l.isps, l.winners, coalesce(l.draw_days, 7), l.starts_at, l.ends_at, l.created_at
-       ${MIGRATABLE}
-       returning id, migrated_from),
-     ann as (update announcements x set lottery_v2_id = v.id from v where x.lottery_id = v.migrated_from)
-     select id, migrated_from from v`,
-  );
-  return rows.map((r) => ({ id: r.id, v1Id: r.migrated_from }));
-}
-
 const ROW_SQL = `select id, migrated_from, title, country, currency, gift_cards, note, isps, winners, draw_days, draw,
     (extract(epoch from starts_at) * 1000)::float8 as starts_ms,
     (extract(epoch from least(ended_at, ends_at)) * 1000)::float8 as ends_ms,   -- 提前結束的以結束那一刻為準
@@ -234,11 +205,14 @@ export async function eligibleEntries(l) {
   return { pool, entries: entries.length, excluded, ispMap: isp ? isp.map.map(({ name, via }) => ({ name, via })) : [] };
 }
 
-// 抽出中獎人並存起來（已經抽過的會覆蓋；沒有人符合資格時也存，winners 是空的，畫面才看得到排除原因）；回傳 draw
+// 抽出中獎人並存起來（已經抽過的整批換掉；沒有人符合資格時也存，winners 是空的，畫面才看得到排除原因）；回傳 draw。
+// 已經寄信通知過任何一位中獎人就不能重抽
 export async function drawWinners(id) {
   const l = await getLotteryV2(id);
-  if (!l) throw new LotteryError(`找不到 v2 第 ${id} 個抽獎`);
+  if (!l) throw new LotteryError(`找不到第 ${id} 個抽獎`);
   if (!l.drawable) throw new LotteryError("抽獎結束後才能抽出中獎人");
+  const mailed = (l.draw?.winners || []).filter((w) => w.mailedAt && !w.deletedAt).length;   // 刪除的不算
+  if (mailed) throw new LotteryError(`已經寄信通知了 ${mailed} 位中獎人，不能重新抽出`);
   const { pool, entries, excluded, ispMap } = await eligibleEntries(l);
   const picked = [...pool];
   for (let i = picked.length - 1; i > 0; i--) {   // Fisher–Yates，用 crypto 亂數
@@ -299,7 +273,7 @@ export async function winnerMailDraft(id, rid, { lang } = {}) {
   await loadSnapshot();   // 雲端：業者名稱對照用本機同步的快照
   const l = await getLotteryV2(id);
   const w = l?.draw?.winners.find((x) => x.rid === rid);
-  if (!w) throw new LotteryError(`v2 第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
+  if (!w) throw new LotteryError(`第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
   lang = MAIL[lang] ? lang : mailLang(l.country);
   const t = MAIL[lang];
   const cards = l.giftCards.map((c) => fillText(t.card, { name: c.name, amount: money(c.amount, l.currency) }));
@@ -315,11 +289,36 @@ export async function sendWinnerMail(id, rid, { subject, body, toSelf = false })
   const l = await getLotteryV2(id);
   const draw = l?.draw;
   const w = draw?.winners.find((x) => x.rid === rid);
-  if (!w) throw new LotteryError(`v2 第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
+  if (!w) throw new LotteryError(`第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
   const sent = await sendGmail({ to: w.email, subject, body, toSelf });
   if (toSelf) return draw;
   w.mailedAt = Date.now();
   w.mailThreadId = sent.threadId;
+  await sql("update lotteries_v2 set draw = $2::jsonb where id = $1", [id, JSON.stringify(draw)]);
+  return draw;
+}
+
+// 刪除中獎人（特殊情況用）：標 draw.winners[i].deletedAt，「中獎人」分頁不再列出，不會補抽（名額就少一位）；回傳更新後的 draw
+export async function deleteWinner(id, rid) {
+  const l = await getLotteryV2(id);
+  const draw = l?.draw;
+  const w = draw?.winners.find((x) => x.rid === rid);
+  if (!w) throw new LotteryError(`第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
+  w.deletedAt = Date.now();
+  await sql("update lotteries_v2 set draw = $2::jsonb where id = $1", [id, JSON.stringify(draw)]);
+  return draw;
+}
+
+// ── 禮物卡已寄出 ───────────────────────────────────────────────────────────────────────────────────
+// 跟必中獎的「獎品已寄出」一樣，記在 draw.winners[i]：prizeSentAt（ms）、prizeNote（寄了什麼）、prizeCost／prizeCurrency（花了多少錢）。
+// prize = { at, note, cost, currency }（winners.mjs 的 setPrize 檢查過；已經標記過的就是修改），null＝取消標記。回傳更新後的 draw
+export async function setWinnerPrizeSent(id, rid, prize) {
+  const l = await getLotteryV2(id);
+  const draw = l?.draw;
+  const w = draw?.winners.find((x) => x.rid === rid);
+  if (!w) throw new LotteryError(`第 ${id} 個抽獎沒有報告 #${rid} 的中獎人`);
+  for (const k of ["prizeSentAt", "prizeNote", "prizeCost", "prizeCurrency"]) delete w[k];
+  if (prize) Object.assign(w, { prizeSentAt: prize.at, prizeNote: prize.note, prizeCost: prize.cost, prizeCurrency: prize.currency });
   await sql("update lotteries_v2 set draw = $2::jsonb where id = $1", [id, JSON.stringify(draw)]);
   return draw;
 }
