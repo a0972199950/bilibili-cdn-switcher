@@ -223,7 +223,7 @@ powershell -ExecutionPolicy Bypass -File tools\cdn-speedtest-app\build.ps1   # �
 不用另外發：擴充每次發版（`/release`）都會把 `release/` 整包上傳到該版本的 GitHub Release，所以**每個 Release 都有 exe**，Latest 永遠下載得到。
 
 **附件檔名固定為 `CDNSpeedTest.exe`**：教學文件（lazy-cv `/docs/bilibili-cdn-speedtest`）用的下載連結是
-`https://github.com/a0972199950/bilibili-cdn-switcher/releases/latest/download/CDNSpeedTest.exe`，檔名一改就會失效。
+`https://github.com/a0972199950/biboost/releases/latest/download/CDNSpeedTest.exe`，檔名一改就會失效。
 
 只改了 exe、想在擴充沒發版時更新：重新 `npm run package`（或只跑 `build.ps1`）後，覆蓋到目前的 Latest：
 

@@ -19,7 +19,7 @@ routes = [
 
 [vars]
 LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
-ISSUES_REPO = "a0972199950/bilibili-cdn-switcher"
+ISSUES_REPO = "a0972199950/biboost"
 
 # 公告 API 的下載次數（國家 × 瀏覽器 × 路徑，不記 IP）；查詢：npm run worker:opens
 [[analytics_engine_datasets]]
@@ -42,7 +42,7 @@ routes = [
 
 [env.staging.vars]
 LOGS_REPO = "a0972199950/bilibili-cdn-switcher-reports"
-ISSUES_REPO = "a0972199950/bilibili-cdn-switcher"
+ISSUES_REPO = "a0972199950/biboost"
 
 # 測試環境的公告下載次數另外記，不混進正式的統計
 [[env.staging.analytics_engine_datasets]]

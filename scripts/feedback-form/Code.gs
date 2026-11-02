@@ -7,7 +7,7 @@
  * 需要的 Script Property：GITHUB_TOKEN（fine-grained PAT，只開本 repo 的 Issues: Read and write）
  */
 
-var REPO = "a0972199950/bilibili-cdn-switcher";
+var REPO = "a0972199950/biboost";
 var FORM_ID = "1np8rQTIf5yUdd7d9F0snraUnMLP1lpCa0QUKXRvealI"; // 表單編輯網址 /forms/d/<這段>/edit
 var EXTRA_LABELS = ["from-form"];
 

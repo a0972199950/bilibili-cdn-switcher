@@ -9,8 +9,8 @@
 # 有新版時由 app.py 在入口頁顯示下載連結（MAC_DOWNLOAD_URL）。
 import hashlib, json, os, subprocess, sys, time, urllib.parse, urllib.request
 
-MANIFEST_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/releases/latest/download/CDNSpeedTest.json"
-MAC_DOWNLOAD_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/releases/latest/download/CDNSpeedTest-mac.zip"
+MANIFEST_URL = "https://github.com/a0972199950/biboost/releases/latest/download/CDNSpeedTest.json"
+MAC_DOWNLOAD_URL = "https://github.com/a0972199950/biboost/releases/latest/download/CDNSpeedTest-mac.zip"
 UA = {"User-Agent": "Mozilla/5.0 cdn-speedtest-updater"}
 
 

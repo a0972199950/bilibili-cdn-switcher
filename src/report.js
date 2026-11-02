@@ -10,8 +10,8 @@
  */
 var REPORT_ENDPOINT = "https://api.biboost.app/v1/report";
 var REPORT_TOKEN = "bcs-f302715d682c1c7864032e45"; // 與 Worker 的 REPORT_TOKEN 相同：弱驗證，只擋無差別掃描
-var PRIVACY_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/blob/master/PRIVACY.md";
-var ISSUES_URL = "https://github.com/a0972199950/bilibili-cdn-switcher/issues/new";
+var PRIVACY_URL = "https://github.com/a0972199950/biboost/blob/master/PRIVACY.md";
+var ISSUES_URL = "https://github.com/a0972199950/biboost/issues/new";
 var DIAG_STORE = chrome.storage.session || chrome.storage.local;
 var DIAG_KEEP_MS = 10 * 60 * 1000;
 var TYPES = ["bug", "feature"];

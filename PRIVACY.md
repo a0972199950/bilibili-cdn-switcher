@@ -72,7 +72,7 @@
 
 ### 聯絡方式
 
-有任何隱私權相關問題，歡迎透過 [GitHub Issues](https://github.com/a0972199950/bilibili-cdn-switcher/issues) 或擴充內的問題回報聯絡我們。
+有任何隱私權相關問題，歡迎透過 [GitHub Issues](https://github.com/a0972199950/biboost/issues) 或擴充內的問題回報聯絡我們。
 
 ---
 
@@ -142,4 +142,4 @@ Any material change to this policy will be reflected by updating the "Last updat
 
 ### Contact
 
-For any privacy-related questions, please reach out via [GitHub Issues](https://github.com/a0972199950/bilibili-cdn-switcher/issues) or the problem-report form inside the extension.
+For any privacy-related questions, please reach out via [GitHub Issues](https://github.com/a0972199950/biboost/issues) or the problem-report form inside the extension.
