@@ -154,3 +154,13 @@ Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再�
 - `https://api.biboost.app`：同一個 worker 的正式網域（`routes` 的 custom domain），之後的擴充與 exe 全部用這個（公告、問題回報、抽獎、贊助）；Stripe webhook 也指到這裡。下面的範例網址兩個都通。
 - 公開網站 `https://biboost.app`（贊助頁網頁版 `/donate`、雲端後台 `/admin`）是另一個 worker：`tools/site/`，`npm run site:deploy`。
 - 後台「贊助管理」的開關（Neon 的 `settings.donate_enabled`）：`GET /v1/donate/config` 回 `{ ok, enabled }` 給 popup，`/v1/donors` 也帶 `enabled`，關掉時結帳回 403 `disabled`。
+
+
+## 與手機 App 共用的帳號後台（2026-11-04）
+
+帳號、訂閱、雲端備份的 API 由 `biboost-mobile` repo 的 `api-worker` 提供，用 Cloudflare 的路徑路由掛在**同一個網域**下（Route 優先於 Custom Domain）：
+
+- `api.biboost.app`（正式 Worker `biboost-api`，D1 `biboost-api` id `a2105ace-b9ed-43af-aaaf-96ffbd8e004a`）、`api-staging.biboost.app`（開發 Worker `biboost-api-dev`，D1 `biboost-api-dev` id `61dc44f6-3bb4-49f0-8ee0-eb633605d6e9`）。
+- 被占用的路徑：`/auth/*`、`/me`、`/me/*`、`/play/*`、`/stripe/*`、`/feedback`、`/config/*`。這個 worker 的新端點請留在 `/v1/*`、`/v2/*`。
+- 擴充與 App 只有這一個後台、一顆帳號資料庫；贊助／抽獎的 Neon Postgres 不併。帳號 id 一律用 `accounts.id`（Play `obfuscatedAccountId`、Stripe `metadata.account_id` 都以它為準），擴充之後接購買沿用。
+- 擴充端登入與雲端備份的規格在 `biboost-mobile/specs/extension-login.md`、`specs/cloud-backup.md`。
