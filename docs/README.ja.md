@@ -65,7 +65,7 @@ bilibili-cdn-switcher/
 ├── tools/
 │   ├── cdn-speedtest-app/    ← 公式速度テストツール CDNSpeedTest（Python、Windows／Mac）
 │   ├── report-worker/        ← api.biboost.app：問題報告、お知らせ、支援などの API（Cloudflare Worker）
-│   │                         同じホスト上のアカウント／サブスクリプション API（/auth/*、/me、/play/*、/stripe/*、/config/*）は biboost-mobile リポジトリの api-worker が提供：拡張機能とアプリで同一バックエンド・同一 Cloudflare D1 を共用：biboost-api（本番、a2105ace-b9ed-43af-aaaf-96ffbd8e004a）／biboost-api-dev（api-staging.biboost.app、61dc44f6-3bb4-49f0-8ee0-eb633605d6e9）
+│   │                         同じホスト上のアカウント／サブスクリプション API（/auth/*、/me、/play/*、/stripe/*、/config/*）は biboost-mobile リポジトリの api-worker が提供し、テーブルはこのプロジェクトの Neon Postgres（bilibili-cdn-switcher：production ブランチ＝api.biboost.app、staging ブランチ＝api-staging.biboost.app）に置く。拡張機能とアプリで同一バックエンド・同一データベースを共用
 │   ├── site/                 ← biboost.app のウェブサイト（Cloudflare Worker）
 │   └── translate-worker/     ← 管理画面用の翻訳 API（Cloudflare Worker）
 ├── scripts/              ← 開発／パッケージ化／リリース／運用スクリプト（主に Node、一部 Python）

@@ -65,7 +65,7 @@ bilibili-cdn-switcher/
 ├── tools/
 │   ├── cdn-speedtest-app/    ← Official speed test tool CDNSpeedTest (Python, Windows / Mac)
 │   ├── report-worker/        ← api.biboost.app: bug-report, announcement, tipping and other APIs (Cloudflare Worker)
-│   │                         Account & subscription API on the same host (/auth/*, /me, /play/*, /stripe/*, /config/*) is served by the biboost-mobile repo's api-worker: one shared backend and one Cloudflare D1 for the extension and the app, biboost-api (prod, a2105ace-b9ed-43af-aaaf-96ffbd8e004a) / biboost-api-dev (api-staging.biboost.app, 61dc44f6-3bb4-49f0-8ee0-eb633605d6e9)
+│   │                         Account & subscription API on the same host (/auth/*, /me, /play/*, /stripe/*, /config/*) is served by the biboost-mobile repo's api-worker, storing its tables in this project's Neon Postgres (bilibili-cdn-switcher: production branch for api.biboost.app, staging branch for api-staging.biboost.app), so the extension and the app share one backend and one database
 │   ├── site/                 ← biboost.app website (Cloudflare Worker)
 │   └── translate-worker/     ← Translation API used by the admin console (Cloudflare Worker)
 ├── scripts/              ← Dev / build / release / operations scripts (mostly Node, a few Python)

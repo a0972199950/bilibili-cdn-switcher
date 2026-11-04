@@ -160,7 +160,7 @@ Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再�
 
 帳號、訂閱、雲端備份的 API 由 `biboost-mobile` repo 的 `api-worker` 提供，用 Cloudflare 的路徑路由掛在**同一個網域**下（Route 優先於 Custom Domain）：
 
-- `api.biboost.app`（正式 Worker `biboost-api`，D1 `biboost-api` id `a2105ace-b9ed-43af-aaaf-96ffbd8e004a`）、`api-staging.biboost.app`（開發 Worker `biboost-api-dev`，D1 `biboost-api-dev` id `61dc44f6-3bb4-49f0-8ee0-eb633605d6e9`）。
+- `api.biboost.app`（正式 Worker `biboost-api`）、`api-staging.biboost.app`（開發 Worker `biboost-api-dev`）。資料表放在**同一顆 Neon Postgres**（`bilibili-cdn-switcher`：production 分支＝正式、staging 分支＝開發，跟贊助／抽獎同一個資料庫）：accounts、identities、sessions、subscriptions、trials、feedback、pending_signups、oauth_results、login_codes、login_attempts、merged_accounts，這邊新開表別撞名。
 - 被占用的路徑：`/auth/*`、`/me`、`/me/*`、`/play/*`、`/stripe/*`、`/feedback`、`/config/*`。這個 worker 的新端點請留在 `/v1/*`、`/v2/*`。
-- 擴充與 App 只有這一個後台、一顆帳號資料庫；贊助／抽獎的 Neon Postgres 不併。帳號 id 一律用 `accounts.id`（Play `obfuscatedAccountId`、Stripe `metadata.account_id` 都以它為準），擴充之後接購買沿用。
+- 擴充與 App 只有這一個後台、一顆資料庫（帳號和贊助／抽獎都在同一顆 Neon）。帳號 id 一律用 `accounts.id`（Play `obfuscatedAccountId`、Stripe `metadata.account_id` 都以它為準），擴充之後接購買沿用。
 - 擴充端登入與雲端備份的規格在 `biboost-mobile/specs/extension-login.md`、`specs/cloud-backup.md`。
