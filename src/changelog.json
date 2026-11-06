@@ -1,5 +1,16 @@
 {
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "feature",
+      "text": {
+        "zh_TW": "介面新增廣東話，香港、澳門用戶會自動顯示",
+        "zh_CN": "界面新增粤语，香港、澳门用户会自动显示",
+        "en": "Added Cantonese to the interface, shown automatically for users in Hong Kong and Macao",
+        "ja": "表示言語に広東語を追加（香港・マカオのユーザーには自動で表示）",
+        "ko": "인터페이스에 광둥어 추가 (홍콩·마카오 사용자에게 자동 표시)"
+      }
+    }
+  ],
   "releases": [
     {
       "version": "2.9.0",

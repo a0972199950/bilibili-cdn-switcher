@@ -14,6 +14,7 @@ import sys
 EN = "BiBoost - Video Speedup"
 NAMES = {
     "zh_TW": "嗶速 - 海外影片加速",
+    "zh_HK": "嗶速 - 海外影片加速",
     "zh_CN": "哔速 - 海外视频加速",
     "en": EN,
     "ja": EN,

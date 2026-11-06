@@ -31,7 +31,8 @@
     var list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || "en"];
     for (var i = 0; i < list.length; i++) {
       var l = String(list[i]).toLowerCase();
-      if (l.indexOf("zh") === 0) return /tw|hk|mo|hant/.test(l) ? "zh_TW" : "zh_CN";
+      if (l.indexOf("yue") === 0 || /^zh-(hant-)?(hk|mo)/.test(l)) return "zh_HK";
+      if (l.indexOf("zh") === 0) return /tw|hant/.test(l) ? "zh_TW" : "zh_CN";
       if (l.indexOf("ja") === 0) return "ja";
       if (l.indexOf("ko") === 0) return "ko";
       if (l.indexOf("en") === 0) return "en";

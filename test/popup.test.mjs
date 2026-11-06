@@ -171,13 +171,28 @@ describe("pure helpers", () => {
 });
 
 describe("uiLangCode", () => {
-  for (const [lang, code] of [["zh-TW", "zhtw"], ["zh-CN", "zhcn"], ["zh", "zhtw"], ["ja", "ja"], ["ko-KR", "ko"], ["en-US", "en"], ["fr", "en"]]) {
+  for (const [lang, code] of [["zh-TW", "zhtw"], ["zh-HK", "zhhk"], ["zh-MO", "zhhk"], ["zh-CN", "zhcn"], ["zh", "zhtw"], ["ja", "ja"], ["ko-KR", "ko"], ["en-US", "en"], ["fr", "en"]]) {
     test(lang + " → " + code, async () => {
       const env = await boot({}, { uiLanguage: lang });
       assert.equal(env.internals("popup").uiLangCode(), code);
       env.close();
     });
   }
+});
+
+describe("Cantonese (zh_HK) auto-detect", () => {
+  test("browser UI zh-HK → uiAutoLang zh_HK, data keys fall back to zh_TW", async () => {
+    const env = await boot({}, { uiLanguage: "zh-HK" });
+    assert.equal(env.window.uiAutoLang, "zh_HK");
+    assert.equal(env.window.uiLangTag(), "zh-TW");
+    assert.equal(env.internals("popup").localized({ zh_TW: "T", en: "E" }), "T");
+    env.close();
+  });
+  test("non-Chinese UI stays with chrome.i18n", async () => {
+    const env = await boot({}, { uiLanguage: "en-US" });
+    assert.equal(env.window.uiAutoLang, null);
+    env.close();
+  });
 });
 
 describe("settings migration on load", () => {

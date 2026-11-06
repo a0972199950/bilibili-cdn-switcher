@@ -1,0 +1,845 @@
+{
+  "extName": {
+    "message": "嗶速 - 海外影片加速 for bilibili"
+  },
+  "extDescription": {
+    "message": "等海外用戶喺網頁版 bilibili 睇 4K 等高畫質影片更加順暢，減少緩衝同卡頓。非官方第三方擴充，同 bilibili 官方無關。"
+  },
+  "extActionTitle": {
+    "message": "嗶速 - 海外影片加速"
+  },
+  "popupHeaderTitle": {
+    "message": "嗶速 - 海外影片加速 for bilibili"
+  },
+  "popupTitle": {
+    "message": "CDN 線路"
+  },
+  "enabledLabel": {
+    "message": "啟用"
+  },
+  "autoFallbackLabel": {
+    "message": "速度唔好時自動優化節點"
+  },
+  "autoFallbackHint": {
+    "message": "影片卡住或者載入失敗時，會先喺背景測試目前清單啲節點，轉去夠快嗰個；仲係卡就改用 B 站原本嘅節點。直播就改用國際線路。如果網絡本身唔穩定（例如 Wi-Fi 訊號弱），可能會成日切換，建議關閉。"
+  },
+  "cdnHostRowLabel": {
+    "message": "CDN 節點"
+  },
+  "modeListLabel": {
+    "message": "清單選擇"
+  },
+  "modeCustomLabel": {
+    "message": "自訂節點列表"
+  },
+  "customHostPlaceholder": {
+    "message": "輸入節點網址或者 host"
+  },
+  "customHintInvalid": {
+    "message": "請輸入有效嘅 host（要包括網域，例如 xxx.bilivideo.com）。"
+  },
+  "speedtestBtnLabel": {
+    "message": "🔍 測試各節點速度"
+  },
+  "rateBtnLabel": {
+    "message": "⭐ 鍾意嘅話，俾個 5 星鼓勵吓"
+  },
+  "donateBtnLabel": {
+    "message": "☕ 贊助/契爺排行榜"
+  },
+  "feedbackBtnLabel": {
+    "message": "🐛 問題回報／功能許願"
+  },
+  "showDebugLabel": {
+    "message": "顯示頁面 debug 疊層"
+  },
+  "debugSectionLabel": {
+    "message": "Debug（目前分頁）"
+  },
+  "debugInitial": {
+    "message": "仲未有資料，請喺 B 站影片頁打開。"
+  },
+  "debugNoDataAfterOpen": {
+    "message": "仲未有資料。請喺 B 站影片頁播放之後再開呢個視窗。"
+  },
+  "stBackBtn": {
+    "message": "← 返回"
+  },
+  "stHeaderTitle": {
+    "message": "各節點測速"
+  },
+  "stRetestBtn": {
+    "message": "🔄 重新測速"
+  },
+  "stHintLeave": {
+    "message": "用「目前影片、目前畫質」嘅分段實測各節點；離開呢頁會即刻停止測速。"
+  },
+  "stHintBandwidth": {
+    "message": "呢度測嘅係各節點嘅<b>理論最大頻寬</b>，唔係播放時實際用到嘅速度，所以比 debug 疊層嘅數字高係正常嘅。"
+  },
+  "speedtestCannotStart": {
+    "message": "開始唔到測速，請確認目前分頁係 B 站影片頁。"
+  },
+  "stGuideTitle": {
+    "message": "目前分頁冇可以測速嘅影片"
+  },
+  "stGuideText": {
+    "message": "打開一條 B 站影片開始播放，再撳擴充圖示，按「測試各節點速度」。"
+  },
+  "stGuideTextIphone": {
+    "message": "先撳網址列左邊嘅頁面選單 ≡，揀「要求桌面版網站」，再打開一條 B 站影片開始播放，然後喺頁面選單撳 BiBoost，按「測試各節點速度」。"
+  },
+  "stGuideTextIpad": {
+    "message": "打開一條 B 站影片開始播放，撳網址列嘅延伸功能圖示，揀 BiBoost，再按「測試各節點速度」。"
+  },
+  "stGuideBtn": {
+    "message": "去示範影片"
+  },
+  "stStaleText": {
+    "message": "擴充啱啱安裝或者更新咗，重新載入頁面之後就可以測速。"
+  },
+  "stStaleReloading": {
+    "message": "重新載入緊，搞掂之後會自動開始測速…"
+  },
+  "speedtestStatusTesting": {
+    "message": "測試緊…"
+  },
+  "speedtestStatusCanceled": {
+    "message": "已取消"
+  },
+  "speedtestStatusWaiting": {
+    "message": "等緊"
+  },
+  "stQuality8k": {
+    "message": "8K 穩睇"
+  },
+  "stQuality4k": {
+    "message": "4K 穩睇"
+  },
+  "stQuality1080": {
+    "message": "1080P 穩睇"
+  },
+  "stQuality720": {
+    "message": "720P 穩睇"
+  },
+  "stQualityLow": {
+    "message": "可能會卡"
+  },
+  "speedtestFailedTemplate": {
+    "message": "失敗（{err}）"
+  },
+  "errNoData": {
+    "message": "冇回應"
+  },
+  "errNoStream": {
+    "message": "讀取唔到串流"
+  },
+  "errTimeout": {
+    "message": "超時"
+  },
+  "errNetworkError": {
+    "message": "網絡錯誤"
+  },
+  "errReadError": {
+    "message": "讀取中斷"
+  },
+  "errNoSample": {
+    "message": "仲未有分段樣本"
+  },
+  "cdnNoteBackupUrl": {
+    "message": "用 B 站提供嘅備用節點"
+  },
+  "cdnNameBackupUrl": {
+    "message": "備用URL"
+  },
+  "mhToastAutoSwitched": {
+    "message": "目前 CDN 速度唔好，已經自動轉去備用節點 {host}"
+  },
+  "mhToastAllFailed": {
+    "message": "目前 CDN 同備用節點都播唔順"
+  },
+  "mhToastReloadBackup": {
+    "message": "重新載入並轉用備用URL"
+  },
+  "mhToastClose": {
+    "message": "關閉"
+  },
+  "mhCdnTargetOriginal": {
+    "message": "原本（唔覆寫）"
+  },
+  "mhCdnTargetBackup": {
+    "message": "備用URL（優先）"
+  },
+  "whatsNewTitle": {
+    "message": "🎉 已經更新到 v{version}"
+  },
+  "whatsNewSubtitle": {
+    "message": "今次更新咗："
+  },
+  "whatsNewClose": {
+    "message": "知道喇"
+  },
+  "whatsNewTypeFeature": {
+    "message": "新增"
+  },
+  "whatsNewTypeFix": {
+    "message": "修正"
+  },
+  "tabVideo": {
+    "message": "影片"
+  },
+  "tabLive": {
+    "message": "直播"
+  },
+  "modeOffLabel": {
+    "message": "關閉"
+  },
+  "modeOffHintVideo": {
+    "message": "唔干預一般影片嘅 CDN 選線，維持官方原本嘅做法。"
+  },
+  "modeOffHintLive": {
+    "message": "唔干預直播嘅 CDN 選線，維持官方原本嘅做法。"
+  },
+  "advancedBtnTitle": {
+    "message": "進階設定"
+  },
+  "advancedBtnLabel": {
+    "message": "進階設定"
+  },
+  "uiLangLabel": {
+    "message": "語言 / Language"
+  },
+  "uiLangAuto": {
+    "message": "跟瀏覽器"
+  },
+  "uiThemeLabel": {
+    "message": "外觀主題"
+  },
+  "uiThemeSystem": {
+    "message": "跟系統"
+  },
+  "uiThemeLight": {
+    "message": "淺色"
+  },
+  "uiThemeDark": {
+    "message": "深色"
+  },
+  "advancedTitle": {
+    "message": "進階設定"
+  },
+  "liveRouteOv": {
+    "message": "國際線路(ov)"
+  },
+  "liveRouteOvB": {
+    "message": "國際備用線路(ov-b)"
+  },
+  "liveRouteCn": {
+    "message": "中國線路(cn)"
+  },
+  "liveRouteCnB": {
+    "message": "中國備用線路(cn-b)"
+  },
+  "liveRouteMissing": {
+    "message": "呢個直播冇呢條線路"
+  },
+  "liveSpeedtestBtnLabel": {
+    "message": "🔍 測試各直播線路速度"
+  },
+  "stLiveHeaderTitle": {
+    "message": "直播線路測速"
+  },
+  "stLiveHintLeave": {
+    "message": "用「目前直播間」嘅串流實測各線路；離開呢頁會即刻停止測速。"
+  },
+  "stLiveHintBandwidth": {
+    "message": "測速會同播緊嘅直播<b>爭頻寬</b>，期間畫面可能會卡一陣，屬正常現象。每條線路大約要 {sec} 秒。"
+  },
+  "liveSpeedtestNoSampleHint": {
+    "message": "請先喺 B 站直播間開始播放，攞到串流網址之後再測速。"
+  },
+  "liveSpeedtestCannotStart": {
+    "message": "開始唔到測速，請確認目前分頁係 B 站直播間。"
+  },
+  "liveSpeedtestUnavailableHint": {
+    "message": "連唔到任何線路，請重新載入直播間之後再測速。"
+  },
+  "stLiveStartupLabel": {
+    "message": "轉台卡頓"
+  },
+  "stLiveSustainLabel": {
+    "message": "持續觀看"
+  },
+  "levelLow": {
+    "message": "低"
+  },
+  "levelMid": {
+    "message": "中"
+  },
+  "levelHigh": {
+    "message": "高"
+  },
+  "sustainGood": {
+    "message": "優秀"
+  },
+  "sustainFair": {
+    "message": "一般"
+  },
+  "sustainPoor": {
+    "message": "差"
+  },
+  "mhToastLiveFallback": {
+    "message": "目前直播線路唔好，已經自動轉去國際線路(ov)"
+  },
+  "speedtestStatusIdle": {
+    "message": "未測試"
+  },
+  "liveRouteRowLabel": {
+    "message": "直播線路"
+  },
+  "stLiveLagTemplate": {
+    "message": "落後 {ms}ms"
+  },
+  "liveRouteExplain": {
+    "message": "直播唔可以好似影片咁隨便揀節點：B 站每次會分配一組專屬節點，轉第二組就播唔到。所以呢度揀嘅係「偏好嘅線路類型」，擴充會喺嗰組節點入面轉去呢條。"
+  },
+  "liveModePrefLabel": {
+    "message": "偏好選擇"
+  },
+  "showDebugHint": {
+    "message": "喺播放畫面左上角顯示目前用緊嘅線路等技術資訊，下面都會列出。回報問題或者比較速度時先開就得。"
+  },
+  "staleTabText": {
+    "message": "擴充啱啱更新或者重新載入咗，要重新載入頁面先會生效。"
+  },
+  "staleTabReloadBtn": {
+    "message": "重新載入"
+  },
+  "sortBySpeedLabel": {
+    "message": "節點按測速排序"
+  },
+  "sortBySpeedHint": {
+    "message": "開咗之後，測速時節點會按速度由快到慢自動排序，並記住次序直到下次測速。影片同直播都適用，閂咗就變返預設次序。"
+  },
+  "stVideoLimitTitle": {
+    "message": "影片測速門檻"
+  },
+  "stVideoLimitHint": {
+    "message": "每個節點下載到呢個大小或者測夠呢個秒數（邊個先到算邊個）就轉下一個。數字越大越準，但係測得越耐。"
+  },
+  "stVideoMbLabel": {
+    "message": "每個節點最多下載"
+  },
+  "stVideoSecLabel": {
+    "message": "每個節點最多測"
+  },
+  "stLiveLimitTitle": {
+    "message": "直播測速門檻"
+  },
+  "stLiveLimitHint": {
+    "message": "「轉台卡頓」測幾次攞平均；「持續觀看」喺每條線路實際拉流幾秒，睇吓跟唔跟得上直播。數字越大越準，但係測得越耐。"
+  },
+  "stLiveRunsLabel": {
+    "message": "轉台卡頓測試次數"
+  },
+  "stLiveSecLabel": {
+    "message": "持續觀看每條線路測"
+  },
+  "unitSec": {
+    "message": "秒"
+  },
+  "unitTimes": {
+    "message": "次"
+  },
+  "resetDefault": {
+    "message": "還原預設"
+  },
+  "stPresetLabel": {
+    "message": "套用"
+  },
+  "stPresetFast": {
+    "message": "測速快 - 準確度低"
+  },
+  "stPresetMedium": {
+    "message": "適中"
+  },
+  "stPresetAccurate": {
+    "message": "測速慢 - 準確度高"
+  },
+  "stPresetCustom": {
+    "message": "自訂"
+  },
+  "staleTabTitle": {
+    "message": "呢個分頁要重新載入"
+  },
+  "stStopBtn": {
+    "message": "⏹ 停止"
+  },
+  "changelogTitle": {
+    "message": "版本更新紀錄"
+  },
+  "changelogCurrent": {
+    "message": "目前版本"
+  },
+  "countryLabel": {
+    "message": "節點清單嘅國家／地區"
+  },
+  "countryYouAreHere": {
+    "message": "{name}（你喺度）"
+  },
+  "countryAll": {
+    "message": "全部"
+  },
+  "countryNodeCount": {
+    "message": "{n} 個節點"
+  },
+  "durationHMS": {
+    "message": "{h} 小時 {m} 分鐘 {s} 秒"
+  },
+  "allWarnTitle": {
+    "message": "全部測速要好耐"
+  },
+  "allWarnText": {
+    "message": "全部 <b>{n}</b> 個節點測速，按目前設定大約要 <b>{time}</b>。"
+  },
+  "allWarnAdvice": {
+    "message": "各國清單已經篩選咗最快嘅節點，建議先揀國家（或者離你最近嘅國家）再測速。"
+  },
+  "allWarnQuestion": {
+    "message": "確定要測晒全部節點？"
+  },
+  "allWarnCancel": {
+    "message": "取消，改揀國家"
+  },
+  "allWarnConfirm": {
+    "message": "照樣測晒全部節點"
+  },
+  "crownRank": {
+    "message": "第 {n} 名"
+  },
+  "stDescExpand": {
+    "message": "展開說明"
+  },
+  "stDescCollapse": {
+    "message": "收起說明"
+  },
+  "mhToastSwitched": {
+    "message": "轉咗去 {host}"
+  },
+  "customHintDup": {
+    "message": "呢個節點已經喺列表入面。"
+  },
+  "customAddBtn": {
+    "message": "加入"
+  },
+  "customDesc1": {
+    "message": "適合唔喺國家清單入面，或者清單啲節點都好慢嘅時候用。"
+  },
+  "customListEmpty": {
+    "message": "空列表"
+  },
+  "customClearBtn": {
+    "message": "清空"
+  },
+  "customDelTitle": {
+    "message": "由列表移除"
+  },
+  "customClearTitle": {
+    "message": "清空自訂節點列表？"
+  },
+  "customClearText": {
+    "message": "列表入面嘅 <b>{n} 個節點</b>都會被移除，並改用目前國家嘅第一個節點。"
+  },
+  "customClearCancel": {
+    "message": "取消"
+  },
+  "customClearConfirm": {
+    "message": "確認"
+  },
+  "resetAllBtn": {
+    "message": "還原原本設定"
+  },
+  "resetAllTitle": {
+    "message": "還原原本設定？"
+  },
+  "resetAllText": {
+    "message": "進階設定、影片同直播嘅節點設定都會變返預設，自訂節點列表會被<b>清空</b>。"
+  },
+  "importToastOk": {
+    "message": "已經將測速工具推薦嘅 {n} 個節點加入「自訂節點列表」，喺擴充選單揀佢就用得。"
+  },
+  "importToastNone": {
+    "message": "測速工具推薦嘅節點已經全部喺「自訂節點列表」入面。"
+  },
+  "importToastFail": {
+    "message": "加唔到測速推薦嘅節點入「自訂節點列表」，請遲啲再試。"
+  },
+  "autoDetectText": {
+    "message": "唔知邊啲節點快？官方測速工具會測勻 300 幾個節點，自動將最快嘅 10 個加入列表。"
+  },
+  "autoDetectTextIos": {
+    "message": "唔知邊啲節點快？喺電腦用官方測速工具測勻 300 幾個節點，測完用呢部裝置掃畫面上嘅 QR code，就會將最快嘅 10 個加入列表。"
+  },
+  "autoDetectBtn": {
+    "message": "⚡ 自動偵測並加入"
+  },
+  "countryMissingHint": {
+    "message": "冇你嘅國家？全部節點都好慢？試吓最近嘅國家，或者{link}。"
+  },
+  "optimizingTitle": {
+    "message": "目前節點速度唔好，優化緊..."
+  },
+  "optimizingStop": {
+    "message": "停止優化"
+  },
+  "reportTitle": {
+    "message": "問題回報／功能許願"
+  },
+  "reportTypeLabel": {
+    "message": "類型"
+  },
+  "reportTypeBug": {
+    "message": "回報問題"
+  },
+  "reportTypeFeature": {
+    "message": "功能許願"
+  },
+  "reportDescLabel": {
+    "message": "描述"
+  },
+  "reportDescNote": {
+    "message": "發生咩事？預期應該係點？大約幾時開始？"
+  },
+  "reportContactLabel": {
+    "message": "Email（選填）"
+  },
+  "reportContactNote": {
+    "message": "想收到開發者回覆嘅話可以填 Email；只有開發者睇到"
+  },
+  "reportDiagTitle": {
+    "message": "會附上診斷資料（大約 {kb} KB）"
+  },
+  "reportDiagView": {
+    "message": "睇內容"
+  },
+  "reportDiagHide": {
+    "message": "收起"
+  },
+  "reportDiagNote": {
+    "message": "診斷資料包括你嘅 IP、ISP、最近 10 分鐘嘅操作紀錄同睇過嘅影片 ID，只有開發者睇到，查完就會刪除。"
+  },
+  "reportPrivacyLink": {
+    "message": "私隱政策"
+  },
+  "reportSubmit": {
+    "message": "提交"
+  },
+  "reportSending": {
+    "message": "提交緊…"
+  },
+  "reportHistoryLabel": {
+    "message": "已提交嘅回報："
+  },
+  "reportHistoryRemove": {
+    "message": "移除呢筆紀錄"
+  },
+  "reportDoneEmailed": {
+    "message": "確認電郵已經寄去 {email}，直接回覆嗰封電郵就可以補充更多資料。"
+  },
+  "reportDoneTitle": {
+    "message": "提交咗，多謝！"
+  },
+  "reportDoneIssue": {
+    "message": "可以喺 GitHub 跟進處理進度：#{n}"
+  },
+  "reportDoneNoIssue": {
+    "message": "收到你嘅回報喇。"
+  },
+  "reportFailTitle": {
+    "message": "提交失敗"
+  },
+  "reportFailHint": {
+    "message": "請遲啲再試，或者複製診斷資料之後去 GitHub 開 issue。"
+  },
+  "reportCopy": {
+    "message": "複製診斷資料"
+  },
+  "reportCopied": {
+    "message": "已複製"
+  },
+  "reportClose": {
+    "message": "關閉"
+  },
+  "reportDiscardConfirm": {
+    "message": "放棄呢份回報？"
+  },
+  "reportContactInvalid": {
+    "message": "Email 格式唔啱"
+  },
+  "reportDescRequired": {
+    "message": "請先描述問題"
+  },
+  "reportErrRateLimited": {
+    "message": "短時間內回報太多次，請 10 分鐘之後再試"
+  },
+  "reportErrNetwork": {
+    "message": "連唔到回報伺服器"
+  },
+  "reportErrPermission": {
+    "message": "要你允許附上診斷資料先可以提交問題回報；唔想附上嘅話，請改用「複製診斷資料」自己去 GitHub 開 issue。"
+  },
+  "lotteryBarLabel": {
+    "message": "公告"
+  },
+  "lotteryBarNext": {
+    "message": "下一則公告"
+  },
+  "lotteryBarHide": {
+    "message": "關閉呢則公告（3 日內唔再顯示）"
+  },
+  "lotteryWinTitle": {
+    "message": "抽獎活動"
+  },
+  "lotteryWinHow": {
+    "message": "參加方法：下載「CDN 測速工具」，揀「參加抽獎」並留低 email，完成測速並發送報告。"
+  },
+  "lotteryWinCta": {
+    "message": "下載測速工具同教學"
+  },
+  "lotteryWinClose": {
+    "message": "關閉"
+  },
+  "announceGone": {
+    "message": "呢則公告已經完結或者被移除。"
+  },
+  "lotteryNote": {
+    "message": "備註"
+  },
+  "donateTitle": {
+    "message": "贊助・契爺排行榜"
+  },
+  "donateBoardTitle": {
+    "message": "契爺排行榜"
+  },
+  "donateBoardSub": {
+    "message": "嗶速永久免費，全靠一班契爺撐住。每一筆贊助都會換算成美金上榜！"
+  },
+  "donateStatDonors": {
+    "message": "位契爺"
+  },
+  "donateTabBoard": {
+    "message": "👑 契爺排行榜"
+  },
+  "donateTabGive": {
+    "message": "☕ 我要贊助"
+  },
+  "donateGiveTitle": {
+    "message": "☕ 請我飲杯咖啡"
+  },
+  "donateGiveSub": {
+    "message": "嗶速由一位獨立開發者放工後維護。你嘅贊助會令我更有動力繼續更新、測更多國家嘅節點！"
+  },
+  "donateStepAmount": {
+    "message": "揀金額"
+  },
+  "donateStepProfile": {
+    "message": "上榜名稱同頭像"
+  },
+  "donateNameNote": {
+    "message": "會公開顯示喺排行榜；呢部裝置會記住，下次自動填返"
+  },
+  "donatePreviewLabel": {
+    "message": "上榜預覽"
+  },
+  "donateStepPay": {
+    "message": "可用嘅付款方式"
+  },
+  "donateFine": {
+    "message": "贊助屬自願贈與，唔會解鎖任何功能，付款完成即上榜，恕不退款；如遇重複扣款或者金額錯誤，請透過「問題回報」聯絡，我哋會退款。收款人係開發者本人，唔係 Google、Microsoft 或者 Mozilla。金額按付款當時嘅匯率換算成美金排名，同一個人嘅多次贊助會合併。換電腦或者清咗瀏覽器資料之後，只要登入同一個瀏覽器帳戶並開啟同步，就搵得返你嘅上榜身分。"
+  },
+  "donateCta": {
+    "message": "☕ 我都要上榜"
+  },
+  "donateBoardNote": {
+    "message": "按累計金額排序，唔分時間；同一位贊助者嘅多次贊助合併為一筆。"
+  },
+  "donateAnonymous": {
+    "message": "匿名契爺"
+  },
+  "donateTier0": {
+    "message": "契爺"
+  },
+  "donateTier1": {
+    "message": "老竇"
+  },
+  "donateTier2": {
+    "message": "契阿爺"
+  },
+  "donateTier3": {
+    "message": "親阿爺"
+  },
+  "donateTier4": {
+    "message": "你係唯一嘅神話"
+  },
+  "donateTimes": {
+    "message": " ・{n} 次"
+  },
+  "donateVacant": {
+    "message": "虛位以待"
+  },
+  "donateVacantSub": {
+    "message": "就等你喇"
+  },
+  "donateYou": {
+    "message": "你"
+  },
+  "donateBoardFailed": {
+    "message": "排行榜暫時載入唔到。"
+  },
+  "donateRetry": {
+    "message": "再試"
+  },
+  "donateLoading": {
+    "message": "載入緊…"
+  },
+  "donateMeKeepBtn": {
+    "message": "加碼守榜"
+  },
+  "donateMeFirst": {
+    "message": "你係<b>榜一契爺</b>！累計 {usd}，拋離第二名 <b>{gap}</b>，守住王座啦！"
+  },
+  "donateMeFirstAlone": {
+    "message": "你係<b>榜一契爺</b>！累計 {usd}，暫時無人能敵。"
+  },
+  "donateMeOvertakeBtn": {
+    "message": "即刻超車"
+  },
+  "donateMeRank": {
+    "message": "你而家排第 <b>{rank}</b> 名（{usd}）。再贊助 <b>{gap}</b> 就可以超越第 {above} 名「{name}」！"
+  },
+  "donateMeJoinBtn": {
+    "message": "我要上榜"
+  },
+  "donateMeFewDonors": {
+    "message": "暫時只有 {n} 位契爺，<b>{min}</b> 起就可以直接登上頒獎台！"
+  },
+  "donateMeNoDonors": {
+    "message": "仲未有人贊助過，<b>第一位契爺</b>就係你！"
+  },
+  "donateMePodium": {
+    "message": "<b>{min}</b> 起就可以上榜！累計超過 <b>{gap}</b> 仲可以登上前三名頒獎台。"
+  },
+  "donateCups": {
+    "message": "{n} 杯"
+  },
+  "donateAmountEmpty": {
+    "message": "請輸入金額（最少 {min}）"
+  },
+  "donateAmountMin": {
+    "message": "最少 {min}：金額太細嘅話，扣埋支付手續費就所剩無幾"
+  },
+  "donateAmountMax": {
+    "message": "每筆最多大約 {max}，係咪打多咗幾個 0？"
+  },
+  "donateAmountDecimals": {
+    "message": "呢個貨幣唔可以有咁多位小數"
+  },
+  "donateAmountOk": {
+    "message": "大約 <b>{usd}</b>・贊助之後你會排第 <b>{rank}</b> 名（最少 {min}）"
+  },
+  "donateAmountOkUsd": {
+    "message": "贊助之後你會排第 <b>{rank}</b> 名（最少 {min}）"
+  },
+  "donatePayBtnIdle": {
+    "message": "☕ 去付款"
+  },
+  "donatePayBtn": {
+    "message": "☕ 贊助 {amount}"
+  },
+  "donateMethodCard": {
+    "message": "信用卡／扣賬卡"
+  },
+  "donateAvatarStyle": {
+    "message": "頭像樣式 {n}"
+  },
+  "donateAvatarMine": {
+    "message": "我上載嘅頭像"
+  },
+  "donateAvatarUpload": {
+    "message": "上載圖片"
+  },
+  "donateCheckoutOpened": {
+    "message": "付款頁已經喺新分頁打開，付款完成之後會自動帶你返嚟。"
+  },
+  "donateConfirming": {
+    "message": "確認緊你嘅付款，幾秒內就會更新排行榜…"
+  },
+  "donateConfirmSlow": {
+    "message": "仲未收到呢筆付款嘅結果。如果已經付咗款，等一陣再重新載入呢頁就會見到。"
+  },
+  "donateCheckoutFailed": {
+    "message": "打開唔到付款頁，請遲啲再試。"
+  },
+  "donateMethodsNote": {
+    "message": "按貨幣顯示，實際喺下一步嘅付款頁揀"
+  },
+  "donateUsdLocal": {
+    "message": "{local}（大約 {usd}）"
+  },
+  "donateNextTier": {
+    "message": "今次贊助之後，再 <b>{gap}</b> 就可以升級做「{tier}」"
+  },
+  "donateTierLegendLabel": {
+    "message": "累計金額夠門檻，稱號就會升級："
+  },
+  "donateCurrencyLabel": {
+    "message": "貨幣"
+  },
+  "donateCurrencySearch": {
+    "message": "搜尋貨幣（名稱或者代碼）"
+  },
+  "donateCurrencyNone": {
+    "message": "搵唔到呢個貨幣"
+  },
+  "donateContact": {
+    "message": "聯絡作者"
+  },
+  "donateContactCopy": {
+    "message": "複製"
+  },
+  "donateContactCopied": {
+    "message": "已複製"
+  },
+  "donateAmountPlaceholder": {
+    "message": "最少 {min}"
+  },
+  "donateThanks": {
+    "message": "🎉 多謝你嘅贊助！你而家排第 <b>{rank}</b> 名。"
+  },
+  "donateProfileSave": {
+    "message": "更新排行榜上嘅名稱同頭像"
+  },
+  "donateProfileSaved": {
+    "message": "排行榜上已經係目前嘅名稱同頭像"
+  },
+  "donateProfileFailed": {
+    "message": "名稱同頭像更新失敗，請遲啲再試。"
+  },
+  "donateMethodCardTw": {
+    "message": "信用卡（限台灣發行）"
+  },
+  "donateMethodCvs": {
+    "message": "台灣便利店條碼／代碼（NT$150 起）"
+  },
+  "donateMethodsNoteTw": {
+    "message": "外國發行嘅信用卡請改揀其他貨幣；實際喺下一步嘅付款頁揀"
+  },
+  "donateEmailLabel": {
+    "message": "Email（選填）"
+  },
+  "donateEmailNote": {
+    "message": "填咗嘅話，換電腦或者換瀏覽器之後再贊助，金額都會合併到你原本嘅排名。只用嚟認出你，唔會公開。"
+  },
+  "donateEmailBad": {
+    "message": "Email 格式唔啱"
+  }
+}

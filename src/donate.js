@@ -216,7 +216,7 @@ function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.cl
 document.title = t("donateTitle");
 // 語言切換：跟 popup 進階設定的語言同一個設定（localStorage 的 uiLang＋chrome.storage.local 的 uiLang／uiMsgs，寫法同 popup.js），換完重載。
 // 網址上測試用的 ?lang= 會蓋過設定，重載前先拿掉
-var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English", ja: "日本語", ko: "한국어" };
+var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_HK: "廣東話", zh_CN: "简体中文", en: "English", ja: "日本語", ko: "한국어" };
 (function () {
   var sel = $("langSelect");
   ["auto"].concat(UI_LANGS).forEach(function (code) {
@@ -233,7 +233,7 @@ var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English
     var q = new URLSearchParams(location.search);
     q.delete("lang");
     var rest = q.toString();
-    chrome.storage.local.set({ uiLang: v, uiMsgs: v === "auto" ? null : loadUiMessages(v) }, function () {
+    chrome.storage.local.set({ uiLang: v, uiMsgs: uiMessagesFor(v) }, function () {
       location.replace(location.pathname + (rest ? "?" + rest : "") + location.hash);
     });
   });

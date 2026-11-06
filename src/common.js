@@ -6,17 +6,22 @@
 // ---- i18n ----
 // Prefer the language the user picked in advanced settings (i18n.js); otherwise chrome.i18n follows the browser.
 function t(key) { return (uiMessages && uiMessages[key]) || chrome.i18n.getMessage(key) || key; }
-function uiLanguage() { return uiLangPref !== "auto" ? uiLangPref.replace("_", "-") : chrome.i18n.getUILanguage(); }
+function uiLanguage() {
+  if (uiLangPref !== "auto") return uiLangPref.replace("_", "-");
+  return window.uiAutoLang ? window.uiAutoLang.replace("_", "-") : chrome.i18n.getUILanguage();
+}
 // Short UI language code used for feedback forms and utm_content (see promotions/campaigns.md)
 function uiLangCode() {
   var lang = (uiLanguage() || "").toLowerCase();
   if (lang.indexOf("ja") === 0) return "ja";
   if (lang.indexOf("ko") === 0) return "ko";
   if (lang.indexOf("zh") !== 0) return "en";
-  return lang.indexOf("cn") !== -1 ? "zhcn" : "zhtw";
+  if (lang.indexOf("cn") !== -1) return "zhcn";
+  return lang.indexOf("hk") !== -1 ? "zhhk" : "zhtw";
 }
 // uiLangCode() → key of the { zh_TW, zh_CN, en, ja, ko } objects in cdn-list.json / changelog.json
-var LOCALIZED_KEYS = { zhtw: "zh_TW", zhcn: "zh_CN", en: "en", ja: "ja", ko: "ko" };
+// Cantonese (zh_HK) only has the UI strings in _locales; data such as changelog / announcements uses zh_TW.
+var LOCALIZED_KEYS = { zhtw: "zh_TW", zhhk: "zh_TW", zhcn: "zh_CN", en: "en", ja: "ja", ko: "ko" };
 // uiLangCode() → "zh-TW"-style tag used by the announcement API and lottery-text.js
 function uiLangTag() { return LOCALIZED_KEYS[uiLangCode()].replace("_", "-"); }
 // { zh_TW: ..., en: ... } → the UI language, falling back to en, then zh_TW

@@ -110,7 +110,7 @@ document.documentElement.lang = uiLanguage();
 // -------- 介面語言（進階設定第一項）--------
 // 選項存 localStorage（i18n.js 開頭同步讀）＋ chrome.storage.local 的 uiLang / uiMsgs（bridge.js 的頁內提示用，uiMsgs 為 null = 跟隨瀏覽器）。
 // 切換後整個 popup 重載，並記一個 sessionStorage 旗標，重載完回到進階設定頁
-var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_CN: "简体中文", en: "English", ja: "日本語", ko: "한국어" };
+var UI_LANG_NAMES = { zh_TW: "繁體中文", zh_HK: "廣東話", zh_CN: "简体中文", en: "English", ja: "日本語", ko: "한국어" };
 var uiLangSelect = document.getElementById("uiLangSelect");
 ["auto"].concat(UI_LANGS).forEach(function (code) {
   var opt = document.createElement("option");
@@ -125,12 +125,14 @@ uiLangSelect.addEventListener("change", function () {
   var v = uiLangSelect.value;
   setUiLangPref(v);
   try { window.sessionStorage.setItem("reopenAdvanced", "1"); } catch (e) {}
-  chrome.storage.local.set({ uiLang: v, uiMsgs: v === "auto" ? null : loadUiMessages(v) }, function () { location.reload(); });
+  chrome.storage.local.set({ uiLang: v, uiMsgs: uiMessagesFor(v) }, function () { location.reload(); });
 });
 // localStorage 被清掉、與 storage 對不上時，以 storage 為準重載一次
-chrome.storage.local.get({ uiLang: "auto" }, function (items) {
+chrome.storage.local.get({ uiLang: "auto", uiMsgs: null }, function (items) {
   if (window.uiLangFromUrl) return; // 測試用的 ?lang= 本來就跟設定不同，比對了會無限重載
   var v = items.uiLang;
+  // 跟隨瀏覽器、偵測到 zh_HK（chrome.i18n 不支援）：頁內提示也要用粵語，第一次開 popup 時補存文案
+  if (v === "auto" && uiLangPref === "auto" && window.uiAutoLang && !items.uiMsgs) chrome.storage.local.set({ uiMsgs: window.uiMessages });
   if (v === uiLangPref || (v !== "auto" && UI_LANGS.indexOf(v) < 0)) return;
   setUiLangPref(v);
   try { if (window.localStorage.getItem("uiLang") === v) location.reload(); } catch (e) {}
