@@ -1,6 +1,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
-import { createEnv, readSrcJson, plain, closeAll } from "./helpers/load.mjs";
+import { createEnv, readSrcJson, plain, closeAll, testKey } from "./helpers/load.mjs";
+import { signJws } from "../tools/report-worker/src/features.js";
 
 const CDN = readSrcJson("cdn-list.json");
 const DEFAULT_HOST = "cn-bj-se-01-05.bilivideo.com"; // = cdn-list.json OTHER 的第一個
@@ -14,7 +15,7 @@ async function boot(storage = {}, { zone = null, uiLanguage } = {}) {
     if (url === ZONE_API && zone) return { ok: true, status: 200, json: () => Promise.resolve(zone) };
     throw new TypeError("Failed to fetch");
   };
-  ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
+  ["theme.js", "i18n.js", "common.js", "lottery-text.js", "features.js", "popup.js"].forEach((f) => env.load(f));
   await env.settle(20);
   return env;
 }
@@ -454,18 +455,23 @@ describe("announcement bar filtering", () => {
 
 describe("donate button", () => {
   const CHROME_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36";
-  const CONFIG_API = "https://api.biboost.app/v1/donate/config";
+  const FEATURES_API = "https://api.biboost.app/v1/features";
+  let key;
+  before(async () => { key = await testKey(); });
   // jsdom 的 User-Agent 會被 detectBrowser 當成 Safari；這裡先換成指定瀏覽器的再載入 popup。
-  // config：GET /v1/donate/config 的回應（null＝連不上）；storage：預先放進 storage.local 的東西
-  async function bootAs(ua, { config = null, storage = {} } = {}) {
+  // features：GET /v1/features 簽章裡的 features（null＝連不上）；storage：預先放進 storage.local 的東西
+  async function bootAs(ua, { features = null, storage = {} } = {}) {
+    const jws = features && await signJws({ iat: 1, features }, key.priv, "t1");
     const env = createEnv({ htmlFile: "popup.html", storage: { zoneCheckedAt: Date.now(), countryAutoDone: true, ...storage } });
     Object.defineProperty(env.window.navigator, "userAgent", { value: ua, configurable: true });
     env.fetchHandler = (url) => {
-      if (url === CONFIG_API && config) return { ok: true, status: 200, json: () => Promise.resolve(config) };
+      if (url === FEATURES_API && jws) return { ok: true, status: 200, json: () => Promise.resolve({ ok: true, jws }) };
       throw new TypeError("Failed to fetch");
     };
-    ["theme.js", "i18n.js", "common.js", "lottery-text.js", "popup.js"].forEach((f) => env.load(f));
-    await env.settle(20);
+    ["theme.js", "i18n.js", "common.js", "lottery-text.js", "features.js"].forEach((f) => env.load(f));
+    env.window.BBFeatures.PUBLIC_KEYS.t1 = key.pub;
+    env.load("popup.js");
+    await env.settle(40);
     return env;
   }
   test("shown next to the 5-star button in Chrome", async () => {
@@ -475,26 +481,38 @@ describe("donate button", () => {
     assert.notEqual(btn.parentNode.style.display, "none");
     env.close();
   });
-  test("hidden once the admin pauses donations, and the answer is cached", async () => {
-    const env = await bootAs(CHROME_UA, { config: { ok: true, enabled: false } });
+  test("hidden once the admin pauses donations, and the signed answer is cached", async () => {
+    const env = await bootAs(CHROME_UA, { features: { donate: { enabled: false } } });
     const btn = env.document.getElementById("donateBtn");
     assert.equal(btn.style.display, "none");
     assert.equal(btn.parentNode.style.display, "", "the 5-star button keeps the row");
-    const stored = env.storage.donateConfig;
-    assert.equal(stored.enabled, false);
-    assert.equal(stored.api, "https://api.biboost.app");
+    assert.equal(env.storage.featureFlags.api, "https://api.biboost.app");
+    assert.match(env.storage.featureFlags.jws, /^[\w-]+\.[\w-]+\.[\w-]+$/);
     env.close();
   });
-  test("a fresh cached pause hides the button without asking the API again", async () => {
-    const env = await bootAs(CHROME_UA, { storage: { donateConfig: { api: "https://api.biboost.app", at: Date.now(), enabled: false } } });
-    assert.equal(env.document.getElementById("donateBtn").style.display, "none");
-    assert.ok(!env.fetchCalls.some((c) => c.url === CONFIG_API));
+  test("a cached pause hides the button at once, and the popup asks again every time", async () => {
+    const first = await bootAs(CHROME_UA, { features: { donate: { enabled: false } } });
+    const cached = first.storage.featureFlags;
+    first.close();
+    const env = await bootAs(CHROME_UA, { storage: { featureFlags: cached } });
+    assert.equal(env.document.getElementById("donateBtn").style.display, "none", "API down: the last verified answer stays");
+    assert.ok(env.fetchCalls.some((c) => c.url === FEATURES_API));
     env.close();
   });
-  test("stays visible when the config API is down (default on)", async () => {
-    const env = await bootAs(CHROME_UA);
-    assert.ok(env.fetchCalls.some((c) => c.url === CONFIG_API));
+  test("a tampered cache is ignored (back to the default: shown)", async () => {
+    const first = await bootAs(CHROME_UA, { features: { donate: { enabled: true } } });
+    const [h, , sig] = first.storage.featureFlags.jws.split(".");
+    first.close();
+    const forged = Buffer.from(JSON.stringify({ iat: 2, features: { donate: { enabled: false } } })).toString("base64url");
+    const env = await bootAs(CHROME_UA, { storage: { featureFlags: { api: "https://api.biboost.app", jws: [h, forged, sig].join(".") } } });
     assert.equal(env.document.getElementById("donateBtn").style.display, "");
+    env.close();
+  });
+  test("stays visible when the API is down (default on), and drops the old 2.9 cache", async () => {
+    const env = await bootAs(CHROME_UA, { storage: { donateConfig: { api: "https://api.biboost.app", at: Date.now(), enabled: false } } });
+    assert.ok(env.fetchCalls.some((c) => c.url === FEATURES_API));
+    assert.equal(env.document.getElementById("donateBtn").style.display, "");
+    assert.equal(env.storage.donateConfig, undefined);
     env.close();
   });
   test("hidden in Safari (App Store rules: no external payment)", async () => {

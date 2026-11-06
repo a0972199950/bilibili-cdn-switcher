@@ -161,13 +161,20 @@ describe("report worker: donate", () => {
     assert.ok(!db.log.some((l) => /^insert into/.test(l.q)), "nothing written");
   });
 
-  // 後台「贊助管理」的開關（settings.donate_enabled）。Node 沒有 Cloudflare 的 caches，換成什麼都不存的假快取
+  // 贊助的功能開關（features.donate；還沒有 features 表時沿用舊的 settings.donate_enabled）。Node 沒有 Cloudflare 的 caches，換成什麼都不存的假快取
+  // value：true／false＝features 的那一列；undefined＝沒有這一列；"missing"＝兩張表都還沒建；{ legacy }＝只有舊的 settings
   const noCache = { default: { match: async () => undefined, put: async () => {}, delete: async () => {} } };
+  const missing = (t) => new Error(`neon_400 {"code":"42P01","message":"relation \\"${t}\\" does not exist"}`);
   const flagDb = (value) => ({
     neonSql: async (env, q) => {
+      const legacy = value && typeof value === "object";
+      if (/from features/.test(q)) {
+        if (value === "missing" || legacy) throw missing("features");
+        return value === undefined ? [] : [{ key: "donate", data: { enabled: value } }];
+      }
       if (/from settings/.test(q)) {
-        if (value === "missing") throw new Error('neon_400 {"code":"42P01","message":"relation \"settings\" does not exist"}');
-        return value === undefined ? [] : [{ value }];
+        if (!legacy) throw missing("settings");
+        return [{ value: value.legacy }];
       }
       return [];
     },
@@ -183,6 +190,8 @@ describe("report worker: donate", () => {
     assert.equal(await donateEnabled({}, flagDb(true)), true);
     assert.equal(await donateEnabled({}, flagDb(undefined)), true);
     assert.equal(await donateEnabled({}, flagDb("missing")), true);
+    assert.equal(await donateEnabled({}, flagDb({ legacy: false })), false, "before the features table exists, the old switch still counts");
+    assert.equal(await donateEnabled({}, flagDb({ legacy: true })), true);
   });
 
   test("GET /v1/donate/config answers the flag for the popup", async () => {

@@ -107,6 +107,7 @@ npx wrangler secret put ECPAY_HASH_KEY --config tools/report-worker/wrangler.tom
 npx wrangler secret put ECPAY_HASH_IV --config tools/report-worker/wrangler.toml
 npx wrangler secret put STRIPE_SECRET_KEY --config tools/report-worker/wrangler.toml      # 贊助結帳：其他幣別（Stripe）
 npx wrangler secret put STRIPE_WEBHOOK_SECRET --config tools/report-worker/wrangler.toml
+npx wrangler secret put FEATURES_SIGNING_KEY --config tools/report-worker/wrangler.toml   # 功能開關的簽章私鑰（P-256 JWK，值在 .env.local），見下方「功能開關」
 npm run worker:deploy
 ```
 
@@ -153,7 +154,7 @@ Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再�
 - `https://bcs-report.bilibili-cdn-switcher-tools.workers.dev`：**不能關**。2.8.0（含）以前的擴充（公告、問題回報）與改網址前打包的 CDN 測速工具 exe（抽獎）都寫死這個網址（`wrangler.toml` 的 `workers_dev = true`）。
 - `https://api.biboost.app`：同一個 worker 的正式網域（`routes` 的 custom domain），之後的擴充與 exe 全部用這個（公告、問題回報、抽獎、贊助）；Stripe webhook 也指到這裡。下面的範例網址兩個都通。
 - 公開網站 `https://biboost.app`（贊助頁網頁版 `/donate`、雲端後台 `/admin`）是另一個 worker：`tools/site/`，`npm run site:deploy`。
-- 後台「贊助管理」的開關（Neon 的 `settings.donate_enabled`）：`GET /v1/donate/config` 回 `{ ok, enabled }` 給 popup，`/v1/donors` 也帶 `enabled`，關掉時結帳回 403 `disabled`。
+- 贊助的功能開關（後台「功能管理」，Neon 的 `features.donate`；還沒有 `features` 表時沿用舊的 `settings.donate_enabled`）：`GET /v1/donate/config` 回 `{ ok, enabled }` 給 2.9.x 以前的 popup（之後的版本讀 `/v1/features`），`/v1/donors` 也帶 `enabled`，關掉時結帳回 403 `disabled`。
 
 
 ## 與手機 App 共用的帳號後台（2026-11-04）
@@ -164,3 +165,10 @@ Gmail 免費帳號每天上限 100 封。Apps Script 對 POST 會先回 302 再�
 - 被占用的路徑：`/auth/*`、`/me`、`/me/*`、`/play/*`、`/stripe/*`、`/feedback`、`/config/*`。這個 worker 的新端點請留在 `/v1/*`、`/v2/*`。
 - 擴充與 App 只有這一個後台、一顆資料庫（帳號和贊助／抽獎都在同一顆 Neon）。帳號 id 一律用 `accounts.id`（Play `obfuscatedAccountId`、Stripe `metadata.account_id` 都以它為準），擴充之後接購買沿用。
 - 擴充端登入與雲端備份的規格在 `biboost-mobile/specs/extension-login.md`、`specs/cloud-backup.md`。
+
+## 功能開關
+
+`GET /v1/features` → `{ ok, jws }`：後台「功能管理」存的每一列（Neon 的 `features`，格式見 `scripts/lib/features.mjs`），
+用 ES256 簽成 compact JWS（payload `{ iat, features: { <key>: { enabled, ... } } }`），擴充用內建公鑰驗章（`src/features.js`），
+storage 或回應被改過就不採用。邊緣快取 60 秒。需要 secret `DATABASE_URL`、`FEATURES_SIGNING_KEY`（缺一回 503 `not_configured`）。
+換金鑰：先在 `src/features.js` 的 `PUBLIC_KEYS` 加新的 kid 並發版，再換 secret 與 `features.js` 的 `KID`。

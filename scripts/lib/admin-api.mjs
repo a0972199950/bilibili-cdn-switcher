@@ -13,10 +13,10 @@
 //        translate?: (from, targets, fields) => { 語言: { 欄位 } }（雲端的翻譯；沒給就用本機的 Claude Code） }
 import * as A from "./announcements.mjs";
 import * as D from "./donations.mjs";
+import * as F from "./features.mjs";
 import * as I from "./invites.mjs";
 import * as L from "./lotteries.mjs";
 import * as V from "./lotteries-v2.mjs";
-import * as S from "./settings.mjs";
 import * as T from "./translate.mjs";
 import * as W from "./winners.mjs";
 import { SESSION_KEY_MIN, SESSION_TTL_MS, checkSession, makeSession, safeEqual, verifyPassword } from "./admin-auth.mjs";
@@ -46,7 +46,7 @@ export function localOnly(ctx) {
   return out;
 }
 // 這些錯誤的訊息是寫給人看的（欄位檢查不過等），原樣顯示在畫面上；其他錯誤是程式或連線問題
-const USER_ERRORS = new Set(["LotteryError", "AnnouncementError", "DonationError", "TranslateError"]);
+const USER_ERRORS = new Set(["LotteryError", "AnnouncementError", "DonationError", "TranslateError", "FeatureError"]);
 const CLOUD_SHEET_NOTE = "雲端後台沒有設定 Google 憑證（GOOGLE_OAUTH）：讀不到測速報告的試算表，報告欄只有 Apps Script 記的份數";
 
 // 清單欄位：表單給陣列（antd 的 tags 輸入），也接受一行一個的字串
@@ -125,14 +125,16 @@ const ACTIONS = {
   sendInviteMail: ([code, mail]) => done(I.sendInviteMail(code, mail)),
 
   // ── 贊助管理 ──
+  // enabled：贊助的功能開關（在「功能管理」切換），贊助管理頁只顯示狀態
   listDonations: async ([range]) => {
-    const [rows, enabled] = await Promise.all([D.listDonations(range || {}), S.donateEnabled()]);
+    const [rows, enabled] = await Promise.all([D.listDonations(range || {}), F.featureEnabled("donate")]);
     return { rows, enabled };
   },
-  setDonateEnabled: async ([on]) => {
-    await S.setSetting(S.DONATE_ENABLED, on === true);
-    return { enabled: on === true };
-  },
+
+  // ── 功能管理（features.mjs）──
+  listFeatures: async () => ({ rows: await F.listFeatures() }),
+  // patch：{ enabled?, <屬性>? }（格式見 features.mjs 的 validatePatch）
+  setFeature: async ([key, patch]) => ({ data: await F.setFeature(String(key || ""), patch) }),
 };
 
 function json(status, obj, headers = {}) {

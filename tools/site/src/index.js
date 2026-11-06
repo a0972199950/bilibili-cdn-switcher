@@ -3,7 +3,7 @@
  * 只有 wrangler.toml 的 run_worker_first 列的路徑先經過這裡：
  *  - /admin、/admin/*        雲端後台（admin/ 打包好的純前端頁面，沒有 SSR）：找不到的路徑都回 /admin（前端自己的路由），加上安全標頭
  *  - /admin/api/*            後台 API（scripts/lib/admin-api.mjs，跟本機後台同一份）：登入、讀寫 Neon
- *  - /donate、/donate.html   贊助頁：後台「贊助管理」關掉贊助時回 404（scripts/lib/settings.mjs 的 donate_enabled）
+ *  - /donate、/donate.html   贊助頁：後台「功能管理」關掉贊助時回 404（scripts/lib/features.mjs 的 donate）
  * secrets（npx wrangler secret put <NAME> --config tools/site/wrangler.toml）：
  *   DATABASE_URL       Neon 正式環境的連線字串（同 .env.local）
  *   ADMIN_USER         後台帳號
@@ -17,7 +17,7 @@
 import "./ext-window.js";
 import "../../../src/lottery-text.js";
 import { API_PREFIX, handleAdminApi } from "../../../scripts/lib/admin-api.mjs";
-import { donateEnabled } from "../../../scripts/lib/settings.mjs";
+import { featureEnabled } from "../../../scripts/lib/features.mjs";
 import { useCurrencyTable } from "../../../scripts/lib/speedtest-reports.mjs";
 import { TranslateError } from "../../../scripts/lib/translate.mjs";
 
@@ -58,13 +58,13 @@ function kvLimiter(env) {
   };
 }
 
-// donate_enabled 在這個節點快取 FLAG_CACHE_S 秒（後台改了最慢 1 分鐘生效）；資料庫出錯時照常顯示（預設開啟）
-async function donateOn(request, ctx) {
-  const key = new Request(new URL("/__flags/donate_enabled", request.url).toString());
+// 功能開關在這個節點快取 FLAG_CACHE_S 秒（後台改了最慢 1 分鐘生效）；資料庫出錯時照常顯示（預設開啟）
+async function featureOn(name, request, ctx) {
+  const key = new Request(new URL("/__flags/" + name, request.url).toString());
   const hit = await caches.default.match(key);
   if (hit) return (await hit.text()) === "1";
   let on = true;
-  try { on = await donateEnabled(); } catch (e) { console.error("donate flag:", e); return true; }
+  try { on = await featureEnabled(name); } catch (e) { console.error("feature flag " + name + ":", e); return true; }
   ctx.waitUntil(caches.default.put(key, new Response(on ? "1" : "0", { headers: { "Cache-Control": `max-age=${FLAG_CACHE_S}` } })));
   return on;
 }
@@ -104,7 +104,7 @@ export default {
       return withHeaders(res, ADMIN_HEADERS);
     }
     if (path === "/admin" || path.startsWith("/admin/")) return adminPage(request, env);
-    if ((path === "/donate" || path === "/donate.html") && !(await donateOn(request, ctx))) {
+    if ((path === "/donate" || path === "/donate.html") && !(await featureOn("donate", request, ctx))) {
       return new Response("Not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
     }
     return env.ASSETS.fetch(request);

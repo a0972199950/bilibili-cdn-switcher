@@ -122,6 +122,10 @@ export function createEnv(opts = {}) {
   window.Response = Response;
   window.Request = Request;
   window.Headers = Headers;
+  // jsdom has no WebCrypto (crypto.subtle) or TextEncoder; features.js verifies signatures with them
+  window.TextEncoder = TextEncoder;
+  window.TextDecoder = TextDecoder;
+  Object.defineProperty(window, "crypto", { value: globalThis.crypto, configurable: true });
 
   const registry = {};
   const onChangedListeners = [];
@@ -235,4 +239,13 @@ export function createEnv(opts = {}) {
   };
   openEnvs.add(env);
   return env;
+}
+
+// A throwaway P-256 key for signed responses (/v1/features): priv = JWK JSON string (what the worker's secret holds),
+// pub = the public JWK to put into BBFeatures.PUBLIC_KEYS under the kid the test signs with
+export async function testKey() {
+  const k = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const priv = await crypto.subtle.exportKey("jwk", k.privateKey);
+  const { kty, crv, x, y } = await crypto.subtle.exportKey("jwk", k.publicKey);
+  return { priv: JSON.stringify(priv), pub: { kty, crv, x, y } };
 }

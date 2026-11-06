@@ -29,6 +29,7 @@ const PRIVATE_PATHS = [
   "cdn-speedtest-results",
   "store",
   "admin", // 後台畫面（Vite＋React；本機 npm run admin、雲端打包到 biboost.app/admin）
+  "src/private", // 擴充的私人模組（不打包，見 scripts/build.mjs）
   // 本機憑證
   ".env.local",
   "tools/report-worker/.dev.vars",

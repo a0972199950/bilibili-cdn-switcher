@@ -1,8 +1,8 @@
 /**
  * 贊助（擴充的 src/donate.html）：乾爹排行榜與 Stripe 結帳。資料表見 scripts/lib/donations.mjs（npm run donations:setup 建）。
  *  - GET  /v1/donors                 排行榜：同一個 pid 的已付款贊助合併、依美金累計排序，邊緣快取 CACHE_S 秒；enabled＝贊助開關
- *  - GET  /v1/donate/config          { ok, enabled }：後台「贊助管理」的開關（Neon 的 settings.donate_enabled，見 scripts/lib/settings.mjs），
- *                                    popup 依它顯示「贊助我一杯咖啡」；關掉時贊助頁只剩排行榜、結帳回 403 disabled。邊緣快取 CACHE_S 秒
+ *  - GET  /v1/donate/config          { ok, enabled }：贊助的功能開關（後台「功能管理」，Neon 的 features.donate，見 features.js）。
+ *                                    2.9.x 以前的 popup 依它顯示贊助按鈕（之後的版本改讀 /v1/features）；關掉時贊助頁只剩排行榜、結帳回 403 disabled。邊緣快取 CACHE_S 秒
  *  - GET  /v1/donors/<pid>/avatar    上傳的頭像圖片
  *  - POST /v1/donors/profile        已上榜的人事後改名稱／頭像
  *  - POST /v1/donate/checkout        建付款頁，回 { ok, url }；先記一筆 donation_intents（名稱、頭像、金額、語言、email…）。
@@ -18,6 +18,7 @@
  * email：Stripe 付款頁會收；綠界的通知不給 email，所以選新台幣時擴充讓使用者選填（存在 donation_intents.email）。
  * 金額換算美金：付款當下用 open.er-api.com 的匯率（付款人付的幣別 → USD）；Stripe 的手續費、實收是結算幣別（SGD），一併換成美金存。
  */
+import { featureData } from "./features.js";
 const NAME_MAX = 20;
 const AVATAR_STYLES = 10;
 const AVATAR_MAX = 60 * 1024; // 上傳頭像 data URL 上限（擴充縮成 128×128，通常 5–15 KB）
@@ -67,15 +68,9 @@ export async function handleDonate(request, env, ctx, url, h) {
 }
 
 // ---------------- 贊助開關 ----------------
-// 沒有 settings 表、沒有這一列＝開啟（預設開）
+// 沒有這一列＝開啟（預設開）；還沒有 features 表時沿用舊的 settings.donate_enabled（見 features.js）
 export async function donateEnabled(env, h) {
-  try {
-    const rows = await h.neonSql(env, "select value from settings where key = 'donate_enabled'");
-    return !rows.length || rows[0].value !== false;
-  } catch (e) {
-    if (/^neon_4\d\d [\s\S]*(42P01|does not exist)/.test(String(e.message))) return true;
-    throw e;
-  }
+  return (await featureData(env, h, "donate")).enabled !== false;
 }
 async function donateConfig(request, env, ctx, h) {
   const key = new Request(new URL("/v1/donate/config", request.url).toString());

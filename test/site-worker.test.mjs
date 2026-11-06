@@ -14,7 +14,7 @@ before(async () => {
     if (String(url).includes("neon.tech/sql")) {
       neonCalls++;
       const { query } = JSON.parse(init.body);
-      const rows = /from settings/.test(query) ? [{ value: flag }] : [];
+      const rows = /select data from features/.test(query) ? [{ data: { enabled: flag } }] : /to_regclass/.test(query) ? [{ t: null }] : [];
       return new Response(JSON.stringify({ rows }), { status: 200 });
     }
     throw new Error("unexpected fetch " + url);
@@ -87,7 +87,7 @@ describe("biboost-site worker", () => {
     assert.match((await bad.json()).error, /不認得的語言/);
   });
 
-  test("/donate follows the admin's donate switch", async () => {
+  test("/donate follows the admin's donate switch (features.donate)", async () => {
     flag = true;
     assert.equal((await get("/donate")).status, 200);
     flag = false;

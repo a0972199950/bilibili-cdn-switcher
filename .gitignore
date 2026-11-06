@@ -66,3 +66,6 @@ promotions/
 tools/site/public/
 tools/site/.wrangler/
 tools/translate-worker/.wrangler/
+
+# 擴充的私人模組：只進私人 repo，也不打包（scripts/build.mjs 排除）
+/src/private/

@@ -66,7 +66,9 @@
 		2B5DF8113066315B00949CE2 /* common.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8103066315B00949CE2 /* common.js */; };
 		2B5DF8123066315B00949CE2 /* common.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8103066315B00949CE2 /* common.js */; };
 		2B5DF8143066315B00949CE2 /* lottery-text.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8133066315B00949CE2 /* lottery-text.js */; };
+		2B5DF8F23066315B00949CF1 /* features.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8F13066315B00949CF1 /* features.js */; };
 		2B5DF8153066315B00949CE2 /* lottery-text.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8133066315B00949CE2 /* lottery-text.js */; };
+		2B5DF8F33066315B00949CF1 /* features.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8F13066315B00949CF1 /* features.js */; };
 		2B5DF8173066315B00949CE2 /* html-sanitize.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8163066315B00949CE2 /* html-sanitize.js */; };
 		2B5DF8183066315B00949CE2 /* html-sanitize.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8163066315B00949CE2 /* html-sanitize.js */; };
 		2B5DF81A3066315B00949CE2 /* announcement.js in Resources */ = {isa = PBXBuildFile; fileRef = 2B5DF8193066315B00949CE2 /* announcement.js */; };
@@ -164,6 +166,7 @@
 		2B5DF63E3066315B00949CE2 /* theme.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = theme.js; path = ../../../src/theme.js; sourceTree = "<group>"; };
 		2B5DF8103066315B00949CE2 /* common.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = common.js; path = ../../../src/common.js; sourceTree = "<group>"; };
 		2B5DF8133066315B00949CE2 /* lottery-text.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = lottery-text.js; path = ../../../src/lottery-text.js; sourceTree = "<group>"; };
+		2B5DF8F13066315B00949CF1 /* features.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = features.js; path = ../../../src/features.js; sourceTree = "<group>"; };
 		2B5DF8163066315B00949CE2 /* html-sanitize.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = html-sanitize.js; path = ../../../src/html-sanitize.js; sourceTree = "<group>"; };
 		2B5DF8193066315B00949CE2 /* announcement.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = announcement.js; path = ../../../src/announcement.js; sourceTree = "<group>"; };
 		2B5DF81C3066315B00949CE2 /* announcement.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = announcement.html; path = ../../../src/announcement.html; sourceTree = "<group>"; };
@@ -319,6 +322,7 @@
 				2B5DF63E3066315B00949CE2 /* theme.js */,
 				2B5DF8103066315B00949CE2 /* common.js */,
 				2B5DF8133066315B00949CE2 /* lottery-text.js */,
+				2B5DF8F13066315B00949CF1 /* features.js */,
 				2B5DF8163066315B00949CE2 /* html-sanitize.js */,
 				2B5DF8193066315B00949CE2 /* announcement.js */,
 				2B5DF81C3066315B00949CE2 /* announcement.html */,
@@ -516,6 +520,7 @@
 				2B5DF6403066315B00949CE2 /* theme.js in Resources */,
 				2B5DF8123066315B00949CE2 /* common.js in Resources */,
 				2B5DF8153066315B00949CE2 /* lottery-text.js in Resources */,
+				2B5DF8F33066315B00949CF1 /* features.js in Resources */,
 				2B5DF8183066315B00949CE2 /* html-sanitize.js in Resources */,
 				2B5DF81B3066315B00949CE2 /* announcement.js in Resources */,
 				2B5DF81E3066315B00949CE2 /* announcement.html in Resources */,
@@ -546,6 +551,7 @@
 				2B5DF63F3066315B00949CE2 /* theme.js in Resources */,
 				2B5DF8113066315B00949CE2 /* common.js in Resources */,
 				2B5DF8143066315B00949CE2 /* lottery-text.js in Resources */,
+				2B5DF8F23066315B00949CF1 /* features.js in Resources */,
 				2B5DF8173066315B00949CE2 /* html-sanitize.js in Resources */,
 				2B5DF81A3066315B00949CE2 /* announcement.js in Resources */,
 				2B5DF81D3066315B00949CE2 /* announcement.html in Resources */,

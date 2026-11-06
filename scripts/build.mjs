@@ -74,12 +74,13 @@ async function buildTarget(name, manifestFile) {
     console.warn(`找不到 ${ICONS_PROD}，zip 內会是 src/icons/ 目前的图示（可能是开发版）。请先执行 npm run gen-icons。`);
   }
 
-  // 收集要打包的檔案：src/ 底下除了兩份 manifest 以外的全部（manifest 換成 manifest.json 放最上層）；
+  // 收集要打包的檔案：src/ 底下除了兩份 manifest、private/ 以外的全部（manifest 換成 manifest.json 放最上層）；
   // icons/ 有正式版（assets/icons-prod/）的話整批換成正式版
   const entries = new Map(); // zip 內的 posix 相對路徑 -> 來源絕對路徑
   for (const abs of listFilesRecursive(SRC)) {
     const rel = path.relative(SRC, abs).split(path.sep).join("/");
     if (rel === "manifest.json" || rel === "manifest.firefox.json") continue;
+    if (rel.startsWith("private/")) continue; // 私人模組（只在私人 repo），不打包
     if (rel.startsWith("icons/") && iconsProdFiles.length) continue;
     if (rel === "changelog.json") continue; // 下面另外處理：打包時要拿掉尚未上架的 unreleased
     entries.set(rel, abs);
